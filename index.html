@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Visualization Toolbox</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: monospace;
+      background: #f0f0f4;
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .landing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+    }
+    .landing-header { text-align: center; }
+    .landing-header h1 { font-size: 26px; font-weight: 700; color: #222; letter-spacing: 0.5px; }
+    .landing-header p { margin-top: 6px; font-size: 13px; color: #888; }
+    .tiles { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .tile {
+      width: 220px; height: 180px; background: #fff; border: 1px solid #ddd; border-radius: 14px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      cursor: pointer; transition: all 0.2s ease; text-decoration: none; color: inherit; font-family: inherit;
+    }
+    .tile:hover {
+      border-color: #648FFF; box-shadow: 0 6px 20px rgba(100, 143, 255, 0.15); transform: translateY(-5px);
+    }
+    .tile-icon { font-size: 42px; line-height: 1; }
+    .tile-label { font-size: 14px; font-weight: 600; color: #333; }
+    .tile-desc { font-size: 11px; color: #999; text-align: center; padding: 0 16px; line-height: 1.4; }
+    .tile.help-tile { width: 220px; height: 60px; gap: 6px; border-style: dashed; }
+    .tile.help-tile .tile-icon { font-size: 20px; }
+    .tile.help-tile .tile-label { font-size: 12px; color: #888; }
+    .tile-separator { width: 1px; height: 180px; background: #ddd; flex-shrink: 0; align-self: center; }
+
+    .tool-view { display: none; flex-direction: column; height: 100vh; }
+    .tool-view.active { display: flex; }
+    .tool-topbar {
+      display: flex; align-items: center; padding: 0 20px; background: #fff;
+      border-bottom: 1px solid #ddd; flex-shrink: 0; height: 46px; gap: 16px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #ccc;
+      border-radius: 6px; padding: 5px 14px; font-family: inherit; font-size: 12px; color: #555;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .back-btn:hover { border-color: #648FFF; color: #648FFF; }
+    .tool-name { font-size: 14px; font-weight: 600; color: #333; }
+    .tool-view iframe { flex: 1; width: 100%; border: none; }
+
+    .help-content {
+      flex: 1; overflow-y: auto; padding: 32px 48px; max-width: 900px; margin: 0 auto; width: 100%;
+    }
+    .help-content h2 {
+      font-size: 18px; font-weight: 700; color: #222; margin: 32px 0 12px; padding-bottom: 6px;
+      border-bottom: 2px solid #648FFF;
+    }
+    .help-content h2:first-child { margin-top: 0; }
+    .help-content h3 { font-size: 14px; font-weight: 600; color: #555; margin: 18px 0 8px; }
+    .help-content p { font-size: 13px; line-height: 1.7; color: #444; margin: 0 0 10px; }
+    .help-content .note {
+      background: #eef2ff; border-left: 3px solid #648FFF; padding: 10px 14px;
+      border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 12px; color: #444;
+    }
+    .help-content table {
+      border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 12px;
+    }
+    .help-content th {
+      background: #f0f0f5; text-align: left; padding: 6px 12px; border: 1px solid #ddd;
+      font-weight: 600; color: #555;
+    }
+    .help-content td { padding: 5px 12px; border: 1px solid #ddd; color: #444; }
+    .help-content code {
+      background: #f0f0f5; padding: 1px 5px; border-radius: 3px; font-size: 12px; color: #d6336c;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="landing" id="landing">
+    <div class="landing-header">
+      <h2>--------------------------------------</h2>
+      <h1>Data Visualization Toolbox</h1>
+      <h2>--------------------------------------</h2>
+      <h3>Pick a tool to get started</h3>
+      <h2>---------------------</h2>
+      <p>Please note this is experimental !</p>
+    </div>
+    <div class="tiles">
+      <button class="tile" data-tool="aequorin">
+        <span class="tile-icon">&#x2697;&#xFE0F;</span>
+        <span class="tile-label">Aequorin Ca&#xB2;&#x207A;</span>
+        <span class="tile-desc">RLU time-course plotting<br/>raw or selectable Ca²⁺ calibration</span>
+      </button>
+      <div class="tile-separator"></div>
+      <button class="tile" data-tool="boxplot">
+        <span class="tile-icon">&#x1F4E6;</span>
+        <span class="tile-label">Boxplot</span>
+        <span class="tile-desc">Long or wide format<br/>auto-detected &amp; boxplotted</span>
+      </button>
+      <button class="tile" data-tool="bargraph">
+        <span class="tile-icon">&#x1F4CA;</span>
+        <span class="tile-label">Bar Graph Viewer</span>
+        <span class="tile-desc">Long or wide format<br/>mean &plusmn; SEM/SD bars</span>
+      </button>
+      <button class="tile" data-tool="scatter">
+        <span class="tile-icon">&#x1F36A;</span>
+        <span class="tile-label">Scatter Plot</span>
+        <span class="tile-desc">XY scatter with color<br/>& size mappings</span>
+      </button>
+    </div>
+    <div class="landing-header">
+      <p><i>"Life is too short to fiddle with aesthetics mapping in R."</i> - Lao Tzu</p>
+    </div>
+  </div>
+
+  <div class="tool-view" id="view-boxplot">
+    <div class="tool-topbar">
+      <button class="back-btn" data-back>&larr; Back</button>
+      <span class="tool-name">&#x1F4E6; Boxplot</span>
+    </div>
+    <iframe id="frame-boxplot" src="tools/boxplot.html"></iframe>
+  </div>
+  <div class="tool-view" id="view-aequorin">
+    <div class="tool-topbar">
+      <button class="back-btn" data-back>&larr; Back</button>
+      <span class="tool-name">&#x2697;&#xFE0F; Aequorin Ca&#xB2;&#x207A; Calibration</span>
+    </div>
+    <iframe id="frame-aequorin" src="tools/aequorin.html"></iframe>
+  </div>
+  <div class="tool-view" id="view-bargraph">
+    <div class="tool-topbar">
+      <button class="back-btn" data-back>&larr; Back</button>
+      <span class="tool-name">&#x1F4CA; Bar Graph Viewer</span>
+    </div>
+    <iframe id="frame-bargraph" src="tools/bargraph.html"></iframe>
+  </div>
+  <div class="tool-view" id="view-scatter">
+    <div class="tool-topbar">
+      <button class="back-btn" data-back>&larr; Back</button>
+      <span class="tool-name">&#x1F36A; Scatter Plot</span>
+    </div>
+    <iframe id="frame-scatter" src="tools/scatter.html"></iframe>
+  </div>
+
+  <script>
+    function openTool(name) {
+      document.getElementById("landing").style.display = "none";
+      document.querySelectorAll(".tool-view").forEach(function(v) { v.classList.remove("active"); });
+      document.getElementById("view-" + name).classList.add("active");
+    }
+
+    function goBack() {
+      document.querySelectorAll(".tool-view").forEach(function(v) { v.classList.remove("active"); });
+      document.getElementById("landing").style.display = "";
+    }
+
+    document.querySelectorAll(".tile[data-tool]").forEach(function(btn) {
+      btn.addEventListener("click", function() { openTool(btn.dataset.tool); });
+    });
+    document.querySelectorAll("[data-back]").forEach(function(btn) {
+      btn.addEventListener("click", goBack);
+    });
+  </script>
+
+</body>
+</html>
