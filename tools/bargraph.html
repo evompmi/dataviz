@@ -353,6 +353,7 @@ function App() {
   const [sepOverride, setSepOverride] = useState("");
   const [groups, setGroups] = useState([]);
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
+  const [plotGroupColors, setPlotGroupColors] = useState({});
   // Long-format state
   const [parsedHeaders, setParsedHeaders] = useState([]);
   const [parsedRows, setParsedRows] = useState([]);
@@ -412,8 +413,8 @@ function App() {
   const effectiveGroups = dataFormat === "wide" ? groups : longGroups;
 
   const displayGroups = useMemo(() =>
-    effectiveGroups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name })),
-    [effectiveGroups, plotGroupRenames]
+    effectiveGroups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color })),
+    [effectiveGroups, plotGroupRenames, plotGroupColors]
   );
 
   // Long-format stats for output
@@ -486,7 +487,7 @@ function App() {
     if (isWide) {
       const { headers: wh, columns } = parseFile(fixedText, sep);
       setGroups(groupColumns(wh, columns));
-      setPlotGroupRenames({});
+      setPlotGroupRenames({}); setPlotGroupColors({});
       setDataFormat("wide");
       setFacetByCol(-1);
       setColorByCol(-1); setCategoryColors({});
@@ -498,7 +499,7 @@ function App() {
       setColNames([...headers]);
       const f = {};
       headers.forEach((_, i) => { const u = [...new Set(rows.map(r => r[i]))].sort(); f[i] = { unique: u, included: new Set(u) }; });
-      setFilters(f); setValueRenames({}); setPlotGroupRenames({}); setGroupOrder([]); setFacetByCol(-1); setColorByCol(-1); setCategoryColors({}); setYMinCustom(""); setYMaxCustom(""); setDataFormat("long"); setStep("configure");
+      setFilters(f); setValueRenames({}); setPlotGroupRenames({}); setPlotGroupColors({}); setGroupOrder([]); setFacetByCol(-1); setColorByCol(-1); setCategoryColors({}); setYMinCustom(""); setYMaxCustom(""); setDataFormat("long"); setStep("configure");
     }
   }, []);
   const handleFileLoad = useCallback((text, name) => { setFileName(name); doParse(text, sepOverride); }, [sepOverride, doParse]);
@@ -507,9 +508,10 @@ function App() {
   const handleColorChange = (i, color) => {
     if (dataFormat === "wide") {
       setGroups(prev => prev.map((g, j) => j === i ? { ...g, color } : g));
+    } else {
+      const groupName = effectiveGroups[i]?.name;
+      if (groupName) setPlotGroupColors(p => ({ ...p, [groupName]: color }));
     }
-    // For long format, colors are set via longGroups which rebuilds from PALETTE — would need separate color state
-    // For now, long groups use PALETTE colors
   };
 
   const toggleFilter = (ci, v) => setFilters(p => { const f = { ...p }, s = new Set(f[ci].included); if (s.has(v)) s.delete(v); else s.add(v); f[ci] = { ...f[ci], included: s }; return f; });
