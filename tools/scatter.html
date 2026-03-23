@@ -469,7 +469,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
     if (!parsed) return {};
     return parsed.headers.reduce((acc, _, i) => {
       const vals = parsed.rawData.map(r => r[i]).filter(v => v !== "" && v != null);
-      acc[i] = vals.length > 0 && vals.filter(v => !isNaN(parseFloat(v))).length / vals.length > 0.5;
+      acc[i] = vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5;
       return acc;
     }, {});
   }, [parsed]);
@@ -583,7 +583,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   const autoAssignRoles = (headers, rawData) => {
     const isNum = idx => {
       const vals = rawData.map(r => r[idx]).filter(v => v !== "" && v != null);
-      return vals.length > 0 && vals.filter(v => !isNaN(parseFloat(v))).length / vals.length > 0.5;
+      return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5;
     };
     const roles = headers.map((_, i) => isNum(i) ? "y" : "available");
     const firstY = roles.indexOf("y");
