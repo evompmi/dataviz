@@ -1,0 +1,5 @@
+Bug to hunt down: 
+In boxplot (possibly barplot), when a value in a column start with a numeric, the entire column is considered numeric, although sometimes is it not. 
+For ex: the value "6wpi" (for six weeks post-inoculation) is treated as numeric, when it should be treated as a character/category.
+1) Is there a reusable function in the codebase (shared.js ?) used for discriminating values vs. other?
+3) Make this detection more robust for numeric/non-numeric based on the entire string, not the first.
