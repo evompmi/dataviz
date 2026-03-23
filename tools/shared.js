@@ -22,6 +22,15 @@ function getPointColors(baseColor, nSources) {
   return colors;
 }
 
+// ── Numeric detection ────────────────────────────────────────────────────────
+
+// Returns true only for strings that are entirely a valid finite number.
+// Rejects values like "6wpi", "Infinity", "0xFF" that Number() would
+// accept or partially parse.
+function isNumericValue(v) {
+  return /^\s*-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?\s*$/.test(v);
+}
+
 // ── Seeded random ────────────────────────────────────────────────────────────
 
 function seededRandom(seed) {
