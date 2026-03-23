@@ -5,6 +5,9 @@ const {
   autoDetectSep, fixDecimalCommas,
   niceStep, makeTicks,
   hexToRgb, rgbToHex, shadeColor, seededRandom,
+  isNumericValue,
+  wideToLong, reshapeWide,
+  computeStats, quartiles, computeGroupStats,
 } = require("./helpers/shared-loader");
 
 // ── autoDetectSep ─────────────────────────────────────────────────────────────
@@ -199,6 +202,188 @@ test("output is in [0, 1)", () => {
     const v = r();
     assert(v >= 0 && v < 1, `value out of range: ${v}`);
   }
+});
+
+// ── isNumericValue ────────────────────────────────────────────────────────────
+
+suite("isNumericValue");
+
+test("accepts plain integers", () => {
+  assert(isNumericValue("0"));
+  assert(isNumericValue("42"));
+  assert(isNumericValue("-7"));
+});
+
+test("accepts decimals and scientific notation", () => {
+  assert(isNumericValue("3.14"));
+  assert(isNumericValue(".5"));
+  assert(isNumericValue("1e10"));
+  assert(isNumericValue("-2.5e-3"));
+});
+
+test("accepts values with surrounding whitespace", () => {
+  assert(isNumericValue("  42  "));
+});
+
+test("rejects alphanumeric strings like '6wpi'", () => {
+  assert(!isNumericValue("6wpi"));
+  assert(!isNumericValue("8wpi"));
+  assert(!isNumericValue("12abc"));
+});
+
+test("rejects empty string", () => {
+  assert(!isNumericValue(""));
+});
+
+test("rejects 'Infinity' and 'NaN'", () => {
+  assert(!isNumericValue("Infinity"));
+  assert(!isNumericValue("-Infinity"));
+  assert(!isNumericValue("NaN"));
+});
+
+test("rejects hex literals that Number() would accept", () => {
+  assert(!isNumericValue("0xFF"));
+});
+
+test("rejects plain text", () => {
+  assert(!isNumericValue("ctrl"));
+  assert(!isNumericValue("treatment"));
+});
+
+// ── computeStats ──────────────────────────────────────────────────────────────
+
+suite("computeStats");
+
+test("returns null for empty array", () => {
+  eq(computeStats([]), null);
+});
+
+test("computes correct mean and median for odd-length array", () => {
+  const s = computeStats([1, 2, 3, 4, 5]);
+  approx(s.mean, 3);
+  approx(s.median, 3);
+  eq(s.n, 5);
+  eq(s.min, 1);
+  eq(s.max, 5);
+});
+
+test("computes correct median for even-length array", () => {
+  const s = computeStats([1, 2, 3, 4]);
+  approx(s.median, 2.5);
+});
+
+test("sd is 0 for a single-element array", () => {
+  const s = computeStats([7]);
+  eq(s.sd, 0);
+  eq(s.sem, 0);
+  eq(s.n, 1);
+});
+
+test("computes sample sd (n-1 denominator)", () => {
+  // [0, 2, 4]: mean=2, variance=(4+0+4)/2=4, sd=2
+  const s = computeStats([0, 2, 4]);
+  approx(s.sd, 2, 1e-9);
+});
+
+test("sem equals sd / sqrt(n)", () => {
+  const arr = [1, 2, 3, 4, 5];
+  const s = computeStats(arr);
+  approx(s.sem, s.sd / Math.sqrt(5), 1e-9);
+});
+
+// ── quartiles ─────────────────────────────────────────────────────────────────
+
+suite("quartiles");
+
+test("returns null for empty array", () => {
+  eq(quartiles([]), null);
+});
+
+test("computes q1, median, q3 correctly", () => {
+  const q = quartiles([1, 2, 3, 4, 5, 6, 7]);
+  assert(q.q1 <= q.med && q.med <= q.q3, "q1 ≤ med ≤ q3");
+  eq(q.n, 7);
+  eq(q.min, 1);
+  eq(q.max, 7);
+});
+
+test("wLo and wHi are within 1.5×IQR of the box", () => {
+  const q = quartiles([1, 2, 3, 4, 5, 100]); // 100 is an outlier
+  assert(q.wHi < 100, "whisker hi should exclude the outlier 100");
+});
+
+test("iqr equals q3 - q1", () => {
+  const q = quartiles([1, 2, 3, 4, 5]);
+  approx(q.iqr, q.q3 - q.q1, 1e-9);
+});
+
+// ── computeGroupStats ────────────────────────────────────────────────────────
+
+suite("computeGroupStats");
+
+test("returns stats for each group", () => {
+  const groups = { A: ["1","2","3"], B: ["4","5","6"] };
+  const stats = computeGroupStats(groups);
+  eq(stats.length, 2);
+  const a = stats.find(s => s.name === "A");
+  approx(a.mean, 2);
+  eq(a.n, 3);
+});
+
+test("handles group with no valid numerics", () => {
+  const groups = { empty: ["","x","y"] };
+  const stats = computeGroupStats(groups);
+  eq(stats[0].n, 0);
+  eq(stats[0].mean, null);
+});
+
+test("ignores empty strings and non-numeric values within a group", () => {
+  // "6wpi" should NOT be counted as numeric
+  const groups = { mixed: ["1","6wpi","2",""] };
+  const stats = computeGroupStats(groups);
+  eq(stats[0].n, 2);
+  approx(stats[0].mean, 1.5);
+});
+
+// ── wideToLong ────────────────────────────────────────────────────────────────
+
+suite("wideToLong");
+
+test("converts wide format to long format with Group/Value headers", () => {
+  const headers = ["ctrl", "treat"];
+  const rows = [["1","4"],["2","5"],["3","6"]];
+  const { headers: h, rows: r } = wideToLong(headers, rows);
+  eq(h, ["Group","Value"]);
+  eq(r.length, 6);
+  assert(r.some(row => row[0] === "ctrl" && row[1] === "1"));
+  assert(r.some(row => row[0] === "treat" && row[1] === "6"));
+});
+
+test("skips empty and non-numeric cells", () => {
+  const headers = ["A","B"];
+  const rows = [["1",""],["x","2"]];
+  const { rows: r } = wideToLong(headers, rows);
+  eq(r.length, 2); // only "1" and "2" are valid
+});
+
+// ── reshapeWide ───────────────────────────────────────────────────────────────
+
+suite("reshapeWide");
+
+test("groups rows by group column index and pivots to wide format", () => {
+  // gi=0 (group), vi=1 (value)
+  const rows = [["ctrl","1"],["ctrl","2"],["treat","3"],["treat","4"]];
+  const { headers, rows: wide } = reshapeWide(rows, 0, 1);
+  assert(headers.includes("ctrl") && headers.includes("treat"), "headers should be group names");
+  const ctrlCol = headers.indexOf("ctrl");
+  const vals = wide.map(r => r[ctrlCol]).filter(v => v !== "");
+  eq(vals.length, 2);
+});
+
+test("returns empty result for empty rows", () => {
+  const { headers, rows } = reshapeWide([], 0, 1);
+  eq(headers, []);
+  eq(rows, []);
 });
 
 summary();

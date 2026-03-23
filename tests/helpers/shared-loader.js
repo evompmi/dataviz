@@ -22,12 +22,30 @@ vm.createContext(ctx);
 vm.runInContext(src, ctx);
 
 module.exports = {
-  autoDetectSep:     ctx.autoDetectSep,
-  fixDecimalCommas:  ctx.fixDecimalCommas,
-  niceStep:          ctx.niceStep,
-  makeTicks:         ctx.makeTicks,
+  // Color helpers
   hexToRgb:          ctx.hexToRgb,
   rgbToHex:          ctx.rgbToHex,
   shadeColor:        ctx.shadeColor,
+  getPointColors:    ctx.getPointColors,
+  // Seeded random
   seededRandom:      ctx.seededRandom,
+  // Axis ticks
+  niceStep:          ctx.niceStep,
+  makeTicks:         ctx.makeTicks,
+  // Separator / decimal
+  autoDetectSep:     ctx.autoDetectSep,
+  fixDecimalCommas:  ctx.fixDecimalCommas,
+  // Numeric detection
+  isNumericValue:    ctx.isNumericValue,
+  // Parsing helpers
+  detectHeader:      ctx.detectHeader,
+  parseRaw:          ctx.parseRaw,
+  guessColumnType:   ctx.guessColumnType,
+  detectWideFormat:  ctx.detectWideFormat,
+  wideToLong:        ctx.wideToLong,
+  reshapeWide:       ctx.reshapeWide,
+  // Statistics
+  computeStats:      ctx.computeStats,
+  quartiles:         ctx.quartiles,
+  computeGroupStats: ctx.computeGroupStats,
 };
