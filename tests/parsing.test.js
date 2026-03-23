@@ -24,6 +24,11 @@ test("handles mix of text and numbers in header", () => {
   assert(detectHeader([["Label","2024"],["A","1"],["B","2"]]));
 });
 
+test("treats '6wpi' values as non-numeric when detecting header", () => {
+  // A column of '6wpi','8wpi' values should not look like a numeric data row
+  assert(detectHeader([["timepoint","value"],["6wpi","1.2"],["8wpi","3.4"]]));
+});
+
 // ── parseRaw ─────────────────────────────────────────────────────────────────
 
 suite("parseRaw — comma CSV");
@@ -140,6 +145,21 @@ test("returns 'text' for a high-cardinality string column (IDs, names)", () => {
 test("ignores empty strings when determining numeric ratio", () => {
   // 3 numbers, 2 empties → 3/3 = 100% numeric → value
   eq(guessColumnType(["1","","2","","3"]), "value");
+});
+
+test("treats '6wpi' and '8wpi' as non-numeric (isNumericValue fix)", () => {
+  // This was the original bug: parseFloat('6wpi')===6 tricked the filter panel
+  // into treating these timepoints as numeric. guessColumnType now uses
+  // isNumericValue which correctly rejects them.
+  // Repeated values to satisfy the low-cardinality group threshold.
+  const col = ["6wpi","8wpi","ctrl","6wpi","8wpi","ctrl","6wpi","8wpi"];
+  eq(guessColumnType(col), "group");
+});
+
+test("treats hex and Infinity as non-numeric", () => {
+  // Number('0xFF')===255 and Number('Infinity') are finite/valid for isNaN,
+  // but isNumericValue correctly rejects them.
+  eq(guessColumnType(["0xFF","0xFF","0xFF","0xFF","0xFF","0xFF","0xFF","0xFF","0xFF","0xFF"]), "group");
 });
 
 // ── detectWideFormat ─────────────────────────────────────────────────────────
