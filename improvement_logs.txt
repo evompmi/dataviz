@@ -1,5 +1,42 @@
-Bug to hunt down: 
-In boxplot (possibly barplot), when a value in a column start with a numeric, the entire column is considered numeric, although sometimes is it not. 
-For ex: the value "6wpi" (for six weeks post-inoculation) is treated as numeric, when it should be treated as a character/category.
-1) Is there a reusable function in the codebase (shared.js ?) used for discriminating values vs. other?
-3) Make this detection more robust for numeric/non-numeric based on the entire string, not the first.
+## Codebase Audit (2026-03-23)
+
+### [BUG]
+1. bargraph — negative bar rendering (~line 183): when yMin >= 0 and mean < 0, the bar
+   silently disappears. The "Handle negative means" comment is misleading — it only works
+   within specific range conditions.
+
+### [BRITTLE]
+2. parseRaw() in bargraph + boxplot — Math.max(...all.map(r=>r.length)) crashes with
+   -Infinity if the file contains only whitespace/newlines (empty array).
+3. groupsFromLong() — accesses r[groupColIdx], r[valueColIdx] directly; ragged CSVs
+   (missing trailing columns) produce undefined silently.
+4. guessColumnType() call in bargraph — rows.map(r => r[i]) assumes every row has column i;
+   short rows produce undefined values fed into the type guesser.
+5. valueColIsNumeric (bargraph ~525, boxplot ~209) — if the column exists but all values are
+   empty strings, vals.length === 0 short-circuits to true, wrongly marking column as numeric.
+6. Legend height (bargraph + boxplot) — no max-height cap; very narrow viewports cause all
+   legend items to stack in one column, pushing SVG off-screen.
+
+### [DUPLICATE]
+7. detectHeader(), parseRaw(), guessColumnType(), detectWideFormat() — identical in bargraph
+   and boxplot; should be in shared.js.
+8. Style constants (inp, inpN, lbl, sec, roleColors) — redefined in each tool; could go in
+   shared.js.
+9. PALETTE array — defined in every tool (bargraph/boxplot have 10 colors, others fewer);
+   base palette belongs in shared.js.
+10. toggleFilter(), toggleAllFilter(), setRenameVal() — identical in bargraph and boxplot.
+11. Stats computation — bargraph's computeStats and boxplot's quartile/group stats overlap
+    significantly.
+12. SVG legend rendering — layout/gradient/positioning logic near-identical in bargraph and
+    boxplot.
+13. Wide<->long format helpers — parseFile()/wideToLong()/reshapeWide() do similar jobs
+    across tools.
+
+### [IMPROVEMENT]
+14. Silent row skipping — groupsFromLong() silently drops rows where value is empty or
+    non-numeric; users get no feedback on how many rows were excluded.
+15. State reset chains — doParse() resets 10+ state variables sequentially in both bargraph
+    and boxplot; fragile to maintain as tools evolve.
+16. Long legend labels — no overflow/truncation handling; long group names spill outside SVG.
+17. setRenameVal orphaned entries — renaming a value that was filtered out creates orphaned
+    keys in valueRenames state.
