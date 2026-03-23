@@ -20,18 +20,6 @@
 </div>
   <script type="text/babel">
 const { useState, useMemo, useCallback, useRef, forwardRef } = React;
-const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627","#8AC926","#6A4C93"];
-
-function detectHeader(rows){if(rows.length<2)return true;const a=rows[0].filter(v=>!isNumericValue(v)&&v.trim()!=="").length;const b=rows[1].filter(v=>!isNumericValue(v)&&v.trim()!=="").length;if(a>b)return true;if(a===b&&a>0){let reps=0;for(let i=1;i<Math.min(rows.length,20);i++)for(let c=0;c<rows[0].length;c++)if(rows[i][c]&&rows[i][c].trim()===rows[0][c].trim())reps++;return reps<rows[0].length;}return a>0;}
-function parseRaw(text, sepOv=""){const sep=autoDetectSep(text, sepOv);const lines=text.trim().split(/\r?\n/).filter(l=>l.trim()!=="");if(lines.length<1)return{headers:[],rows:[],hasHeader:false};const all=lines.map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,"")));const mx=Math.max(...all.map(r=>r.length));const pad=all.map(r=>{while(r.length<mx)r.push("");return r;});const hh=detectHeader(pad);if(hh)return{headers:pad[0],rows:pad.slice(1),hasHeader:true};return{headers:pad[0].map((_,i)=>`Col_${i+1}`),rows:pad,hasHeader:false};}
-function guessColumnType(vals){const ne=vals.filter(v=>v!=="");if(ne.length===0)return"ignore";if(ne.filter(v=>isNumericValue(v)).length/ne.length>0.8)return"value";const u=new Set(ne);if(u.size<=20&&u.size<ne.length*0.5)return"group";return"text";}
-
-function detectWideFormat(headers,rows){if(headers.length<2||rows.length<2)return false;const numericCols=headers.map((_,ci)=>{const vals=rows.map(r=>r[ci]).filter(v=>v!=="");return vals.length>0&&vals.filter(v=>isNumericValue(v)).length/vals.length>0.8;});return numericCols.every(Boolean);}
-function wideToLong(headers,rows){const longRows=[];rows.forEach(r=>{headers.forEach((h,ci)=>{if(r[ci]!==""&&!isNaN(Number(r[ci])))longRows.push([h,r[ci]]);});});return{headers:["Group","Value"],rows:longRows};}
-
-function quartiles(arr){const s=[...arr].sort((a,b)=>a-b),n=s.length;if(n===0)return null;const q=p=>{const i=p*(n-1),lo=Math.floor(i),hi=Math.ceil(i);return lo===hi?s[lo]:s[lo]*(hi-i)+s[hi]*(i-lo);};const q1=q(.25),med=q(.5),q3=q(.75),iqr=q3-q1;return{min:s[0],max:s[n-1],q1,med,q3,iqr,wLo:s.find(v=>v>=q1-1.5*iqr)??s[0],wHi:[...s].reverse().find(v=>v<=q3+1.5*iqr)??s[n-1],n};}
-function computeGroupStats(groups){return Object.entries(groups).map(([name,vals])=>{const nums=vals.filter(v=>v!==""&&!isNaN(Number(v))).map(Number);const n=nums.length;if(n===0)return{name,n:0,mean:null,sd:null,sem:null,min:null,max:null,median:null};const mean=nums.reduce((a,b)=>a+b,0)/n;const vr=n>1?nums.reduce((s,v)=>s+(v-mean)**2,0)/(n-1):0;const sd=Math.sqrt(vr),sem=n>1?sd/Math.sqrt(n):0;const sorted=[...nums].sort((a,b)=>a-b);return{name,n,mean,sd,sem,min:sorted[0],max:sorted[n-1],median:n%2===0?(sorted[n/2-1]+sorted[n/2])/2:sorted[Math.floor(n/2)]};});}
-function reshapeWide(rows,gi,vi){const g={};rows.forEach(r=>{const k=r[gi]||"?";if(!g[k])g[k]=[];g[k].push(r[vi]);});const mx=Math.max(...Object.values(g).map(v=>v.length));const names=Object.keys(g);const w=[];for(let i=0;i<mx;i++)w.push(names.map(n=>g[n][i]!=null?g[n][i]:""));return{headers:names,rows:w};}
 
 const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plotBg,showGrid,gridColor,boxWidth,boxFillOpacity,pointSize,showPoints,jitterWidth,pointOpacity,xLabelAngle,yMin:yMinP,yMax:yMaxP,categoryColors:catCols,colorByCol:cbc,boxGap,svgLegend},ref){
   const angle=xLabelAngle||0,absA=Math.abs(angle),botM=60+(absA>0?absA*0.8:0);
@@ -90,7 +78,7 @@ const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plo
                     {item.shape === "line"
                       ? <line x1={0} x2={14} y1={7} y2={7} stroke={item.color} strokeWidth="2.5" />
                       : <circle cx={6} cy={7} r={5} fill={item.color} />}
-                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label}</text>
+                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label && item.label.length > 14 ? item.label.slice(0,12)+"…" : item.label}</text>
                   </g>
                 );
               })}
@@ -116,11 +104,7 @@ const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plo
     </svg>);
 });
 
-const inp={background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:12};
-const inpN={width:72,background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:13,textAlign:"center"};
 const lbl={fontSize:11,color:"#777",marginBottom:2};
-const sec={background:"#f8f8fa",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #ddd"};
-const roleColors={group:"#648FFF",value:"#2EC4B6",filter:"#FFB000",text:"#785EF0",ignore:"#ccc"};
 
 function App(){
   const[rawText,setRawText]=useState(null),[fileName,setFileName]=useState(""),[step,setStep]=useState("upload");
@@ -154,7 +138,7 @@ function App(){
       const f={};lh.forEach((_,i)=>{const u=[...new Set(lr.map(r=>r[i]))].sort();f[i]={unique:u,included:new Set(u)};});
       setFilters(f);setValueRenames({});setBoxplotColors({});setPlotGroupRenames({});setGroupOrder([]);setColorByCol(-1);setCategoryColors({});setFacetByCol(-1);setYMinCustom("");setYMaxCustom("");setDataFormat("wide");setStep("plot");
     }else{
-      setParsedHeaders(headers);setParsedRows(rows);setHasHeader(hh);setColRoles(headers.map((_,i)=>guessColumnType(rows.map(r=>r[i]))));setColNames([...headers]);const f={};headers.forEach((_,i)=>{const u=[...new Set(rows.map(r=>r[i]))].sort();f[i]={unique:u,included:new Set(u)};});setFilters(f);setValueRenames({});setBoxplotColors({});setPlotGroupRenames({});setGroupOrder([]);setColorByCol(-1);setCategoryColors({});setFacetByCol(-1);setYMinCustom("");setYMaxCustom("");setDataFormat("long");setStep("configure");
+      setParsedHeaders(headers);setParsedRows(rows);setHasHeader(hh);setColRoles(headers.map((_,i)=>guessColumnType(rows.map(r=>r[i]??""))));setColNames([...headers]);const f={};headers.forEach((_,i)=>{const u=[...new Set(rows.map(r=>r[i]))].sort();f[i]={unique:u,included:new Set(u)};});setFilters(f);setValueRenames({});setBoxplotColors({});setPlotGroupRenames({});setGroupOrder([]);setColorByCol(-1);setCategoryColors({});setFacetByCol(-1);setYMinCustom("");setYMaxCustom("");setDataFormat("long");setStep("configure");
     }
   },[]);
   const handleFileLoad=useCallback((text,name)=>{setFileName(name);doParse(text,sepOverride);},[sepOverride,doParse]);
@@ -206,7 +190,7 @@ function App(){
   const updateColName=(i,nm)=>setColNames(p=>p.map((n,j)=>j===i?nm:n));
 
   const yMinVal=yMinCustom!==""?Number(yMinCustom):null,yMaxVal=yMaxCustom!==""?Number(yMaxCustom):null;
-  const valueColIsNumeric=useMemo(()=>{if(valueColIdx<0||!parsedRows.length)return true;const vals=parsedRows.map(r=>r[valueColIdx]).filter(v=>v!=="");return vals.length>0&&vals.filter(v=>!isNaN(Number(v))).length/vals.length>0.5;},[parsedRows,valueColIdx]);
+  const valueColIsNumeric=useMemo(()=>{if(valueColIdx<0||!parsedRows.length)return false;const vals=parsedRows.map(r=>r[valueColIdx]??"").filter(v=>v!=="");return vals.length>0&&vals.filter(v=>isNumericValue(v)).length/vals.length>0.5;},[parsedRows,valueColIdx]);
   const canPlot=groupColIdx>=0&&valueColIdx>=0&&valueColIsNumeric&&boxplotGroups.length>0;
 
   return(

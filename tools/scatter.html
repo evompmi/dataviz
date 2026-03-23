@@ -493,7 +493,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   const detectColType = useCallback((colIdx) => {
     if (colIdx == null || !parsed) return null;
     const vals = parsed.rawData.map(r => r[colIdx]).filter(v => v != null && v !== "");
-    return vals.every(v => !isNaN(parseFloat(v.replace(",", ".")))) ? "continuous" : "discrete";
+    return vals.every(v => isNumericValue(v)) ? "continuous" : "discrete";
   }, [parsed]);
 
   const colorMapType = useMemo(() => detectColType(colorMapCol), [colorMapCol, detectColType]);
@@ -503,7 +503,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   const uniqueVals = useCallback((colIdx) => {
     if (colIdx == null || !parsed) return [];
     const vals = [...new Set(parsed.rawData.map(r => r[colIdx]).filter(v => v != null && v !== ""))];
-    const allNum = vals.every(v => !isNaN(parseFloat(v.replace(",", "."))));
+    const allNum = vals.every(v => isNumericValue(v));
     return allNum
       ? vals.sort((a, b) => parseFloat(a.replace(",", ".")) - parseFloat(b.replace(",", ".")))
       : vals.sort();

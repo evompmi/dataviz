@@ -21,25 +21,15 @@
   <script type="text/babel">
 const { useState, useMemo, useCallback, useRef, forwardRef } = React;
 
-const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627","#8AC926","#6A4C93"];
-
-// ── Parsing ─────────────────────────────────────────────────────────────────
-
-// ── Long-format helpers (shared with Boxplot tool) ──
-
-function detectHeader(rows){if(rows.length<2)return true;const a=rows[0].filter(v=>!isNumericValue(v)&&v.trim()!=="").length;const b=rows[1].filter(v=>!isNumericValue(v)&&v.trim()!=="").length;if(a>b)return true;if(a===b&&a>0){let reps=0;for(let i=1;i<Math.min(rows.length,20);i++)for(let c=0;c<rows[0].length;c++)if(rows[i][c]&&rows[i][c].trim()===rows[0][c].trim())reps++;return reps<rows[0].length;}return a>0;}
-function parseRaw(text, sepOv=""){const sep=autoDetectSep(text, sepOv);const lines=text.trim().split(/\r?\n/).filter(l=>l.trim()!=="");if(lines.length<1)return{headers:[],rows:[],hasHeader:false};const all=lines.map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,"")));const mx=Math.max(...all.map(r=>r.length));const pad=all.map(r=>{while(r.length<mx)r.push("");return r;});const hh=detectHeader(pad);if(hh)return{headers:pad[0],rows:pad.slice(1),hasHeader:true};return{headers:pad[0].map((_,i)=>`Col_${i+1}`),rows:pad,hasHeader:false};}
-function guessColumnType(vals){const ne=vals.filter(v=>v!=="");if(ne.length===0)return"ignore";if(ne.filter(v=>isNumericValue(v)).length/ne.length>0.8)return"value";const u=new Set(ne);if(u.size<=20&&u.size<ne.length*0.5)return"group";return"text";}
-function detectWideFormat(headers,rows){if(headers.length<2||rows.length<2)return false;const numericCols=headers.map((_,ci)=>{const vals=rows.map(r=>r[ci]).filter(v=>v!=="");return vals.length>0&&vals.filter(v=>isNumericValue(v)).length/vals.length>0.8;});return numericCols.every(Boolean);}
-
 // Helper: build groups structure from long-format data (group col + value col)
 function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
   const map = {};
   const order = [];
   rows.forEach(r => {
-    const name = r[groupColIdx] || "?";
-    const v = Number(r[valueColIdx]);
-    if (r[valueColIdx] === "" || isNaN(v)) return;
+    const name = r[groupColIdx] ?? "?";
+    const raw = r[valueColIdx] ?? "";
+    const v = Number(raw);
+    if (raw === "" || isNaN(v)) return;
     if (!map[name]) { map[name] = { name, values: [], categories: [] }; order.push(name); }
     map[name].values.push(v);
     if (categoryColIdx >= 0) map[name].categories.push(r[categoryColIdx]);
@@ -71,19 +61,6 @@ function parseFile(text, sepOv="") {
   return { headers, columns };
 }
 
-// ── Stats ───────────────────────────────────────────────────────────────────
-
-function computeStats(arr) {
-  const n = arr.length;
-  if (n === 0) return null;
-  const mean = arr.reduce((a, b) => a + b, 0) / n;
-  const variance = arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n > 1 ? n - 1 : 1);
-  const sd = Math.sqrt(variance);
-  const sem = n > 1 ? sd / Math.sqrt(n) : 0;
-  const min = Math.min(...arr);
-  const max = Math.max(...arr);
-  return { mean, sd, sem, n, min, max };
-}
 
 function groupColumns(headers, columns) {
   const map = {};
@@ -179,11 +156,10 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
         if (!g.stats) return null;
         const cx = bx(gi);
         const { mean, sd, sem } = g.stats;
+        if (mean < yMin || mean > yMax) return null;
         const errVal = errorType === "sd" ? sd : sem;
-        const barTop = sy(mean);
-        const barBottom = sy(yMin > 0 ? yMin : 0);
-        // Handle negative means: bar goes downward from baseline
         const baseline = sy(Math.max(0, yMin));
+        const barTop = sy(mean);
         const yBar = mean >= 0 ? barTop : baseline;
         const barH = mean >= 0 ? (baseline - barTop) : (sy(mean) - baseline);
 
@@ -285,7 +261,7 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
                     {item.shape === "line"
                       ? <line x1={0} x2={14} y1={7} y2={7} stroke={item.color} strokeWidth="2.5" />
                       : <circle cx={6} cy={7} r={5} fill={item.color} />}
-                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label}</text>
+                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label && item.label.length > 14 ? item.label.slice(0,12)+"…" : item.label}</text>
                   </g>
                 );
               })}
@@ -335,11 +311,7 @@ function GroupEditor({ groups, onColorChange, onNameChange }) {
 
 // ── Style constants ──────────────────────────────────────────────────────────
 
-const inp = { background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 12 };
-const inpN = { width: 72, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 13, textAlign: "center" };
 const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
-const sec = { background: "#f8f8fa", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #ddd" };
-const roleColors = { group: "#648FFF", value: "#2EC4B6", filter: "#FFB000", text: "#785EF0", ignore: "#ccc" };
 
 // ── App ─────────────────────────────────────────────────────────────────────
 
@@ -423,14 +395,10 @@ function App() {
     const gd = {};
     renamedRows.forEach(r => { const k = r[groupColIdx]; if (!gd[k]) gd[k] = []; gd[k].push(r[valueColIdx]); });
     return Object.entries(gd).map(([name, vals]) => {
-      const nums = vals.filter(v => v !== "" && !isNaN(Number(v))).map(Number);
-      const n = nums.length;
-      if (n === 0) return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
-      const mean = nums.reduce((a, b) => a + b, 0) / n;
-      const vr = n > 1 ? nums.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1) : 0;
-      const sd = Math.sqrt(vr), sem = n > 1 ? sd / Math.sqrt(n) : 0;
-      const sorted = [...nums].sort((a, b) => a - b);
-      return { name, n, mean, sd, sem, min: sorted[0], max: sorted[n - 1], median: n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)] };
+      const nums = vals.filter(v => isNumericValue(v)).map(Number);
+      const stats = computeStats(nums);
+      if (!stats) return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
+      return { name, ...stats };
     });
   }, [dataFormat, renamedRows, groupColIdx, valueColIdx]);
 
@@ -495,7 +463,7 @@ function App() {
       setStep("plot");
     } else {
       setParsedHeaders(headers); setParsedRows(rows); setHasHeader(hh);
-      setColRoles(headers.map((_, i) => guessColumnType(rows.map(r => r[i]))));
+      setColRoles(headers.map((_, i) => guessColumnType(rows.map(r => r[i] ?? ""))));
       setColNames([...headers]);
       const f = {};
       headers.forEach((_, i) => { const u = [...new Set(rows.map(r => r[i]))].sort(); f[i] = { unique: u, included: new Set(u) }; });
@@ -522,7 +490,7 @@ function App() {
 
   const yMinVal = yMinCustom !== "" ? Number(yMinCustom) : null;
   const yMaxVal = yMaxCustom !== "" ? Number(yMaxCustom) : null;
-  const valueColIsNumeric = useMemo(() => { if (valueColIdx < 0 || !parsedRows.length) return true; const vals = parsedRows.map(r => r[valueColIdx]).filter(v => v !== ""); return vals.length > 0 && vals.filter(v => !isNaN(Number(v))).length / vals.length > 0.5; }, [parsedRows, valueColIdx]);
+  const valueColIsNumeric = useMemo(() => { if (valueColIdx < 0 || !parsedRows.length) return false; const vals = parsedRows.map(r => r[valueColIdx] ?? "").filter(v => v !== ""); return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5; }, [parsedRows, valueColIdx]);
   const canPlot = effectiveGroups.length > 0;
 
   const allSteps = dataFormat === "long" ? ["upload", "configure", "filter", "output", "plot"] : ["upload", "plot"];

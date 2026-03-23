@@ -22,6 +22,17 @@ function getPointColors(baseColor, nSources) {
   return colors;
 }
 
+// ── Color palette ─────────────────────────────────────────────────────────────
+
+const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627","#8AC926","#6A4C93"];
+
+// ── UI style constants ────────────────────────────────────────────────────────
+
+const inp       = {background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:12};
+const inpN      = {width:72,background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:13,textAlign:"center"};
+const sec       = {background:"#f8f8fa",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #ddd"};
+const roleColors = {group:"#648FFF",value:"#2EC4B6",filter:"#FFB000",text:"#785EF0",ignore:"#ccc"};
+
 // ── Numeric detection ────────────────────────────────────────────────────────
 
 // Returns true only for strings that are entirely a valid finite number.
@@ -90,6 +101,113 @@ function fixDecimalCommas(text, sep) {
   let count = 0;
   const fixed = text.replace(/(\d),(\d)/g, (_, a, b) => { count++; return `${a}.${b}`; });
   return { text: fixed, commaFixed: count > 0, count };
+}
+
+// ── Parsing helpers ───────────────────────────────────────────────────────────
+
+function detectHeader(rows) {
+  if (rows.length < 2) return true;
+  const a = rows[0].filter(v => !isNumericValue(v) && v.trim() !== "").length;
+  const b = rows[1].filter(v => !isNumericValue(v) && v.trim() !== "").length;
+  if (a > b) return true;
+  if (a === b && a > 0) {
+    let reps = 0;
+    for (let i = 1; i < Math.min(rows.length, 20); i++)
+      for (let c = 0; c < rows[0].length; c++)
+        if (rows[i][c] && rows[i][c].trim() === rows[0][c].trim()) reps++;
+    return reps < rows[0].length;
+  }
+  return a > 0;
+}
+
+function parseRaw(text, sepOv = "") {
+  const sep = autoDetectSep(text, sepOv);
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lines.length < 1) return { headers: [], rows: [], hasHeader: false };
+  const all = lines.map(l => l.split(sep).map(v => v.trim().replace(/^"|"$/g, "")));
+  if (all.length === 0) return { headers: [], rows: [], hasHeader: false };
+  const mx = Math.max(...all.map(r => r.length));
+  const pad = all.map(r => { while (r.length < mx) r.push(""); return r; });
+  const hh = detectHeader(pad);
+  if (hh) return { headers: pad[0], rows: pad.slice(1), hasHeader: true };
+  return { headers: pad[0].map((_, i) => `Col_${i+1}`), rows: pad, hasHeader: false };
+}
+
+function guessColumnType(vals) {
+  const ne = vals.filter(v => v != null && v !== "");
+  if (ne.length === 0) return "ignore";
+  if (ne.filter(v => isNumericValue(v)).length / ne.length > 0.8) return "value";
+  const u = new Set(ne);
+  if (u.size <= 20 && u.size < ne.length * 0.5) return "group";
+  return "text";
+}
+
+function detectWideFormat(headers, rows) {
+  if (headers.length < 2 || rows.length < 2) return false;
+  const numericCols = headers.map((_, ci) => {
+    const vals = rows.map(r => r[ci]).filter(v => v !== "");
+    return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.8;
+  });
+  return numericCols.every(Boolean);
+}
+
+// ── Wide / long format helpers ────────────────────────────────────────────────
+
+function wideToLong(headers, rows) {
+  const longRows = [];
+  rows.forEach(r => {
+    headers.forEach((h, ci) => {
+      if (r[ci] !== "" && isNumericValue(r[ci])) longRows.push([h, r[ci]]);
+    });
+  });
+  return { headers: ["Group", "Value"], rows: longRows };
+}
+
+function reshapeWide(rows, gi, vi) {
+  const g = {};
+  rows.forEach(r => { const k = r[gi] || "?"; if (!g[k]) g[k] = []; g[k].push(r[vi]); });
+  const vals = Object.values(g);
+  if (vals.length === 0) return { headers: [], rows: [] };
+  const mx = Math.max(...vals.map(v => v.length));
+  const names = Object.keys(g);
+  const w = [];
+  for (let i = 0; i < mx; i++) w.push(names.map(n => g[n][i] != null ? g[n][i] : ""));
+  return { headers: names, rows: w };
+}
+
+// ── Statistics ────────────────────────────────────────────────────────────────
+
+function computeStats(arr) {
+  const n = arr.length;
+  if (n === 0) return null;
+  const mean = arr.reduce((a, b) => a + b, 0) / n;
+  const variance = arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n > 1 ? n - 1 : 1);
+  const sd = Math.sqrt(variance);
+  const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const min = sorted[0];
+  const max = sorted[n - 1];
+  const median = n % 2 === 0 ? (sorted[n/2-1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+  return { mean, sd, sem, n, min, max, median };
+}
+
+function quartiles(arr) {
+  const s = [...arr].sort((a, b) => a - b), n = s.length;
+  if (n === 0) return null;
+  const q = p => { const i = p*(n-1), lo = Math.floor(i), hi = Math.ceil(i); return lo === hi ? s[lo] : s[lo]*(hi-i)+s[hi]*(i-lo); };
+  const q1 = q(.25), med = q(.5), q3 = q(.75), iqr = q3 - q1;
+  return { min: s[0], max: s[n-1], q1, med, q3, iqr,
+    wLo: s.find(v => v >= q1 - 1.5*iqr) ?? s[0],
+    wHi: [...s].reverse().find(v => v <= q3 + 1.5*iqr) ?? s[n-1], n };
+}
+
+function computeGroupStats(groups) {
+  return Object.entries(groups).map(([name, vals]) => {
+    const nums = vals.filter(v => v !== "" && isNumericValue(v)).map(Number);
+    const stats = computeStats(nums);
+    if (!stats) return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
+    return { name, ...stats };
+  });
 }
 
 // ── Download helpers ──────────────────────────────────────────────────────────

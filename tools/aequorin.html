@@ -24,8 +24,6 @@ const DEFAULT_KR  = 7;
 const DEFAULT_KTR = 118;
 const DEFAULT_KD  = 7;
 const DEFAULT_HILL_N = 3;
-const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627"];
-
 const TIME_UNITS = [
   { key: "ms",  label: "milliseconds" },
   { key: "s",   label: "seconds" },
@@ -171,7 +169,7 @@ function detectConditions(headers, poolReplicates = true, columnEnabled = null) 
   }
 }
 
-function computeStats(calData, headers, conditions) {
+function computeCalStats(calData, headers, conditions) {
   const nRows = calData.length;
   return conditions.map(cond => {
     const idxs = cond.colIndices;
@@ -440,9 +438,7 @@ const InsetBarplot = forwardRef(function InsetBarplot({ series, insetColors, ins
   );
 });
 
-const inp = { width: 72, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 13, textAlign: "center" };
 const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
-const sec = { background: "#f8f8fa", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #ddd" };
 const dlBtn = { padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer",
   background: "#fff", border: "1px solid #ccc", color: "#555", fontFamily: "inherit", marginTop: 4, display: "inline-block" };
 
@@ -703,7 +699,7 @@ function App() {
     if (formula === "generalized") return calibrateGeneralized(parsed.headers, parsed.data, Kr, Ktr, hillN);
     return calibrate(parsed.headers, parsed.data, Kr, Ktr);
   }, [parsed, formula, Kr, Ktr, Kd, hillN]);
-  const stats = useMemo(() => (calData && parsed && conditions.length > 0) ? computeStats(calData, parsed.headers, conditions) : [], [calData, parsed, conditions]);
+  const stats = useMemo(() => (calData && parsed && conditions.length > 0) ? computeCalStats(calData, parsed.headers, conditions) : [], [calData, parsed, conditions]);
 
   // Per-replicate sums for the inset barplot — computed from calData directly so SD/SEM
   // reflect variability across biological replicates, not across time points.
@@ -950,7 +946,7 @@ function App() {
               <div>
                 <div style={lbl}>Time step (per row)</div>
                 <input type="number" value={timeStep} onChange={e => setTimeStep(Number(e.target.value) || 1)}
-                  style={{ ...inp, width: 88 }} min="0.001" step="any" />
+                  style={{ ...inpN, width: 88 }} min="0.001" step="any" />
               </div>
               <div>
                 <div style={lbl}>Base unit</div>
@@ -985,16 +981,16 @@ function App() {
                 </select>
               </div>
               {(formula === "allen-blinks" || formula === "generalized") && (
-                <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inp} step="0.1" /></div>
+                <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inpN} step="0.1" /></div>
               )}
               {(formula === "allen-blinks" || formula === "generalized") && (
-                <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inp} step="1" /></div>
+                <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inpN} step="1" /></div>
               )}
               {formula === "hill" && (
-                <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inp} step="0.5" min="0.1" /></div>
+                <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inpN} step="0.5" min="0.1" /></div>
               )}
               {formula === "generalized" && (
-                <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inp} step="0.5" min="1" /></div>
+                <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inpN} step="0.5" min="1" /></div>
               )}
             </div>
             {calData && parsed && (
@@ -1052,10 +1048,10 @@ function App() {
               <div style={sec}>
                 <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Plot parameters</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div><div style={lbl}>X start</div><input type="number" value={xStart} onChange={e => setXStart(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>X end</div><input type="number" value={xEnd} onChange={e => setXEnd(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>Y min</div><input type="number" value={yMin} onChange={e => setYMin(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} step="0.1" /></div>
-                  <div><div style={lbl}>Y max</div><input type="number" value={yMax} onChange={e => setYMax(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} step="0.1" /></div>
+                  <div><div style={lbl}>X start</div><input type="number" value={xStart} onChange={e => setXStart(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+                  <div><div style={lbl}>X end</div><input type="number" value={xEnd} onChange={e => setXEnd(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+                  <div><div style={lbl}>Y min</div><input type="number" value={yMin} onChange={e => setYMin(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
+                  <div><div style={lbl}>Y max</div><input type="number" value={yMax} onChange={e => setYMax(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
                   <div>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
                       <span style={lbl}>Smooth (±pts)</span>
@@ -1063,8 +1059,8 @@ function App() {
                     </div>
                     <input type="range" min="0" max="20" step="1" value={smoothWidth} onChange={e => setSmoothWidth(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
                   </div>
-                  <div><div style={lbl}>Title</div><input value={plotTitle} onChange={e => setPlotTitle(e.target.value)} style={{...inp,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>Subtitle</div><input value={plotSubtitle} onChange={e => setPlotSubtitle(e.target.value)} style={{...inp,width:"100%",textAlign:"left"}} /></div>
+                  <div><div style={lbl}>Title</div><input value={plotTitle} onChange={e => setPlotTitle(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+                  <div><div style={lbl}>Subtitle</div><input value={plotSubtitle} onChange={e => setPlotSubtitle(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
                 </div>
               </div>
 
@@ -1123,13 +1119,13 @@ function App() {
                   <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Layout</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                     <div><div style={lbl}>Width</div><input type="number" value={insetW}
-                      onChange={e => setInsetW(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} min="100" max="500" step="10" /></div>
+                      onChange={e => setInsetW(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} min="100" max="500" step="10" /></div>
                     <div><div style={lbl}>Height</div><input type="number" value={insetH}
-                      onChange={e => setInsetH(Number(e.target.value))} style={{...inp,width:"100%",textAlign:"left"}} min="80" max="400" step="10" /></div>
+                      onChange={e => setInsetH(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} min="80" max="400" step="10" /></div>
                     <div><div style={lbl}>Y min (auto)</div><input value={insetYMinCustom}
-                      onChange={e => setInsetYMinCustom(e.target.value)} style={{...inp,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
+                      onChange={e => setInsetYMinCustom(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
                     <div><div style={lbl}>Y max (auto)</div><input value={insetYMaxCustom}
-                      onChange={e => setInsetYMaxCustom(e.target.value)} style={{...inp,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
+                      onChange={e => setInsetYMaxCustom(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={lbl}>Grid</span>
                       <input type="checkbox" checked={insetShowGrid} onChange={e => setInsetShowGrid(e.target.checked)} style={{ accentColor: "#648FFF" }} />
