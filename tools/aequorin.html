@@ -537,7 +537,7 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
             title: null,
             items: displaySeries.map(s => ({ label: `${s.label} (n=${s.n})`, color: s.color, shape: "line" }))
           }]} />
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center", marginTop: 8, alignItems: "center" }}>
           {displaySeries.map(s => (
             <div key={s.prefix} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#444" }}>
               <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
