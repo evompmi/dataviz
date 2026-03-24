@@ -44,6 +44,20 @@
     .tile.help-tile .tile-label { font-size: 12px; color: #888; }
     .tile-separator { width: 1px; height: 180px; background: #ddd; flex-shrink: 0; align-self: center; }
 
+    .prefetch-bar {
+      display: flex; align-items: center; gap: 10px; font-size: 11px; color: #999;
+      margin-top: -20px;
+    }
+    .prefetch-bar .pf-track {
+      width: 120px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden;
+    }
+    .prefetch-bar .pf-fill {
+      height: 100%; background: #648FFF; border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .prefetch-bar.ready { color: #16a34a; }
+    .prefetch-bar.ready .pf-fill { background: #16a34a; }
+
     .tool-view { display: none; flex-direction: column; height: 100vh; }
     .tool-view.active { display: flex; }
     .tool-topbar {
@@ -120,6 +134,10 @@
         <span class="tile-desc">XY scatter with color<br/>& size mappings</span>
       </button>
     </div>
+    <div class="prefetch-bar" id="prefetch-bar">
+      <div class="pf-track"><div class="pf-fill" id="pf-fill" style="width:0%"></div></div>
+      <span id="pf-label">Loading dependencies…</span>
+    </div>
     <div class="landing-header">
       <p><i>"Life is too short to fiddle with aesthetics mapping in R."</i> - Lao Tzu</p>
     </div>
@@ -155,6 +173,38 @@
   </div>
 
   <script>
+    // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
+    (function() {
+      var scripts = [
+        "vendor/react.production.min.js",
+        "vendor/react-dom.production.min.js",
+        "vendor/babel.min.js",
+        "tools/shared.js",
+        "tools/shared-components.js"
+      ];
+      var total = scripts.length;
+      var loaded = 0;
+      var bar = document.getElementById("prefetch-bar");
+      var fill = document.getElementById("pf-fill");
+      var label = document.getElementById("pf-label");
+
+      function tick() {
+        loaded++;
+        var pct = Math.round((loaded / total) * 100);
+        fill.style.width = pct + "%";
+        if (loaded < total) {
+          label.textContent = "Loading dependencies… " + loaded + "/" + total;
+        } else {
+          label.textContent = "All dependencies cached ✓";
+          bar.classList.add("ready");
+        }
+      }
+
+      scripts.forEach(function(src) {
+        fetch(src).then(tick).catch(tick);
+      });
+    })();
+
     function openTool(name) {
       document.getElementById("landing").style.display = "none";
       document.querySelectorAll(".tool-view").forEach(function(v) { v.classList.remove("active"); });
