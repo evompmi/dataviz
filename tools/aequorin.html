@@ -398,7 +398,7 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
       }
       return { prefix: cond.prefix, label: cond.label, color: cond.color, n: cond.colIndices.length, rows };
     });
-  }, [activeStats.length, activeStats.map(s => s.prefix + s.color + s.enabled).join(","), xStart, xEnd, smoothWidth]);
+  }, [activeStats.length, activeStats.map(s => s.prefix + s.color + s.enabled + ":" + s.colIndices.join(":")).join(","), xStart, xEnd, smoothWidth]);
 
   const ts = timeStep || 1;
   const bUnit = baseUnit || "s";
