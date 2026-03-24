@@ -844,6 +844,57 @@ function App() {
 
       {step === "configure" && parsed && (
         <div>
+          <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
+            <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Calibration formula</p>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div>
+                  <div style={lbl}>Formula</div>
+                  <select value={formula} onChange={e => setFormula(e.target.value)}
+                    style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
+                    <option value="none">None (raw data)</option>
+                    <option value="allen-blinks">Allen &amp; Blinks (1978)</option>
+                    <option value="hill">Hill equilibrium</option>
+                    <option value="generalized">Generalised Allen &amp; Blinks</option>
+                  </select>
+                </div>
+                {(formula === "allen-blinks" || formula === "generalized") && (
+                  <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inpN} step="0.1" /></div>
+                )}
+                {(formula === "allen-blinks" || formula === "generalized") && (
+                  <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inpN} step="1" /></div>
+                )}
+                {formula === "hill" && (
+                  <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inpN} step="0.5" min="0.1" /></div>
+                )}
+                {formula === "generalized" && (
+                  <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inpN} step="0.5" min="1" /></div>
+                )}
+              </div>
+            </div>
+            <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Time axis</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+                <div>
+                  <div style={lbl}>Time step (per row)</div>
+                  <input type="number" value={timeStep} onChange={e => setTimeStep(Number(e.target.value) || 1)}
+                    style={{ ...inpN, width: 88 }} min="0.001" step="any" />
+                </div>
+                <div>
+                  <div style={lbl}>Base unit</div>
+                  <select value={baseUnit} onChange={e => setBaseUnit(e.target.value)}
+                    style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
+                    {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
+                  </select>
+                </div>
+                {parsed && (
+                  <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
+                    Range: 0 – {(parsed.data.length * timeStep).toFixed(3)} {baseUnit}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
           <div style={sec}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>Column grouping</p>
@@ -857,43 +908,36 @@ function App() {
                 ))}
               </div>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 160, overflowY: "auto", padding: 4 }}>
-              {colInfo.map(({ h, i, rep, isDup }) => {
-                const colLabel = (isDup || !poolReplicates) ? `${h}_rep${rep}` : h;
-                const enabled = columnEnabled[i] !== false;
-                return (
-                  <label key={i} style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 9px",
-                    background: enabled ? "#f0f0f5" : "#fafafa", borderRadius: 5,
-                    border: `1px solid ${enabled ? "#ccc" : "#e0e0e0"}`,
-                    opacity: enabled ? 1 : 0.5, fontSize: 11, cursor: "pointer", userSelect: "none" }}>
-                    <input type="checkbox" checked={enabled} onChange={e => handleColumnToggle(i, e.target.checked)}
-                      style={{ accentColor: "#648FFF" }} />
-                    {colLabel}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-          <div style={sec}>
-            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Time axis</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
-              <div>
-                <div style={lbl}>Time step (per row)</div>
-                <input type="number" value={timeStep} onChange={e => setTimeStep(Number(e.target.value) || 1)}
-                  style={{ ...inpN, width: 88 }} min="0.001" step="any" />
-              </div>
-              <div>
-                <div style={lbl}>Base unit</div>
-                <select value={baseUnit} onChange={e => setBaseUnit(e.target.value)}
-                  style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                  {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
-                </select>
-              </div>
-              {parsed && (
-                <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
-                  Range: 0 – {(parsed.data.length * timeStep).toFixed(3)} {baseUnit}
-                </div>
-              )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, maxHeight: 200, overflowY: "auto", padding: 4 }}>
+              {(() => {
+                const groups = [];
+                const seen = {};
+                colInfo.forEach(c => {
+                  if (!seen[c.h]) { seen[c.h] = { name: c.h, cols: [] }; groups.push(seen[c.h]); }
+                  seen[c.h].cols.push(c);
+                });
+                return groups.map(g => (
+                  <div key={g.name} style={{ background: "#f4f4f8", borderRadius: 6, border: "1px solid #ddd", padding: "6px 8px", minWidth: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#555", marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.name}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {g.cols.map(({ h, i, rep, isDup }) => {
+                        const enabled = columnEnabled[i] !== false;
+                        const showRep = g.cols.length > 1 || !poolReplicates;
+                        return (
+                          <label key={i} style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px",
+                            background: enabled ? "#fff" : "#fafafa", borderRadius: 4,
+                            border: `1px solid ${enabled ? "#bbb" : "#e0e0e0"}`,
+                            opacity: enabled ? 1 : 0.45, fontSize: 10, cursor: "pointer", userSelect: "none" }}>
+                            <input type="checkbox" checked={enabled} onChange={e => handleColumnToggle(i, e.target.checked)}
+                              style={{ accentColor: "#648FFF", width: 12, height: 12 }} />
+                            {showRep ? `rep${rep}` : h}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
           <div style={sec}>
@@ -903,36 +947,15 @@ function App() {
               </p>
               <button onClick={(e) => { downloadCalibrated(); flashSaved(e.currentTarget); }} style={{ padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 }}>⬇ Download CSV</button>
             </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 12 }}>
-              <div>
-                <div style={lbl}>Calibration formula</div>
-                <select value={formula} onChange={e => setFormula(e.target.value)}
-                  style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                  <option value="none">None (raw data)</option>
-                  <option value="allen-blinks">Allen &amp; Blinks (1978)</option>
-                  <option value="hill">Hill equilibrium</option>
-                  <option value="generalized">Generalised Allen &amp; Blinks</option>
-                </select>
-              </div>
-              {(formula === "allen-blinks" || formula === "generalized") && (
-                <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inpN} step="0.1" /></div>
-              )}
-              {(formula === "allen-blinks" || formula === "generalized") && (
-                <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inpN} step="1" /></div>
-              )}
-              {formula === "hill" && (
-                <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inpN} step="0.5" min="0.1" /></div>
-              )}
-              {formula === "generalized" && (
-                <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inpN} step="0.5" min="1" /></div>
-              )}
-            </div>
-            {calData && parsed && (
+            {calData && parsed && (() => {
+              const ei = parsed.headers.map((_, i) => i).filter(i => columnEnabled[i] !== false);
+              return (
               <div style={{ marginTop: 8 }}>
-                <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>Preview — {formula === "none" ? "raw data" : "calibrated data"} (first 15 rows):</p>
-                <DataPreview headers={parsed.headers} rows={calData.slice(0, 15).map(r => r.map(v => v != null ? v : ""))} maxRows={15} />
+                <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>Preview — {formula === "none" ? "raw data" : "calibrated data"} · {ei.length} of {parsed.headers.length} columns (first 15 rows):</p>
+                <DataPreview headers={ei.map(i => parsed.headers[i])} rows={calData.slice(0, 15).map(r => ei.map(i => r[i] != null ? r[i] : ""))} maxRows={15} />
               </div>
-            )}
+              );
+            })()}
           </div>
           <button onClick={() => setStep("plot")} style={{ padding: "10px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700,
             background: "#648FFF", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", marginTop: 16 }}>Plot →</button>

@@ -1,0 +1,84 @@
+## Longevity Assessment
+
+Since everything is vendored locally (React 18, ReactDOM 18, Babel Standalone 7.29),
+there's no CDN or npm dependency that can break overnight. The longevity depends on
+what browsers keep supporting.
+
+Very safe (10+ years):
+- Core JS (ES6+ features, const, arrows, destructuring, Map/Set) -- standardized, browsers will never drop these
+- DOM APIs (FileReader, Blob, URL.createObjectURL) -- stable web standards
+- SVG in HTML, inline CSS -- fundamental web primitives
+- <script> tag loading -- will never change
+
+Solid (5-8 years):
+- React 18 -- vendored, so it can't break from a React update. Risk is only if browsers
+  remove some internal API React 18 depends on (very unlikely near-term)
+- Plain JS patterns -- React.createElement, hooks -- all standard React 18 API,
+  frozen in your vendored copy
+
+The weakest link (3-5 years):
+- Babel Standalone -- a 3MB runtime JSX compiler in the browser. It works by injecting a
+  compiled <script> element into the DOM. This relies on synchronous script evaluation
+  behavior that's stable today, but it's an unusual pattern that browser vendors don't
+  actively optimize for. No immediate risk, but it's the most "non-standard" part of the stack.
+
+Bottom line: Realistically 5-8 years with zero maintenance, probably longer. The vendored
+approach is actually a strength -- nothing external can break. The day it eventually does
+break, it'll likely be Babel Standalone first, and the fix would be to either update the
+vendored Babel or pre-compile the JSX (a one-time migration to a build step).
+
+
+## Tackling the Weakest Link
+
+Two approaches, from simplest to cleanest:
+
+### 1. One-time pre-compile (minimal change)
+
+Run Babel once, check in the output, delete Babel Standalone. No ongoing build step.
+
+    # For each tool: extract JSX -> compile -> replace inline
+    npx @babel/cli --presets @babel/preset-react tools/scatter.jsx -o tools/scatter.compiled.js
+
+Then in each HTML:
+
+    <!-- Remove this -->
+    <script src="../vendor/babel.min.js"></script>
+    <!-- Change this -->
+    <script type="text/babel">  ->  <script src="scatter.compiled.js">
+
+Pros: Zero infrastructure, removes the 3MB Babel runtime, pages load faster.
+Cons: You lose JSX readability when editing -- you'd be maintaining compiled
+React.createElement calls directly. Fine for small tweaks, painful for big UI changes.
+
+### 2. Add esbuild as a build step (cleanest)
+
+esbuild (https://esbuild.github.io/) is a single binary, near-zero config, compiles
+JSX in milliseconds.
+
+    npm install --save-dev esbuild
+
+    // package.json
+    "scripts": {
+      "build": "esbuild tools/scatter.jsx tools/bargraph.jsx tools/boxplot.jsx tools/aequorin.jsx --outdir=tools --bundle=false --jsx=transform",
+      "watch": "npm run build -- --watch"
+    }
+
+Workflow becomes: edit .jsx files, run `npm run build` (or --watch during dev),
+commit the compiled output. The HTML files load plain <script> tags.
+
+Pros: Keep JSX for readability, sub-second builds, esbuild is very stable
+(Go binary, no transitive deps), removes the 3MB Babel runtime.
+Cons: Adds a build step (though a trivial one).
+
+### Either way the migration is the same work:
+
+1. Extract each <script type="text/babel"> block into its own .jsx file
+2. Compile it
+3. Replace the Babel script tag with a plain <script src="..."> tag
+4. Delete vendor/babel.min.js (~3MB saved)
+5. Handle the const scoping -- compiled code would run in global scope,
+   so the same inp/sec naming discipline applies
+
+Effort estimate: The actual migration is mechanical -- maybe an hour of work
+for all four tools. Option 2 (esbuild) is recommended if you plan to keep
+editing the UI.
