@@ -2,7 +2,7 @@
 // Source: tools/shared.js (detectHeader, parseRaw, guessColumnType, detectWideFormat)
 
 const { suite, test, assert, eq, summary } = require("./harness");
-const { detectHeader, parseRaw, guessColumnType, detectWideFormat } = require("./helpers/parsing-fns");
+const { detectHeader, parseRaw, guessColumnType, detectWideFormat, parseData, dataToColumns } = require("./helpers/parsing-fns");
 
 // ── detectHeader ─────────────────────────────────────────────────────────────
 
@@ -206,6 +206,61 @@ test("rejects when more than 20% non-numeric", () => {
   const headers = ["A","B"];
   const rows = [["1","2"],["x","y"],["3","4"],["a","b"],["5","6"]];
   assert(!detectWideFormat(headers, rows));
+});
+
+// ── parseData ────────────────────────────────────────────────────────────────
+
+suite("parseData");
+
+test("parses CSV into numeric data and raw strings", () => {
+  const { headers, data, rawData } = parseData("A,B,C\n1,2,3\n4,5,6");
+  eq(headers, ["A", "B", "C"]);
+  eq(data, [[1, 2, 3], [4, 5, 6]]);
+  eq(rawData, [["1", "2", "3"], ["4", "5", "6"]]);
+});
+
+test("returns null for non-numeric values", () => {
+  const { data, rawData } = parseData("Name,Val\nAlice,10\nBob,20");
+  eq(data, [[null, 10], [null, 20]]);
+  eq(rawData[0], ["Alice", "10"]);
+});
+
+test("rejects '6wpi' as non-numeric via isNumericValue", () => {
+  const { data } = parseData("Group,Val\n6wpi,1\n8wpi,2");
+  eq(data[0][0], null);
+  eq(data[0][1], 1);
+});
+
+test("pads short rows to match header count", () => {
+  const { data, rawData } = parseData("A,B,C\n1,2\n3,4,5");
+  eq(rawData[0], ["1", "2", ""]);
+  eq(data[0], [1, 2, null]);
+});
+
+test("skips entirely blank rows", () => {
+  const { data } = parseData("A,B\n1,2\n  \n3,4");
+  eq(data.length, 2);
+});
+
+test("returns empty for single-line input", () => {
+  const { headers, data } = parseData("A,B,C");
+  eq(headers, []);
+  eq(data, []);
+});
+
+// ── dataToColumns ────────────────────────────────────────────────────────────
+
+suite("dataToColumns");
+
+test("converts row-oriented data to column arrays, filtering nulls", () => {
+  const data = [[1, null, 3], [4, 5, null]];
+  const cols = dataToColumns(data, 3);
+  eq(cols, [[1, 4], [5], [3]]);
+});
+
+test("returns empty columns for empty data", () => {
+  const cols = dataToColumns([], 2);
+  eq(cols, [[], []]);
 });
 
 summary();

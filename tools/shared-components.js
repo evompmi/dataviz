@@ -74,6 +74,119 @@ function FileDropZone({ onFileLoad, accept = ".csv,.tsv,.txt,.dat", hint = "CSV 
   );
 }
 
+// ── SVG Legend helpers ────────────────────────────────────────────────────────
+
+// itemWidth: number (fixed) or function(block) => number (dynamic per block)
+function computeLegendHeight(blocks, usableW, itemWidth) {
+  if (!blocks || !blocks.length) return 0;
+  var IH = 18, TH = 15;
+  var iw = itemWidth || 88;
+  var t = 10;
+  blocks.forEach(function(b, bi) {
+    if (b.title) t += TH;
+    if (b.items) {
+      var bIW = typeof iw === "function" ? iw(b) : iw;
+      t += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / bIW))) * IH;
+    }
+    if (b.gradient) t += 30;
+    if (b.sizeItems && b.sizeItems.length) {
+      var mr = Math.max.apply(null, b.sizeItems.map(function(i) { return i.r; }).concat([3]));
+      t += mr * 2 + 4;
+    }
+    if (bi < blocks.length - 1) t += 8;
+  });
+  return t + 6;
+}
+
+// Renders SVG legend blocks. Returns array of <g> elements.
+// startY: y offset for the first block, leftX: x offset, usableW: available width
+// itemWidth: number or function(block) => number
+// truncateLabel: optional max char length for labels (falsy = no truncation)
+function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabel) {
+  if (!blocks || !blocks.length) return null;
+  var h = React.createElement;
+  var IH = 18, TH = 15;
+  var iw = itemWidth || 88;
+
+  return blocks.map(function(block, bi) {
+    var bIW = typeof iw === "function" ? iw(block) : iw;
+    var blockY = startY + (bi > 0 ? blocks.slice(0, bi).reduce(function(acc, b) {
+      if (b.title) acc += TH;
+      if (b.items) {
+        var w = typeof iw === "function" ? iw(b) : iw;
+        acc += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / w))) * IH;
+      }
+      if (b.gradient) acc += 30;
+      if (b.sizeItems && b.sizeItems.length) {
+        var mr = Math.max.apply(null, b.sizeItems.map(function(i) { return i.r; }).concat([3]));
+        acc += mr * 2 + 4;
+      }
+      acc += 8;
+      return acc;
+    }, 0) : 0);
+    var itemsPerRow = Math.max(1, Math.floor(usableW / bIW));
+    var children = [];
+
+    // Title
+    if (block.title) {
+      children.push(h("text", { key: "title", fontSize: "10", fill: "#666", fontFamily: "sans-serif", y: 10 }, block.title));
+    }
+
+    // Items (circles or lines)
+    if (block.items) {
+      block.items.forEach(function(item, ii) {
+        var row = Math.floor(ii / itemsPerRow);
+        var col = ii % itemsPerRow;
+        var label = item.label || "";
+        if (truncateLabel && label.length > truncateLabel) label = label.slice(0, truncateLabel - 2) + "\u2026";
+        var shape = item.shape === "line"
+          ? h("line", { key: "s", x1: 0, x2: 14, y1: 7, y2: 7, stroke: item.color, strokeWidth: "2.5" })
+          : h("circle", { key: "s", cx: 6, cy: 7, r: 5, fill: item.color });
+        var text = h("text", {
+          key: "t", x: item.shape === "line" ? 18 : 14, y: 11,
+          fontSize: "10", fill: "#444", fontFamily: "sans-serif"
+        }, label);
+        children.push(h("g", {
+          key: "i" + ii,
+          transform: "translate(" + (col * bIW) + ", " + ((block.title ? TH : 0) + row * IH) + ")"
+        }, shape, text));
+      });
+    }
+
+    // Gradient
+    if (block.gradient) {
+      var gw = Math.min(usableW * 0.6, 200), gh = 12;
+      var th = block.title ? TH : 0;
+      var gradId = "svggrad-" + bi;
+      var stops = block.gradient.stops.map(function(c, si) {
+        return h("stop", { key: si, offset: (si / (block.gradient.stops.length - 1) * 100) + "%", stopColor: c });
+      });
+      children.push(h("g", { key: "grad", transform: "translate(0, " + th + ")" },
+        h("defs", null, h("linearGradient", { id: gradId, x1: "0%", y1: "0%", x2: "100%", y2: "0%" }, stops)),
+        h("rect", { x: 0, y: 0, width: gw, height: gh, fill: "url(#" + gradId + ")", rx: "2" }),
+        h("text", { x: 0, y: gh + 13, fontSize: "9", fill: "#555", fontFamily: "sans-serif", textAnchor: "start" }, block.gradient.min),
+        h("text", { x: gw, y: gh + 13, fontSize: "9", fill: "#555", fontFamily: "sans-serif", textAnchor: "end" }, block.gradient.max)
+      ));
+    }
+
+    // Size items (scatter)
+    if (block.sizeItems && block.sizeItems.length) {
+      var sth = block.title ? TH : 0;
+      var maxR = Math.max.apply(null, block.sizeItems.map(function(i) { return i.r; }).concat([3]));
+      var spacing = maxR * 2 + 30;
+      var sizeChildren = block.sizeItems.map(function(item, ii) {
+        return h("g", { key: ii, transform: "translate(" + (ii * spacing) + ", 0)" },
+          h("circle", { cx: maxR, cy: 0, r: item.r, fill: "#888", fillOpacity: "0.35", stroke: "#888", strokeWidth: "0.8" }),
+          h("text", { x: maxR * 2 + 4, y: 4, fontSize: "9", fill: "#444", fontFamily: "sans-serif" }, item.label)
+        );
+      });
+      children.push(h("g", { key: "size", transform: "translate(0, " + (sth + maxR) + ")" }, sizeChildren));
+    }
+
+    return h("g", { key: bi, transform: "translate(" + leftX + ", " + blockY + ")" }, children);
+  });
+}
+
 function DataPreview({headers, rows, maxRows}) {
   const limit = maxRows || 10;
   const d = rows.slice(0, limit);

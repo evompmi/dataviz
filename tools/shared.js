@@ -151,6 +151,35 @@ function detectWideFormat(headers, rows) {
   return numericCols.every(Boolean);
 }
 
+// ── Unified data parsing ─────────────────────────────────────────────────────
+
+function parseData(text, sepOv = "") {
+  const sep = autoDetectSep(text, sepOv);
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lines.length < 2) return { headers: [], data: [], rawData: [] };
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ""));
+  const nCols = headers.length;
+  const data = [], rawData = [];
+  for (let i = 1; i < lines.length; i++) {
+    const rawVals = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ""));
+    while (rawVals.length < nCols) rawVals.push("");
+    if (rawVals.every(v => v === "")) continue;
+    data.push(rawVals.map(s => isNumericValue(s) ? Number(s) : null));
+    rawData.push(rawVals);
+  }
+  return { headers, data, rawData };
+}
+
+function dataToColumns(data, nCols) {
+  const columns = Array.from({ length: nCols }, () => []);
+  for (const row of data) {
+    for (let c = 0; c < nCols; c++) {
+      if (row[c] != null) columns[c].push(row[c]);
+    }
+  }
+  return columns;
+}
+
 // ── Wide / long format helpers ────────────────────────────────────────────────
 
 function wideToLong(headers, rows) {

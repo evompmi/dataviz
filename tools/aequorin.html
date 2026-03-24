@@ -59,25 +59,6 @@ const FORMULA_DEFS = {
   },
 };
 
-// ── CSV parsing ──────────────────────────────────────────────────────────────
-
-function parseCSV(text, sepOv="") {
-  const sep = autoDetectSep(text, sepOv);
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return { headers: [], data: [] };
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ""));
-  const data = [];
-  for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i].split(sep).map(v => {
-      const s = v.trim().replace(/^"|"$/g, "");
-      const n = Number(s);
-      return s === "" || isNaN(n) ? null : n;
-    });
-    if (vals.length === headers.length) data.push(vals);
-  }
-  return { headers, data };
-}
-
 // ── Calibration ──────────────────────────────────────────────────────────────
 
 function calibrate(headers, data, Kr, Ktr) {
@@ -218,7 +199,8 @@ const MARGIN = { top: 20, right: 20, bottom: 48, left: 62 };
 
 const Chart = forwardRef(function Chart({ series, xStart, xEnd, yMin, yMax, vbW, vbH, xLabel, yLabel,
                  plotBg, showGrid, lineWidth, ribbonOpacity, gridColor, svgLegend, plotTitle, plotSubtitle }, ref) {
-  const legendH = (() => { const blocks=svgLegend||[]; if(!blocks.length)return 0; const IH=18,TH=15,usableW=vbW-MARGIN.left-MARGIN.right; let t=10; blocks.forEach((b,bi)=>{if(b.title)t+=TH;if(b.items){const maxLen=Math.max(0,...b.items.map(i=>(i.label||"").length));const IW=Math.max(110,maxLen*6+28);t+=Math.ceil(b.items.length/Math.max(1,Math.floor(usableW/IW)))*IH;}if(b.gradient)t+=30;if(bi<blocks.length-1)t+=8;}); return t+6; })();
+  const aequorinItemW = (b) => { const maxLen = Math.max(0, ...(b.items||[]).map(i=>(i.label||"").length)); return Math.max(110, maxLen * 6 + 28); };
+  const legendH = computeLegendHeight(svgLegend, vbW - MARGIN.left - MARGIN.right, aequorinItemW);
   const topPad = (plotTitle ? 20 : 0) + (plotSubtitle ? 16 : 0);
   const w = vbW - MARGIN.left - MARGIN.right;
   const h = vbH - MARGIN.top - MARGIN.bottom;
@@ -281,55 +263,7 @@ const Chart = forwardRef(function Chart({ series, xStart, xEnd, yMin, yMax, vbW,
       ))}
       {xLabel && <text x={MARGIN.left + w / 2} y={vbH - 4} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{xLabel}</text>}
       {yLabel && <text transform={`translate(14,${MARGIN.top + h / 2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>}
-      {svgLegend && svgLegend.length > 0 && (() => {
-        const ITEM_H = 18, TITLE_H = 15;
-        const leftX = MARGIN.left;
-        const usableW = vbW - leftX - MARGIN.right;
-        const blockItemW = (b) => { const maxLen = Math.max(0, ...(b.items||[]).map(i=>(i.label||"").length)); return Math.max(110, maxLen * 6 + 28); };
-        return svgLegend.map((block, bi) => {
-          const IW = blockItemW(block);
-          const blockY = vbH + 10 + (bi > 0 ? svgLegend.slice(0, bi).reduce((acc, b) => {
-            if (b.title) acc += TITLE_H;
-            if (b.items) acc += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / blockItemW(b)))) * ITEM_H;
-            if (b.gradient) acc += 30;
-            acc += 8;
-            return acc;
-          }, 0) : 0);
-          const itemsPerRow = Math.max(1, Math.floor(usableW / IW));
-          return (
-            <g key={bi} transform={`translate(${leftX}, ${blockY})`}>
-              {block.title && <text fontSize="10" fill="#666" fontFamily="sans-serif" y={10}>{block.title}</text>}
-              {block.items && block.items.map((item, ii) => {
-                const row = Math.floor(ii / itemsPerRow);
-                const col = ii % itemsPerRow;
-                return (
-                  <g key={ii} transform={`translate(${col * IW}, ${(block.title ? TITLE_H : 0) + row * ITEM_H})`}>
-                    {item.shape === "line"
-                      ? <line x1={0} x2={14} y1={7} y2={7} stroke={item.color} strokeWidth="2.5" />
-                      : <circle cx={6} cy={7} r={5} fill={item.color} />}
-                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label}</text>
-                  </g>
-                );
-              })}
-              {block.gradient && (() => {
-                const gw = Math.min(usableW * 0.6, 200), gh = 12;
-                const th = block.title ? TITLE_H : 0;
-                const gradId = `svggrad-${bi}`;
-                return (
-                  <g transform={`translate(0, ${th})`}>
-                    <defs><linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                      {block.gradient.stops.map((c, si) => <stop key={si} offset={`${si/(block.gradient.stops.length-1)*100}%`} stopColor={c} />)}
-                    </linearGradient></defs>
-                    <rect x={0} y={0} width={gw} height={gh} fill={`url(#${gradId})`} rx="2" />
-                    <text x={0} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="start">{block.gradient.min}</text>
-                    <text x={gw} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="end">{block.gradient.max}</text>
-                  </g>
-                );
-              })()}
-            </g>
-          );
-        });
-      })()}
+      {renderSvgLegend(svgLegend, vbH + 10, MARGIN.left, vbW - MARGIN.left - MARGIN.right, aequorinItemW)}
       </g>
     </svg>
   );
@@ -691,7 +625,7 @@ function App() {
   const [insetYFontSize, setInsetYFontSize] = useState(7);
   const [insetXLabelAngle, setInsetXLabelAngle] = useState(-45);
 
-  const parsed = useMemo(() => rawText ? parseCSV(rawText) : null, [rawText]);
+  const parsed = useMemo(() => rawText ? parseData(rawText) : null, [rawText]);
   const calData = useMemo(() => {
     if (!parsed) return null;
     if (formula === "none")        return parsed.data;
@@ -778,7 +712,7 @@ function App() {
   const doParse = useCallback((text, sep) => {
     const dc = fixDecimalCommas(text, sep); setCommaFixed(dc.commaFixed); setCommaFixCount(dc.count);
     setRawText(dc.text);
-    const { headers, data } = parseCSV(dc.text, sep);
+    const { headers, data } = parseData(dc.text, sep);
     if (!headers.length || !data.length) { setParseError("The file appears to be empty or has no data rows. Please check your file and try again."); return; }
     setParseError(null);
     const ce = {};

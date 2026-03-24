@@ -21,8 +21,6 @@
 
 const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
 
-  const POINT_PALETTE = ["#648FFF","#DC267F","#FE6100","#FFB000","#785EF0","#2EC4B6","#E71D36","#011627"];
-
   const COLOR_PALETTES = {
   viridis: ["#440154","#3b528b","#21908c","#5dc963","#fde725"],
   plasma:  ["#0d0887","#7e03a8","#cc4778","#f89540","#f0f921"],
@@ -43,24 +41,6 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   const [r1,g1,b1] = hexToRgb(stops[i]);
   const [r2,g2,b2] = hexToRgb(stops[i+1]);
   return rgbToHex(r1+(r2-r1)*f, g1+(g2-g1)*f, b1+(b2-b1)*f);
-  }
-
-
-  function parseCSV(text, sepOv="") {
-  const sep = autoDetectSep(text, sepOv);
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return { headers: [], data: [], rawData: [] };
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ""));
-  const data = [], rawData = [];
-  for (let i = 1; i < lines.length; i++) {
-    const rawVals = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ""));
-    const vals = rawVals.map(s => {
-      const n = parseFloat(s.replace(",", "."));
-      return s === "" || isNaN(n) ? null : n;
-    });
-    if (rawVals.some(v => v !== "")) { data.push(vals); rawData.push(rawVals); }
-  }
-  return { headers, data, rawData };
   }
 
 
@@ -103,7 +83,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   }, ref) {
   const w = VBW - MARGIN.left - MARGIN.right;
   const h = VBH - MARGIN.top - MARGIN.bottom;
-  const legendH = (() => { const blocks=svgLegend||[]; if(!blocks.length)return 0; const IW=88,IH=18,TH=15; let t=10; blocks.forEach((b,bi)=>{if(b.title)t+=TH;if(b.items)t+=Math.ceil(b.items.length/Math.max(1,Math.floor((VBW-MARGIN.left-MARGIN.right)/IW)))*IH;if(b.gradient)t+=30;if(b.sizeItems&&b.sizeItems.length){const mr=Math.max(...b.sizeItems.map(i=>i.r),3);t+=mr*2+4;}if(bi<blocks.length-1)t+=8;}); return t+6; })();
+  const legendH = computeLegendHeight(svgLegend, VBW - MARGIN.left - MARGIN.right);
   const xRange = xMax - xMin || 1;
   const yRange = yMax - yMin || 1;
   const sx = v => MARGIN.left + ((v - xMin) / xRange) * w;
@@ -250,69 +230,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
       {xLabel && <text x={MARGIN.left + w/2} y={VBH - 6} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{xLabel}</text>}
       {yLabel && <text transform={`translate(14,${MARGIN.top + h/2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>}
       {title && <text x={VBW/2} y={16} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{title}</text>}
-      {svgLegend && svgLegend.length > 0 && (() => {
-        const ITEM_W = 88, ITEM_H = 18, TITLE_H = 15;
-        const leftX = MARGIN.left;
-        const usableW = VBW - leftX - MARGIN.right;
-        return svgLegend.map((block, bi) => {
-          const blockY = VBH + 10 + (bi > 0 ? svgLegend.slice(0, bi).reduce((acc, b) => {
-            if (b.title) acc += TITLE_H;
-            if (b.items) acc += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / ITEM_W))) * ITEM_H;
-            if (b.gradient) acc += 30;
-            if (b.sizeItems && b.sizeItems.length) { const mr = Math.max(...b.sizeItems.map(i => i.r), 3); acc += mr * 2 + 4; }
-            acc += 8;
-            return acc;
-          }, 0) : 0);
-          const itemsPerRow = Math.max(1, Math.floor(usableW / ITEM_W));
-          return (
-            <g key={bi} transform={`translate(${leftX}, ${blockY})`}>
-              {block.title && <text fontSize="10" fill="#666" fontFamily="sans-serif" y={10}>{block.title}</text>}
-              {block.items && block.items.map((item, ii) => {
-                const row = Math.floor(ii / itemsPerRow);
-                const col = ii % itemsPerRow;
-                return (
-                  <g key={ii} transform={`translate(${col * ITEM_W}, ${(block.title ? TITLE_H : 0) + row * ITEM_H})`}>
-                    {item.shape === "line"
-                      ? <line x1={0} x2={14} y1={7} y2={7} stroke={item.color} strokeWidth="2.5" />
-                      : <circle cx={6} cy={7} r={5} fill={item.color} />}
-                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label}</text>
-                  </g>
-                );
-              })}
-              {block.gradient && (() => {
-                const gw = Math.min(usableW * 0.6, 200), gh = 12;
-                const th = block.title ? TITLE_H : 0;
-                const gradId = `svggrad-${bi}`;
-                return (
-                  <g transform={`translate(0, ${th})`}>
-                    <defs><linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                      {block.gradient.stops.map((c, si) => <stop key={si} offset={`${si/(block.gradient.stops.length-1)*100}%`} stopColor={c} />)}
-                    </linearGradient></defs>
-                    <rect x={0} y={0} width={gw} height={gh} fill={`url(#${gradId})`} rx="2" />
-                    <text x={0} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="start">{block.gradient.min}</text>
-                    <text x={gw} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="end">{block.gradient.max}</text>
-                  </g>
-                );
-              })()}
-              {block.sizeItems && block.sizeItems.length > 0 && (() => {
-                const th = block.title ? TITLE_H : 0;
-                const maxR = Math.max(...block.sizeItems.map(i => i.r), 3);
-                const spacing = maxR * 2 + 30;
-                return (
-                  <g transform={`translate(0, ${th + maxR})`}>
-                    {block.sizeItems.map((item, ii) => (
-                      <g key={ii} transform={`translate(${ii * spacing}, 0)`}>
-                        <circle cx={maxR} cy={0} r={item.r} fill="#888" fillOpacity="0.35" stroke="#888" strokeWidth="0.8" />
-                        <text x={maxR * 2 + 4} y={4} fontSize="9" fill="#444" fontFamily="sans-serif">{item.label}</text>
-                      </g>
-                    ))}
-                  </g>
-                );
-              })()}
-            </g>
-          );
-        });
-      })()}
+      {renderSvgLegend(svgLegend, VBH + 10, MARGIN.left, VBW - MARGIN.left - MARGIN.right)}
     </svg>
   );
   });
@@ -404,10 +322,9 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   );
   }
 
-  // Style constants
-  const inp   = { width: 80, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 13, textAlign: "center" };
+  // Style constants (use unique names to avoid conflict with shared.js globals)
+  const scInp = { width: 80, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 13, textAlign: "center" };
   const lbl   = { fontSize: 12, color: "#777", marginBottom: 2 };
-  const sec   = { background: "#f8f8fa", borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #ddd" };
   const dlBtn = { padding: "6px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#fff", border: "1px solid #ccc", color: "#555", fontFamily: "inherit" };
   const selSt = { background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" };
 
@@ -456,7 +373,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
   const svgRef = useRef();
   const sepRef = useRef("");
 
-  const parsed = useMemo(() => rawText ? parseCSV(rawText, sepRef.current) : null, [rawText]);
+  const parsed = useMemo(() => rawText ? parseData(rawText, sepRef.current) : null, [rawText]);
 
   // Derived from colRoles
   const xcol = useMemo(() => { const i = colRoles.indexOf("x"); return i >= 0 ? i : 0; }, [colRoles]);
@@ -527,7 +444,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
     if (colorMapCategories.length === 0) { setColorMapDiscrete({}); return; }
     setColorMapDiscrete(prev => {
       const next = {};
-      colorMapCategories.forEach((cat, i) => { next[cat] = prev[cat] || POINT_PALETTE[i % POINT_PALETTE.length]; });
+      colorMapCategories.forEach((cat, i) => { next[cat] = prev[cat] || PALETTE[i % PALETTE.length]; });
       return next;
     });
   }, [colorMapCategories]);
@@ -571,7 +488,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
       if (i === defaultXcol) return;
       cfg[i] = {
         enabled: true, label: h,
-        color: POINT_PALETTE[colorIdx++ % POINT_PALETTE.length],
+        color: PALETTE[colorIdx++ % PALETTE.length],
         colorMode: "solid", palette: "viridis",
         pointSize: 5, opacity: 0.8,
         strokeColor: "#000000", strokeWidth: 1,
@@ -595,7 +512,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
     sepRef.current = sep;
     const dc = fixDecimalCommas(text, sep); setCommaFixed(dc.commaFixed); setCommaFixCount(dc.count);
     const fixedText = dc.text;
-    const { headers, data, rawData } = parseCSV(fixedText, sep);
+    const { headers, data, rawData } = parseData(fixedText, sep);
     if (headers.length < 2 || data.length === 0) { setParseError("The file appears to be empty or has no data rows. Please check your file and try again."); return; }
     setParseError(null);
     setRawText(fixedText);
@@ -618,7 +535,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
     yColIdxs.forEach(ci => {
       cfg[ci] = {
         enabled: true, label: parsed.headers[ci],
-        color: POINT_PALETTE[colorIdx++ % POINT_PALETTE.length],
+        color: PALETTE[colorIdx++ % PALETTE.length],
         colorMode: "solid", palette: "viridis",
         pointSize: 5, opacity: 0.8, strokeColor: "#000000", strokeWidth: 1,
       };
@@ -1045,7 +962,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto" }}>
                         {colorMapCategories.map((cat, ci) => (
                           <div key={cat} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <ColorInput value={colorMapDiscrete[cat] || POINT_PALETTE[ci % POINT_PALETTE.length]}
+                            <ColorInput value={colorMapDiscrete[cat] || PALETTE[ci % PALETTE.length]}
                               onChange={v => setColorMapDiscrete(prev => ({ ...prev, [cat]: v }))} size={18} />
                             <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
                           </div>
@@ -1133,16 +1050,16 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
               <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Axes</p>
               <div style={{ display: "flex", flexDirection:"column", gap: 6 }}>
                 <div style={{display:"flex",gap:8}}>
-                  <div style={{flex:1}}><div style={lbl}>X min</div><input type="number" value={xMin} step="any" onChange={e => setXMin(Number(e.target.value))} style={{...inp,width:"100%"}} /></div>
-                  <div style={{flex:1}}><div style={lbl}>X max</div><input type="number" value={xMax} step="any" onChange={e => setXMax(Number(e.target.value))} style={{...inp,width:"100%"}} /></div>
+                  <div style={{flex:1}}><div style={lbl}>X min</div><input type="number" value={xMin} step="any" onChange={e => setXMin(Number(e.target.value))} style={{...scInp,width:"100%"}} /></div>
+                  <div style={{flex:1}}><div style={lbl}>X max</div><input type="number" value={xMax} step="any" onChange={e => setXMax(Number(e.target.value))} style={{...scInp,width:"100%"}} /></div>
                 </div>
                 <div style={{display:"flex",gap:8}}>
-                  <div style={{flex:1}}><div style={lbl}>Y min</div><input type="number" value={yMin} step="any" onChange={e => setYMin(Number(e.target.value))} style={{...inp,width:"100%"}} /></div>
-                  <div style={{flex:1}}><div style={lbl}>Y max</div><input type="number" value={yMax} step="any" onChange={e => setYMax(Number(e.target.value))} style={{...inp,width:"100%"}} /></div>
+                  <div style={{flex:1}}><div style={lbl}>Y min</div><input type="number" value={yMin} step="any" onChange={e => setYMin(Number(e.target.value))} style={{...scInp,width:"100%"}} /></div>
+                  <div style={{flex:1}}><div style={lbl}>Y max</div><input type="number" value={yMax} step="any" onChange={e => setYMax(Number(e.target.value))} style={{...scInp,width:"100%"}} /></div>
                 </div>
-                <div><div style={lbl}>X label</div><input value={xLabel} onChange={e => setXLabel(e.target.value)} style={{ ...inp, width:"100%", textAlign: "left" }} /></div>
-                <div><div style={lbl}>Y label</div><input value={yLabel} onChange={e => setYLabel(e.target.value)} style={{ ...inp, width:"100%", textAlign: "left" }} /></div>
-                <div><div style={lbl}>Title</div><input value={plotTitle} onChange={e => setPlotTitle(e.target.value)} style={{ ...inp, width:"100%", textAlign: "left" }} /></div>
+                <div><div style={lbl}>X label</div><input value={xLabel} onChange={e => setXLabel(e.target.value)} style={{ ...scInp, width:"100%", textAlign: "left" }} /></div>
+                <div><div style={lbl}>Y label</div><input value={yLabel} onChange={e => setYLabel(e.target.value)} style={{ ...scInp, width:"100%", textAlign: "left" }} /></div>
+                <div><div style={lbl}>Title</div><input value={plotTitle} onChange={e => setPlotTitle(e.target.value)} style={{ ...scInp, width:"100%", textAlign: "left" }} /></div>
               </div>
             </div>
 
@@ -1184,7 +1101,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
                         {rl.dir === "h" ? "Y =" : "X ="}
                       </span>
                       <input type="number" value={rl.value} step="any" onChange={e => updateRefLine(rl.id, "value", Number(e.target.value))}
-                        style={{ ...inp, flex:1 }} />
+                        style={{ ...scInp, flex:1 }} />
                       <button onClick={() => removeRefLine(rl.id)}
                         style={{ padding: "3px 9px", borderRadius: 5, fontSize: 12, cursor: "pointer",
                           background: "#fff", border: "1px solid #fca5a5", color: "#dc2626", fontFamily: "inherit" }}>✕</button>
@@ -1214,7 +1131,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
                       </select>
                     )}
                     <input value={rl.label} placeholder="label" onChange={e => updateRefLine(rl.id, "label", e.target.value)}
-                      style={{ ...inp, width:"100%", textAlign: "left" }} />
+                      style={{ ...scInp, width:"100%", textAlign: "left" }} />
                     {rl.label && (
                       <select value={rl.labelSide} onChange={e => updateRefLine(rl.id, "labelSide", e.target.value)} style={{ ...selSt, fontSize: 11, width:"100%" }}>
                         {rl.dir === "h"

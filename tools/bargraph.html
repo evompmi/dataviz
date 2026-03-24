@@ -17,7 +17,6 @@
 </head>
 <body>
   <div id="root"></div>
-</div>
   <script type="text/babel">
 const { useState, useMemo, useCallback, useRef, forwardRef } = React;
 
@@ -42,25 +41,6 @@ function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
     return { name, sources: [src], allValues: g.values, stats, color: PALETTE[gi % PALETTE.length] };
   });
 }
-
-function parseFile(text, sepOv="") {
-  const sep = autoDetectSep(text, sepOv);
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return { headers: [], columns: [] };
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ""));
-  const nCols = headers.length;
-  const columns = Array.from({ length: nCols }, () => []);
-  for (let i = 1; i < lines.length; i++) {
-    const vals = lines[i].split(sep);
-    for (let c = 0; c < nCols; c++) {
-      const s = (vals[c] || "").trim().replace(/^"|"$/g, "");
-      const n = Number(s);
-      if (s !== "" && !isNaN(n)) columns[c].push(n);
-    }
-  }
-  return { headers, columns };
-}
-
 
 function groupColumns(headers, columns) {
   const map = {};
@@ -119,7 +99,7 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
   const n = groups.length;
   const vbW = Math.max(400, n * 100 + MChart.left + MChart.right);
   const vbH_chart = 420 + Math.abs(angle) * 0.9;
-  const legendH = (() => { const blocks = svgLegend || []; if (!blocks.length) return 0; const ITEM_W=88,ITEM_H=18,TITLE_H=15; let t=10; blocks.forEach((b,bi)=>{ if(b.title)t+=TITLE_H; if(b.items)t+=Math.ceil(b.items.length/Math.max(1,Math.floor((vbW-MChart.left-MChart.right)/ITEM_W)))*ITEM_H; if(b.gradient)t+=30; if(bi<blocks.length-1)t+=8; }); return t+6; })();
+  const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right);
   const vbH = vbH_chart + legendH;
   const w = vbW - MChart.left - MChart.right;
   const h = vbH_chart - MChart.top - MChart.bottom;
@@ -237,53 +217,7 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
         <text x={MChart.left + w / 2} y={14} textAnchor="middle" fontSize="15" fontWeight="700"
           fill="#222" fontFamily="sans-serif">{plotTitle}</text>
       )}
-      {svgLegend && svgLegend.length > 0 && (() => {
-        const ITEM_W = 88, ITEM_H = 18, TITLE_H = 15;
-        const leftX = MChart.left;
-        const usableW = vbW - leftX - MChart.right;
-        return svgLegend.map((block, bi) => {
-          const blockY = vbH_chart + 10 + (bi > 0 ? svgLegend.slice(0, bi).reduce((acc, b) => {
-            if (b.title) acc += TITLE_H;
-            if (b.items) acc += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / ITEM_W))) * ITEM_H;
-            if (b.gradient) acc += 30;
-            acc += 8;
-            return acc;
-          }, 0) : 0);
-          const itemsPerRow = Math.max(1, Math.floor(usableW / ITEM_W));
-          return (
-            <g key={bi} transform={`translate(${leftX}, ${blockY})`}>
-              {block.title && <text fontSize="10" fill="#666" fontFamily="sans-serif" y={10}>{block.title}</text>}
-              {block.items && block.items.map((item, ii) => {
-                const row = Math.floor(ii / itemsPerRow);
-                const col = ii % itemsPerRow;
-                return (
-                  <g key={ii} transform={`translate(${col * ITEM_W}, ${(block.title ? TITLE_H : 0) + row * ITEM_H})`}>
-                    {item.shape === "line"
-                      ? <line x1={0} x2={14} y1={7} y2={7} stroke={item.color} strokeWidth="2.5" />
-                      : <circle cx={6} cy={7} r={5} fill={item.color} />}
-                    <text x={item.shape === "line" ? 18 : 14} y={11} fontSize="10" fill="#444" fontFamily="sans-serif">{item.label && item.label.length > 14 ? item.label.slice(0,12)+"…" : item.label}</text>
-                  </g>
-                );
-              })}
-              {block.gradient && (() => {
-                const gw = Math.min(usableW * 0.6, 200), gh = 12;
-                const th = block.title ? TITLE_H : 0;
-                const gradId = `svggrad-${bi}`;
-                return (
-                  <g transform={`translate(0, ${th})`}>
-                    <defs><linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-                      {block.gradient.stops.map((c, si) => <stop key={si} offset={`${si/(block.gradient.stops.length-1)*100}%`} stopColor={c} />)}
-                    </linearGradient></defs>
-                    <rect x={0} y={0} width={gw} height={gh} fill={`url(#${gradId})`} rx="2" />
-                    <text x={0} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="start">{block.gradient.min}</text>
-                    <text x={gw} y={gh+13} fontSize="9" fill="#555" fontFamily="sans-serif" textAnchor="end">{block.gradient.max}</text>
-                  </g>
-                );
-              })()}
-            </g>
-          );
-        });
-      })()}
+      {renderSvgLegend(svgLegend, vbH_chart + 10, MChart.left, vbW - MChart.left - MChart.right, 88, 14)}
     </svg>
   );
 });
@@ -453,7 +387,9 @@ function App() {
     setParseError(null);
     const isWide = detectWideFormat(headers, rows);
     if (isWide) {
-      const { headers: wh, columns } = parseFile(fixedText, sep);
+      const pd = parseData(fixedText, sep);
+      const columns = dataToColumns(pd.data, pd.headers.length);
+      const wh = pd.headers;
       setGroups(groupColumns(wh, columns));
       setPlotGroupRenames({}); setPlotGroupColors({});
       setDataFormat("wide");

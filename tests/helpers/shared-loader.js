@@ -42,6 +42,8 @@ module.exports = {
   parseRaw:          ctx.parseRaw,
   guessColumnType:   ctx.guessColumnType,
   detectWideFormat:  ctx.detectWideFormat,
+  parseData:         ctx.parseData,
+  dataToColumns:     ctx.dataToColumns,
   wideToLong:        ctx.wideToLong,
   reshapeWide:       ctx.reshapeWide,
   // Statistics
