@@ -123,6 +123,9 @@ function App(){
   // Faceted groups: one boxplot per facet category
   const facetedData=useMemo(()=>{
     if(facetByCol<0)return[];
+    // Build global color map from boxplotGroups for consistent colors across facets
+    const globalColorMap={};
+    boxplotGroups.forEach(g=>{globalColorMap[g.name]=g.color;});
     return facetByCategories.map(cat=>{
       const catRows=renamedRows.filter(r=>r[facetByCol]===cat);
       const gm={};
@@ -131,10 +134,10 @@ function App(){
         else{if(!gm[g]["_all"])gm[g]["_all"]=[];gm[g]["_all"].push(v);}
       });
       const cats=colorByCol>=0?colorByCategories:["_all"];
-      const groups=effectiveOrder.filter(name=>gm[name]).map((name,gi)=>{const catMap=gm[name];const sources=cats.filter(c=>catMap[c]).map((c,si)=>({colIndex:si,values:catMap[c],category:c}));const allValues=sources.flatMap(s=>s.values);return{name,sources,allValues,stats:quartiles(allValues),color:boxplotColors[name]||PALETTE[gi%PALETTE.length]};});
+      const groups=effectiveOrder.filter(name=>gm[name]).map((name,gi)=>{const catMap=gm[name];const sources=cats.filter(c=>catMap[c]).map((c,si)=>({colIndex:si,values:catMap[c],category:c}));const allValues=sources.flatMap(s=>s.values);return{name,sources,allValues,stats:quartiles(allValues),color:globalColorMap[name]||boxplotColors[name]||PALETTE[gi%PALETTE.length]};});
       return{category:cat,groups};
     });
-  },[facetByCol,facetByCategories,colorByCol,colorByCategories,renamedRows,groupColIdx,valueColIdx,effectiveOrder,boxplotColors]);
+  },[facetByCol,facetByCategories,colorByCol,colorByCategories,renamedRows,groupColIdx,valueColIdx,effectiveOrder,boxplotColors,boxplotGroups]);
 
   const toggleFilter=(ci,v)=>setFilters(p=>{const f={...p},s=new Set(f[ci].included);if(s.has(v))s.delete(v);else s.add(v);f[ci]={...f[ci],included:s};return f;});
   const toggleAllFilter=(ci,all)=>setFilters(p=>{const f={...p};f[ci]={...f[ci],included:all?new Set(f[ci].unique):new Set()};return f;});
@@ -427,7 +430,7 @@ function App(){
             {facetByCol>=0&&facetedData.length>0&&(
               <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
                 {facetedData.map(fd=>{
-                  const displayFdGroups = fd.groups.map(g => ({...g, name: plotGroupRenames[g.name]??g.name}));
+                  const displayFdGroups = fd.groups.map(g => ({...g, name: plotGroupRenames[g.name]??g.name, color: boxplotColors[g.name]??g.color}));
                   return (
                   <div key={fd.category} style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd",flex:"0 1 auto",minWidth:180}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>

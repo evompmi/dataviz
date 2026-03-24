@@ -303,17 +303,28 @@ function App() {
   const activeColIdxs = useMemo(() => colRoles.reduce((acc, r, i) => { if (r !== "ignore") acc.push(i); return acc; }, []), [colRoles]);
   const groupColIdx = colRoles.indexOf("group"), valueColIdx = colRoles.indexOf("value");
 
+  // Global group ordering (same pattern as boxplot)
+  const naturalGroupOrder = useMemo(() => {
+    if (groupColIdx < 0 || valueColIdx < 0) return [];
+    const seen = new Set(), order = [];
+    renamedRows.forEach(r => { const g = r[groupColIdx]; if (!seen.has(g)) { seen.add(g); order.push(g); } });
+    return order;
+  }, [renamedRows, groupColIdx, valueColIdx]);
+  const effectiveOrder = useMemo(() => {
+    if (groupOrder.length > 0) {
+      const valid = groupOrder.filter(g => naturalGroupOrder.includes(g));
+      const missing = naturalGroupOrder.filter(g => !groupOrder.includes(g));
+      return [...valid, ...missing];
+    }
+    return naturalGroupOrder;
+  }, [groupOrder, naturalGroupOrder]);
+
   // Build groups from long-format data
   const longGroups = useMemo(() => {
     if (dataFormat !== "long" || groupColIdx < 0 || valueColIdx < 0) return [];
-    const ordered = groupOrder.length > 0 ? groupOrder : null;
     const raw = groupsFromLong(renamedRows, groupColIdx, valueColIdx, colorByCol);
-    if (!ordered) return raw;
-    const valid = ordered.filter(n => raw.find(g => g.name === n));
-    const missing = raw.filter(g => !ordered.includes(g.name)).map(g => g.name);
-    const finalOrder = [...valid, ...missing];
-    return finalOrder.map(n => raw.find(g => g.name === n)).filter(Boolean);
-  }, [dataFormat, renamedRows, groupColIdx, valueColIdx, groupOrder, colorByCol]);
+    return effectiveOrder.map(n => raw.find(g => g.name === n)).filter(Boolean);
+  }, [dataFormat, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol]);
 
   // Effective groups for plotting
   const effectiveGroups = dataFormat === "wide" ? groups : longGroups;
@@ -354,17 +365,18 @@ function App() {
 
   const facetedData = useMemo(() => {
     if (facetByCol < 0 || groupColIdx < 0 || valueColIdx < 0) return [];
+    // Build global color map from longGroups for consistent colors across facets
+    const globalColorMap = {};
+    longGroups.forEach(g => { globalColorMap[g.name] = g.color; });
     return facetByCategories.map(cat => {
       const catRows = renamedRows.filter(r => r[facetByCol] === cat);
-      const ordered = groupOrder.length > 0 ? groupOrder : null;
-      const raw = groupsFromLong(catRows, groupColIdx, valueColIdx, colorByCol);
-      if (!ordered) return { category: cat, groups: raw };
-      const valid = ordered.filter(n => raw.find(g => g.name === n));
-      const missing = raw.filter(g => !ordered.includes(g.name)).map(g => g.name);
-      const finalOrder = [...valid, ...missing];
-      return { category: cat, groups: finalOrder.map(n => raw.find(g => g.name === n)).filter(Boolean) };
+      const rawMap = {};
+      groupsFromLong(catRows, groupColIdx, valueColIdx, colorByCol)
+        .forEach(g => { rawMap[g.name] = { ...g, color: globalColorMap[g.name] || g.color }; });
+      const groups = effectiveOrder.filter(n => rawMap[n]).map(n => rawMap[n]);
+      return { category: cat, groups };
     });
-  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, groupOrder, colorByCol]);
+  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups]);
 
   // Wide data reshape from long
   const wideData = useMemo(() => {
@@ -840,7 +852,7 @@ function App() {
             {facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
                 {facetedData.map(fd => {
-                  const displayFdGroups = fd.groups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name }));
+                  const displayFdGroups = fd.groups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
                   return (
                   <div key={fd.category} style={{ background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
