@@ -20,15 +20,15 @@
   <script type="text/babel">
 const { useState, useMemo, useCallback, useRef, forwardRef } = React;
 
-const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plotBg,showGrid,gridColor,boxWidth,boxFillOpacity,pointSize,showPoints,jitterWidth,pointOpacity,xLabelAngle,yMin:yMinP,yMax:yMaxP,categoryColors:catCols,colorByCol:cbc,boxGap,svgLegend},ref){
-  const angle=xLabelAngle||0,absA=Math.abs(angle),botM=60+(absA>0?absA*0.8:0);
+const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plotBg,showGrid,gridColor,boxWidth,boxFillOpacity,pointSize,showPoints,jitterWidth,pointOpacity,xLabelAngle,yMin:yMinP,yMax:yMaxP,categoryColors:catCols,colorByCol:cbc,boxGap,svgLegend,showCompPie},ref){
+  const angle=xLabelAngle||0,absA=Math.abs(angle),pieSpace=(cbc>=0&&showCompPie?60:0),botM=60+(absA>0?absA*0.8:0)+pieSpace;
   const M={top:24,right:24,bottom:botM,left:62};
   const allV=groups.flatMap(g=>g.allValues);if(allV.length===0)return null;
   const dMin=Math.min(...allV),dMax=Math.max(...allV),pad=(dMax-dMin)*0.08||1;
   const yMin=yMinP!=null?yMinP:dMin-pad,yMax=yMaxP!=null?yMaxP:dMax+pad;
   const n=groups.length,compact=(100-(boxGap!=null?boxGap:0))/100;
   const vbW=Math.max(200,n*100*compact+M.left+M.right);
-  const vbH_chart=420+(absA>0?absA*0.8:0);
+  const vbH_chart=504+(absA>0?absA*0.8:0);
   const _legH=computeLegendHeight(svgLegend,vbW-M.left-M.right);
   const vbH=vbH_chart+_legH;
   const w=vbW-M.left-M.right,h=vbH_chart-M.top-M.bottom;
@@ -50,7 +50,7 @@ const BoxplotChart=forwardRef(function BoxplotChart({groups,yLabel,plotTitle,plo
           {showPoints&&g.sources.map((src,si)=>{const rng=seededRandom(gi*1000+si*100+42);const ptColor=(cbc>=0&&catCols&&src.category)?catCols[src.category]||getPointColors(g.color,g.sources.length)[si]||g.color:getPointColors(g.color,g.sources.length)[si]||g.color;return src.values.map((v,vi)=>{const j=(rng()-.5)*jitterWidth*halfBox*2;return<circle key={`${g.name}-${si}-${vi}`} cx={cx+j} cy={sy(v)} r={pointSize} fill={ptColor} fillOpacity={pointOpacity||.6} stroke={ptColor} strokeOpacity={Math.min(1,(pointOpacity||.6)+.15)} strokeWidth="0.3"/>;});})}
         </g>);})}
       <rect x={M.left} y={M.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1"/>
-      {groups.map((g,gi)=>{const lx=bx(gi),ly=M.top+h+16;return angle===0?(<g key={`xl-${g.name}`}><text x={lx} y={ly} textAnchor="middle" fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text><text x={lx} y={ly+14} textAnchor="middle" fontSize="9" fill="#999" fontFamily="sans-serif">n={g.stats?.n||0}</text></g>):(<g key={`xl-${g.name}`} transform={`rotate(${angle},${lx},${ly})`}><text x={lx} y={ly} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text><text x={lx} y={ly+12} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#999" fontFamily="sans-serif">n={g.stats?.n||0}</text></g>);})}
+      {groups.map((g,gi)=>{const lx=bx(gi),ly=M.top+h+16;const compBar=(()=>{if(cbc<0||!g.sources||!showCompPie)return null;const total=g.allValues.length;if(!total)return null;const r=20,cy2=vbH_chart-r-12;let cum=0;const slices=g.sources.map((src,si)=>{const pct=src.values.length/total;const a0=cum*Math.PI*2,a1=(cum+pct)*Math.PI*2;cum+=pct;const col=(catCols&&src.category)?catCols[src.category]||"#999":"#999";if(pct>=1)return<circle key={si} cx={lx} cy={cy2} r={r} fill={col}/>;const x0=lx+Math.sin(a0)*r,y0=cy2-Math.cos(a0)*r,x1=lx+Math.sin(a1)*r,y1=cy2-Math.cos(a1)*r;const lg=pct>0.5?1:0;return<path key={si} d={`M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`} fill={col}/>;});const labels=g.sources.map((src,si)=>{const pct=src.values.length/total;if(pct<0.08)return null;const cumPct=g.sources.slice(0,si).reduce((s,ss)=>s+ss.values.length/total,0);const midA=(cumPct+pct/2)*Math.PI*2;const lr=r+8;return<text key={`t${si}`} x={lx+Math.sin(midA)*lr} y={cy2-Math.cos(midA)*lr+3} textAnchor="middle" fontSize="7" fill="#888" fontFamily="sans-serif">{Math.round(pct*100)}%</text>;});return<g key={`cb-${g.name}`}>{slices}<circle cx={lx} cy={cy2} r={r} fill="none" stroke="#ddd" strokeWidth="0.5"/>{labels}</g>;})();return<React.Fragment key={`xl-${g.name}`}>{angle===0?(<g><text x={lx} y={ly} textAnchor="middle" fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text><text x={lx} y={ly+14} textAnchor="middle" fontSize="9" fill="#999" fontFamily="sans-serif">n={g.stats?.n||0}</text></g>):(<g transform={`rotate(${angle},${lx},${ly})`}><text x={lx} y={ly} textAnchor="end" dominantBaseline="middle" fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text><text x={lx} y={ly+12} textAnchor="end" dominantBaseline="middle" fontSize="9" fill="#999" fontFamily="sans-serif">n={g.stats?.n||0}</text></g>)}{compBar}</React.Fragment>;})}
       {yLabel&&<text transform={`translate(14,${M.top+h/2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>}
       {plotTitle&&<text x={M.left+w/2} y={14} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>}
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
@@ -74,6 +74,7 @@ function App(){
   const[groupOrder,setGroupOrder]=useState([]);
   const[colorByCol,setColorByCol]=useState(-1);
   const[categoryColors,setCategoryColors]=useState({});
+  const[showCompPie,setShowCompPie]=useState(false);
   const[dragIdx,setDragIdx]=useState(null);
   const[facetByCol,setFacetByCol]=useState(-1);
   const[sepOverride,setSepOverride]=useState("");
@@ -363,6 +364,7 @@ function App(){
                     {colorByCandidates.map(ci=><option key={ci} value={ci}>{colNames[ci]}</option>)}
                   </select>
                 </div>
+                {colorByCol>=0&&<label style={{display:"flex",alignItems:"center",gap:4,paddingLeft:8,cursor:"pointer"}}><input type="checkbox" checked={showCompPie} onChange={e=>setShowCompPie(e.target.checked)}/><span style={{fontSize:10,color:"#555"}}>Composition pies</span></label>}
                 {colorByCol>=0&&colorByCategories.map(cat=>(
                   <div key={cat} style={{display:"flex",alignItems:"center",gap:4,paddingLeft:8}}>
                     <ColorInput value={categoryColors[cat]||"#999999"} onChange={c=>setCategoryColors(p=>({...p,[cat]:c}))} size={16}/>
@@ -420,7 +422,7 @@ function App(){
             )}
             {(facetByCol<0)&&(
               <div style={{background:"#fff",borderRadius:10,padding:20,border:"1px solid #ddd"}}>
-                <BoxplotChart ref={chartRef} groups={displayBoxplotGroups} yLabel={yLabel} plotTitle={plotTitle} plotBg={plotBg} showGrid={showGrid} gridColor={gridColor} boxWidth={boxWidth} boxFillOpacity={boxFillOpacity} pointSize={pointSize} showPoints={showPoints} jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={boxGap}
+                <BoxplotChart ref={chartRef} groups={displayBoxplotGroups} yLabel={yLabel} plotTitle={plotTitle} plotBg={plotBg} showGrid={showGrid} gridColor={gridColor} boxWidth={boxWidth} boxFillOpacity={boxFillOpacity} pointSize={pointSize} showPoints={showPoints} jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={boxGap} showCompPie={showCompPie}
                   svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
                     title: `Points colored by: ${colNames[colorByCol]}`,
                     items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
@@ -438,7 +440,7 @@ function App(){
                       <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
                       <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a,g)=>a+g.allValues.length,0)} pts)</span>
                     </div>
-                    <BoxplotChart ref={el=>{facetRefs.current[fd.category]=el;}} groups={displayFdGroups} yLabel={yLabel} plotTitle={[plotTitle, fd.category].filter(Boolean).join(" — ")} plotBg={plotBg} showGrid={showGrid} gridColor={gridColor} boxWidth={boxWidth} boxFillOpacity={boxFillOpacity} pointSize={pointSize} showPoints={showPoints} jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={boxGap}
+                    <BoxplotChart ref={el=>{facetRefs.current[fd.category]=el;}} groups={displayFdGroups} yLabel={yLabel} plotTitle={[plotTitle, fd.category].filter(Boolean).join(" — ")} plotBg={plotBg} showGrid={showGrid} gridColor={gridColor} boxWidth={boxWidth} boxFillOpacity={boxFillOpacity} pointSize={pointSize} showPoints={showPoints} jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={boxGap} showCompPie={showCompPie}
                       svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
                         title: `Points colored by: ${colNames[colorByCol]}`,
                         items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
