@@ -195,8 +195,12 @@
         if (done < scripts.length) {
           label.textContent = "Loading dependencies\u2026 " + pct + "%";
         } else {
-          label.textContent = "All dependencies cached \u2713";
-          bar.classList.add("ready");
+          fill.style.width = "100%";
+          label.textContent = "Loading dependencies\u2026";
+          setTimeout(function() {
+            label.textContent = "Ready";
+            bar.classList.add("ready");
+          }, 350);
         }
       }
 
