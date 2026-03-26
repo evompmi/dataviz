@@ -10,7 +10,7 @@
   <script src="../vendor/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: monospace; }
+    body { font-family: monospace; background: #f0f0f4; background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px); background-size: 20px 20px; }
   </style>
   <script src="shared.js"></script>
   <script src="shared-components.js"></script>
@@ -150,9 +150,9 @@ function App(){
   const canPlot=groupColIdx>=0&&valueColIdx>=0&&valueColIsNumeric&&boxplotGroups.length>0;
 
   return(
-    <div style={{minHeight:"100vh",background:"#f0f0f4",color:"#333",fontFamily:"monospace",padding:"24px 32px"}}>
+    <div style={{minHeight:"100vh",color:"#333",fontFamily:"monospace",padding:"24px 32px"}}>
       <div style={{marginBottom:28,borderBottom:"1px solid #ccc",paddingBottom:16}}>
-        <h1 style={{margin:0,fontSize:22,fontWeight:700,color:"#222"}}>📦 Boxplot</h1>
+        <h1 style={{margin:0,fontSize:22,fontWeight:700,color:"#222"}}><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22,verticalAlign:"middle",marginRight:6}}><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>Boxplot</h1>
         <p style={{margin:"4px 0 0",fontSize:12,color:"#888"}}>Load → label columns → filter → plot & export{dataFormat==="wide"?" · Wide format auto-detected":""}</p>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:20}}>

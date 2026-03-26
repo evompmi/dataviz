@@ -10,7 +10,7 @@
   <script src="../vendor/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: monospace; }
+    body { font-family: monospace; background: #f0f0f4; background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px); background-size: 20px 20px; }
   </style>
   <script src="shared.js"></script>
   <script src="shared-components.js"></script>
@@ -445,11 +445,11 @@ function App() {
 
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f0f4", color: "#333",
+    <div style={{ minHeight: "100vh", color: "#333",
       fontFamily: "monospace", padding: "24px 32px" }}>
 
       <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>📊 Bar Graph Viewer</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22,verticalAlign:"middle",marginRight:6}}><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg>Bar Graph Viewer</h1>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
           Load a data file — bars show mean ± SEM/SD, with optional individual data points overlay
         </p>

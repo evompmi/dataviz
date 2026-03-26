@@ -10,7 +10,7 @@
   <script src="../vendor/babel.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: monospace; }
+    body { font-family: monospace; background: #f0f0f4; background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px); background-size: 20px 20px; }
   </style>
   <script src="shared.js"></script>
   <script src="shared-components.js"></script>
@@ -774,11 +774,11 @@ function App() {
 
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f0f4", color: "#333",
+    <div style={{ minHeight: "100vh", color: "#333",
       fontFamily: "monospace", padding: "24px 32px" }}>
 
       <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>⚗️ Aequorin Ca²⁺ Calibration</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22,verticalAlign:"middle",marginRight:6}}><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>Aequorin Ca²⁺ Calibration</h1>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
           {FORMULA_DEFS[formula].label} — {FORMULA_DEFS[formula].eq}
         </p>
