@@ -31,7 +31,7 @@
     .landing-header .version { font-size: 11px; font-weight: 400; color: #aaa; vertical-align: super; margin-left: 4px; }
     .landing-header .tagline { margin-top: 8px; font-size: 13px; color: #888; font-style: italic; }
     .landing-header p { margin-top: 6px; font-size: 13px; color: #888; }
-    .tiles { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .tiles { display: grid; grid-template-columns: repeat(2, 220px); gap: 20px; justify-content: center; }
     .tile {
       width: 220px; height: 180px; background: #fff; border: 1px solid #ddd; border-radius: 14px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
@@ -47,7 +47,6 @@
     .tile.help-tile { width: 220px; height: 60px; gap: 6px; border-style: dashed; }
     .tile.help-tile .tile-icon { font-size: 20px; }
     .tile.help-tile .tile-label { font-size: 12px; color: #888; }
-    .tile-separator { width: 1px; height: 180px; background: #ddd; flex-shrink: 0; align-self: center; }
 
     .prefetch-bar {
       display: flex; align-items: center; gap: 10px; font-size: 11px; color: #999;
@@ -118,7 +117,6 @@
         <span class="tile-label">Aequorin Ca&#xB2;&#x207A;</span>
         <span class="tile-desc">RLU time-courses<br/>optional Ca&#xB2;&#x207A; calibration</span>
       </button>
-      <div class="tile-separator"></div>
       <button class="tile" data-tool="boxplot">
         <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg></span>
         <span class="tile-label">Boxplot</span>
