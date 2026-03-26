@@ -175,32 +175,48 @@
     // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
     (function() {
       var scripts = [
-        "vendor/react.production.min.js",
-        "vendor/react-dom.production.min.js",
-        "vendor/babel.min.js",
-        "tools/shared.js",
-        "tools/shared-components.js"
+        { src: "vendor/react.production.min.js",     size: 6 },
+        { src: "vendor/react-dom.production.min.js",  size: 130 },
+        { src: "vendor/babel.min.js",                 size: 800 },
+        { src: "tools/shared.js",                     size: 5 },
+        { src: "tools/shared-components.js",          size: 8 }
       ];
-      var total = scripts.length;
-      var loaded = 0;
+      var totalWeight = scripts.reduce(function(s, f) { return s + f.size; }, 0);
+      var progress = scripts.map(function() { return 0; });
       var bar = document.getElementById("prefetch-bar");
       var fill = document.getElementById("pf-fill");
       var label = document.getElementById("pf-label");
+      var done = 0;
 
-      function tick() {
-        loaded++;
-        var pct = Math.round((loaded / total) * 100);
+      function update() {
+        var loaded = progress.reduce(function(s, v) { return s + v; }, 0);
+        var pct = Math.min(100, Math.round((loaded / totalWeight) * 100));
         fill.style.width = pct + "%";
-        if (loaded < total) {
-          label.textContent = "Loading dependencies… " + loaded + "/" + total;
+        if (done < scripts.length) {
+          label.textContent = "Loading dependencies\u2026 " + pct + "%";
         } else {
-          label.textContent = "All dependencies cached ✓";
+          label.textContent = "All dependencies cached \u2713";
           bar.classList.add("ready");
         }
       }
 
-      scripts.forEach(function(src) {
-        fetch(src).then(tick).catch(tick);
+      scripts.forEach(function(file, i) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", file.src);
+        xhr.onprogress = function(e) {
+          if (e.lengthComputable) {
+            progress[i] = (e.loaded / e.total) * file.size;
+          } else {
+            progress[i] = file.size * 0.5;
+          }
+          update();
+        };
+        xhr.onload = xhr.onerror = function() {
+          progress[i] = file.size;
+          done++;
+          update();
+        };
+        xhr.send();
       });
     })();
 
