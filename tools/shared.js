@@ -35,9 +35,22 @@ const TOOL_ICONS = {
   scatter: '<svg viewBox="0 0 44 44" fill="#648FFF" stroke="none"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>'
 };
 
-function toolIcon(name, size) {
+function toolIcon(name, size, opts) {
   size = size || 22;
+  opts = opts || {};
   var svg = TOOL_ICONS[name].replace('<svg ', '<svg width="' + size + '" height="' + size + '" ');
+  var pad = Math.round(size * 0.3);
+  var outerSize = size + pad * 2;
+  if (opts.circle) {
+    return React.createElement('span', {
+      style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: outerSize, height: outerSize, borderRadius: '50%', background: '#fff',
+        flexShrink: 0, verticalAlign: 'middle', marginRight: 6, lineHeight: 0 }
+    }, React.createElement('span', {
+      dangerouslySetInnerHTML: { __html: svg },
+      style: { display: 'inline-block', lineHeight: 0 }
+    }));
+  }
   return React.createElement('span', {
     dangerouslySetInnerHTML: { __html: svg },
     style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 6, lineHeight: 0 }
