@@ -577,7 +577,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
     <div style={{ minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }}>
 
       <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}><svg viewBox="0 0 44 44" fill="#648FFF" stroke="none" style={{width:22,height:22,verticalAlign:"middle",marginRight:6}}><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>Scatter Plot</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>{toolIcon("scatter")}Scatter Plot</h1>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>XY scatter — one row per data point, one column per variable</p>
       </div>
 
@@ -748,7 +748,7 @@ const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
       <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p>
       <div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
         <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
-          <span style={{fontSize:24}}>🍪</span>
+          {toolIcon("scatter", 24)}
           <div>
             <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Scatter Plot — How to use</div>
             <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Upload → Configure columns → Plot · Color & size mappings · Reference lines</div>

@@ -778,7 +778,7 @@ function App() {
       fontFamily: "monospace", padding: "24px 32px" }}>
 
       <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:22,height:22,verticalAlign:"middle",marginRight:6}}><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>Aequorin Ca²⁺ Calibration</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>{toolIcon("aequorin")}Aequorin Ca²⁺ Calibration</h1>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
           {FORMULA_DEFS[formula].label} — {FORMULA_DEFS[formula].eq}
         </p>
@@ -806,7 +806,7 @@ function App() {
 
       {step === "upload" && <div><div style={sec}><div style={{marginBottom:12,padding:"12px 16px",background:"#eef2ff",borderRadius:8,border:"1.5px solid #b0c4ff",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:13,fontWeight:600,color:"#648FFF"}}>1. Choose your column separator:</span><select value={sepOverride} onChange={e=>{const v=e.target.value;setSepOverride(v);if(rawText)doParse(rawText,v);}} style={{background:"#fff",border:"2px solid #648FFF",borderRadius:6,padding:"6px 12px",fontSize:13,fontFamily:"inherit",color:"#333",cursor:"pointer",fontWeight:600}}><option value="">— Select —</option><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={"\t"}>Tab (\t)</option><option value={" "}>Space</option></select>{!sepOverride&&<span style={{fontSize:11,color:"#e11d48",fontWeight:600}}>⚠ Required before loading a file</span>}</div><div>{!sepOverride?(<div style={{border:"2px dashed #ccc",borderRadius:12,padding:"48px 24px",textAlign:"center",background:"#f5f5f5",opacity:0.5}}><div style={{fontSize:40,marginBottom:8}}>🚫</div><p style={{margin:0,fontSize:15,color:"#999"}}>Select a column separator above to enable file loading</p></div>):(<FileDropZone onFileLoad={handleFileLoad} accept=".csv,.tsv,.txt,.dat" hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point" />)}</div></div><p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p><div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
         <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
-          <span style={{fontSize:24}}>⚗️</span>
+          {toolIcon("aequorin", 24)}
           <div>
             <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Aequorin Ca²⁺ Calibration — How to use</div>
             <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots</div>

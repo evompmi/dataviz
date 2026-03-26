@@ -26,6 +26,23 @@ function getPointColors(baseColor, nSources) {
 
 const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627","#8AC926","#6A4C93"];
 
+// ── Tool icons (raw SVG strings) ─────────────────────────────────────────────
+
+const TOOL_ICONS = {
+  aequorin: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
+  boxplot: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>',
+  bargraph: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg>',
+  scatter: '<svg viewBox="0 0 44 44" fill="#648FFF" stroke="none"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>'
+};
+
+function toolIcon(name, size) {
+  size = size || 22;
+  return React.createElement('span', {
+    dangerouslySetInnerHTML: { __html: TOOL_ICONS[name] },
+    style: { display: 'inline-block', width: size, height: size, verticalAlign: 'middle', marginRight: 6 }
+  });
+}
+
 // ── UI style constants ────────────────────────────────────────────────────────
 
 const inp       = {background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:12};
