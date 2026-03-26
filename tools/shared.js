@@ -37,9 +37,10 @@ const TOOL_ICONS = {
 
 function toolIcon(name, size) {
   size = size || 22;
+  var svg = TOOL_ICONS[name].replace('<svg ', '<svg width="' + size + '" height="' + size + '" ');
   return React.createElement('span', {
-    dangerouslySetInnerHTML: { __html: TOOL_ICONS[name] },
-    style: { display: 'inline-block', width: size, height: size, verticalAlign: 'middle', marginRight: 6 }
+    dangerouslySetInnerHTML: { __html: svg },
+    style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 6, lineHeight: 0 }
   });
 }
 
