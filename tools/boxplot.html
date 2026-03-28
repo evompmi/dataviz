@@ -220,6 +220,23 @@ function App(){
               </div>
             ))}
           </div>
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#E07B39",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>🥧 Composition Pies</div>
+            <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>When <strong>Color by</strong> is active, a <strong>Composition pies</strong> checkbox appears. Enable it to display a small pie chart beneath each boxplot group showing the proportion of each color-by category within that group.</p>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {[
+                {step:"1.",text:"Enable Points (the jitter overlay) in the plot controls."},
+                {step:"2.",text:"Select a column in the Color by dropdown."},
+                {step:"3.",text:"Tick the Composition pies checkbox that appears next to it."}
+              ].map(({step,text})=>(
+                <div key={step} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#E07B39",flexShrink:0}}>{step}</span>
+                  <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{fontSize:10,color:"#888",marginTop:8,marginBottom:0,lineHeight:1.5}}>Each slice is colored to match the jitter points. Percentage labels are shown for categories ≥ 8 % of the pie. Useful for quickly spotting unbalanced group compositions (e.g. sex ratio across genotypes).</p>
+          </div>
           <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
             <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Tip — </span>
             <span style={{fontSize:11,color:"#444"}}>Wide-format files (like the output of the Bar Graph or Aequorin tools) are auto-detected and go straight to plot. For long-format, you can facet by one column while coloring points by another.</span>
