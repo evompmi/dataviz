@@ -861,6 +861,20 @@ function App() {
               </div>
             ))}
           </div>
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Sample selection (plot page)</div>
+            {[
+              {icon:"🔬",text:"Click the sticky \"Sample selection\" button above the chart to open the column overlay."},
+              {icon:"✅",text:"Toggle individual replicates on or off — excluded columns are removed from the plot, barplots, and all exports."},
+              {icon:"🔀",text:"Switch between Pool (group by header name, mean ± SD) and Individual (each column plotted separately as name_rep1, name_rep2…)."},
+              {icon:"⚡",text:"All changes apply instantly — no need to go back to the configure step."},
+            ].map(({icon,text})=>(
+              <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+                <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
+                <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+              </div>
+            ))}
+          </div>
           <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
             <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Replicate grouping — </span>
             <span style={{fontSize:11,color:"#444"}}>In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed across them at each time-point. In Individual mode, each column is its own condition (labelled name_rep1, name_rep2…) and plotted separately.</span>
