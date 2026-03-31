@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx --outdir=tools --jsx=transform",
+    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx --outdir=tools --jsx=transform --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
