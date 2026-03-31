@@ -18,7 +18,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-const { useState, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
 
 // Helper: build groups structure from long-format data (group col + value col)
 function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
@@ -222,30 +222,446 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
   );
 });
 
-// ── UI ──────────────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────
 
-function GroupEditor({ groups, onColorChange, onNameChange }) {
+function HowToSection() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {groups.map((g, i) => (
-        <div key={g.name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 8px",
-          borderRadius: 6, fontSize: 12, background: "#f0f0f5", border: "1px solid #ccc" }}>
-          <ColorInput value={g.color} onChange={color => onColorChange(i, color)} size={22} />
-          <input value={g.name} onChange={e => onNameChange && onNameChange(i, e.target.value)}
-            style={{ flex: 1, minWidth: 0, background: "#fff", border: "1px solid #ccc", borderRadius: 4,
-              color: "#333", padding: "2px 5px", fontSize: 12, fontFamily: "inherit" }} />
-          <span style={{ color: "#999", fontSize: 10, flexShrink: 0 }}>
-            n={g.stats?.n || 0}{g.sources.length > 1 ? ` (${g.sources.length} src)` : ""}
-          </span>
+    <div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
+      <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
+        {toolIcon("bargraph", 24, {circle:true})}
+        <div>
+          <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Bar Graph Viewer — How to use</div>
+          <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Long or wide data → auto-detect → mean ± SEM/SD bar charts</div>
         </div>
-      ))}
+      </div>
+      <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Purpose</div>
+          <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:0}}>Bar chart visualization with mean ± SEM/SD error bars and optional jittered data points. Accepts <strong>both long and wide formats</strong>. Wide data goes straight to plot; long data gets the full configure → filter → output → plot pipeline.</p>
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Long format</div>
+          <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>Each <strong>row</strong> = one observation. Mix of categorical and numeric columns.</p>
+          <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
+            <tbody>
+              {[["WT","0.45"],["WT","0.52"],["mutA","0.12"],["mutB","0.31"]].map((r,i)=>(
+                <tr key={i} style={{background:i%2===0?"#f0f4ff":"#fff"}}>
+                  {r.map((v,j)=><td key={j} style={{padding:"3px 8px",border:"1px solid #d0dbff",color:"#333"}}>{v}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#2EC4B6",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Wide format → auto-detected!</div>
+          <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>One <strong>column</strong> per condition. All numeric. <strong>Goes straight to plot.</strong></p>
+          <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
+            <thead><tr style={{background:"#d1fae5"}}>{["WT","mutA","mutB"].map(h=><th key={h} style={{padding:"3px 8px",border:"1px solid #a7f3d0",color:"#065f46",fontWeight:700}}>{h}</th>)}</tr></thead>
+            <tbody>
+              {[[0.45,0.12,0.31],[0.52,0.08,0.28],[0.48,0.15,0.35]].map((r,i)=>(
+                <tr key={i} style={{background:i%2===0?"#f0fdf4":"#fff"}}>
+                  {r.map((v,j)=><td key={j} style={{padding:"3px 8px",border:"1px solid #bbf7d0",color:"#333"}}>{v}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Tip — </span>
+          <span style={{fontSize:11,color:"#444"}}>Duplicate column names in wide format are pooled as replicates. Points are colored by source column shade.</span>
+        </div>
+        <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["Separator explicitly selected (comma, semicolon, tab, space)","Quoted values stripped automatically","100% browser-side — nothing uploaded"].map(t=>(
+            <span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Style constants ──────────────────────────────────────────────────────────
+function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+  return (
+    <div>
+      <UploadPanel
+        sepOverride={sepOverride}
+        onSepChange={v => { setSepOverride(v); if (rawText) { doParse(rawText, v); } }}
+        onFileLoad={handleFileLoad}
+        hint="CSV · TSV · TXT · DAT — one column per condition, values in rows"
+      />
+      <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p>
+      <HowToSection />
+    </div>
+  );
+}
 
-const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
+function ConfigureStep({ fileName, parsedHeaders, parsedRows, hasHeader, colRoles, colNames,
+  updateRole, updateColName, valueColIdx, valueColIsNumeric, setStep }) {
+  return (
+    <div>
+      <div style={sec}>
+        <p style={{margin:"0 0 4px",fontSize:13,color:"#666"}}>
+          <strong style={{color:"#333"}}>{fileName}</strong> — {parsedHeaders.length} cols × {parsedRows.length} rows{hasHeader ? "" : " (no header)"}
+        </p>
+        <p style={{fontSize:11,color:"#999",marginBottom:10}}>Preview (first 8 rows):</p>
+        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8}/>
+      </div>
+
+      <ColumnRoleEditor
+        headers={parsedHeaders}
+        rows={parsedRows}
+        colRoles={colRoles}
+        colNames={colNames}
+        onRoleChange={updateRole}
+        onNameChange={updateColName}
+      />
+
+      {valueColIdx >= 0 && !valueColIsNumeric && (
+        <div style={{...sec,background:"#fef2f2",borderColor:"#fca5a5",marginBottom:12}}>
+          <p style={{fontSize:12,color:"#dc2626"}}>⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as <strong>value</strong> but appears to be non-numeric — the plot will be empty. Please assign a numeric column as value.</p>
+        </div>
+      )}
+
+      <button onClick={() => setStep("filter")} style={btnPrimary}>Filter & Rename →</button>
+    </div>
+  );
+}
+
+function FilterStep({ parsedHeaders, parsedRows, colRoles, colNames, filters, filteredRows,
+  renamedRows, activeColIdxs, valueRenames, groupColIdx, effectiveOrder, applyRename,
+  toggleFilter, toggleAllFilter, setRenameVal, setGroupOrder, dragIdx, setDragIdx,
+  canPlot, setStep }) {
+  return (
+    <div>
+      <div style={{display:"flex",gap:16,alignItems:"stretch",marginBottom:16}}>
+        <FilterCheckboxPanel
+          headers={parsedHeaders}
+          colNames={colNames}
+          colRoles={colRoles}
+          filters={filters}
+          filteredCount={filteredRows.length}
+          totalCount={parsedRows.length}
+          onToggle={toggleFilter}
+          onToggleAll={toggleAllFilter}
+        />
+        <RenameReorderPanel
+          headers={parsedHeaders}
+          colNames={colNames}
+          colRoles={colRoles}
+          filters={filters}
+          valueRenames={valueRenames}
+          groupColIdx={groupColIdx}
+          effectiveOrder={effectiveOrder}
+          applyRename={applyRename}
+          onRenameVal={setRenameVal}
+          onReorder={setGroupOrder}
+          dragIdx={dragIdx}
+          onDragStart={setDragIdx}
+          onDragEnd={() => setDragIdx(null)}
+        />
+      </div>
+
+      <div style={{borderRadius:10,padding:16,marginBottom:16,border:"1px solid #99f6e4",background:"#f0fdfa"}}>
+        <p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#0f766e"}}>Preview ({renamedRows.length} rows):</p>
+        <DataPreview headers={activeColIdxs.map(i => colNames[i])} rows={renamedRows.map(r => activeColIdxs.map(i => r[i]))} maxRows={10}/>
+      </div>
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={() => setStep("output")} style={btnPrimary}>Output →</button>
+        {canPlot && <button onClick={() => setStep("plot")} style={btnPlot}>Plot →</button>}
+      </div>
+    </div>
+  );
+}
+
+function OutputStep({ groupColIdx, valueColIdx, colNames, longStats, activeColIdxs, renamedRows,
+  fileName, wideData, valueColIsNumeric, canPlot, setStep }) {
+  return (
+    <div>
+      {groupColIdx >= 0 && valueColIdx >= 0 && longStats.length > 0 && (
+        <StatsTable stats={longStats} groupLabel={colNames[groupColIdx]} />
+      )}
+
+      <div style={sec}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <p style={{margin:0,fontSize:13,fontWeight:600,color:"#555"}}>Filtered data (long)</p>
+          <button onClick={(e) => {
+            downloadCsv(activeColIdxs.map(i => colNames[i]), renamedRows.map(r => activeColIdxs.map(i => r[i])),
+              `sanitized_long_${fileName.replace(/\.[^.]+$/, "")}.csv`);
+            flashSaved(e.currentTarget);
+          }} style={btnDownload}>⬇ Long CSV</button>
+        </div>
+        <DataPreview headers={activeColIdxs.map(i => colNames[i])} rows={renamedRows.map(r => activeColIdxs.map(i => r[i]))} maxRows={6}/>
+      </div>
+
+      {wideData && (
+        <div style={sec}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <p style={{margin:0,fontSize:13,fontWeight:600,color:"#555"}}>Reshaped (wide)</p>
+            <button onClick={(e) => {
+              downloadCsv(wideData.headers, wideData.rows,
+                `sanitized_wide_${fileName.replace(/\.[^.]+$/, "")}.csv`);
+              flashSaved(e.currentTarget);
+            }} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#dcfce7",border:"1px solid #86efac",color:"#166534",fontFamily:"inherit",fontWeight:600}}>⬇ Wide CSV</button>
+          </div>
+          <DataPreview headers={wideData.headers} rows={wideData.rows} maxRows={8}/>
+        </div>
+      )}
+
+      {valueColIdx >= 0 && !valueColIsNumeric && (
+        <div style={{...sec,background:"#fef2f2",borderColor:"#fca5a5"}}>
+          <p style={{fontSize:12,color:"#dc2626"}}>⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as <strong>value</strong> but appears to be non-numeric — the plot will be empty. Go back to Configure and assign a numeric column as value.</p>
+        </div>
+      )}
+
+      <div style={{display:"flex",gap:8,marginTop:8}}>
+        <button onClick={() => setStep("filter")} style={btnSecondary}>← Filter</button>
+        {canPlot && <button onClick={() => setStep("plot")} style={btnPlot}>Plot →</button>}
+      </div>
+    </div>
+  );
+}
+
+function PlotControls({ dataFormat, fileName, effectiveGroups, displayGroups, handleColorChange,
+  plotGroupRenames, setPlotGroupRenames, vis, updVis,
+  colorByCol, setColorByCol, categoryColors, setCategoryColors, colorByCategories, renamedRows, colNames,
+  facetByCandidates, facetByCol, setFacetByCol,
+  resetAll, chartRef, facetRefs, facetedData }) {
+
+  const sv = k => v => updVis({[k]: v});
+  const handleDownloadSvg = () => {
+    if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
+      facetedData.forEach(fd => downloadSvg(facetRefs.current[fd.category], `bargraph_${fd.category}.svg`));
+    } else {
+      downloadSvg(chartRef.current, "bargraph.svg");
+    }
+  };
+
+  return (
+    <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+
+      {/* Wide format banner */}
+      {dataFormat === "wide" && (
+        <div style={{background:"#ecfdf5",borderRadius:8,border:"1px solid #6ee7b7",display:"flex",alignItems:"center",gap:8,padding:"8px 12px"}}>
+          <span style={{fontSize:16}}>⚡</span>
+          <div style={{flex:1}}>
+            <p style={{margin:0,fontSize:11,color:"#065f46",fontWeight:600}}>Wide format auto-detected</p>
+            <p style={{margin:"2px 0 0",fontSize:10,color:"#047857"}}>Duplicate headers pooled as replicates.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Actions tile */}
+      <ActionsPanel
+        onDownloadSvg={handleDownloadSvg}
+        onReset={resetAll}
+      />
+
+      {/* Conditions / group colors */}
+      <div style={sec}>
+        <p style={{margin:"0 0 8px",fontSize:12,color:"#666"}}>
+          <strong style={{color:"#333"}}>{fileName}</strong>
+        </p>
+        <p style={{margin:"0 0 8px",fontSize:11,color:"#999"}}>
+          {effectiveGroups.length} condition{effectiveGroups.length > 1 ? "s" : ""} detected
+        </p>
+        <GroupColorEditor
+          groups={displayGroups.map(g => ({ ...g, displayName: g.name }))}
+          onColorChange={handleColorChange}
+          onNameChange={(i, newName) => {
+            const origName = effectiveGroups[i].name;
+            setPlotGroupRenames(p => ({ ...p, [origName]: newName }));
+          }}
+        />
+        {effectiveGroups.some(g => g.sources.length > 1) && (
+          <div style={{marginTop:8,padding:"8px 10px",background:"#fff7ed",border:"1px solid #fdba74",borderRadius:6,display:"flex",alignItems:"flex-start",gap:7}}>
+            <span style={{fontSize:14,flexShrink:0}}>⚠️</span>
+            <div>
+              <p style={{margin:0,fontSize:11,fontWeight:600,color:"#92400e"}}>Duplicate column headers detected</p>
+              <p style={{margin:"2px 0 0",fontSize:10,color:"#b45309"}}>Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Style controls */}
+      <div style={{...sec,padding:12,display:"flex",flexDirection:"column",gap:10}}>
+        <BaseStyleControls
+          plotBg={vis.plotBg} onPlotBgChange={sv("plotBg")}
+          showGrid={vis.showGrid} onShowGridChange={sv("showGrid")}
+          gridColor={vis.gridColor} onGridColorChange={sv("gridColor")}
+        />
+        <div>
+          <span style={lbl}>Error bars</span>
+          <select value={vis.errorType} onChange={e => updVis({errorType:e.target.value})}
+            style={{width:"100%",background:"#fff",border:"1px solid #ccc",borderRadius:4,padding:"4px 8px",
+              fontSize:12,fontFamily:"inherit",color:"#333",cursor:"pointer",marginTop:2}}>
+            <option value="sem">SEM</option>
+            <option value="sd">SD</option>
+          </select>
+        </div>
+        <SliderControl label="Error bar stroke" value={vis.errStrokeWidth} displayValue={vis.errStrokeWidth.toFixed(1)}
+          min={0.5} max={4} step={0.1} onChange={sv("errStrokeWidth")} />
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={lbl}>Bar outline</span>
+          <input type="checkbox" checked={vis.showBarOutline} onChange={e => updVis({showBarOutline:e.target.checked})}
+            style={{accentColor:"#648FFF"}} />
+        </div>
+        {vis.showBarOutline && (
+          <SliderControl label="Outline stroke" value={vis.barOutlineWidth} displayValue={vis.barOutlineWidth.toFixed(1)}
+            min={0.5} max={5} step={0.5} onChange={sv("barOutlineWidth")} />
+        )}
+        <SliderControl label="Bar width" value={vis.barWidth} displayValue={`${vis.barWidth}%`}
+          min={20} max={100} step={5} onChange={sv("barWidth")} />
+        <SliderControl label="Bar opacity" value={vis.barOpacity} displayValue={vis.barOpacity.toFixed(2)}
+          min={0.05} max={1} step={0.05} onChange={sv("barOpacity")} />
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={lbl}>Points</span>
+          <input type="checkbox" checked={vis.showPoints} onChange={e => updVis({showPoints:e.target.checked})}
+            style={{accentColor:"#648FFF"}} />
+        </div>
+        {vis.showPoints && (
+          <>
+            <SliderControl label="Point size" value={vis.pointSize} displayValue={vis.pointSize}
+              min={1} max={6} step={0.5} onChange={sv("pointSize")} />
+            <SliderControl label="Jitter" value={vis.jitterWidth} displayValue={vis.jitterWidth.toFixed(2)}
+              min={0} max={1} step={0.05} onChange={sv("jitterWidth")} />
+            <SliderControl label="Point opacity" value={vis.pointOpacity} displayValue={vis.pointOpacity.toFixed(2)}
+              min={0.1} max={1} step={0.05} onChange={sv("pointOpacity")} />
+            {dataFormat === "long" && facetByCandidates.length > 0 && (
+              <>
+                <div>
+                  <div style={lbl}>Color by</div>
+                  <select value={colorByCol} onChange={e => {
+                    const v = Number(e.target.value);
+                    setColorByCol(v);
+                    if (v >= 0) {
+                      const cats = [...new Set(renamedRows.map(r => r[v]))].sort();
+                      const cc = {};
+                      cats.forEach((c, ci) => { cc[c] = PALETTE[(ci + 2) % PALETTE.length]; });
+                      setCategoryColors(cc);
+                    }
+                  }} style={{width:"100%",...inp,cursor:"pointer",fontSize:11,marginTop:2}}>
+                    <option value={-1}>— none —</option>
+                    {facetByCandidates.map(ci => <option key={ci} value={ci}>{colNames[ci]}</option>)}
+                  </select>
+                </div>
+                {colorByCol >= 0 && colorByCategories.map(cat => (
+                  <div key={cat} style={{display:"flex",alignItems:"center",gap:4,paddingLeft:8}}>
+                    <ColorInput value={categoryColors[cat] || "#999999"} onChange={c => setCategoryColors(p => ({...p,[cat]:c}))} size={16} />
+                    <span style={{fontSize:10,color:"#555"}}>{cat}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
+        <SliderControl label="X label angle" value={vis.xLabelAngle} displayValue={`${vis.xLabelAngle}°`}
+          min={-90} max={0} step={5} onChange={sv("xLabelAngle")} />
+        {dataFormat === "long" && facetByCandidates.length > 0 && (
+          <div>
+            <span style={lbl}>Facet by</span>
+            <select value={facetByCol} onChange={e => setFacetByCol(Number(e.target.value))}
+              style={{width:"100%",...inp,cursor:"pointer",fontSize:11,marginTop:2}}>
+              <option value={-1}>— none —</option>
+              {facetByCandidates.map(ci => <option key={ci} value={ci}>{colNames[ci]}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Plot params */}
+      <div style={{...sec,padding:12,display:"flex",flexDirection:"column",gap:8}}>
+        <div>
+          <div style={lbl}>Title</div>
+          <input value={vis.plotTitle} onChange={e => updVis({plotTitle:e.target.value})}
+            style={{...inp,width:"100%",marginTop:2}} />
+        </div>
+        <div>
+          <div style={lbl}>Y label</div>
+          <input value={vis.yLabel} onChange={e => updVis({yLabel:e.target.value})}
+            style={{...inp,width:"100%",marginTop:2}} />
+        </div>
+        <div>
+          <div style={lbl}>Y min (auto if empty)</div>
+          <input value={vis.yMinCustom} onChange={e => updVis({yMinCustom:e.target.value})}
+            style={{...inp,width:"100%",marginTop:2}} placeholder="auto" />
+        </div>
+        <div>
+          <div style={lbl}>Y max (auto if empty)</div>
+          <input value={vis.yMaxCustom} onChange={e => updVis({yMaxCustom:e.target.value})}
+            style={{...inp,width:"100%",marginTop:2}} placeholder="auto" />
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+function ChartArea({ dataFormat, facetByCol, facetedData, displayGroups, plotGroupRenames,
+  plotGroupColors, colorByCol, colorByCategories, categoryColors, colNames,
+  vis, yMinVal, yMaxVal, chartRef, facetRefs }) {
+
+  const svgLegend = colorByCol >= 0 && colorByCategories.length > 0 ? [{
+    title: `Points colored by: ${colNames[colorByCol]}`,
+    items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
+  }] : null;
+  const vp = {...vis, yMin: yMinVal, yMax: yMaxVal, catColors: colorByCol >= 0 ? categoryColors : null, svgLegend};
+
+  return (
+    <div style={{flex:1,minWidth:0}}>
+      {colorByCol >= 0 && colorByCategories.length > 0 && (
+        <div style={{marginBottom:12,background:"#f8f8fa",borderRadius:8,padding:"8px 14px",border:"1px solid #ddd",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{fontSize:11,color:"#777"}}>Points colored by: {colNames[colorByCol]}</span>
+          {colorByCategories.map(cat => (
+            <div key={cat} style={{display:"flex",alignItems:"center",gap:4}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:categoryColors[cat]||"#999"}} />
+              <span style={{fontSize:11,color:"#444"}}>{cat}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Chart */}
+      {(facetByCol < 0 || dataFormat !== "long") && (
+        <div style={{...sec,padding:20,background:"#fff"}}>
+          <BarChart ref={chartRef} groups={displayGroups} yLabel={vis.yLabel} plotTitle={vis.plotTitle}
+            plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
+            barWidth={vis.barWidth} barOpacity={vis.barOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints}
+            jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle}
+            errorType={vis.errorType} yMin={yMinVal} yMax={yMaxVal}
+            catColors={vp.catColors}
+            errStrokeWidth={vis.errStrokeWidth} showBarOutline={vis.showBarOutline} barOutlineWidth={vis.barOutlineWidth}
+            svgLegend={svgLegend} />
+        </div>
+      )}
+      {facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0 && (
+        <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:16}}>
+          {facetedData.map(fd => {
+            const displayFdGroups = fd.groups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
+            return (
+              <div key={fd.category} style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <div style={{width:10,height:10,borderRadius:"50%",background:"#648FFF"}} />
+                  <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
+                  <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)</span>
+                </div>
+                <BarChart ref={el => { facetRefs.current[fd.category] = el; }} groups={displayFdGroups} yLabel={vis.yLabel} plotTitle={[vis.plotTitle, fd.category].filter(Boolean).join(" — ")}
+                  plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
+                  barWidth={vis.barWidth} barOpacity={vis.barOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints}
+                  jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle}
+                  errorType={vis.errorType} yMin={yMinVal} yMax={yMaxVal}
+                  catColors={vp.catColors}
+                  errStrokeWidth={vis.errStrokeWidth} showBarOutline={vis.showBarOutline} barOutlineWidth={vis.barOutlineWidth}
+                  svgLegend={svgLegend} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── App ─────────────────────────────────────────────────────────────────────
 
@@ -270,27 +686,11 @@ function App() {
   const [valueRenames, setValueRenames] = useState({});
   const [groupOrder, setGroupOrder] = useState([]);
   const [dragIdx, setDragIdx] = useState(null);
-  // Plot state
-  const [plotTitle, setPlotTitle] = useState("");
-  const [yLabel, setYLabel] = useState("Value");
-  const [plotBg, setPlotBg] = useState("#ffffff");
-  const [showGrid, setShowGrid] = useState(true);
-  const [gridColor, setGridColor] = useState("#e0e0e0");
-  const [barWidth, setBarWidth] = useState(70);
-  const [barOpacity, setBarOpacity] = useState(0.25);
-  const [pointSize, setPointSize] = useState(2.5);
-  const [showPoints, setShowPoints] = useState(true);
-  const [jitterWidth, setJitterWidth] = useState(0.6);
-  const [pointOpacity, setPointOpacity] = useState(0.6);
+  // Plot visual state (grouped)
+  const visInit={plotTitle:"",yLabel:"Value",plotBg:"#ffffff",showGrid:true,gridColor:"#e0e0e0",barWidth:70,barOpacity:0.25,pointSize:2.5,showPoints:true,jitterWidth:0.6,pointOpacity:0.6,xLabelAngle:0,errorType:"sem",errStrokeWidth:1.2,showBarOutline:false,barOutlineWidth:1.5,yMinCustom:"",yMaxCustom:""};
+  const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
-  const [xLabelAngle, setXLabelAngle] = useState(0);
-  const [errorType, setErrorType] = useState("sem");
-  const [errStrokeWidth, setErrStrokeWidth] = useState(1.2);
-  const [showBarOutline, setShowBarOutline] = useState(false);
-  const [barOutlineWidth, setBarOutlineWidth] = useState(1.5);
-  const [yMinCustom, setYMinCustom] = useState("");
-  const [yMaxCustom, setYMaxCustom] = useState("");
   const [step, setStep] = useState("upload");
   const [facetByCol, setFacetByCol] = useState(-1);
   const chartRef = useRef();
@@ -436,8 +836,8 @@ function App() {
   const updateRole = (i, role) => setColRoles(p => p.map((r, j) => j === i ? role : r));
   const updateColName = (i, nm) => setColNames(p => p.map((n, j) => j === i ? nm : n));
 
-  const yMinVal = yMinCustom !== "" ? Number(yMinCustom) : null;
-  const yMaxVal = yMaxCustom !== "" ? Number(yMaxCustom) : null;
+  const yMinVal = vis.yMinCustom !== "" ? Number(vis.yMinCustom) : null;
+  const yMaxVal = vis.yMaxCustom !== "" ? Number(vis.yMaxCustom) : null;
   const valueColIsNumeric = useMemo(() => { if (valueColIdx < 0 || !parsedRows.length) return false; const vals = parsedRows.map(r => r[valueColIdx] ?? "").filter(v => v !== ""); return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5; }, [parsedRows, valueColIdx]);
   const canPlot = effectiveGroups.length > 0;
 
@@ -448,437 +848,88 @@ function App() {
     <div style={{ minHeight: "100vh", color: "#333",
       fontFamily: "monospace", padding: "24px 32px" }}>
 
-      <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>{toolIcon("bargraph")}Bar Graph Viewer</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
-          Load a data file — bars show mean ± SEM/SD, with optional individual data points overlay
-        </p>
-      </div>
+      <PageHeader toolName="bargraph" title="Bar Graph Viewer"
+        subtitle="Load a data file — bars show mean ± SEM/SD, with optional individual data points overlay" />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {allSteps.map((s, i) => (
-          <button key={s} onClick={() => { if (s === "upload" || parsedRows.length > 0 || groups.length > 0) setStep(s); }}
-            style={{ padding: "6px 16px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-              background: step === s ? "#648FFF" : "#fff", color: step === s ? "#fff" : "#888",
-              border: `1px solid ${step === s ? "#648FFF" : "#ccc"}`,
-              cursor: "pointer", fontFamily: "inherit", textTransform: "uppercase", letterSpacing: 1,
-            }}>{i + 1}. {s}</button>
-        ))}
-      </div>
+      <StepNavBar
+        steps={allSteps}
+        currentStep={step}
+        onStepChange={setStep}
+        canNavigate={s => s === "upload" || parsedRows.length > 0 || groups.length > 0}
+      />
 
-      {commaFixed&&(<div style={{...sec,background:"#fffbeb",borderColor:"#fbbf24",display:"flex",alignItems:"center",gap:12,padding:"10px 16px"}}><span style={{fontSize:18}}>🔄</span><div style={{flex:1}}><p style={{margin:0,fontSize:12,color:"#92400e",fontWeight:600}}>Decimal commas automatically converted to dots</p><p style={{margin:"2px 0 0",fontSize:11,color:"#a16207"}}>{commaFixCount} value{commaFixCount>1?"s":""} had commas as decimal separators (e.g. "0,5" → "0.5"). The data was corrected automatically.</p></div></div>)}
-      {parseError&&(<div style={{marginBottom:16,padding:"10px 14px",borderRadius:8,background:"#fef2f2",border:"1px solid #fca5a5",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>🚫</span><span style={{fontSize:12,color:"#dc2626",fontWeight:600}}>{parseError}</span></div>)}
+      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
+      <ParseErrorBanner error={parseError} />
 
       {step === "upload" && (
-        <div><div style={sec}><div style={{marginBottom:12,padding:"12px 16px",background:"#eef2ff",borderRadius:8,border:"1.5px solid #b0c4ff",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:13,fontWeight:600,color:"#648FFF"}}>1. Choose your column separator:</span><select value={sepOverride} onChange={e=>{const v=e.target.value;setSepOverride(v);if(rawText){doParse(rawText,v);setStep("configure");}}} style={{background:"#fff",border:"2px solid #648FFF",borderRadius:6,padding:"6px 12px",fontSize:13,fontFamily:"inherit",color:"#333",cursor:"pointer",fontWeight:600}}><option value="">— Select —</option><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={"	"}>Tab (\t)</option><option value={" "}>Space</option></select>{!sepOverride&&<span style={{fontSize:11,color:"#e11d48",fontWeight:600}}>⚠ Required before loading a file</span>}</div><div>{!sepOverride?(<div style={{border:"2px dashed #ccc",borderRadius:12,padding:"48px 24px",textAlign:"center",background:"#f5f5f5",opacity:0.5}}><div style={{fontSize:40,marginBottom:8}}>🚫</div><p style={{margin:0,fontSize:15,color:"#999"}}>Select a column separator above to enable file loading</p></div>):(<FileDropZone onFileLoad={handleFileLoad} accept=".csv,.tsv,.txt,.dat" hint="CSV · TSV · TXT · DAT — one column per condition, values in rows" />)}</div></div><p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p><div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
-        <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
-          {toolIcon("bargraph", 24, {circle:true})}
-          <div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Bar Graph Viewer — How to use</div>
-            <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Long or wide data → auto-detect → mean ± SEM/SD bar charts</div>
-          </div>
-        </div>
-        <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Purpose</div>
-            <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:0}}>Bar chart visualization with mean ± SEM/SD error bars and optional jittered data points. Accepts <strong>both long and wide formats</strong>. Wide data goes straight to plot; long data gets the full configure → filter → output → plot pipeline.</p>
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Long format</div>
-            <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>Each <strong>row</strong> = one observation. Mix of categorical and numeric columns.</p>
-            <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
-              <tbody>
-                {[["WT","0.45"],["WT","0.52"],["mutA","0.12"],["mutB","0.31"]].map((r,i)=>(
-                  <tr key={i} style={{background:i%2===0?"#f0f4ff":"#fff"}}>
-                    {r.map((v,j)=><td key={j} style={{padding:"3px 8px",border:"1px solid #d0dbff",color:"#333"}}>{v}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#2EC4B6",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Wide format → auto-detected!</div>
-            <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>One <strong>column</strong> per condition. All numeric. <strong>Goes straight to plot.</strong></p>
-            <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
-              <thead><tr style={{background:"#d1fae5"}}>{["WT","mutA","mutB"].map(h=><th key={h} style={{padding:"3px 8px",border:"1px solid #a7f3d0",color:"#065f46",fontWeight:700}}>{h}</th>)}</tr></thead>
-              <tbody>
-                {[[0.45,0.12,0.31],[0.52,0.08,0.28],[0.48,0.15,0.35]].map((r,i)=>(
-                  <tr key={i} style={{background:i%2===0?"#f0fdf4":"#fff"}}>
-                    {r.map((v,j)=><td key={j} style={{padding:"3px 8px",border:"1px solid #bbf7d0",color:"#333"}}>{v}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
-            <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Tip — </span>
-            <span style={{fontSize:11,color:"#444"}}>Duplicate column names in wide format are pooled as replicates. Points are colored by source column shade.</span>
-          </div>
-          <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
-            {["Separator explicitly selected (comma, semicolon, tab, space)","Quoted values stripped automatically","100% browser-side — nothing uploaded"].map(t=>(
-              <span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>
-            ))}
-          </div>
-        </div>
-      </div></div>
+        <UploadStep
+          sepOverride={sepOverride} setSepOverride={setSepOverride}
+          rawText={rawText} doParse={doParse} handleFileLoad={handleFileLoad}
+        />
       )}
 
       {/* ── LONG FORMAT: Configure ── */}
-      {step === "configure" && dataFormat === "long" && parsedRows.length > 0 && (<div>
-        <div style={sec}><p style={{margin:"0 0 4px",fontSize:13,color:"#666"}}><strong style={{color:"#333"}}>{fileName}</strong> — {parsedHeaders.length} cols × {parsedRows.length} rows{hasHeader ? "" : " (no header)"}</p><p style={{fontSize:11,color:"#999",marginBottom:10}}>Preview (first 8 rows):</p><DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8}/></div>
-        <div style={sec}><p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#555"}}>Column roles</p>
-          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>{Object.entries(roleColors).map(([r,c])=><span key={r} style={{fontSize:10,padding:"2px 8px",borderRadius:4,background:c,color:r==="ignore"?"#666":"#fff",fontWeight:600}}>{r}</span>)}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>{parsedHeaders.map((h,i)=>{const u=[...new Set(parsedRows.map(r=>r[i]))];const pv=u.slice(0,5).join(", ")+(u.length>5?` … (${u.length})`:"");return(
-            <div key={`col-${i}`} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 12px",background:"#fff",borderRadius:6,border:`2px solid ${roleColors[colRoles[i]]||"#ccc"}`}}>
-              <span style={{fontWeight:700,color:"#333",minWidth:20,fontSize:12}}>#{i+1}</span>
-              <input value={colNames[i]} onChange={e=>updateColName(i,e.target.value)} style={{...inp,width:120,fontWeight:600}}/>
-              <select value={colRoles[i]} onChange={e=>updateRole(i,e.target.value)} style={{...inp,cursor:"pointer",fontWeight:600,color:roleColors[colRoles[i]]}}><option value="group">group</option><option value="value">value</option><option value="filter">filter</option><option value="text">text</option><option value="ignore">ignore</option></select>
-              <span style={{fontSize:10,color:"#999",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pv}</span>
-            </div>);})}</div>
-        </div>
-        {valueColIdx>=0&&!valueColIsNumeric&&(<div style={{...sec,background:"#fef2f2",borderColor:"#fca5a5",marginBottom:12}}><p style={{fontSize:12,color:"#dc2626"}}>⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as <strong>value</strong> but appears to be non-numeric — the plot will be empty. Please assign a numeric column as value.</p></div>)}
-        <button onClick={()=>setStep("filter")} style={{padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#648FFF",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Filter & Rename →</button>
-      </div>)}
+      {step === "configure" && dataFormat === "long" && parsedRows.length > 0 && (
+        <ConfigureStep
+          fileName={fileName} parsedHeaders={parsedHeaders} parsedRows={parsedRows}
+          hasHeader={hasHeader} colRoles={colRoles} colNames={colNames}
+          updateRole={updateRole} updateColName={updateColName}
+          valueColIdx={valueColIdx} valueColIsNumeric={valueColIsNumeric} setStep={setStep}
+        />
+      )}
 
       {/* ── LONG FORMAT: Filter ── */}
-      {step === "filter" && dataFormat === "long" && parsedRows.length > 0 && (<div>
-        <div style={{display:"flex",gap:16,alignItems:"stretch",marginBottom:16}}>
-          <div style={{flex:1,borderRadius:10,padding:16,border:"1px solid #bfdbfe",background:"#eff6ff",display:"flex",flexDirection:"column"}}><p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#1d4ed8"}}>Filter rows ({filteredRows.length}/{parsedRows.length})</p>
-            <div style={{display:"flex",gap:16,flexWrap:"wrap",alignItems:"stretch",flex:1}}>{parsedHeaders.map((h,i)=>{if(colRoles[i]==="ignore")return null;const u=filters[i]?.unique||[];const isNumCol=u.length>0&&u.filter(v=>isNumericValue(v)).length/u.length>0.5;if(isNumCol)return<div key={`col-${i}`} style={{minWidth:140,flex:1,background:"#fff",borderRadius:6,border:"1px solid #ddd",padding:10}}><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}><p style={{fontSize:11,fontWeight:600,color:"#333",margin:0}}>{colNames[i]}</p><button onClick={()=>toggleAllFilter(i,true)} style={{fontSize:9,padding:"2px 6px",background:"#eee",border:"1px solid #ccc",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>All</button></div><p style={{fontSize:10,color:"#999",margin:"4px 0 0",fontStyle:"italic"}}>numeric — use axis range in plot</p></div>;return(
-              <div key={`col-${i}`} style={{minWidth:140,flex:1,background:"#fff",borderRadius:6,border:"1px solid #ddd",padding:10}}>
-                <p style={{fontSize:11,fontWeight:600,color:"#333",marginBottom:4}}>{colNames[i]}</p>
-                <div style={{display:"flex",gap:6,marginBottom:4}}><button onClick={()=>toggleAllFilter(i,true)} style={{fontSize:9,padding:"2px 6px",background:"#eee",border:"1px solid #ccc",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>All</button><button onClick={()=>toggleAllFilter(i,false)} style={{fontSize:9,padding:"2px 6px",background:"#eee",border:"1px solid #ccc",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>None</button></div>
-                {u.map(v=><label key={v} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#444",cursor:"pointer",marginBottom:2}}><input type="checkbox" checked={filters[i]?.included.has(v)||false} onChange={()=>toggleFilter(i,v)} style={{accentColor:"#648FFF"}}/>{v||<em style={{color:"#bbb"}}>(empty)</em>}</label>)}
-              </div>);})}</div>
-          </div>
-          <div style={{flex:1,borderRadius:10,padding:16,border:"1px solid #ddd6fe",background:"#f5f3ff"}}><p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#6d28d9"}}>Rename values & reorder groups <span style={{fontSize:10,color:"#a78bfa",fontWeight:400}}>(drag ☰ to reorder)</span></p>
-            <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>{parsedHeaders.map((h,i)=>{if(colRoles[i]!=="group"&&colRoles[i]!=="filter")return null;const u=(filters[i]?.unique||[]).filter(v=>filters[i].included.has(v));
-              const isGrp=(i===groupColIdx);
-              const renamedU=u.map(v=>({orig:v,renamed:applyRename(i,v)}));
-              const effectiveOrder=groupOrder.length>0?groupOrder.filter(g=>renamedU.find(x=>x.renamed===g)):null;
-              const orderedU=isGrp&&effectiveOrder?effectiveOrder.map(g=>renamedU.find(x=>x.renamed===g)).filter(Boolean):renamedU;
-              const displayList=orderedU.length>0?orderedU:renamedU;
-              return(
-              <div key={`col-${i}`} style={{minWidth:200,background:"#fff",borderRadius:6,border:"1px solid #ddd",padding:10}}>
-                <p style={{fontSize:11,fontWeight:600,color:"#333",marginBottom:6}}>{colNames[i]}</p>
-                {displayList.map((item,vi)=>{const v=item.orig;return(
-                  <div key={v} draggable={isGrp} onDragStart={()=>setDragIdx(vi)} onDragOver={e=>e.preventDefault()} onDrop={()=>{if(!isGrp||dragIdx===null||dragIdx===vi){setDragIdx(null);return;}const cur=displayList.map(x=>x.renamed);const moved=cur[dragIdx];cur.splice(dragIdx,1);cur.splice(vi,0,moved);setGroupOrder(cur);setDragIdx(null);}} onDragEnd={()=>setDragIdx(null)}
-                    style={{display:"flex",gap:4,alignItems:"center",marginBottom:3,padding:"3px 4px",borderRadius:4,background:isGrp&&dragIdx===vi?"#e0eaff":"transparent",cursor:isGrp?"grab":"default",borderLeft:isGrp?"3px solid #648FFF":"3px solid transparent"}}>
-                    {isGrp&&<span style={{fontSize:11,color:"#bbb",cursor:"grab"}}>☰</span>}
-                    <span style={{fontSize:10,color:"#888",minWidth:55,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v||"(empty)"}</span>
-                    <span style={{fontSize:10,color:"#bbb"}}>→</span>
-                    <input value={valueRenames[i]?.[v]??v} onChange={e=>setRenameVal(i,v,e.target.value)} style={{...inp,width:100,fontSize:11}}/>
-                  </div>);})}
-              </div>);})}</div>
-          </div>
-        </div>
-        <div style={{borderRadius:10,padding:16,marginBottom:16,border:"1px solid #99f6e4",background:"#f0fdfa"}}><p style={{margin:"0 0 6px",fontSize:13,fontWeight:600,color:"#0f766e"}}>Preview ({renamedRows.length} rows):</p><DataPreview headers={activeColIdxs.map(i=>colNames[i])} rows={renamedRows.map(r=>activeColIdxs.map(i=>r[i]))} maxRows={10}/></div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setStep("output")} style={{padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#648FFF",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Output →</button>
-          {canPlot&&<button onClick={()=>setStep("plot")} style={{padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#2EC4B6",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Plot →</button>}
-        </div>
-      </div>)}
+      {step === "filter" && dataFormat === "long" && parsedRows.length > 0 && (
+        <FilterStep
+          parsedHeaders={parsedHeaders} parsedRows={parsedRows} colRoles={colRoles}
+          colNames={colNames} filters={filters} filteredRows={filteredRows}
+          renamedRows={renamedRows} activeColIdxs={activeColIdxs}
+          valueRenames={valueRenames} groupColIdx={groupColIdx}
+          effectiveOrder={effectiveOrder} applyRename={applyRename}
+          toggleFilter={toggleFilter} toggleAllFilter={toggleAllFilter}
+          setRenameVal={setRenameVal} setGroupOrder={setGroupOrder}
+          dragIdx={dragIdx} setDragIdx={setDragIdx}
+          canPlot={canPlot} setStep={setStep}
+        />
+      )}
 
       {/* ── LONG FORMAT: Output ── */}
-      {step === "output" && dataFormat === "long" && parsedRows.length > 0 && (<div>
-        {groupColIdx >= 0 && valueColIdx >= 0 && longStats.length > 0 && (<div style={sec}><p style={{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#555"}}>Summary — grouped by "{colNames[groupColIdx]}"</p><div style={{overflowX:"auto"}}><table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}><thead><tr style={{borderBottom:"2px solid #ccc"}}>{["Group","n","Mean","Median","SD","SEM","Min","Max"].map(h=><th key={h} style={{padding:"4px 10px",textAlign:"left",color:"#666",fontWeight:600}}>{h}</th>)}</tr></thead><tbody>{longStats.map((s,i)=><tr key={s.name} style={{borderBottom:"1px solid #eee"}}><td style={{padding:"4px 10px",fontWeight:600,color:PALETTE[i%PALETTE.length]}}>{s.name}</td><td style={{padding:"4px 10px"}}>{s.n}</td><td style={{padding:"4px 10px"}}>{s.mean!=null?s.mean.toFixed(4):"—"}</td><td style={{padding:"4px 10px"}}>{s.median!=null?s.median.toFixed(4):"—"}</td><td style={{padding:"4px 10px"}}>{s.sd!=null?s.sd.toFixed(4):"—"}</td><td style={{padding:"4px 10px"}}>{s.sem!=null?s.sem.toFixed(4):"—"}</td><td style={{padding:"4px 10px"}}>{s.min!=null?s.min.toFixed(4):"—"}</td><td style={{padding:"4px 10px"}}>{s.max!=null?s.max.toFixed(4):"—"}</td></tr>)}</tbody></table></div></div>)}
-        <div style={sec}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}><p style={{margin:0,fontSize:13,fontWeight:600,color:"#555"}}>Filtered data (long)</p><button onClick={(e)=>{downloadCsv(activeColIdxs.map(i=>colNames[i]),renamedRows.map(r=>activeColIdxs.map(i=>r[i])),`sanitized_long_${fileName.replace(/\.[^.]+$/,"")}.csv`);flashSaved(e.currentTarget);}} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#16a34a",border:"none",color:"#fff",fontFamily:"inherit",fontWeight:600}}>⬇ Long CSV</button></div><DataPreview headers={activeColIdxs.map(i=>colNames[i])} rows={renamedRows.map(r=>activeColIdxs.map(i=>r[i]))} maxRows={6}/></div>
-        {wideData&&(<div style={sec}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}><p style={{margin:0,fontSize:13,fontWeight:600,color:"#555"}}>Reshaped (wide)</p><button onClick={(e)=>{downloadCsv(wideData.headers,wideData.rows,`sanitized_wide_${fileName.replace(/\.[^.]+$/,"")}.csv`);flashSaved(e.currentTarget);}} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#dcfce7",border:"1px solid #86efac",color:"#166534",fontFamily:"inherit",fontWeight:600}}>⬇ Wide CSV</button></div><DataPreview headers={wideData.headers} rows={wideData.rows} maxRows={8}/></div>)}
-        {valueColIdx>=0&&!valueColIsNumeric&&<div style={{...sec,background:"#fef2f2",borderColor:"#fca5a5"}}><p style={{fontSize:12,color:"#dc2626"}}>⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as <strong>value</strong> but appears to be non-numeric — the plot will be empty. Go back to Configure and assign a numeric column as value.</p></div>}
-        <div style={{display:"flex",gap:8,marginTop:8}}>
-          <button onClick={()=>setStep("filter")} style={{padding:"6px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fff",border:"1px solid #ccc",color:"#555",fontFamily:"inherit"}}>← Filter</button>
-          {canPlot&&<button onClick={()=>setStep("plot")} style={{padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#2EC4B6",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Plot →</button>}
-        </div>
-      </div>)}
+      {step === "output" && dataFormat === "long" && parsedRows.length > 0 && (
+        <OutputStep
+          groupColIdx={groupColIdx} valueColIdx={valueColIdx} colNames={colNames}
+          longStats={longStats} activeColIdxs={activeColIdxs} renamedRows={renamedRows}
+          fileName={fileName} wideData={wideData} valueColIsNumeric={valueColIsNumeric}
+          canPlot={canPlot} setStep={setStep}
+        />
+      )}
 
       {/* ── PLOT (both formats) ── */}
       {step === "plot" && canPlot && (
         <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
-
-          {/* LEFT: controls panel */}
-          <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
-
-            {/* Wide format banner */}
-            {dataFormat === "wide" && (<div style={{background:"#ecfdf5",borderRadius:8,border:"1px solid #6ee7b7",display:"flex",alignItems:"center",gap:8,padding:"8px 12px"}}>
-              <span style={{fontSize:16}}>⚡</span>
-              <div style={{flex:1}}>
-                <p style={{margin:0,fontSize:11,color:"#065f46",fontWeight:600}}>Wide format auto-detected</p>
-                <p style={{margin:"2px 0 0",fontSize:10,color:"#047857"}}>Duplicate headers pooled as replicates.</p>
-              </div>
-            </div>)}
-
-            {/* Actions tile */}
-            <div style={sec}>
-              <p style={{margin:"0 0 8px",fontSize:11,fontWeight:700,color:"#555",textTransform:"uppercase",letterSpacing:"0.8px"}}>Actions</p>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <button onClick={(e) => {
-                  if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
-                    facetedData.forEach(fd => downloadSvg(facetRefs.current[fd.category], `bargraph_${fd.category}.svg`));
-                  } else {
-                    downloadSvg(chartRef.current, "bargraph.svg");
-                  }
-                  flashSaved(e.currentTarget);
-                }} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#16a34a",border:"none",color:"#fff",fontFamily:"inherit",width:"100%",fontWeight:600}}>⬇ Download SVG</button>
-                <button onClick={resetAll} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fef2f2",border:"1px solid #fca5a5",color:"#dc2626",fontFamily:"inherit",width:"100%"}}>↺ Start over</button>
-              </div>
-            </div>
-
-            {/* Conditions / group colors */}
-            <div style={sec}>
-              <p style={{ margin: "0 0 8px", fontSize: 12, color: "#666" }}>
-                <strong style={{ color: "#333" }}>{fileName}</strong>
-              </p>
-              <p style={{ margin: "0 0 8px", fontSize: 11, color: "#999" }}>
-                {effectiveGroups.length} condition{effectiveGroups.length > 1 ? "s" : ""} detected
-              </p>
-              <GroupEditor groups={displayGroups} onColorChange={handleColorChange}
-                onNameChange={(i, newName) => {
-                  const origName = effectiveGroups[i].name;
-                  setPlotGroupRenames(p => ({ ...p, [origName]: newName }));
-                }} />
-              {effectiveGroups.some(g => g.sources.length > 1) && (
-                <div style={{ marginTop: 8, padding: "8px 10px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 6, display: "flex", alignItems: "flex-start", gap: 7 }}>
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#92400e" }}>Duplicate column headers detected</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "#b45309" }}>Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Style controls */}
-            <div style={{ ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Background</span>
-                <ColorInput value={plotBg} onChange={setPlotBg} size={24} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Grid</span>
-                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)}
-                  style={{ accentColor: "#648FFF" }} />
-              </div>
-              {showGrid && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={lbl}>Grid color</span>
-                  <ColorInput value={gridColor} onChange={setGridColor} size={24} />
-                </div>
-              )}
-              <div>
-                <span style={lbl}>Error bars</span>
-                <select value={errorType} onChange={e => setErrorType(e.target.value)}
-                  style={{ width: "100%", background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px",
-                    fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer", marginTop: 2 }}>
-                  <option value="sem">SEM</option>
-                  <option value="sd">SD</option>
-                </select>
-              </div>
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                  <span style={lbl}>Error bar stroke</span>
-                  <span style={{fontSize:10,color:"#999"}}>{errStrokeWidth.toFixed(1)}</span>
-                </div>
-                <input type="range" min="0.5" max="4" step="0.1" value={errStrokeWidth}
-                  onChange={e => setErrStrokeWidth(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Bar outline</span>
-                <input type="checkbox" checked={showBarOutline} onChange={e => setShowBarOutline(e.target.checked)}
-                  style={{ accentColor: "#648FFF" }} />
-              </div>
-              {showBarOutline && (
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                    <span style={lbl}>Outline stroke</span>
-                    <span style={{fontSize:10,color:"#999"}}>{barOutlineWidth.toFixed(1)}</span>
-                  </div>
-                  <input type="range" min="0.5" max="5" step="0.5" value={barOutlineWidth}
-                    onChange={e => setBarOutlineWidth(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-                </div>
-              )}
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                  <span style={lbl}>Bar width</span>
-                  <span style={{fontSize:10,color:"#999"}}>{barWidth}%</span>
-                </div>
-                <input type="range" min="20" max="100" step="5" value={barWidth}
-                  onChange={e => setBarWidth(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-              </div>
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                  <span style={lbl}>Bar opacity</span>
-                  <span style={{fontSize:10,color:"#999"}}>{barOpacity.toFixed(2)}</span>
-                </div>
-                <input type="range" min="0.05" max="1" step="0.05" value={barOpacity}
-                  onChange={e => setBarOpacity(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Points</span>
-                <input type="checkbox" checked={showPoints} onChange={e => setShowPoints(e.target.checked)}
-                  style={{ accentColor: "#648FFF" }} />
-              </div>
-              {showPoints && (
-                <>
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>Point size</span>
-                      <span style={{fontSize:10,color:"#999"}}>{pointSize}</span>
-                    </div>
-                    <input type="range" min="1" max="6" step="0.5" value={pointSize}
-                      onChange={e => setPointSize(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-                  </div>
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>Jitter</span>
-                      <span style={{fontSize:10,color:"#999"}}>{jitterWidth.toFixed(2)}</span>
-                    </div>
-                    <input type="range" min="0" max="1" step="0.05" value={jitterWidth}
-                      onChange={e => setJitterWidth(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-                  </div>
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>Point opacity</span>
-                      <span style={{fontSize:10,color:"#999"}}>{pointOpacity.toFixed(2)}</span>
-                    </div>
-                    <input type="range" min="0.1" max="1" step="0.05" value={pointOpacity}
-                      onChange={e => setPointOpacity(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-                  </div>
-                  {dataFormat === "long" && facetByCandidates.length > 0 && (
-                    <>
-                      <div>
-                        <div style={lbl}>Color by</div>
-                        <select value={colorByCol} onChange={e => {
-                          const v = Number(e.target.value);
-                          setColorByCol(v);
-                          if (v >= 0) {
-                            const cats = [...new Set(renamedRows.map(r => r[v]))].sort();
-                            const cc = {};
-                            cats.forEach((c, ci) => { cc[c] = PALETTE[(ci + 2) % PALETTE.length]; });
-                            setCategoryColors(cc);
-                          }
-                        }} style={{ width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 }}>
-                          <option value={-1}>— none —</option>
-                          {facetByCandidates.map(ci => <option key={ci} value={ci}>{colNames[ci]}</option>)}
-                        </select>
-                      </div>
-                      {colorByCol >= 0 && colorByCategories.map(cat => (
-                        <div key={cat} style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 }}>
-                          <ColorInput value={categoryColors[cat] || "#999999"} onChange={c => setCategoryColors(p => ({ ...p, [cat]: c }))} size={16} />
-                          <span style={{ fontSize: 10, color: "#555" }}>{cat}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-              <div>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                  <span style={lbl}>X label angle</span>
-                  <span style={{fontSize:10,color:"#999"}}>{xLabelAngle}°</span>
-                </div>
-                <input type="range" min="-90" max="0" step="5" value={xLabelAngle}
-                  onChange={e => setXLabelAngle(Number(e.target.value))} style={{ width: "100%", accentColor: "#648FFF" }} />
-              </div>
-              {dataFormat === "long" && facetByCandidates.length > 0 && (
-                <div>
-                  <span style={lbl}>Facet by</span>
-                  <select value={facetByCol} onChange={e => setFacetByCol(Number(e.target.value))}
-                    style={{ width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 }}>
-                    <option value={-1}>— none —</option>
-                    {facetByCandidates.map(ci => <option key={ci} value={ci}>{colNames[ci]}</option>)}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Plot params */}
-            <div style={{ ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <div>
-                <div style={lbl}>Title</div>
-                <input value={plotTitle} onChange={e => setPlotTitle(e.target.value)}
-                  style={{ ...inp, width: "100%", marginTop: 2 }} />
-              </div>
-              <div>
-                <div style={lbl}>Y label</div>
-                <input value={yLabel} onChange={e => setYLabel(e.target.value)}
-                  style={{ ...inp, width: "100%", marginTop: 2 }} />
-              </div>
-              <div>
-                <div style={lbl}>Y min (auto if empty)</div>
-                <input value={yMinCustom} onChange={e => setYMinCustom(e.target.value)}
-                  style={{ ...inp, width: "100%", marginTop: 2 }} placeholder="auto" />
-              </div>
-              <div>
-                <div style={lbl}>Y max (auto if empty)</div>
-                <input value={yMaxCustom} onChange={e => setYMaxCustom(e.target.value)}
-                  style={{ ...inp, width: "100%", marginTop: 2 }} placeholder="auto" />
-              </div>
-            </div>
-
-
-          </div>{/* end LEFT */}
-
-          {/* RIGHT: chart area */}
-          <div style={{flex:1,minWidth:0}}>
-
-            {colorByCol>=0&&colorByCategories.length>0&&(
-              <div style={{marginBottom:12,background:"#f8f8fa",borderRadius:8,padding:"8px 14px",border:"1px solid #ddd",display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
-                <span style={{fontSize:11,color:"#777"}}>Points colored by: {colNames[colorByCol]}</span>
-                {colorByCategories.map(cat=>(
-                  <div key={cat} style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:10,height:10,borderRadius:"50%",background:categoryColors[cat]||"#999"}}/>
-                    <span style={{fontSize:11,color:"#444"}}>{cat}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Chart */}
-            {(facetByCol < 0 || dataFormat !== "long") && (
-              <div style={{ ...sec, padding: 20, background: "#fff" }}>
-                <BarChart ref={chartRef} groups={displayGroups} yLabel={yLabel} plotTitle={plotTitle}
-                  plotBg={plotBg} showGrid={showGrid} gridColor={gridColor}
-                  barWidth={barWidth} barOpacity={barOpacity} pointSize={pointSize} showPoints={showPoints}
-                  jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle}
-                  errorType={errorType} yMin={yMinVal} yMax={yMaxVal}
-                  catColors={colorByCol >= 0 ? categoryColors : null}
-                  errStrokeWidth={errStrokeWidth} showBarOutline={showBarOutline} barOutlineWidth={barOutlineWidth}
-                  svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
-                    title: `Points colored by: ${colNames[colorByCol]}`,
-                    items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
-                  }] : null} />
-              </div>
-            )}
-            {facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-                {facetedData.map(fd => {
-                  const displayFdGroups = fd.groups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
-                  return (
-                  <div key={fd.category} style={{ background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#648FFF" }} />
-                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#333" }}>{fd.category}</p>
-                      <span style={{ fontSize: 11, color: "#999" }}>({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)</span>
-                    </div>
-                    <BarChart ref={el => { facetRefs.current[fd.category] = el; }} groups={displayFdGroups} yLabel={yLabel} plotTitle={[plotTitle, fd.category].filter(Boolean).join(" — ")}
-                      plotBg={plotBg} showGrid={showGrid} gridColor={gridColor}
-                      barWidth={barWidth} barOpacity={barOpacity} pointSize={pointSize} showPoints={showPoints}
-                      jitterWidth={jitterWidth} pointOpacity={pointOpacity} xLabelAngle={xLabelAngle}
-                      errorType={errorType} yMin={yMinVal} yMax={yMaxVal}
-                      catColors={colorByCol >= 0 ? categoryColors : null}
-                      errStrokeWidth={errStrokeWidth} showBarOutline={showBarOutline} barOutlineWidth={barOutlineWidth}
-                      svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
-                        title: `Points colored by: ${colNames[colorByCol]}`,
-                        items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
-                      }] : null} />
-                  </div>
-                  );
-                })}
-              </div>
-            )}
-
-          </div>{/* end RIGHT */}
-
+          <PlotControls
+            dataFormat={dataFormat} fileName={fileName}
+            effectiveGroups={effectiveGroups} displayGroups={displayGroups}
+            handleColorChange={handleColorChange}
+            plotGroupRenames={plotGroupRenames} setPlotGroupRenames={setPlotGroupRenames}
+            plotBg={plotBg} setPlotBg={setPlotBg}
+            vis={vis} updVis={updVis}
+            colorByCol={colorByCol} setColorByCol={setColorByCol}
+            categoryColors={categoryColors} setCategoryColors={setCategoryColors}
+            colorByCategories={colorByCategories} renamedRows={renamedRows}
+            colNames={colNames} facetByCandidates={facetByCandidates}
+            facetByCol={facetByCol} setFacetByCol={setFacetByCol}
+            resetAll={resetAll} chartRef={chartRef} facetRefs={facetRefs}
+            facetedData={facetedData}
+          />
+          <ChartArea
+            dataFormat={dataFormat} facetByCol={facetByCol} facetedData={facetedData}
+            displayGroups={displayGroups} plotGroupRenames={plotGroupRenames}
+            plotGroupColors={plotGroupColors} colorByCol={colorByCol}
+            colorByCategories={colorByCategories} categoryColors={categoryColors}
+            colNames={colNames} vis={vis}
+            yMinVal={yMinVal} yMaxVal={yMaxVal}
+            chartRef={chartRef} facetRefs={facetRefs}
+          />
         </div>
       )}
     </div>

@@ -30,8 +30,14 @@ No test framework — custom harness in `tests/harness.js` using `suite()`, `tes
 Each tool HTML is self-contained: loads vendored React/ReactDOM/Babel and shared scripts in `<head>`, then has a single `<script type="text/babel">` block with all tool logic as JSX.
 
 ### Shared code
-- `tools/shared.js` — plain JS globals: color helpers, numeric detection, seeded random, axis tick generation, separator detection, CSV parsing, statistics, download helpers
-- `tools/shared-components.js` — plain JS React components (`React.createElement`, NOT JSX): `ColorInput`, `FileDropZone`, `DataPreview`, SVG legend helpers
+- `tools/shared.js` — plain JS globals: color helpers, numeric detection, seeded random, axis tick generation, separator detection, CSV parsing, statistics, download helpers, **shared style constants** (`sec`, `inp`, `lbl`, `btnPrimary`, `btnSecondary`, `btnDanger`, `btnDownload`, `btnPlot`, `selStyle`, `sepSelect`, `roleColors`)
+- `tools/shared-components.js` — plain JS React components (`React.createElement`, NOT JSX):
+  - **Inputs**: `ColorInput`, `FileDropZone`, `DataPreview`
+  - **Layout**: `SliderControl`, `StepNavBar`, `PageHeader`, `UploadPanel`, `ActionsPanel`
+  - **Banners**: `CommaFixBanner`, `ParseErrorBanner`
+  - **Long-format pipeline** (boxplot + bargraph): `ColumnRoleEditor`, `FilterCheckboxPanel`, `RenameReorderPanel`, `StatsTable`, `GroupColorEditor`
+  - **Style helpers**: `BaseStyleControls`
+  - **SVG legends**: `computeLegendHeight`, `renderSvgLegend`
 
 ### Critical constraint: Babel Standalone scoping
 **`shared-components.js` must remain plain JS (not `type="text/babel"`).** Babel Standalone evaluates external `src` scripts inside its own closure in strict mode — function declarations don't reach global scope. Shared components loaded as `text/babel` cause "X is not defined" errors at render time. Only inline `<script type="text/babel">` blocks (inside each tool HTML) can use JSX.
@@ -40,7 +46,13 @@ Each tool HTML is self-contained: loads vendored React/ReactDOM/Babel and shared
 File upload/paste -> `autoDetectSep` + `fixDecimalCommas` + `parseRaw` -> `DataPreview` table -> user assigns column roles -> `computeStats`/`quartiles` -> React SVG rendering -> SVG/CSV export
 
 ### Per-tool palettes
-`PALETTE` / `POINT_PALETTE` are intentionally defined per-tool (values differ), not in shared.js.
+`PALETTE` is defined in `shared.js` as the global default. Tools may override if needed.
+
+### Tool-internal structure
+Each tool's inline `<script type="text/babel">` block follows this pattern:
+1. **Chart component** (e.g. `BoxplotChart`, `BarChart`, `ScatterChart`) — the SVG renderer, kept as `forwardRef`
+2. **Step sub-components** — `UploadStep`, `ConfigureStep`, `FilterStep`, `OutputStep`, `PlotControls`, `PlotArea` (where applicable)
+3. **App()** — orchestrator holding state and routing between steps
 
 ## Testing helpers
 

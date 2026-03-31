@@ -62,7 +62,16 @@ function toolIcon(name, size, opts) {
 const inp       = {background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:12};
 const inpN      = {width:72,background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:13,textAlign:"center"};
 const sec       = {background:"#f8f8fa",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #ddd"};
+const lbl       = {fontSize:12,color:"#777",marginBottom:2};
 const roleColors = {group:"#648FFF",value:"#2EC4B6",filter:"#FFB000",text:"#785EF0",ignore:"#ccc"};
+
+const btnPrimary  = {padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#648FFF",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"};
+const btnSecondary = {padding:"6px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fff",border:"1px solid #ccc",color:"#555",fontFamily:"inherit"};
+const btnDanger   = {padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fef2f2",border:"1px solid #fca5a5",color:"#dc2626",fontFamily:"inherit",width:"100%"};
+const btnDownload = {padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#16a34a",border:"none",color:"#fff",fontFamily:"inherit",width:"100%",fontWeight:600};
+const btnPlot     = {padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#2EC4B6",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"};
+const selStyle    = {background:"#fff",border:"1px solid #ccc",borderRadius:4,padding:"4px 8px",fontSize:12,fontFamily:"inherit",color:"#333",cursor:"pointer"};
+const sepSelect   = {background:"#fff",border:"2px solid #648FFF",borderRadius:6,padding:"6px 12px",fontSize:13,fontFamily:"inherit",color:"#333",cursor:"pointer",fontWeight:600};
 
 // ── Numeric detection ────────────────────────────────────────────────────────
 

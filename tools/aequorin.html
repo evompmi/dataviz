@@ -18,7 +18,7 @@
 <body>
   <div id="root"></div>
 <script type="text/babel">
-const { useState, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
 
 const DEFAULT_KR  = 7;
 const DEFAULT_KTR = 118;
@@ -372,10 +372,6 @@ const InsetBarplot = forwardRef(function InsetBarplot({ series, insetColors, ins
   );
 });
 
-const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
-const dlBtn = { padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer",
-  background: "#fff", border: "1px solid #ccc", color: "#555", fontFamily: "inherit", marginTop: 4, display: "inline-block" };
-
 const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMin, yMax, faceted, title, subtitle, smoothWidth,
                      plotBg, showGrid, lineWidth, ribbonOpacity, gridColor,
                      timeStep, baseUnit, displayUnit,
@@ -573,6 +569,402 @@ function ConditionEditor({ conditions, onChange }) {
   );
 }
 
+// ── Sub-components for App ──────────────────────────────────────────────────
+
+function HowToSection() {
+  return (
+    <div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
+      <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
+        {toolIcon("aequorin", 24, {circle:true})}
+        <div>
+          <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Aequorin Ca²⁺ Calibration — How to use</div>
+          <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots</div>
+        </div>
+      </div>
+      <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Purpose</div>
+          <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:0}}>Plots aequorin luminescence time-courses — either as raw RLU values or converted to [Ca²⁺] using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes mean ± SD across replicates and generates Σ barplots (raw and baseline-corrected) for the selected time window.</p>
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Data layout — wide format</div>
+          <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one time-point. First row = header names.</p>
+          <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
+            <thead>
+              <tr style={{background:"#dbeafe"}}>
+                {["WT","WT","WT","KO","KO","KO"].map((h,i)=><th key={i} style={{padding:"4px 8px",border:"1px solid #b0c4ff",color:"#648FFF",fontWeight:700}}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[[1200,1180,1250,800,790,810],[1350,1400,1310,850,870,840],[980,1010,990,620,600,640]].map((r,i)=>(
+                <tr key={i} style={{background:i%2===0?"#f0f4ff":"#fff"}}>
+                  {r.map((v,j)=><td key={j} style={{padding:"4px 8px",border:"1px solid #d0dbff",color:"#333"}}>{v}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Configure step</div>
+          {[
+            {icon:"🔬",text:"Column grouping: identical header names are pooled as replicates by default. Switch to Individual to treat each column separately. Uncheck any column to exclude it from the analysis and exports."},
+            {icon:"⏱️",text:"Time axis: set the time step per row and its base unit (ms, s, min, h…). The display unit can be changed independently on the plot page."},
+            {icon:"⚙️",text:"Calibration: defaults to None (raw RLU). Switch to Allen & Blinks (1978), Hill equilibrium, or Generalised Allen & Blinks — constants are adjustable."},
+          ].map(({icon,text})=>(
+            <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
+              <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Plot step</div>
+          {[
+            {icon:"📊",text:"Combined or faceted view. X/Y range, smoothing, title, and style controls in the left panel."},
+            {icon:"📈",text:"Σ barplots shown below the main chart: raw sums and baseline-corrected sums (Σv − n×min) per condition, with SD/SEM error bars computed across replicates."},
+            {icon:"⬇️",text:"Each barplot tile has a matching CSV table below it — download per-replicate sums directly from the plot page."},
+          ].map(({icon,text})=>(
+            <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
+              <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Sample selection (plot page)</div>
+          {[
+            {icon:"🔬",text:"Click the sticky \"Sample selection\" button above the chart to open the column overlay."},
+            {icon:"✅",text:"Toggle individual replicates on or off — excluded columns are removed from the plot, barplots, and all exports."},
+            {icon:"🔀",text:"Switch between Pool (group by header name, mean ± SD) and Individual (each column plotted separately as name_rep1, name_rep2…)."},
+            {icon:"⚡",text:"All changes apply instantly — no need to go back to the configure step."},
+          ].map(({icon,text})=>(
+            <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
+              <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Replicate grouping — </span>
+          <span style={{fontSize:11,color:"#444"}}>In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed across them at each time-point. In Individual mode, each column is its own condition (labelled name_rep1, name_rep2…) and plotted separately.</span>
+        </div>
+        <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["Separator explicitly selected (comma, semicolon, tab, space)","Quoted values stripped automatically","Excluded columns omitted from all exports","100% browser-side — nothing uploaded"].map(t=>(
+            <span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+  return (
+    <div>
+      <UploadPanel
+        sepOverride={sepOverride}
+        onSepChange={v => { setSepOverride(v); if (rawText) doParse(rawText, v); }}
+        onFileLoad={handleFileLoad}
+        hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point"
+      />
+      <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p>
+      <HowToSection />
+    </div>
+  );
+}
+
+function ConfigureStep({ parsed, formula, setFormula, Kr, setKr, Ktr, setKtr, Kd, setKd, hillN, setHillN,
+  vis, updVis, fileName, calData, columnEnabled, downloadCalibrated, setStep }) {
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
+        <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
+          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Calibration formula</p>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div>
+              <div style={lbl}>Formula</div>
+              <select value={formula} onChange={e => setFormula(e.target.value)}
+                style={selStyle}>
+                <option value="none">None (raw data)</option>
+                <option value="allen-blinks">Allen &amp; Blinks (1978)</option>
+                <option value="hill">Hill equilibrium</option>
+                <option value="generalized">Generalised Allen &amp; Blinks</option>
+              </select>
+            </div>
+            {(formula === "allen-blinks" || formula === "generalized") && (
+              <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inpN} step="0.1" /></div>
+            )}
+            {(formula === "allen-blinks" || formula === "generalized") && (
+              <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inpN} step="1" /></div>
+            )}
+            {formula === "hill" && (
+              <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inpN} step="0.5" min="0.1" /></div>
+            )}
+            {formula === "generalized" && (
+              <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inpN} step="0.5" min="1" /></div>
+            )}
+          </div>
+        </div>
+        <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
+          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Time axis</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+            <div>
+              <div style={lbl}>Time step (per row)</div>
+              <input type="number" value={vis.timeStep} onChange={e => updVis({timeStep:Number(e.target.value)||1})}
+                style={{ ...inpN, width: 88 }} min="0.001" step="any" />
+            </div>
+            <div>
+              <div style={lbl}>Base unit</div>
+              <select value={vis.baseUnit} onChange={e => updVis({baseUnit:e.target.value})}
+                style={selStyle}>
+                {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
+              </select>
+            </div>
+            {parsed && (
+              <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
+                Range: 0 – {(parsed.data.length * timeStep).toFixed(3)} {baseUnit}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div style={sec}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
+            Loaded <strong style={{ color: "#333" }}>{fileName}</strong> — {parsed.headers.length} samples × {parsed.data.length} time-points
+          </p>
+          <button onClick={(e) => { downloadCalibrated(); flashSaved(e.currentTarget); }} style={{ padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 }}>⬇ Download CSV</button>
+        </div>
+        {calData && parsed && (() => {
+          const ei = parsed.headers.map((_, i) => i).filter(i => columnEnabled[i] !== false);
+          return (
+          <div style={{ marginTop: 8 }}>
+            <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>Preview — {formula === "none" ? "raw data" : "calibrated data"} · {ei.length} of {parsed.headers.length} columns (first 15 rows):</p>
+            <DataPreview headers={ei.map(i => parsed.headers[i])} rows={calData.slice(0, 15).map(r => ei.map(i => r[i] != null ? r[i] : ""))} maxRows={15} />
+          </div>
+          );
+        })()}
+      </div>
+      <button onClick={() => setStep("plot")} style={btnPrimary}>Plot →</button>
+    </div>
+  );
+}
+
+function PlotControls({ stats, vis, updVis, setStep, plotPanelRef, downloadCalibrated, resetAll,
+  insetColors, setInsetColors, insetStrokeColors, setInsetStrokeColors }) {
+  const sv = k => v => updVis({[k]: v});
+  return (
+    <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+
+      {/* Actions tile */}
+      <ActionsPanel
+        onDownloadSvg={(e) => { plotPanelRef.current?.downloadMain(); }}
+        onReset={resetAll}
+        extraButtons={[
+          { label: "⬇ Download CSV", onClick: (e) => { downloadCalibrated(); flashSaved(e.currentTarget); },
+            style: {...btnSecondary, background:"#dcfce7", border:"1px solid #86efac", color:"#166534", width:"100%", fontWeight:600} }
+        ]}
+      />
+
+      {/* Conditions */}
+      <div style={sec}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Conditions</p>
+        <ConditionEditor conditions={stats} onChange={() => {}} />
+        <details style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
+          <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
+          <pre style={{ whiteSpace: "pre-wrap", marginTop: 4, fontSize: 10, background: "#eee", padding: 8, borderRadius: 4 }}>
+            {stats.map(c => `"${c.prefix}" → ${c.colIndices.length} replicate(s) (col indices: ${c.colIndices.join(", ")})`).join("\n")}
+          </pre>
+        </details>
+      </div>
+
+      {/* Plot parameters */}
+      <div style={sec}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Plot parameters</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div><div style={lbl}>X start</div><input type="number" value={vis.xStart} onChange={e => updVis({xStart:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+          <div><div style={lbl}>X end</div><input type="number" value={vis.xEnd} onChange={e => updVis({xEnd:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+          <div><div style={lbl}>Y min</div><input type="number" value={vis.yMin} onChange={e => updVis({yMin:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
+          <div><div style={lbl}>Y max</div><input type="number" value={vis.yMax} onChange={e => updVis({yMax:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
+          <SliderControl label="Smooth (±pts)" value={vis.smoothWidth} min={0} max={20} step={1} onChange={sv("smoothWidth")} />
+          <div><div style={lbl}>Title</div><input value={vis.plotTitle} onChange={e => updVis({plotTitle:e.target.value})} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+          <div><div style={lbl}>Subtitle</div><input value={vis.plotSubtitle} onChange={e => updVis({plotSubtitle:e.target.value})} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
+        </div>
+      </div>
+
+      {/* Style controls */}
+      <div style={sec}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Style</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <BaseStyleControls plotBg={vis.plotBg} onPlotBgChange={sv("plotBg")}
+            showGrid={vis.showGrid} onShowGridChange={sv("showGrid")}
+            gridColor={vis.gridColor} onGridColorChange={sv("gridColor")} />
+          <SliderControl label="Line width" value={vis.lineWidth} min={0.5} max={5} step={0.5} onChange={sv("lineWidth")} />
+          <SliderControl label="SD opacity" value={vis.ribbonOpacity} displayValue={vis.ribbonOpacity.toFixed(2)} min={0} max={1} step={0.05} onChange={sv("ribbonOpacity")} />
+          <div>
+            <div style={lbl}>Display unit</div>
+            <select value={vis.displayUnit} onChange={e => updVis({displayUnit:e.target.value})}
+              style={{ width: "100%", ...selStyle }}>
+              {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Barplot controls */}
+      <div style={sec}>
+        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Barplot (Σ of plotted values)</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+          <span style={lbl}>Show</span>
+          <input type="checkbox" checked={vis.showInset} onChange={e => updVis({showInset:e.target.checked})} style={{ accentColor: "#648FFF" }} />
+        </div>
+
+        {vis.showInset && (<>
+          {/* Layout */}
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Layout</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <div><div style={lbl}>Width</div><input type="number" value={vis.insetW}
+              onChange={e => updVis({insetW:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} min="100" max="500" step="10" /></div>
+            <div><div style={lbl}>Height</div><input type="number" value={vis.insetH}
+              onChange={e => updVis({insetH:Number(e.target.value)})} style={{...inpN,width:"100%",textAlign:"left"}} min="80" max="400" step="10" /></div>
+            <div><div style={lbl}>Y min (auto)</div><input value={vis.insetYMinCustom}
+              onChange={e => updVis({insetYMinCustom:e.target.value})} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
+            <div><div style={lbl}>Y max (auto)</div><input value={vis.insetYMaxCustom}
+              onChange={e => updVis({insetYMaxCustom:e.target.value})} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={lbl}>Grid</span>
+              <input type="checkbox" checked={vis.insetShowGrid} onChange={e => updVis({insetShowGrid:e.target.checked})} style={{ accentColor: "#648FFF" }} />
+            </div>
+            {vis.insetShowGrid && (
+              <div>
+                <div style={lbl}>Grid color</div>
+                <ColorInput value={vis.insetGridColor} onChange={sv("insetGridColor")} size={24}/>
+              </div>
+            )}
+            <SliderControl label="X label size" value={vis.insetXFontSize} min={4} max={16} step={0.5} onChange={sv("insetXFontSize")} />
+            <SliderControl label="Y label size" value={vis.insetYFontSize} min={4} max={16} step={0.5} onChange={sv("insetYFontSize")} />
+            <SliderControl label="X label angle" value={vis.insetXLabelAngle} displayValue={`${vis.insetXLabelAngle}°`} min={-90} max={0} step={5} onChange={sv("insetXLabelAngle")} />
+          </div>
+
+          {/* Bars */}
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Bars</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <SliderControl label="Fill opacity" value={vis.insetFillOpacity} displayValue={vis.insetFillOpacity.toFixed(2)} min={0} max={1} step={0.05} onChange={sv("insetFillOpacity")} />
+            <SliderControl label="Stroke opacity" value={vis.insetStrokeOpacity} displayValue={vis.insetStrokeOpacity.toFixed(2)} min={0} max={1} step={0.05} onChange={sv("insetStrokeOpacity")} />
+            <SliderControl label="Stroke width" value={vis.insetBarStrokeWidth} min={0} max={4} step={0.25} onChange={sv("insetBarStrokeWidth")} />
+          </div>
+
+          {/* Error bars */}
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Error bars</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <div>
+              <div style={lbl}>Type</div>
+              <select value={vis.insetErrorType} onChange={e => updVis({insetErrorType:e.target.value})}
+                style={{ width:"100%", ...selStyle }}>
+                <option value="none">None</option>
+                <option value="sem">SEM</option>
+                <option value="sd">SD</option>
+              </select>
+            </div>
+            {vis.insetErrorType !== "none" && (
+              <SliderControl label="Error stroke width" value={vis.insetErrorStrokeWidth} min={0.2} max={3} step={0.1} onChange={sv("insetErrorStrokeWidth")} />
+            )}
+          </div>
+
+          {/* Per-condition colors */}
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Condition colors</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {stats.filter(s => s.enabled).map(s => (
+              <div key={s.prefix} style={{ padding: "6px 8px", background: "#f0f0f5", borderRadius: 5, border: "1px solid #ddd" }}>
+                <div style={{ fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 6 }}>{s.label}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: "#999", width: 28 }}>fill</span>
+                    <ColorInput value={insetColors[s.prefix] || s.color}
+                      onChange={v => setInsetColors(prev => ({ ...prev, [s.prefix]: v }))} size={18}/>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: "#999", width: 28 }}>line</span>
+                    <ColorInput value={insetStrokeColors[s.prefix] || s.color}
+                      onChange={v => setInsetStrokeColors(prev => ({ ...prev, [s.prefix]: v }))} size={18}/>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function SampleSelectionOverlay({ showColumnOverlay, setShowColumnOverlay, poolReplicates, handlePoolChange, colInfo, columnEnabled, handleColumnToggle }) {
+  return (
+    <div style={{position:"sticky",top:0,zIndex:20,marginBottom:10}}>
+      <div style={{position:"relative",display:"inline-block"}}>
+        <button onClick={() => setShowColumnOverlay(!showColumnOverlay)}
+          style={{padding:"7px 16px",borderRadius:8,fontSize:12,fontWeight:700,fontFamily:"inherit",
+            cursor:"pointer",
+            background:showColumnOverlay?"#f59e0b":"#fffbeb",
+            color:showColumnOverlay?"#fff":"#92400e",
+            border:"2px solid #f59e0b",
+            boxShadow:"0 2px 10px rgba(245,158,11,0.3)"}}>
+          {showColumnOverlay ? "✕ Close" : "🔬 Sample selection"}
+        </button>
+        {showColumnOverlay && (
+          <div style={{position:"absolute",top:"100%",left:0,marginTop:6,width:420,
+            background:"#fff",borderRadius:10,border:"2px solid #f59e0b",
+            boxShadow:"0 8px 32px rgba(0,0,0,0.18)",padding:"12px 14px",maxHeight:360,overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <p style={{margin:0,fontSize:12,fontWeight:600,color:"#555"}}>Column grouping</p>
+              <div style={{display:"flex",gap:4}}>
+                {[{val:true,label:"Pool by name"},{val:false,label:"Individual"}].map(({val,label}) => (
+                  <button key={label} onClick={() => handlePoolChange(val)} style={{padding:"3px 10px",borderRadius:5,fontSize:10,fontWeight:600,
+                    cursor:"pointer",fontFamily:"inherit",
+                    background:poolReplicates===val?"#f59e0b":"#fff",
+                    color:poolReplicates===val?"#fff":"#888",
+                    border:`1px solid ${poolReplicates===val?"#f59e0b":"#ccc"}`}}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,maxHeight:260,overflowY:"auto",padding:2}}>
+              {(() => {
+                const groups = [];
+                const seen = {};
+                colInfo.forEach(c => {
+                  if (!seen[c.h]) { seen[c.h] = { name: c.h, cols: [] }; groups.push(seen[c.h]); }
+                  seen[c.h].cols.push(c);
+                });
+                return groups.map(g => (
+                  <div key={g.name} style={{background:"#f4f4f8",borderRadius:6,border:"1px solid #ddd",padding:"5px 7px",minWidth:0}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#555",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{g.name}</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
+                      {g.cols.map(({h,i,rep}) => {
+                        const enabled = columnEnabled[i] !== false;
+                        const showRep = g.cols.length > 1 || !poolReplicates;
+                        return (
+                          <label key={i} style={{display:"flex",alignItems:"center",gap:3,padding:"2px 6px",
+                            background:enabled?"#fff":"#fafafa",borderRadius:4,
+                            border:`1px solid ${enabled?"#bbb":"#e0e0e0"}`,
+                            opacity:enabled?1:0.45,fontSize:10,cursor:"pointer",userSelect:"none"}}>
+                            <input type="checkbox" checked={enabled} onChange={e => handleColumnToggle(i,e.target.checked)}
+                              style={{accentColor:"#f59e0b",width:12,height:12}} />
+                            {showRep ? `rep${rep}` : h}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 
 function App() {
@@ -590,41 +982,11 @@ function App() {
   const [conditions, setConditions] = useState([]);
   const [poolReplicates, setPoolReplicates] = useState(true);
   const [columnEnabled, setColumnEnabled] = useState({});
-  const [xStart, setXStart] = useState(10);
-  const [xEnd, setXEnd] = useState(800);
-  const [yMin, setYMin] = useState(0.1);
-  const [yMax, setYMax] = useState(1.4);
-  const [faceted, setFaceted] = useState(false);
-  const [plotTitle, setPlotTitle] = useState("");
-  const [plotSubtitle, setPlotSubtitle] = useState("");
-  const [smoothWidth, setSmoothWidth] = useState(3);
+  const visInit={xStart:10,xEnd:800,yMin:0.1,yMax:1.4,faceted:false,plotTitle:"",plotSubtitle:"",smoothWidth:3,plotBg:"#ffffff",showGrid:true,lineWidth:2,ribbonOpacity:0.3,gridColor:"#e0e0e0",timeStep:1,baseUnit:"s",displayUnit:"s",showInset:true,insetFillOpacity:0.7,insetStrokeOpacity:1,insetYMinCustom:"",insetYMaxCustom:"",insetW:200,insetH:150,insetErrorType:"none",insetBarStrokeWidth:1,insetShowGrid:true,insetGridColor:"#e0e0e0",insetErrorStrokeWidth:0.8,insetXFontSize:7,insetYFontSize:7,insetXLabelAngle:-45,showColumnOverlay:false};
+  const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
   const [step, setStep] = useState("upload");
-  const [plotBg, setPlotBg] = useState("#ffffff");
-  const [showGrid, setShowGrid] = useState(true);
-  const [lineWidth, setLineWidth] = useState(2);
-  const [ribbonOpacity, setRibbonOpacity] = useState(0.3);
-  const [gridColor, setGridColor] = useState("#e0e0e0");
-  const [timeStep, setTimeStep] = useState(1);
-  const [baseUnit, setBaseUnit] = useState("s");
-  const [displayUnit, setDisplayUnit] = useState("s");
-  const [showInset, setShowInset] = useState(true);
   const [insetColors, setInsetColors] = useState({});
   const [insetStrokeColors, setInsetStrokeColors] = useState({});
-  const [insetFillOpacity, setInsetFillOpacity] = useState(0.7);
-  const [insetStrokeOpacity, setInsetStrokeOpacity] = useState(1);
-  const [insetYMinCustom, setInsetYMinCustom] = useState("");
-  const [insetYMaxCustom, setInsetYMaxCustom] = useState("");
-  const [insetW, setInsetW] = useState(200);
-  const [insetH, setInsetH] = useState(150);
-  const [insetErrorType, setInsetErrorType] = useState("none");
-  const [insetBarStrokeWidth, setInsetBarStrokeWidth] = useState(1);
-  const [insetShowGrid, setInsetShowGrid] = useState(true);
-  const [insetGridColor, setInsetGridColor] = useState("#e0e0e0");
-  const [insetErrorStrokeWidth, setInsetErrorStrokeWidth] = useState(0.8);
-  const [insetXFontSize, setInsetXFontSize] = useState(7);
-  const [insetYFontSize, setInsetYFontSize] = useState(7);
-  const [insetXLabelAngle, setInsetXLabelAngle] = useState(-45);
-  const [showColumnOverlay, setShowColumnOverlay] = useState(false);
 
   const parsed = useMemo(() => rawText ? parseData(rawText) : null, [rawText]);
   const calData = useMemo(() => {
@@ -751,8 +1113,7 @@ function App() {
     detectedConds.forEach(c => { ic[c.prefix] = c.color; isc[c.prefix] = c.color; });
     setInsetColors(ic);
     setInsetStrokeColors(isc);
-    setXStart(0); setXEnd(data.length);
-    setFaceted(false);
+    updVis({xStart:0, xEnd:data.length, faceted:false});
     setStep("configure");
   }, []);
   const handleFileLoad = useCallback((text, name) => { setFileName(name); doParse(text, sepOverride); }, [sepOverride, doParse]);
@@ -772,506 +1133,82 @@ function App() {
     navigator.clipboard.writeText(csvText).catch(() => {});
   };
 
+  const canNavigate = (s) => s === "upload" || (parsed && s !== "upload");
 
   return (
     <div style={{ minHeight: "100vh", color: "#333",
       fontFamily: "monospace", padding: "24px 32px" }}>
 
-      <div style={{ marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#222" }}>{toolIcon("aequorin")}Aequorin Ca²⁺ Calibration</h1>
-        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
-          {FORMULA_DEFS[formula].label} — {FORMULA_DEFS[formula].eq}
-        </p>
-      </div>
+      <PageHeader toolName="aequorin" title="Aequorin Ca²⁺ Calibration"
+        subtitle={`${FORMULA_DEFS[formula].label} — ${FORMULA_DEFS[formula].eq}`} />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {["upload","configure","plot"].map((s, i) => (
-          <button key={s} onClick={() => { if (s === "upload" || (parsed && s !== "upload")) setStep(s); }}
-            style={{ padding: "6px 16px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-              background: step === s ? "#648FFF" : "#fff", color: step === s ? "#fff" : "#888",
-              border: `1px solid ${step === s ? "#648FFF" : "#ccc"}`,
-              cursor: "pointer", fontFamily: "inherit", textTransform: "uppercase", letterSpacing: 1,
-            }}>{i + 1}. {s}</button>
-        ))}
-      </div>
+      <StepNavBar steps={["upload","configure","plot"]} currentStep={step}
+        onStepChange={setStep} canNavigate={canNavigate} />
 
-      {commaFixed&&(<div style={{...sec,background:"#fffbeb",borderColor:"#fbbf24",display:"flex",alignItems:"center",gap:12,padding:"10px 16px"}}><span style={{fontSize:18}}>🔄</span><div style={{flex:1}}><p style={{margin:0,fontSize:12,color:"#92400e",fontWeight:600}}>Decimal commas automatically converted to dots</p><p style={{margin:"2px 0 0",fontSize:11,color:"#a16207"}}>{commaFixCount} value{commaFixCount>1?"s":""} had commas as decimal separators (e.g. "0,5" → "0.5"). The data was corrected automatically.</p></div></div>)}
-      {parseError&&(<div style={{marginBottom:16,padding:"10px 14px",borderRadius:8,
-        background:parseError.startsWith("⚠️")?"#fffbeb":"#fef2f2",
-        border:`1px solid ${parseError.startsWith("⚠️")?"#fcd34d":"#fca5a5"}`,
-        display:"flex",alignItems:"flex-start",gap:8}}>
-        {!parseError.startsWith("⚠️")&&<span style={{fontSize:16}}>🚫</span>}
-        <span style={{fontSize:12,color:parseError.startsWith("⚠️")?"#92400e":"#dc2626",fontWeight:600,whiteSpace:"pre-line"}}>{parseError}</span>
-      </div>)}
-
-      {step === "upload" && <div><div style={sec}><div style={{marginBottom:12,padding:"12px 16px",background:"#eef2ff",borderRadius:8,border:"1.5px solid #b0c4ff",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:13,fontWeight:600,color:"#648FFF"}}>1. Choose your column separator:</span><select value={sepOverride} onChange={e=>{const v=e.target.value;setSepOverride(v);if(rawText)doParse(rawText,v);}} style={{background:"#fff",border:"2px solid #648FFF",borderRadius:6,padding:"6px 12px",fontSize:13,fontFamily:"inherit",color:"#333",cursor:"pointer",fontWeight:600}}><option value="">— Select —</option><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={"\t"}>Tab (\t)</option><option value={" "}>Space</option></select>{!sepOverride&&<span style={{fontSize:11,color:"#e11d48",fontWeight:600}}>⚠ Required before loading a file</span>}</div><div>{!sepOverride?(<div style={{border:"2px dashed #ccc",borderRadius:12,padding:"48px 24px",textAlign:"center",background:"#f5f5f5",opacity:0.5}}><div style={{fontSize:40,marginBottom:8}}>🚫</div><p style={{margin:0,fontSize:15,color:"#999"}}>Select a column separator above to enable file loading</p></div>):(<FileDropZone onFileLoad={handleFileLoad} accept=".csv,.tsv,.txt,.dat" hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point" />)}</div></div><p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p><div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
-        <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
-          {toolIcon("aequorin", 24, {circle:true})}
-          <div>
-            <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Aequorin Ca²⁺ Calibration — How to use</div>
-            <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots</div>
-          </div>
+      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
+      {parseError && (
+        <div style={{marginBottom:16,padding:"10px 14px",borderRadius:8,
+          background:parseError.startsWith("⚠️")?"#fffbeb":"#fef2f2",
+          border:`1px solid ${parseError.startsWith("⚠️")?"#fcd34d":"#fca5a5"}`,
+          display:"flex",alignItems:"flex-start",gap:8}}>
+          {!parseError.startsWith("⚠️")&&<span style={{fontSize:16}}>🚫</span>}
+          <span style={{fontSize:12,color:parseError.startsWith("⚠️")?"#92400e":"#dc2626",fontWeight:600,whiteSpace:"pre-line"}}>{parseError}</span>
         </div>
-        <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Purpose</div>
-            <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:0}}>Plots aequorin luminescence time-courses — either as raw RLU values or converted to [Ca²⁺] using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes mean ± SD across replicates and generates Σ barplots (raw and baseline-corrected) for the selected time window.</p>
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Data layout — wide format</div>
-            <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one time-point. First row = header names.</p>
-            <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
-              <thead>
-                <tr style={{background:"#dbeafe"}}>
-                  {["WT","WT","WT","KO","KO","KO"].map((h,i)=><th key={i} style={{padding:"4px 8px",border:"1px solid #b0c4ff",color:"#648FFF",fontWeight:700}}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {[[1200,1180,1250,800,790,810],[1350,1400,1310,850,870,840],[980,1010,990,620,600,640]].map((r,i)=>(
-                  <tr key={i} style={{background:i%2===0?"#f0f4ff":"#fff"}}>
-                    {r.map((v,j)=><td key={j} style={{padding:"4px 8px",border:"1px solid #d0dbff",color:"#333"}}>{v}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Configure step</div>
-            {[
-              {icon:"🔬",text:"Column grouping: identical header names are pooled as replicates by default. Switch to Individual to treat each column separately. Uncheck any column to exclude it from the analysis and exports."},
-              {icon:"⏱️",text:"Time axis: set the time step per row and its base unit (ms, s, min, h…). The display unit can be changed independently on the plot page."},
-              {icon:"⚙️",text:"Calibration: defaults to None (raw RLU). Switch to Allen & Blinks (1978), Hill equilibrium, or Generalised Allen & Blinks — constants are adjustable."},
-            ].map(({icon,text})=>(
-              <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
-                <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
-                <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Plot step</div>
-            {[
-              {icon:"📊",text:"Combined or faceted view. X/Y range, smoothing, title, and style controls in the left panel."},
-              {icon:"📈",text:"Σ barplots shown below the main chart: raw sums and baseline-corrected sums (Σv − n×min) per condition, with SD/SEM error bars computed across replicates."},
-              {icon:"⬇️",text:"Each barplot tile has a matching CSV table below it — download per-replicate sums directly from the plot page."},
-            ].map(({icon,text})=>(
-              <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
-                <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
-                <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Sample selection (plot page)</div>
-            {[
-              {icon:"🔬",text:"Click the sticky \"Sample selection\" button above the chart to open the column overlay."},
-              {icon:"✅",text:"Toggle individual replicates on or off — excluded columns are removed from the plot, barplots, and all exports."},
-              {icon:"🔀",text:"Switch between Pool (group by header name, mean ± SD) and Individual (each column plotted separately as name_rep1, name_rep2…)."},
-              {icon:"⚡",text:"All changes apply instantly — no need to go back to the configure step."},
-            ].map(({icon,text})=>(
-              <div key={icon} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
-                <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
-                <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
-            <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Replicate grouping — </span>
-            <span style={{fontSize:11,color:"#444"}}>In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed across them at each time-point. In Individual mode, each column is its own condition (labelled name_rep1, name_rep2…) and plotted separately.</span>
-          </div>
-          <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
-            {["Separator explicitly selected (comma, semicolon, tab, space)","Quoted values stripped automatically","Excluded columns omitted from all exports","100% browser-side — nothing uploaded"].map(t=>(
-              <span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>
-            ))}
-          </div>
-        </div>
-      </div></div>}
+      )}
+
+      {step === "upload" && (
+        <UploadStep sepOverride={sepOverride} setSepOverride={setSepOverride}
+          rawText={rawText} doParse={doParse} handleFileLoad={handleFileLoad} />
+      )}
 
       {step === "configure" && parsed && (
-        <div>
-          <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
-            <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Calibration formula</p>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
-                <div>
-                  <div style={lbl}>Formula</div>
-                  <select value={formula} onChange={e => setFormula(e.target.value)}
-                    style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                    <option value="none">None (raw data)</option>
-                    <option value="allen-blinks">Allen &amp; Blinks (1978)</option>
-                    <option value="hill">Hill equilibrium</option>
-                    <option value="generalized">Generalised Allen &amp; Blinks</option>
-                  </select>
-                </div>
-                {(formula === "allen-blinks" || formula === "generalized") && (
-                  <div><div style={lbl}>Kr</div><input type="number" value={Kr} onChange={e => setKr(Number(e.target.value))} style={inpN} step="0.1" /></div>
-                )}
-                {(formula === "allen-blinks" || formula === "generalized") && (
-                  <div><div style={lbl}>Ktr</div><input type="number" value={Ktr} onChange={e => setKtr(Number(e.target.value))} style={inpN} step="1" /></div>
-                )}
-                {formula === "hill" && (
-                  <div><div style={lbl}>Kd (µM)</div><input type="number" value={Kd} onChange={e => setKd(Number(e.target.value))} style={inpN} step="0.5" min="0.1" /></div>
-                )}
-                {formula === "generalized" && (
-                  <div><div style={lbl}>n (Hill exp.)</div><input type="number" value={hillN} onChange={e => setHillN(Number(e.target.value))} style={inpN} step="0.5" min="1" /></div>
-                )}
-              </div>
-            </div>
-            <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Time axis</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
-                <div>
-                  <div style={lbl}>Time step (per row)</div>
-                  <input type="number" value={timeStep} onChange={e => setTimeStep(Number(e.target.value) || 1)}
-                    style={{ ...inpN, width: 88 }} min="0.001" step="any" />
-                </div>
-                <div>
-                  <div style={lbl}>Base unit</div>
-                  <select value={baseUnit} onChange={e => setBaseUnit(e.target.value)}
-                    style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                    {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
-                  </select>
-                </div>
-                {parsed && (
-                  <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
-                    Range: 0 – {(parsed.data.length * timeStep).toFixed(3)} {baseUnit}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div style={sec}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
-                Loaded <strong style={{ color: "#333" }}>{fileName}</strong> — {parsed.headers.length} samples × {parsed.data.length} time-points
-              </p>
-              <button onClick={(e) => { downloadCalibrated(); flashSaved(e.currentTarget); }} style={{ padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 }}>⬇ Download CSV</button>
-            </div>
-            {calData && parsed && (() => {
-              const ei = parsed.headers.map((_, i) => i).filter(i => columnEnabled[i] !== false);
-              return (
-              <div style={{ marginTop: 8 }}>
-                <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>Preview — {formula === "none" ? "raw data" : "calibrated data"} · {ei.length} of {parsed.headers.length} columns (first 15 rows):</p>
-                <DataPreview headers={ei.map(i => parsed.headers[i])} rows={calData.slice(0, 15).map(r => ei.map(i => r[i] != null ? r[i] : ""))} maxRows={15} />
-              </div>
-              );
-            })()}
-          </div>
-          <button onClick={() => setStep("plot")} style={{ padding: "10px 28px", borderRadius: 8, fontSize: 14, fontWeight: 700,
-            background: "#648FFF", color: "#fff", border: "none", cursor: "pointer", fontFamily: "inherit", marginTop: 16 }}>Plot →</button>
-        </div>
+        <ConfigureStep parsed={parsed} formula={formula} setFormula={setFormula}
+          Kr={Kr} setKr={setKr} Ktr={Ktr} setKtr={setKtr} Kd={Kd} setKd={setKd}
+          hillN={hillN} setHillN={setHillN}
+          vis={vis} updVis={updVis}
+          fileName={fileName} calData={calData} columnEnabled={columnEnabled}
+          downloadCalibrated={downloadCalibrated} setStep={setStep} />
       )}
 
       {step === "plot" && stats.length > 0 && (
         <div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-            <button onClick={() => setFaceted(false)} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
-              background: !faceted ? "#648FFF" : "#fff", color: !faceted ? "#fff" : "#888",
-              border: `1px solid ${!faceted ? "#648FFF" : "#ccc"}`, cursor: "pointer" }}>Combined</button>
-            <button onClick={() => setFaceted(true)} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
-              background: faceted ? "#648FFF" : "#fff", color: faceted ? "#fff" : "#888",
-              border: `1px solid ${faceted ? "#648FFF" : "#ccc"}`, cursor: "pointer" }}>Faceted</button>
-            <button onClick={() => setStep("configure")} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontFamily: "inherit",
-              background: "#fff", color: "#888", border: "1px solid #ccc", cursor: "pointer", marginLeft: "auto" }}>← Calibration</button>
+            <button onClick={() => updVis({faceted:false})} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+              background: !vis.faceted ? "#648FFF" : "#fff", color: !vis.faceted ? "#fff" : "#888",
+              border: `1px solid ${!vis.faceted ? "#648FFF" : "#ccc"}`, cursor: "pointer" }}>Combined</button>
+            <button onClick={() => updVis({faceted:true})} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+              background: vis.faceted ? "#648FFF" : "#fff", color: vis.faceted ? "#fff" : "#888",
+              border: `1px solid ${vis.faceted ? "#648FFF" : "#ccc"}`, cursor: "pointer" }}>Faceted</button>
+            <button onClick={() => setStep("configure")} style={{ ...btnSecondary, marginLeft: "auto" }}>← Calibration</button>
           </div>
 
           <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
             {/* LEFT: controls panel */}
-            <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
-
-              {/* Actions tile */}
-              <div style={sec}>
-                <p style={{margin:"0 0 8px",fontSize:11,fontWeight:700,color:"#555",textTransform:"uppercase",letterSpacing:"0.8px"}}>Actions</p>
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  <button onClick={(e) => { plotPanelRef.current?.downloadMain(); flashSaved(e.currentTarget); }} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#16a34a",border:"none",color:"#fff",fontFamily:"inherit",width:"100%",fontWeight:600}}>⬇ Download SVG</button>
-                  <button onClick={(e) => { downloadCalibrated(); flashSaved(e.currentTarget); }} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#dcfce7",border:"1px solid #86efac",color:"#166534",fontFamily:"inherit",width:"100%",fontWeight:600}}>⬇ Download CSV</button>
-                  <button onClick={resetAll} style={{padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fef2f2",border:"1px solid #fca5a5",color:"#dc2626",fontFamily:"inherit",width:"100%"}}>↺ Start over</button>
-                </div>
-              </div>
-
-              {/* Conditions */}
-              <div style={sec}>
-                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Conditions</p>
-                <ConditionEditor conditions={conditions} onChange={setConditions} />
-                <details style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
-                  <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
-                  <pre style={{ whiteSpace: "pre-wrap", marginTop: 4, fontSize: 10, background: "#eee", padding: 8, borderRadius: 4 }}>
-                    {conditions.map(c => `"${c.prefix}" → ${c.colIndices.length} replicate(s) (col indices: ${c.colIndices.join(", ")})`).join("\n")}
-                  </pre>
-                </details>
-              </div>
-
-              {/* Plot parameters */}
-              <div style={sec}>
-                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Plot parameters</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div><div style={lbl}>X start</div><input type="number" value={xStart} onChange={e => setXStart(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>X end</div><input type="number" value={xEnd} onChange={e => setXEnd(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>Y min</div><input type="number" value={yMin} onChange={e => setYMin(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
-                  <div><div style={lbl}>Y max</div><input type="number" value={yMax} onChange={e => setYMax(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} step="0.1" /></div>
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>Smooth (±pts)</span>
-                      <span style={{fontSize:10,color:"#999"}}>{smoothWidth}</span>
-                    </div>
-                    <input type="range" min="0" max="20" step="1" value={smoothWidth} onChange={e => setSmoothWidth(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                  </div>
-                  <div><div style={lbl}>Title</div><input value={plotTitle} onChange={e => setPlotTitle(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
-                  <div><div style={lbl}>Subtitle</div><input value={plotSubtitle} onChange={e => setPlotSubtitle(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} /></div>
-                </div>
-              </div>
-
-              {/* Style controls */}
-              <div style={sec}>
-                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Style</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div>
-                    <div style={lbl}>Background</div>
-                    <ColorInput value={plotBg} onChange={setPlotBg} size={24}/>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={lbl}>Grid</span>
-                    <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} style={{ accentColor: "#648FFF" }} />
-                  </div>
-                  {showGrid && (
-                    <div>
-                      <div style={lbl}>Grid color</div>
-                      <ColorInput value={gridColor} onChange={setGridColor} size={24}/>
-                    </div>
-                  )}
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>Line width</span>
-                      <span style={{fontSize:10,color:"#999"}}>{lineWidth}</span>
-                    </div>
-                    <input type="range" min="0.5" max="5" step="0.5" value={lineWidth} onChange={e => setLineWidth(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                  </div>
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                      <span style={lbl}>SD opacity</span>
-                      <span style={{fontSize:10,color:"#999"}}>{ribbonOpacity.toFixed(2)}</span>
-                    </div>
-                    <input type="range" min="0" max="1" step="0.05" value={ribbonOpacity} onChange={e => setRibbonOpacity(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                  </div>
-                  <div>
-                    <div style={lbl}>Display unit</div>
-                    <select value={displayUnit} onChange={e => setDisplayUnit(e.target.value)}
-                      style={{ width: "100%", background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                      {TIME_UNITS.map(u => <option key={u.key} value={u.key}>{u.label}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Barplot controls */}
-              <div style={sec}>
-                <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Barplot (Σ of plotted values)</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={lbl}>Show</span>
-                  <input type="checkbox" checked={showInset} onChange={e => setShowInset(e.target.checked)} style={{ accentColor: "#648FFF" }} />
-                </div>
-
-                {showInset && (<>
-                  {/* ── Layout ── */}
-                  <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Layout</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                    <div><div style={lbl}>Width</div><input type="number" value={insetW}
-                      onChange={e => setInsetW(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} min="100" max="500" step="10" /></div>
-                    <div><div style={lbl}>Height</div><input type="number" value={insetH}
-                      onChange={e => setInsetH(Number(e.target.value))} style={{...inpN,width:"100%",textAlign:"left"}} min="80" max="400" step="10" /></div>
-                    <div><div style={lbl}>Y min (auto)</div><input value={insetYMinCustom}
-                      onChange={e => setInsetYMinCustom(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
-                    <div><div style={lbl}>Y max (auto)</div><input value={insetYMaxCustom}
-                      onChange={e => setInsetYMaxCustom(e.target.value)} style={{...inpN,width:"100%",textAlign:"left"}} placeholder="auto" /></div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={lbl}>Grid</span>
-                      <input type="checkbox" checked={insetShowGrid} onChange={e => setInsetShowGrid(e.target.checked)} style={{ accentColor: "#648FFF" }} />
-                    </div>
-                    {insetShowGrid && (
-                      <div>
-                        <div style={lbl}>Grid color</div>
-                        <ColorInput value={insetGridColor} onChange={setInsetGridColor} size={24}/>
-                      </div>
-                    )}
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>X label size</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetXFontSize}</span>
-                      </div>
-                      <input type="range" min="4" max="16" step="0.5" value={insetXFontSize} onChange={e => setInsetXFontSize(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>Y label size</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetYFontSize}</span>
-                      </div>
-                      <input type="range" min="4" max="16" step="0.5" value={insetYFontSize} onChange={e => setInsetYFontSize(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>X label angle</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetXLabelAngle}°</span>
-                      </div>
-                      <input type="range" min="-90" max="0" step="5" value={insetXLabelAngle} onChange={e => setInsetXLabelAngle(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                  </div>
-
-                  {/* ── Bars ── */}
-                  <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Bars</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>Fill opacity</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetFillOpacity.toFixed(2)}</span>
-                      </div>
-                      <input type="range" min="0" max="1" step="0.05" value={insetFillOpacity} onChange={e => setInsetFillOpacity(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>Stroke opacity</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetStrokeOpacity.toFixed(2)}</span>
-                      </div>
-                      <input type="range" min="0" max="1" step="0.05" value={insetStrokeOpacity} onChange={e => setInsetStrokeOpacity(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                    <div>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                        <span style={lbl}>Stroke width</span>
-                        <span style={{fontSize:10,color:"#999"}}>{insetBarStrokeWidth}</span>
-                      </div>
-                      <input type="range" min="0" max="4" step="0.25" value={insetBarStrokeWidth} onChange={e => setInsetBarStrokeWidth(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                    </div>
-                  </div>
-
-                  {/* ── Error bars ── */}
-                  <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Error bars</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                    <div>
-                      <div style={lbl}>Type</div>
-                      <select value={insetErrorType} onChange={e => setInsetErrorType(e.target.value)}
-                        style={{ width:"100%", background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px",
-                          fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" }}>
-                        <option value="none">None</option>
-                        <option value="sem">SEM</option>
-                        <option value="sd">SD</option>
-                      </select>
-                    </div>
-                    {insetErrorType !== "none" && (
-                      <div>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
-                          <span style={lbl}>Error stroke width</span>
-                          <span style={{fontSize:10,color:"#999"}}>{insetErrorStrokeWidth}</span>
-                        </div>
-                        <input type="range" min="0.2" max="3" step="0.1" value={insetErrorStrokeWidth} onChange={e => setInsetErrorStrokeWidth(Number(e.target.value))} style={{width:"100%",accentColor:"#648FFF"}}/>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── Per-condition colors ── */}
-                  <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: 1 }}>Condition colors</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {stats.filter(s => s.enabled).map(s => (
-                      <div key={s.prefix} style={{ padding: "6px 8px", background: "#f0f0f5", borderRadius: 5, border: "1px solid #ddd" }}>
-                        <div style={{ fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 6 }}>{s.label}</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 10, color: "#999", width: 28 }}>fill</span>
-                            <ColorInput value={insetColors[s.prefix] || s.color}
-                              onChange={v => setInsetColors(prev => ({ ...prev, [s.prefix]: v }))} size={18}/>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 10, color: "#999", width: 28 }}>line</span>
-                            <ColorInput value={insetStrokeColors[s.prefix] || s.color}
-                              onChange={v => setInsetStrokeColors(prev => ({ ...prev, [s.prefix]: v }))} size={18}/>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>)}
-              </div>
-
-
-            </div>
+            <PlotControls stats={stats} vis={vis} updVis={updVis} setStep={setStep}
+              plotPanelRef={plotPanelRef} downloadCalibrated={downloadCalibrated} resetAll={resetAll}
+              insetColors={insetColors} setInsetColors={setInsetColors}
+              insetStrokeColors={insetStrokeColors} setInsetStrokeColors={setInsetStrokeColors} />
 
             {/* RIGHT: chart area */}
             <div style={{flex:1,minWidth:0}}>
               {/* Sample selection — sticky so it follows scroll */}
-              <div style={{position:"sticky",top:0,zIndex:20,marginBottom:10}}>
-                <div style={{position:"relative",display:"inline-block"}}>
-                  <button onClick={() => setShowColumnOverlay(!showColumnOverlay)}
-                    style={{padding:"7px 16px",borderRadius:8,fontSize:12,fontWeight:700,fontFamily:"inherit",
-                      cursor:"pointer",
-                      background:showColumnOverlay?"#f59e0b":"#fffbeb",
-                      color:showColumnOverlay?"#fff":"#92400e",
-                      border:"2px solid #f59e0b",
-                      boxShadow:"0 2px 10px rgba(245,158,11,0.3)"}}>
-                    {showColumnOverlay ? "✕ Close" : "🔬 Sample selection"}
-                  </button>
-                  {showColumnOverlay && (
-                    <div style={{position:"absolute",top:"100%",left:0,marginTop:6,width:420,
-                      background:"#fff",borderRadius:10,border:"2px solid #f59e0b",
-                      boxShadow:"0 8px 32px rgba(0,0,0,0.18)",padding:"12px 14px",maxHeight:360,overflowY:"auto"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                        <p style={{margin:0,fontSize:12,fontWeight:600,color:"#555"}}>Column grouping</p>
-                        <div style={{display:"flex",gap:4}}>
-                          {[{val:true,label:"Pool by name"},{val:false,label:"Individual"}].map(({val,label}) => (
-                            <button key={label} onClick={() => handlePoolChange(val)} style={{padding:"3px 10px",borderRadius:5,fontSize:10,fontWeight:600,
-                              cursor:"pointer",fontFamily:"inherit",
-                              background:poolReplicates===val?"#f59e0b":"#fff",
-                              color:poolReplicates===val?"#fff":"#888",
-                              border:`1px solid ${poolReplicates===val?"#f59e0b":"#ccc"}`}}>{label}</button>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:8,maxHeight:260,overflowY:"auto",padding:2}}>
-                        {(() => {
-                          const groups = [];
-                          const seen = {};
-                          colInfo.forEach(c => {
-                            if (!seen[c.h]) { seen[c.h] = { name: c.h, cols: [] }; groups.push(seen[c.h]); }
-                            seen[c.h].cols.push(c);
-                          });
-                          return groups.map(g => (
-                            <div key={g.name} style={{background:"#f4f4f8",borderRadius:6,border:"1px solid #ddd",padding:"5px 7px",minWidth:0}}>
-                              <div style={{fontSize:10,fontWeight:700,color:"#555",marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{g.name}</div>
-                              <div style={{display:"flex",flexWrap:"wrap",gap:3}}>
-                                {g.cols.map(({h,i,rep}) => {
-                                  const enabled = columnEnabled[i] !== false;
-                                  const showRep = g.cols.length > 1 || !poolReplicates;
-                                  return (
-                                    <label key={i} style={{display:"flex",alignItems:"center",gap:3,padding:"2px 6px",
-                                      background:enabled?"#fff":"#fafafa",borderRadius:4,
-                                      border:`1px solid ${enabled?"#bbb":"#e0e0e0"}`,
-                                      opacity:enabled?1:0.45,fontSize:10,cursor:"pointer",userSelect:"none"}}>
-                                      <input type="checkbox" checked={enabled} onChange={e => handleColumnToggle(i,e.target.checked)}
-                                        style={{accentColor:"#f59e0b",width:12,height:12}} />
-                                      {showRep ? `rep${rep}` : h}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <SampleSelectionOverlay showColumnOverlay={vis.showColumnOverlay} setShowColumnOverlay={v=>updVis({showColumnOverlay:v})}
+                poolReplicates={poolReplicates} handlePoolChange={handlePoolChange}
+                colInfo={colInfo} columnEnabled={columnEnabled} handleColumnToggle={handleColumnToggle} />
               <div style={{ ...sec, padding: 20, background: "#fff" }}>
-                <PlotPanel ref={plotPanelRef} stats={stats} xStart={xStart} xEnd={xEnd} yMin={yMin} yMax={yMax} faceted={faceted}
-                  title={plotTitle} subtitle={plotSubtitle} smoothWidth={smoothWidth} formula={formula} replicateSums={replicateSums} fileName={fileName}
-                  plotBg={plotBg} showGrid={showGrid} lineWidth={lineWidth}
-                  ribbonOpacity={ribbonOpacity} gridColor={gridColor}
-                  timeStep={timeStep} baseUnit={baseUnit} displayUnit={displayUnit}
-                  showInset={showInset} insetColors={insetColors} insetStrokeColors={insetStrokeColors}
-                  insetFillOpacity={insetFillOpacity} insetStrokeOpacity={insetStrokeOpacity}
-                  insetYMin={insetYMinCustom !== "" ? Number(insetYMinCustom) : null}
-                  insetYMax={insetYMaxCustom !== "" ? Number(insetYMaxCustom) : null}
-                  insetW={insetW} insetH={insetH} insetErrorType={insetErrorType}
-                  insetBarStrokeWidth={insetBarStrokeWidth} insetShowGrid={insetShowGrid}
-                  insetGridColor={insetGridColor} insetErrorStrokeWidth={insetErrorStrokeWidth}
-                  insetXFontSize={insetXFontSize} insetYFontSize={insetYFontSize} insetXLabelAngle={insetXLabelAngle} />
+                <PlotPanel ref={plotPanelRef} stats={stats} xStart={vis.xStart} xEnd={vis.xEnd} yMin={vis.yMin} yMax={vis.yMax} faceted={vis.faceted}
+                  title={vis.plotTitle} subtitle={vis.plotSubtitle} smoothWidth={vis.smoothWidth} formula={formula} replicateSums={replicateSums} fileName={fileName}
+                  plotBg={vis.plotBg} showGrid={vis.showGrid} lineWidth={vis.lineWidth}
+                  ribbonOpacity={vis.ribbonOpacity} gridColor={vis.gridColor}
+                  timeStep={vis.timeStep} baseUnit={vis.baseUnit} displayUnit={vis.displayUnit}
+                  showInset={vis.showInset} insetColors={insetColors} insetStrokeColors={insetStrokeColors}
+                  insetFillOpacity={vis.insetFillOpacity} insetStrokeOpacity={vis.insetStrokeOpacity}
+                  insetYMin={vis.insetYMinCustom !== "" ? Number(vis.insetYMinCustom) : null}
+                  insetYMax={vis.insetYMaxCustom !== "" ? Number(vis.insetYMaxCustom) : null}
+                  insetW={vis.insetW} insetH={vis.insetH} insetErrorType={vis.insetErrorType}
+                  insetBarStrokeWidth={vis.insetBarStrokeWidth} insetShowGrid={vis.insetShowGrid}
+                  insetGridColor={vis.insetGridColor} insetErrorStrokeWidth={vis.insetErrorStrokeWidth}
+                  insetXFontSize={vis.insetXFontSize} insetYFontSize={vis.insetYFontSize} insetXLabelAngle={vis.insetXLabelAngle} />
               </div>
             </div>
           </div>
