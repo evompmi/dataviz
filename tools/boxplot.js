@@ -335,7 +335,7 @@ function OutputStep({ parsedRows, parsedHeaders, colRoles, colNames, groupColIdx
     flashSaved(e.currentTarget);
   }, style: { padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 } }, "\u2B07 Wide CSV")), /* @__PURE__ */ React.createElement(DataPreview, { headers: wideData.headers, rows: wideData.rows, maxRows: 8 })), (groupColIdx < 0 || valueColIdx < 0) && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fff8e8", borderColor: "#f0d060" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#886600" } }, "\u26A0 Assign ", /* @__PURE__ */ React.createElement("strong", null, "group"), " + ", /* @__PURE__ */ React.createElement("strong", null, "value"), " columns to enable reshaping & stats.")), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Go back to Configure and assign a numeric column as value.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnSecondary }, "\u2190 Filter"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
 }
-function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, chartRef, facetedData, facetRefs }) {
+function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   return /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, dataFormat === "wide" && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#ecfdf5", borderColor: "#6ee7b7", padding: "10px 12px", marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u26A1"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected")), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setDataFormat("long");
@@ -344,6 +344,7 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGro
     ActionsPanel,
     {
       onDownloadSvg,
+      onDownloadPng,
       extraButtons: [
         { label: "\u2190 Output", onClick: () => setStep("output"), style: { ...btnSecondary, width: "100%" } },
         { label: "\u2190 Filter", onClick: () => setStep("filter"), style: { ...btnSecondary, width: "100%" } }
@@ -495,7 +496,6 @@ function App() {
   const facetRefs = useRef({});
   const chartRef = useRef();
   const resetDerived = () => {
-    setFilters({});
     setValueRenames({});
     setBoxplotColors({});
     setPlotGroupRenames({});
@@ -742,6 +742,13 @@ function App() {
       downloadSvg(chartRef.current, "boxplot.svg");
     }
   }, [facetByCol, facetedData]);
+  const handleDownloadPng = useCallback((e) => {
+    if (facetByCol >= 0 && facetedData.length > 0) {
+      facetedData.forEach((fd) => downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`));
+    } else {
+      downloadPng(chartRef.current, "boxplot.png");
+    }
+  }, [facetByCol, facetedData]);
   return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" } }, /* @__PURE__ */ React.createElement(
     PageHeader,
     {
@@ -849,6 +856,7 @@ function App() {
       facetByCol,
       setFacetByCol,
       onDownloadSvg: handleDownloadSvg,
+      onDownloadPng: handleDownloadPng,
       chartRef,
       facetedData,
       facetRefs

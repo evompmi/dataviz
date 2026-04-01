@@ -325,6 +325,12 @@ function ActionsPanel(props) {
       style:btnDownload
     }, "\u2B07 Download SVG"));
   }
+  if (props.onDownloadPng) {
+    children.push(React.createElement('button', {
+      key:"dlpng", onClick:function(e){props.onDownloadPng(e);flashSaved(e.currentTarget);},
+      style:Object.assign({}, btnDownload, {background:"#e0f2fe",borderColor:"#7dd3fc",color:"#0369a1"})
+    }, "\u2B07 Download PNG"));
+  }
   if (props.extraButtons) {
     props.extraButtons.forEach(function(b, i) {
       children.push(React.createElement('button', {

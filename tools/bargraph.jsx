@@ -418,6 +418,13 @@ function PlotControls({ dataFormat, fileName, effectiveGroups, displayGroups, ha
       downloadSvg(chartRef.current, "bargraph.svg");
     }
   };
+  const handleDownloadPng = () => {
+    if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
+      facetedData.forEach(fd => downloadPng(facetRefs.current[fd.category], `bargraph_${fd.category}.png`));
+    } else {
+      downloadPng(chartRef.current, "bargraph.png");
+    }
+  };
 
   return (
     <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
@@ -436,6 +443,7 @@ function PlotControls({ dataFormat, fileName, effectiveGroups, displayGroups, ha
       {/* Actions tile */}
       <ActionsPanel
         onDownloadSvg={handleDownloadSvg}
+        onDownloadPng={handleDownloadPng}
         onReset={resetAll}
       />
 

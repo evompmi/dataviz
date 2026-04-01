@@ -300,6 +300,37 @@ function downloadSvg(svgEl, filename) {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+function downloadPng(svgEl, filename, scale) {
+  if (!svgEl) return;
+  scale = scale || 2;
+  var serializer = new XMLSerializer();
+  var svgStr = serializer.serializeToString(svgEl);
+  var vb = svgEl.getAttribute("viewBox");
+  var parts = vb ? vb.split(/[\s,]+/) : [];
+  var w = parts.length >= 4 ? parseFloat(parts[2]) : svgEl.clientWidth || 800;
+  var h = parts.length >= 4 ? parseFloat(parts[3]) : svgEl.clientHeight || 600;
+  var canvas = document.createElement("canvas");
+  canvas.width = w * scale;
+  canvas.height = h * scale;
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  var img = new Image();
+  var blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  var url = URL.createObjectURL(blob);
+  img.onload = function() {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(pngBlob) {
+      var pngUrl = URL.createObjectURL(pngBlob);
+      var a = document.createElement("a");
+      a.href = pngUrl; a.download = filename; a.style.display = "none";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(pngUrl); }, 1000);
+    }, "image/png");
+  };
+  img.src = url;
+}
 function downloadCsv(headers, rows, filename) {
   const lines = [headers.join(","), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });

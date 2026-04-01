@@ -381,7 +381,7 @@ function OutputStep({parsedRows, parsedHeaders, colRoles, colNames, groupColIdx,
   );
 }
 
-function PlotControls({dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, chartRef, facetedData, facetRefs}) {
+function PlotControls({dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs}) {
   const sv=k=>v=>updVis({[k]:v});
   return (
     <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
@@ -397,6 +397,7 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, boxplotGrou
       {/* Actions tile */}
       <ActionsPanel
         onDownloadSvg={onDownloadSvg}
+        onDownloadPng={onDownloadPng}
         extraButtons={[
           {label:"← Output", onClick:()=>setStep("output"), style:{...btnSecondary,width:"100%"}},
           {label:"← Filter", onClick:()=>setStep("filter"), style:{...btnSecondary,width:"100%"}}
@@ -563,7 +564,6 @@ function App() {
   const chartRef = useRef();
 
   const resetDerived = () => {
-    setFilters({});
     setValueRenames({});
     setBoxplotColors({});
     setPlotGroupRenames({});
@@ -828,6 +828,14 @@ function App() {
     }
   }, [facetByCol, facetedData]);
 
+  const handleDownloadPng = useCallback((e) => {
+    if(facetByCol>=0&&facetedData.length>0){
+      facetedData.forEach(fd=>downloadPng(facetRefs.current[fd.category],`boxplot_${fd.category}.png`));
+    }else{
+      downloadPng(chartRef.current,"boxplot.png");
+    }
+  }, [facetByCol, facetedData]);
+
   return(
     <div style={{minHeight:"100vh",color:"#333",fontFamily:"monospace",padding:"24px 32px"}}>
       <PageHeader
@@ -931,6 +939,7 @@ function App() {
             colorByCategories={colorByCategories}
             facetByCol={facetByCol} setFacetByCol={setFacetByCol}
             onDownloadSvg={handleDownloadSvg}
+            onDownloadPng={handleDownloadPng}
             chartRef={chartRef}
             facetedData={facetedData} facetRefs={facetRefs}
           />
