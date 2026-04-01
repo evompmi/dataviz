@@ -1,60 +1,258 @@
 const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
-const BoxplotChart = forwardRef(function BoxplotChart2({ groups, yLabel, plotTitle, plotBg, showGrid, gridColor, boxWidth, boxFillOpacity, pointSize, showPoints, jitterWidth, pointOpacity, xLabelAngle, yMin: yMinP, yMax: yMaxP, categoryColors: catCols, colorByCol: cbc, boxGap, svgLegend, showCompPie }, ref) {
-  const angle = xLabelAngle || 0, absA = Math.abs(angle), pieSpace = cbc >= 0 && showCompPie ? 60 : 0, botM = 60 + (absA > 0 ? absA * 0.8 : 0) + pieSpace;
+const BoxplotChart = forwardRef(function BoxplotChart2({
+  groups,
+  yLabel,
+  plotTitle,
+  plotBg,
+  showGrid,
+  gridColor,
+  boxWidth,
+  boxFillOpacity,
+  pointSize,
+  showPoints,
+  jitterWidth,
+  pointOpacity,
+  xLabelAngle,
+  yMin: yMinP,
+  yMax: yMaxP,
+  categoryColors: catCols,
+  colorByCol: cbc,
+  boxGap,
+  svgLegend,
+  showCompPie
+}, ref) {
+  const angle = xLabelAngle || 0;
+  const absA = Math.abs(angle);
+  const pieSpace = cbc >= 0 && showCompPie ? 60 : 0;
+  const botM = 60 + (absA > 0 ? absA * 0.8 : 0) + pieSpace;
   const M = { top: 24, right: 24, bottom: botM, left: 62 };
   const allV = groups.flatMap((g) => g.allValues);
   if (allV.length === 0) return null;
-  const dMin = Math.min(...allV), dMax = Math.max(...allV), pad = (dMax - dMin) * 0.08 || 1;
-  const yMin = yMinP != null ? yMinP : dMin - pad, yMax = yMaxP != null ? yMaxP : dMax + pad;
-  const n = groups.length, compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
+  const dMin = Math.min(...allV);
+  const dMax = Math.max(...allV);
+  const pad = (dMax - dMin) * 0.08 || 1;
+  const yMin = yMinP != null ? yMinP : dMin - pad;
+  const yMax = yMaxP != null ? yMaxP : dMax + pad;
+  const n = groups.length;
+  const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
   const vbW = Math.max(200, n * 100 * compact + M.left + M.right);
   const vbH_chart = 504 + (absA > 0 ? absA * 0.8 : 0);
   const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right);
   const vbH = vbH_chart + _legH;
-  const w = vbW - M.left - M.right, h = vbH_chart - M.top - M.bottom;
-  const bandW = w / n, bx = (i) => M.left + i * bandW + bandW / 2, sy = (v) => M.top + (1 - (v - yMin) / (yMax - yMin || 1)) * h;
-  const yTicks = makeTicks(yMin, yMax, 8), halfBox = boxWidth / 100 * bandW * 0.4;
-  return /* @__PURE__ */ React.createElement("svg", { ref, viewBox: `0 0 ${vbW} ${vbH}`, style: { width: vbW, maxWidth: "100%", height: "auto", display: "block" }, xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: plotBg }), showGrid && yTicks.map((t) => /* @__PURE__ */ React.createElement("line", { key: t, x1: M.left, x2: M.left + w, y1: sy(t), y2: sy(t), stroke: gridColor, strokeWidth: "0.5" })), yTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: M.left - 5, x2: M.left, y1: sy(t), y2: sy(t), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("text", { x: M.left - 8, y: sy(t) + 4, textAnchor: "end", fontSize: "11", fill: "#555", fontFamily: "sans-serif" }, Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)))), groups.map((g, gi) => {
-    if (!g.stats) return null;
-    const cx = bx(gi), { q1, med, q3, wLo, wHi } = g.stats;
-    return /* @__PURE__ */ React.createElement("g", { key: g.name }, /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(wHi), y2: sy(q3), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(q1), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wHi), y2: sy(wHi), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wLo), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("rect", { x: cx - halfBox, y: sy(q3), width: halfBox * 2, height: sy(q1) - sy(q3), fill: g.color, fillOpacity: boxFillOpacity, stroke: g.color, strokeWidth: "1.5", rx: "2" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox, x2: cx + halfBox, y1: sy(med), y2: sy(med), stroke: g.color, strokeWidth: "2.5" }), showPoints && g.sources.map((src, si) => {
-      const rng = seededRandom(gi * 1e3 + si * 100 + 42);
-      const ptColor = cbc >= 0 && catCols && src.category ? catCols[src.category] || getPointColors(g.color, g.sources.length)[si] || g.color : getPointColors(g.color, g.sources.length)[si] || g.color;
-      return src.values.map((v, vi) => {
-        const j = (rng() - 0.5) * jitterWidth * halfBox * 2;
-        return /* @__PURE__ */ React.createElement("circle", { key: `${g.name}-${si}-${vi}`, cx: cx + j, cy: sy(v), r: pointSize, fill: ptColor, fillOpacity: pointOpacity || 0.6, stroke: ptColor, strokeOpacity: Math.min(1, (pointOpacity || 0.6) + 0.15), strokeWidth: "0.3" });
-      });
-    }));
-  }), /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }), groups.map((g, gi) => {
-    const lx = bx(gi), ly = M.top + h + 16;
-    const compBar = (() => {
-      if (cbc < 0 || !g.sources || !showCompPie) return null;
-      const total = g.allValues.length;
-      if (!total) return null;
-      const r = 20, cy2 = vbH_chart - r - 12;
-      let cum = 0;
-      const slices = g.sources.map((src, si) => {
-        const pct = src.values.length / total;
-        const a0 = cum * Math.PI * 2, a1 = (cum + pct) * Math.PI * 2;
-        cum += pct;
-        const col = catCols && src.category ? catCols[src.category] || "#999" : "#999";
-        if (pct >= 1) return /* @__PURE__ */ React.createElement("circle", { key: si, cx: lx, cy: cy2, r, fill: col });
-        const x0 = lx + Math.sin(a0) * r, y0 = cy2 - Math.cos(a0) * r, x1 = lx + Math.sin(a1) * r, y1 = cy2 - Math.cos(a1) * r;
-        const lg = pct > 0.5 ? 1 : 0;
-        return /* @__PURE__ */ React.createElement("path", { key: si, d: `M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`, fill: col });
-      });
-      const labels = g.sources.map((src, si) => {
-        const pct = src.values.length / total;
-        if (pct < 0.08) return null;
-        const cumPct = g.sources.slice(0, si).reduce((s, ss) => s + ss.values.length / total, 0);
-        const midA = (cumPct + pct / 2) * Math.PI * 2;
-        const lr = r + 8;
-        return /* @__PURE__ */ React.createElement("text", { key: `t${si}`, x: lx + Math.sin(midA) * lr, y: cy2 - Math.cos(midA) * lr + 3, textAnchor: "middle", fontSize: "7", fill: "#888", fontFamily: "sans-serif" }, Math.round(pct * 100), "%");
-      });
-      return /* @__PURE__ */ React.createElement("g", { key: `cb-${g.name}` }, slices, /* @__PURE__ */ React.createElement("circle", { cx: lx, cy: cy2, r, fill: "none", stroke: "#ddd", strokeWidth: "0.5" }), labels);
-    })();
-    return /* @__PURE__ */ React.createElement(React.Fragment, { key: `xl-${g.name}` }, angle === 0 ? /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement("text", { x: lx, y: ly, textAnchor: "middle", fontSize: "11", fill: "#333", fontFamily: "sans-serif", fontWeight: "600" }, g.name), /* @__PURE__ */ React.createElement("text", { x: lx, y: ly + 14, textAnchor: "middle", fontSize: "9", fill: "#999", fontFamily: "sans-serif" }, "n=", g.stats?.n || 0)) : /* @__PURE__ */ React.createElement("g", { transform: `rotate(${angle},${lx},${ly})` }, /* @__PURE__ */ React.createElement("text", { x: lx, y: ly, textAnchor: "end", dominantBaseline: "middle", fontSize: "11", fill: "#333", fontFamily: "sans-serif", fontWeight: "600" }, g.name), /* @__PURE__ */ React.createElement("text", { x: lx, y: ly + 12, textAnchor: "end", dominantBaseline: "middle", fontSize: "9", fill: "#999", fontFamily: "sans-serif" }, "n=", g.stats?.n || 0)), compBar);
-  }), yLabel && /* @__PURE__ */ React.createElement("text", { transform: `translate(14,${M.top + h / 2}) rotate(-90)`, textAnchor: "middle", fontSize: "13", fill: "#444", fontFamily: "sans-serif" }, yLabel), plotTitle && /* @__PURE__ */ React.createElement("text", { x: M.left + w / 2, y: 14, textAnchor: "middle", fontSize: "15", fontWeight: "700", fill: "#222", fontFamily: "sans-serif" }, plotTitle), renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14));
+  const w = vbW - M.left - M.right;
+  const h = vbH_chart - M.top - M.bottom;
+  const bandW = w / n;
+  const bx = (i) => M.left + i * bandW + bandW / 2;
+  const sy = (v) => M.top + (1 - (v - yMin) / (yMax - yMin || 1)) * h;
+  const yTicks = makeTicks(yMin, yMax, 8);
+  const halfBox = boxWidth / 100 * bandW * 0.4;
+  const pointColor = (g, src, si) => {
+    if (cbc >= 0 && catCols && src.category)
+      return catCols[src.category] || getPointColors(g.color, g.sources.length)[si] || g.color;
+    return getPointColors(g.color, g.sources.length)[si] || g.color;
+  };
+  const renderCompPie = (g, lx) => {
+    if (cbc < 0 || !g.sources || !showCompPie) return null;
+    const total = g.allValues.length;
+    if (!total) return null;
+    const r = 20;
+    const cy2 = vbH_chart - r - 12;
+    let cum = 0;
+    const slices = g.sources.map((src, si) => {
+      const pct = src.values.length / total;
+      const a0 = cum * Math.PI * 2;
+      const a1 = (cum + pct) * Math.PI * 2;
+      cum += pct;
+      const col = catCols && src.category ? catCols[src.category] || "#999" : "#999";
+      if (pct >= 1) return /* @__PURE__ */ React.createElement("circle", { key: si, cx: lx, cy: cy2, r, fill: col });
+      const x0 = lx + Math.sin(a0) * r;
+      const y0 = cy2 - Math.cos(a0) * r;
+      const x1 = lx + Math.sin(a1) * r;
+      const y1 = cy2 - Math.cos(a1) * r;
+      const lg = pct > 0.5 ? 1 : 0;
+      return /* @__PURE__ */ React.createElement("path", { key: si, d: `M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`, fill: col });
+    });
+    const labels = g.sources.map((src, si) => {
+      const pct = src.values.length / total;
+      if (pct < 0.08) return null;
+      const cumPct = g.sources.slice(0, si).reduce((s, ss) => s + ss.values.length / total, 0);
+      const midA = (cumPct + pct / 2) * Math.PI * 2;
+      const lr = r + 8;
+      return /* @__PURE__ */ React.createElement(
+        "text",
+        {
+          key: `t${si}`,
+          x: lx + Math.sin(midA) * lr,
+          y: cy2 - Math.cos(midA) * lr + 3,
+          textAnchor: "middle",
+          fontSize: "7",
+          fill: "#888",
+          fontFamily: "sans-serif"
+        },
+        Math.round(pct * 100),
+        "%"
+      );
+    });
+    return /* @__PURE__ */ React.createElement("g", { key: `cb-${g.name}` }, slices, /* @__PURE__ */ React.createElement("circle", { cx: lx, cy: cy2, r, fill: "none", stroke: "#ddd", strokeWidth: "0.5" }), labels);
+  };
+  return /* @__PURE__ */ React.createElement(
+    "svg",
+    {
+      ref,
+      viewBox: `0 0 ${vbW} ${vbH}`,
+      style: { width: vbW, maxWidth: "100%", height: "auto", display: "block" },
+      xmlns: "http://www.w3.org/2000/svg"
+    },
+    /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: plotBg }),
+    showGrid && yTicks.map(
+      (t) => /* @__PURE__ */ React.createElement(
+        "line",
+        {
+          key: t,
+          x1: M.left,
+          x2: M.left + w,
+          y1: sy(t),
+          y2: sy(t),
+          stroke: gridColor,
+          strokeWidth: "0.5"
+        }
+      )
+    ),
+    yTicks.map(
+      (t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: M.left - 5, x2: M.left, y1: sy(t), y2: sy(t), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("text", { x: M.left - 8, y: sy(t) + 4, textAnchor: "end", fontSize: "11", fill: "#555", fontFamily: "sans-serif" }, Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)))
+    ),
+    groups.map((g, gi) => {
+      if (!g.stats) return null;
+      const cx = bx(gi);
+      const { q1, med, q3, wLo, wHi } = g.stats;
+      return /* @__PURE__ */ React.createElement("g", { key: g.name }, /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(wHi), y2: sy(q3), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(q1), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wHi), y2: sy(wHi), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wLo), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement(
+        "rect",
+        {
+          x: cx - halfBox,
+          y: sy(q3),
+          width: halfBox * 2,
+          height: sy(q1) - sy(q3),
+          fill: g.color,
+          fillOpacity: boxFillOpacity,
+          stroke: g.color,
+          strokeWidth: "1.5",
+          rx: "2"
+        }
+      ), /* @__PURE__ */ React.createElement(
+        "line",
+        {
+          x1: cx - halfBox,
+          x2: cx + halfBox,
+          y1: sy(med),
+          y2: sy(med),
+          stroke: g.color,
+          strokeWidth: "2.5"
+        }
+      ), showPoints && g.sources.map((src, si) => {
+        const rng = seededRandom(gi * 1e3 + si * 100 + 42);
+        const ptColor = pointColor(g, src, si);
+        return src.values.map((v, vi) => {
+          const j = (rng() - 0.5) * jitterWidth * halfBox * 2;
+          return /* @__PURE__ */ React.createElement(
+            "circle",
+            {
+              key: `${g.name}-${si}-${vi}`,
+              cx: cx + j,
+              cy: sy(v),
+              r: pointSize,
+              fill: ptColor,
+              fillOpacity: pointOpacity || 0.6,
+              stroke: ptColor,
+              strokeOpacity: Math.min(1, (pointOpacity || 0.6) + 0.15),
+              strokeWidth: "0.3"
+            }
+          );
+        });
+      }));
+    }),
+    /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }),
+    groups.map((g, gi) => {
+      const lx = bx(gi);
+      const ly = M.top + h + 16;
+      const compBar = renderCompPie(g, lx);
+      return /* @__PURE__ */ React.createElement(React.Fragment, { key: `xl-${g.name}` }, angle === 0 ? /* @__PURE__ */ React.createElement("g", null, /* @__PURE__ */ React.createElement(
+        "text",
+        {
+          x: lx,
+          y: ly,
+          textAnchor: "middle",
+          fontSize: "11",
+          fill: "#333",
+          fontFamily: "sans-serif",
+          fontWeight: "600"
+        },
+        g.name
+      ), /* @__PURE__ */ React.createElement(
+        "text",
+        {
+          x: lx,
+          y: ly + 14,
+          textAnchor: "middle",
+          fontSize: "9",
+          fill: "#999",
+          fontFamily: "sans-serif"
+        },
+        "n=",
+        g.stats?.n || 0
+      )) : /* @__PURE__ */ React.createElement("g", { transform: `rotate(${angle},${lx},${ly})` }, /* @__PURE__ */ React.createElement(
+        "text",
+        {
+          x: lx,
+          y: ly,
+          textAnchor: "end",
+          dominantBaseline: "middle",
+          fontSize: "11",
+          fill: "#333",
+          fontFamily: "sans-serif",
+          fontWeight: "600"
+        },
+        g.name
+      ), /* @__PURE__ */ React.createElement(
+        "text",
+        {
+          x: lx,
+          y: ly + 12,
+          textAnchor: "end",
+          dominantBaseline: "middle",
+          fontSize: "9",
+          fill: "#999",
+          fontFamily: "sans-serif"
+        },
+        "n=",
+        g.stats?.n || 0
+      )), compBar);
+    }),
+    yLabel && /* @__PURE__ */ React.createElement(
+      "text",
+      {
+        transform: `translate(14,${M.top + h / 2}) rotate(-90)`,
+        textAnchor: "middle",
+        fontSize: "13",
+        fill: "#444",
+        fontFamily: "sans-serif"
+      },
+      yLabel
+    ),
+    plotTitle && /* @__PURE__ */ React.createElement(
+      "text",
+      {
+        x: M.left + w / 2,
+        y: 14,
+        textAnchor: "middle",
+        fontSize: "15",
+        fontWeight: "700",
+        fill: "#222",
+        fontFamily: "sans-serif"
+      },
+      plotTitle
+    ),
+    renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)
+  );
 });
 function UploadStep({ sepOverride, onSepChange, rawText, doParse, handleFileLoad, setStep }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
@@ -253,13 +451,39 @@ function PlotArea({ colorByCol, colorByCategories, colNames, categoryColors, fac
   })));
 }
 function App() {
-  const [rawText, setRawText] = useState(null), [fileName, setFileName] = useState(""), [step, setStep] = useState("upload");
+  const [rawText, setRawText] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [step, setStep] = useState("upload");
   const [parseError, setParseError] = useState(null);
   const [dataFormat, setDataFormat] = useState("long");
-  const [commaFixed, setCommaFixed] = useState(false), [commaFixCount, setCommaFixCount] = useState(0);
-  const [parsedHeaders, setParsedHeaders] = useState([]), [parsedRows, setParsedRows] = useState([]), [hasHeader, setHasHeader] = useState(true);
-  const [colRoles, setColRoles] = useState([]), [colNames, setColNames] = useState([]), [filters, setFilters] = useState({}), [valueRenames, setValueRenames] = useState({});
-  const visInit = { plotTitle: "", yLabel: "Value", plotBg: "#ffffff", showGrid: true, gridColor: "#e0e0e0", boxFillOpacity: 0.15, boxWidth: 70, boxGap: 0, pointSize: 2.5, showPoints: true, jitterWidth: 0.6, pointOpacity: 0.6, xLabelAngle: 0, yMinCustom: "", yMaxCustom: "", showCompPie: false };
+  const [sepOverride, setSepOverride] = useState("");
+  const [commaFixed, setCommaFixed] = useState(false);
+  const [commaFixCount, setCommaFixCount] = useState(0);
+  const [parsedHeaders, setParsedHeaders] = useState([]);
+  const [parsedRows, setParsedRows] = useState([]);
+  const [hasHeader, setHasHeader] = useState(true);
+  const [colRoles, setColRoles] = useState([]);
+  const [colNames, setColNames] = useState([]);
+  const [filters, setFilters] = useState({});
+  const [valueRenames, setValueRenames] = useState({});
+  const visInit = {
+    plotTitle: "",
+    yLabel: "Value",
+    plotBg: "#ffffff",
+    showGrid: true,
+    gridColor: "#e0e0e0",
+    boxFillOpacity: 0.15,
+    boxWidth: 70,
+    boxGap: 0,
+    pointSize: 2.5,
+    showPoints: true,
+    jitterWidth: 0.6,
+    pointOpacity: 0.6,
+    xLabelAngle: 0,
+    yMinCustom: "",
+    yMaxCustom: "",
+    showCompPie: false
+  };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [boxplotColors, setBoxplotColors] = useState({});
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
@@ -268,9 +492,27 @@ function App() {
   const [categoryColors, setCategoryColors] = useState({});
   const [dragIdx, setDragIdx] = useState(null);
   const [facetByCol, setFacetByCol] = useState(-1);
-  const [sepOverride, setSepOverride] = useState("");
   const facetRefs = useRef({});
   const chartRef = useRef();
+  const resetDerived = () => {
+    setFilters({});
+    setValueRenames({});
+    setBoxplotColors({});
+    setPlotGroupRenames({});
+    setGroupOrder([]);
+    setColorByCol(-1);
+    setCategoryColors({});
+    setFacetByCol(-1);
+    updVis({ yMinCustom: "", yMaxCustom: "" });
+  };
+  const buildFilters = (hdrs, rws) => {
+    const f = {};
+    hdrs.forEach((_, i) => {
+      const u = [...new Set(rws.map((r) => r[i]))].sort();
+      f[i] = { unique: u, included: new Set(u) };
+    });
+    return f;
+  };
   const doParse = useCallback((text, sep) => {
     const dc = fixDecimalCommas(text, sep);
     const fixedText = dc.text;
@@ -291,20 +533,8 @@ function App() {
       setHasHeader(true);
       setColRoles(["group", "value"]);
       setColNames([...lh]);
-      const f = {};
-      lh.forEach((_, i) => {
-        const u = [...new Set(lr.map((r) => r[i]))].sort();
-        f[i] = { unique: u, included: new Set(u) };
-      });
-      setFilters(f);
-      setValueRenames({});
-      setBoxplotColors({});
-      setPlotGroupRenames({});
-      setGroupOrder([]);
-      setColorByCol(-1);
-      setCategoryColors({});
-      setFacetByCol(-1);
-      updVis({ yMinCustom: "", yMaxCustom: "" });
+      setFilters(buildFilters(lh, lr));
+      resetDerived();
       setDataFormat("wide");
       setStep("plot");
     } else {
@@ -313,20 +543,8 @@ function App() {
       setHasHeader(hh);
       setColRoles(headers.map((_, i) => guessColumnType(rows.map((r) => r[i] ?? ""))));
       setColNames([...headers]);
-      const f = {};
-      headers.forEach((_, i) => {
-        const u = [...new Set(rows.map((r) => r[i]))].sort();
-        f[i] = { unique: u, included: new Set(u) };
-      });
-      setFilters(f);
-      setValueRenames({});
-      setBoxplotColors({});
-      setPlotGroupRenames({});
-      setGroupOrder([]);
-      setColorByCol(-1);
-      setCategoryColors({});
-      setFacetByCol(-1);
-      updVis({ yMinCustom: "", yMaxCustom: "" });
+      setFilters(buildFilters(headers, rows));
+      resetDerived();
       setDataFormat("long");
       setStep("configure");
     }
@@ -343,13 +561,23 @@ function App() {
     setStep("upload");
   };
   const applyRename = (ci, v) => valueRenames[ci] && valueRenames[ci][v] != null ? valueRenames[ci][v] : v;
-  const filteredRows = useMemo(() => parsedRows.filter((r) => r.every((v, ci) => !filters[ci] || filters[ci].included.has(v))), [parsedRows, filters]);
-  const renamedRows = useMemo(() => filteredRows.map((r) => r.map((v, ci) => applyRename(ci, v))), [filteredRows, valueRenames]);
-  const activeColIdxs = useMemo(() => colRoles.reduce((acc, r, i) => {
-    if (r !== "ignore") acc.push(i);
-    return acc;
-  }, []), [colRoles]);
-  const groupColIdx = colRoles.indexOf("group"), valueColIdx = colRoles.indexOf("value");
+  const filteredRows = useMemo(
+    () => parsedRows.filter((r) => r.every((v, ci) => !filters[ci] || filters[ci].included.has(v))),
+    [parsedRows, filters]
+  );
+  const renamedRows = useMemo(
+    () => filteredRows.map((r) => r.map((v, ci) => applyRename(ci, v))),
+    [filteredRows, valueRenames]
+  );
+  const activeColIdxs = useMemo(
+    () => colRoles.reduce((acc, r, i) => {
+      if (r !== "ignore") acc.push(i);
+      return acc;
+    }, []),
+    [colRoles]
+  );
+  const groupColIdx = colRoles.indexOf("group");
+  const valueColIdx = colRoles.indexOf("value");
   const groupedData = useMemo(() => {
     if (groupColIdx < 0 || valueColIdx < 0) return {};
     const g = {};
@@ -361,7 +589,10 @@ function App() {
     return g;
   }, [renamedRows, groupColIdx, valueColIdx]);
   const stats = useMemo(() => computeGroupStats(groupedData), [groupedData]);
-  const wideData = useMemo(() => groupColIdx < 0 || valueColIdx < 0 ? null : reshapeWide(renamedRows, groupColIdx, valueColIdx), [renamedRows, groupColIdx, valueColIdx]);
+  const wideData = useMemo(
+    () => groupColIdx < 0 || valueColIdx < 0 ? null : reshapeWide(renamedRows, groupColIdx, valueColIdx),
+    [renamedRows, groupColIdx, valueColIdx]
+  );
   const naturalGroupOrder = useMemo(() => {
     if (groupColIdx < 0 || valueColIdx < 0) return [];
     const seen = /* @__PURE__ */ new Set(), order = [];
@@ -382,7 +613,12 @@ function App() {
     }
     return naturalGroupOrder;
   }, [groupOrder, naturalGroupOrder]);
-  const colorByCandidates = useMemo(() => parsedHeaders.map((_, i) => i).filter((i) => i !== groupColIdx && i !== valueColIdx && (colRoles[i] === "filter" || colRoles[i] === "group" || colRoles[i] === "text")), [parsedHeaders, groupColIdx, valueColIdx, colRoles]);
+  const colorByCandidates = useMemo(
+    () => parsedHeaders.map((_, i) => i).filter(
+      (i) => i !== groupColIdx && i !== valueColIdx && (colRoles[i] === "filter" || colRoles[i] === "group" || colRoles[i] === "text")
+    ),
+    [parsedHeaders, groupColIdx, valueColIdx, colRoles]
+  );
   const colorByCategories = useMemo(() => {
     if (colorByCol < 0) return [];
     return [...new Set(renamedRows.map((r) => r[colorByCol]))].sort();
@@ -406,9 +642,19 @@ function App() {
     const cats = colorByCol >= 0 ? colorByCategories : ["_all"];
     return effectiveOrder.filter((name) => gm[name]).map((name, gi) => {
       const catMap = gm[name];
-      const sources = cats.filter((c) => catMap[c]).map((cat, si) => ({ colIndex: si, values: catMap[cat], category: cat }));
+      const sources = cats.filter((c) => catMap[c]).map((cat, si) => ({
+        colIndex: si,
+        values: catMap[cat],
+        category: cat
+      }));
       const allValues = sources.flatMap((s) => s.values);
-      return { name, sources, allValues, stats: quartiles(allValues), color: boxplotColors[name] || PALETTE[gi % PALETTE.length] };
+      return {
+        name,
+        sources,
+        allValues,
+        stats: quartiles(allValues),
+        color: boxplotColors[name] || PALETTE[gi % PALETTE.length]
+      };
     });
   }, [renamedRows, groupColIdx, valueColIdx, boxplotColors, effectiveOrder, colorByCol, colorByCategories]);
   const displayBoxplotGroups = useMemo(
@@ -444,9 +690,19 @@ function App() {
       const cats = colorByCol >= 0 ? colorByCategories : ["_all"];
       const groups = effectiveOrder.filter((name) => gm[name]).map((name, gi) => {
         const catMap = gm[name];
-        const sources = cats.filter((c) => catMap[c]).map((c, si) => ({ colIndex: si, values: catMap[c], category: c }));
+        const sources = cats.filter((c) => catMap[c]).map((c, si) => ({
+          colIndex: si,
+          values: catMap[c],
+          category: c
+        }));
         const allValues = sources.flatMap((s) => s.values);
-        return { name, sources, allValues, stats: quartiles(allValues), color: globalColorMap[name] || boxplotColors[name] || PALETTE[gi % PALETTE.length] };
+        return {
+          name,
+          sources,
+          allValues,
+          stats: quartiles(allValues),
+          color: globalColorMap[name] || boxplotColors[name] || PALETTE[gi % PALETTE.length]
+        };
       });
       return { category: cat, groups };
     });
@@ -471,7 +727,8 @@ function App() {
   });
   const updateRole = (i, role) => setColRoles((p) => p.map((r, j) => j === i ? role : r));
   const updateColName = (i, nm) => setColNames((p) => p.map((n, j) => j === i ? nm : n));
-  const yMinVal = vis.yMinCustom !== "" ? Number(vis.yMinCustom) : null, yMaxVal = vis.yMaxCustom !== "" ? Number(vis.yMaxCustom) : null;
+  const yMinVal = vis.yMinCustom !== "" ? Number(vis.yMinCustom) : null;
+  const yMaxVal = vis.yMaxCustom !== "" ? Number(vis.yMaxCustom) : null;
   const valueColIsNumeric = useMemo(() => {
     if (valueColIdx < 0 || !parsedRows.length) return false;
     const vals = parsedRows.map((r) => r[valueColIdx] ?? "").filter((v) => v !== "");
