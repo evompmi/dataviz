@@ -404,6 +404,7 @@ function PlotStep({
     ActionsPanel,
     {
       onDownloadSvg: () => downloadSvg(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.svg`),
+      onDownloadPng: () => downloadPng(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.png`),
       onReset: resetAll,
       extraButtons: [
         {

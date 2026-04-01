@@ -464,6 +464,17 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
         downloadSvg(insetBarRef.current, "barplot_sum.svg");
         downloadSvg(insetBarCorrRef.current, "barplot_sum_corrected.svg");
       }
+    },
+    downloadMainPng: () => {
+      if (faceted) {
+        displaySeries.forEach((s) => downloadPng(facetRefs.current[s.prefix], `${s.label}.png`));
+      } else {
+        downloadPng(combinedRef.current, "combined_plot.png");
+      }
+      if (showInset) {
+        downloadPng(insetBarRef.current, "barplot_sum.png");
+        downloadPng(insetBarCorrRef.current, "barplot_sum_corrected.png");
+      }
     }
   }), [faceted, displaySeries, showInset]);
   const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
@@ -679,6 +690,9 @@ function PlotControls({
     {
       onDownloadSvg: (e) => {
         plotPanelRef.current?.downloadMain();
+      },
+      onDownloadPng: (e) => {
+        plotPanelRef.current?.downloadMainPng();
       },
       onReset: resetAll,
       extraButtons: [

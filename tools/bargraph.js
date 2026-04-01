@@ -418,10 +418,18 @@ function PlotControls({
       downloadSvg(chartRef.current, "bargraph.svg");
     }
   };
+  const handleDownloadPng = () => {
+    if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
+      facetedData.forEach((fd) => downloadPng(facetRefs.current[fd.category], `bargraph_${fd.category}.png`));
+    } else {
+      downloadPng(chartRef.current, "bargraph.png");
+    }
+  };
   return /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, dataFormat === "wide" && /* @__PURE__ */ React.createElement("div", { style: { background: "#ecfdf5", borderRadius: 8, border: "1px solid #6ee7b7", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u26A1"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#047857" } }, "Duplicate headers pooled as replicates."))), /* @__PURE__ */ React.createElement(
     ActionsPanel,
     {
       onDownloadSvg: handleDownloadSvg,
+      onDownloadPng: handleDownloadPng,
       onReset: resetAll
     }
   ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 12, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName)), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 11, color: "#999" } }, effectiveGroups.length, " condition", effectiveGroups.length > 1 ? "s" : "", " detected"), /* @__PURE__ */ React.createElement(

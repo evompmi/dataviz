@@ -405,6 +405,17 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
         downloadSvg(insetBarCorrRef.current, "barplot_sum_corrected.svg");
       }
     },
+    downloadMainPng: () => {
+      if (faceted) {
+        displaySeries.forEach(s => downloadPng(facetRefs.current[s.prefix], `${s.label}.png`));
+      } else {
+        downloadPng(combinedRef.current, "combined_plot.png");
+      }
+      if (showInset) {
+        downloadPng(insetBarRef.current, "barplot_sum.png");
+        downloadPng(insetBarCorrRef.current, "barplot_sum_corrected.png");
+      }
+    },
   }), [faceted, displaySeries, showInset]);
 
   const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
@@ -741,6 +752,7 @@ function PlotControls({ stats, vis, updVis, setStep, plotPanelRef, downloadCalib
       {/* Actions tile */}
       <ActionsPanel
         onDownloadSvg={(e) => { plotPanelRef.current?.downloadMain(); }}
+        onDownloadPng={(e) => { plotPanelRef.current?.downloadMainPng(); }}
         onReset={resetAll}
         extraButtons={[
           { label: "⬇ Download CSV", onClick: (e) => { downloadCalibrated(); flashSaved(e.currentTarget); },
