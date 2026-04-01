@@ -381,6 +381,8 @@ function PlotStep({
   shapeWarning,
   vis,
   updVis,
+  autoAxis,
+  effAxis,
   refLines,
   addRefLine,
   updateRefLine,
@@ -503,7 +505,19 @@ function PlotStep({
       style: { ...selSt, fontSize: 11, width: 90 }
     },
     SHAPES.map((s) => /* @__PURE__ */ React.createElement("option", { key: s, value: s }, s))
-  ), /* @__PURE__ */ React.createElement(ShapePreview, { shape: shapeMapDiscrete[cat] || SHAPES[ci % SHAPES.length], color: "#666" }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#333" } }, cat)))))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Axes"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X min"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xMin, step: "any", onChange: (e) => updVis({ xMin: Number(e.target.value) }), style: { ...scInp, width: "100%" } })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X max"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xMax, step: "any", onChange: (e) => updVis({ xMax: Number(e.target.value) }), style: { ...scInp, width: "100%" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMin, step: "any", onChange: (e) => updVis({ yMin: Number(e.target.value) }), style: { ...scInp, width: "100%" } })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMax, step: "any", onChange: (e) => updVis({ yMax: Number(e.target.value) }), style: { ...scInp, width: "100%" } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X label"), /* @__PURE__ */ React.createElement("input", { value: vis.xLabel, onChange: (e) => updVis({ xLabel: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Style"), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(ShapePreview, { shape: shapeMapDiscrete[cat] || SHAPES[ci % SHAPES.length], color: "#666" }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#333" } }, cat)))))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Axes"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X min"), /* @__PURE__ */ React.createElement("input", { type: "text", inputMode: "decimal", value: vis.xMin != null ? vis.xMin : "", placeholder: "auto (" + fmtTick(autoAxis.xMin) + ")", onChange: (e) => {
+    const v = e.target.value.trim();
+    updVis({ xMin: v === "" ? null : Number(v) });
+  }, style: { ...scInp, width: "100%" } })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X max"), /* @__PURE__ */ React.createElement("input", { type: "text", inputMode: "decimal", value: vis.xMax != null ? vis.xMax : "", placeholder: "auto (" + fmtTick(autoAxis.xMax) + ")", onChange: (e) => {
+    const v = e.target.value.trim();
+    updVis({ xMax: v === "" ? null : Number(v) });
+  }, style: { ...scInp, width: "100%" } }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { type: "text", inputMode: "decimal", value: vis.yMin != null ? vis.yMin : "", placeholder: "auto (" + fmtTick(autoAxis.yMin) + ")", onChange: (e) => {
+    const v = e.target.value.trim();
+    updVis({ yMin: v === "" ? null : Number(v) });
+  }, style: { ...scInp, width: "100%" } })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { type: "text", inputMode: "decimal", value: vis.yMax != null ? vis.yMax : "", placeholder: "auto (" + fmtTick(autoAxis.yMax) + ")", onChange: (e) => {
+    const v = e.target.value.trim();
+    updVis({ yMax: v === "" ? null : Number(v) });
+  }, style: { ...scInp, width: "100%" } }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X label"), /* @__PURE__ */ React.createElement("input", { value: vis.xLabel, onChange: (e) => updVis({ xLabel: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...scInp, width: "100%", textAlign: "left" } })))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Style"), /* @__PURE__ */ React.createElement(
     BaseStyleControls,
     {
       plotBg: vis.plotBg,
@@ -632,10 +646,10 @@ function PlotStep({
       rawData: filteredRawRows,
       xCol,
       yCol,
-      xMin: vis.xMin,
-      xMax: vis.xMax,
-      yMin: vis.yMin,
-      yMax: vis.yMax,
+      xMin: effAxis.xMin,
+      xMax: effAxis.xMax,
+      yMin: effAxis.yMin,
+      yMax: effAxis.yMax,
       xLabel: vis.xLabel,
       yLabel: vis.yLabel,
       title: vis.plotTitle,
@@ -691,7 +705,7 @@ function App() {
   const [shapeMapCol, setShapeMapCol] = useState(null);
   const [shapeMapDiscrete, setShapeMapDiscrete] = useState({});
   const [filterState, setFilterState] = useState({});
-  const visInit = { xMin: 0, xMax: 1, yMin: 0, yMax: 1, xLabel: "", yLabel: "", plotTitle: "", plotBg: "#ffffff", showGrid: true, gridColor: "#e0e0e0" };
+  const visInit = { xMin: null, xMax: null, yMin: null, yMax: null, xLabel: "", yLabel: "", plotTitle: "", plotBg: "#ffffff", showGrid: true, gridColor: "#e0e0e0" };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [refLines, setRefLines] = useState([]);
   const svgRef = useRef();
@@ -803,20 +817,35 @@ function App() {
   }, [shapeMapCategories]);
   useEffect(() => {
     if (!parsed || xCol == null || yCol == null) return;
+    updVis({
+      xMin: null,
+      xMax: null,
+      yMin: null,
+      yMax: null,
+      xLabel: parsed.headers[xCol],
+      yLabel: parsed.headers[yCol]
+    });
+  }, [xCol, yCol, parsed]);
+  const autoAxis = useMemo(() => {
+    if (!parsed || xCol == null || yCol == null) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
     const data = parsed.data;
     const xVals = data.map((r) => r[xCol]).filter((v) => v != null);
     const yVals = data.map((r) => r[yCol]).filter((v) => v != null);
     const xPad = xVals.length > 1 ? (Math.max(...xVals) - Math.min(...xVals)) * 0.05 : 0.5;
     const yPad = yVals.length > 1 ? (Math.max(...yVals) - Math.min(...yVals)) * 0.05 : 0.5;
-    updVis({
+    return {
       xMin: xVals.length ? Math.min(...xVals) - xPad : 0,
       xMax: xVals.length ? Math.max(...xVals) + xPad : 1,
       yMin: yVals.length ? Math.min(...yVals) - yPad : 0,
-      yMax: yVals.length ? Math.max(...yVals) + yPad : 1,
-      xLabel: parsed.headers[xCol],
-      yLabel: parsed.headers[yCol]
-    });
-  }, [xCol, yCol, parsed]);
+      yMax: yVals.length ? Math.max(...yVals) + yPad : 1
+    };
+  }, [parsed, xCol, yCol]);
+  const effAxis = {
+    xMin: vis.xMin != null ? vis.xMin : autoAxis.xMin,
+    xMax: vis.xMax != null ? vis.xMax : autoAxis.xMax,
+    yMin: vis.yMin != null ? vis.yMin : autoAxis.yMin,
+    yMax: vis.yMax != null ? vis.yMax : autoAxis.yMax
+  };
   useEffect(() => {
     if (colorMapCol === xCol || colorMapCol === yCol) setColorMapCol(null);
     if (sizeMapCol === xCol || sizeMapCol === yCol) setSizeMapCol(null);
@@ -1006,6 +1035,8 @@ function App() {
       shapeWarning,
       vis,
       updVis,
+      autoAxis,
+      effAxis,
       refLines,
       addRefLine,
       updateRefLine,

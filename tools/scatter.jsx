@@ -344,7 +344,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     sizeMapMax, setSizeMapMax, sizeMapDiscrete, setSizeMapDiscrete,
     sizeMapCategories, sizeMapRange,
     shapeMapCol, setShapeMapCol, shapeMapCategories, shapeMapDiscrete, setShapeMapDiscrete, shapeWarning,
-    vis, updVis,
+    vis, updVis, autoAxis, effAxis,
     refLines, addRefLine, updateRefLine, removeRefLine,
     filterState, setFilterState, filterableCols, uniqueVals,
     mappableCols,
@@ -553,12 +553,12 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
             <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Axes</p>
             <div style={{ display: "flex", flexDirection:"column", gap: 6 }}>
               <div style={{display:"flex",gap:8}}>
-                <div style={{flex:1}}><div style={lbl}>X min</div><input type="number" value={vis.xMin} step="any" onChange={e => updVis({xMin:Number(e.target.value)})} style={{...scInp,width:"100%"}} /></div>
-                <div style={{flex:1}}><div style={lbl}>X max</div><input type="number" value={vis.xMax} step="any" onChange={e => updVis({xMax:Number(e.target.value)})} style={{...scInp,width:"100%"}} /></div>
+                <div style={{flex:1}}><div style={lbl}>X min</div><input type="text" inputMode="decimal" value={vis.xMin != null ? vis.xMin : ""} placeholder={"auto (" + fmtTick(autoAxis.xMin) + ")"} onChange={e => { const v = e.target.value.trim(); updVis({xMin: v === "" ? null : Number(v)}); }} style={{...scInp,width:"100%"}} /></div>
+                <div style={{flex:1}}><div style={lbl}>X max</div><input type="text" inputMode="decimal" value={vis.xMax != null ? vis.xMax : ""} placeholder={"auto (" + fmtTick(autoAxis.xMax) + ")"} onChange={e => { const v = e.target.value.trim(); updVis({xMax: v === "" ? null : Number(v)}); }} style={{...scInp,width:"100%"}} /></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <div style={{flex:1}}><div style={lbl}>Y min</div><input type="number" value={vis.yMin} step="any" onChange={e => updVis({yMin:Number(e.target.value)})} style={{...scInp,width:"100%"}} /></div>
-                <div style={{flex:1}}><div style={lbl}>Y max</div><input type="number" value={vis.yMax} step="any" onChange={e => updVis({yMax:Number(e.target.value)})} style={{...scInp,width:"100%"}} /></div>
+                <div style={{flex:1}}><div style={lbl}>Y min</div><input type="text" inputMode="decimal" value={vis.yMin != null ? vis.yMin : ""} placeholder={"auto (" + fmtTick(autoAxis.yMin) + ")"} onChange={e => { const v = e.target.value.trim(); updVis({yMin: v === "" ? null : Number(v)}); }} style={{...scInp,width:"100%"}} /></div>
+                <div style={{flex:1}}><div style={lbl}>Y max</div><input type="text" inputMode="decimal" value={vis.yMax != null ? vis.yMax : ""} placeholder={"auto (" + fmtTick(autoAxis.yMax) + ")"} onChange={e => { const v = e.target.value.trim(); updVis({yMax: v === "" ? null : Number(v)}); }} style={{...scInp,width:"100%"}} /></div>
               </div>
               <div><div style={lbl}>X label</div><input value={vis.xLabel} onChange={e => updVis({xLabel:e.target.value})} style={{ ...scInp, width:"100%", textAlign: "left" }} /></div>
               <div><div style={lbl}>Y label</div><input value={vis.yLabel} onChange={e => updVis({yLabel:e.target.value})} style={{ ...scInp, width:"100%", textAlign: "left" }} /></div>
@@ -699,7 +699,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
           <div style={{ ...sec, padding: 20, background: "#fff" }}>
             <ScatterChart ref={svgRef}
               data={filteredData} rawData={filteredRawRows} xCol={xCol} yCol={yCol}
-              xMin={vis.xMin} xMax={vis.xMax} yMin={vis.yMin} yMax={vis.yMax}
+              xMin={effAxis.xMin} xMax={effAxis.xMax} yMin={effAxis.yMin} yMax={effAxis.yMax}
               xLabel={vis.xLabel} yLabel={vis.yLabel} title={vis.plotTitle}
               plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
               refLines={refLines}
@@ -762,7 +762,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const [filterState, setFilterState] = useState({});
 
   // Visual state
-  const visInit={xMin:0,xMax:1,yMin:0,yMax:1,xLabel:"",yLabel:"",plotTitle:"",plotBg:"#ffffff",showGrid:true,gridColor:"#e0e0e0"};
+  const visInit={xMin:null,xMax:null,yMin:null,yMax:null,xLabel:"",yLabel:"",plotTitle:"",plotBg:"#ffffff",showGrid:true,gridColor:"#e0e0e0"};
   const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
 
   const [refLines, setRefLines] = useState([]);
@@ -890,23 +890,39 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     });
   }, [shapeMapCategories]);
 
-  // Auto-compute axis ranges when X/Y columns change
+  // Reset axis overrides and labels when X/Y columns change
   useEffect(() => {
     if (!parsed || xCol == null || yCol == null) return;
+    updVis({
+      xMin: null, xMax: null, yMin: null, yMax: null,
+      xLabel: parsed.headers[xCol],
+      yLabel: parsed.headers[yCol],
+    });
+  }, [xCol, yCol, parsed]);
+
+  // Auto-compute axis ranges from data (used as fallback when vis values are null)
+  const autoAxis = useMemo(() => {
+    if (!parsed || xCol == null || yCol == null) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
     const data = parsed.data;
     const xVals = data.map(r => r[xCol]).filter(v => v != null);
     const yVals = data.map(r => r[yCol]).filter(v => v != null);
     const xPad = xVals.length > 1 ? (Math.max(...xVals) - Math.min(...xVals)) * 0.05 : 0.5;
     const yPad = yVals.length > 1 ? (Math.max(...yVals) - Math.min(...yVals)) * 0.05 : 0.5;
-    updVis({
+    return {
       xMin: xVals.length ? Math.min(...xVals) - xPad : 0,
       xMax: xVals.length ? Math.max(...xVals) + xPad : 1,
       yMin: yVals.length ? Math.min(...yVals) - yPad : 0,
       yMax: yVals.length ? Math.max(...yVals) + yPad : 1,
-      xLabel: parsed.headers[xCol],
-      yLabel: parsed.headers[yCol],
-    });
-  }, [xCol, yCol, parsed]);
+    };
+  }, [parsed, xCol, yCol]);
+
+  // Effective axis values: user override or auto
+  const effAxis = {
+    xMin: vis.xMin != null ? vis.xMin : autoAxis.xMin,
+    xMax: vis.xMax != null ? vis.xMax : autoAxis.xMax,
+    yMin: vis.yMin != null ? vis.yMin : autoAxis.yMin,
+    yMax: vis.yMax != null ? vis.yMax : autoAxis.yMax,
+  };
 
   // Clear aesthetic that refers to X or Y column
   useEffect(() => {
@@ -1053,7 +1069,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
           shapeMapCategories={shapeMapCategories}
           shapeMapDiscrete={shapeMapDiscrete} setShapeMapDiscrete={setShapeMapDiscrete}
           shapeWarning={shapeWarning}
-          vis={vis} updVis={updVis}
+          vis={vis} updVis={updVis} autoAxis={autoAxis} effAxis={effAxis}
           refLines={refLines} addRefLine={addRefLine}
           updateRefLine={updateRefLine} removeRefLine={removeRefLine}
           filterState={filterState} setFilterState={setFilterState}
