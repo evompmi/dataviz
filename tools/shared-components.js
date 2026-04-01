@@ -139,9 +139,18 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
         var col = ii % itemsPerRow;
         var label = item.label || "";
         if (truncateLabel && label.length > truncateLabel) label = label.slice(0, truncateLabel - 2) + "\u2026";
-        var shape = item.shape === "line"
-          ? h("line", { key: "s", x1: 0, x2: 14, y1: 7, y2: 7, stroke: item.color, strokeWidth: "2.5" })
-          : h("circle", { key: "s", cx: 6, cy: 7, r: 5, fill: item.color });
+        var shape;
+        if (item.shape === "line") {
+          shape = h("line", { key: "s", x1: 0, x2: 14, y1: 7, y2: 7, stroke: item.color, strokeWidth: "2.5" });
+        } else if (item.shape === "triangle") {
+          shape = h("polygon", { key: "s", points: "6,1 1,12 11,12", fill: item.color });
+        } else if (item.shape === "square") {
+          shape = h("rect", { key: "s", x: 1, y: 2, width: 10, height: 10, fill: item.color });
+        } else if (item.shape === "cross") {
+          shape = h("path", { key: "s", d: "M4,0 H8 V4 H12 V8 H8 V12 H4 V8 H0 V4 H4 Z", fill: item.color });
+        } else {
+          shape = h("circle", { key: "s", cx: 6, cy: 7, r: 5, fill: item.color });
+        }
         var text = h("text", {
           key: "t", x: item.shape === "line" ? 18 : 14, y: 11,
           fontSize: "10", fill: "#444", fontFamily: "sans-serif"

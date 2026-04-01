@@ -49,18 +49,58 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   );
   }
 
+  // ── Shapes ──────────────────────────────────────────────────────────────────
+
+  const SHAPES = ['circle', 'triangle', 'cross', 'square'];
+
+  function renderPoint(shape, cx, cy, r, props) {
+    const { fill, fillOpacity, stroke, strokeWidth, key } = props;
+    switch (shape) {
+      case 'triangle': {
+        const bx = r * 0.866;
+        const by = cy + r * 0.5;
+        return <polygon key={key} points={`${cx},${cy-r} ${cx-bx},${by} ${cx+bx},${by}`}
+          fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} />;
+      }
+      case 'square': {
+        const s = r * 1.4;
+        return <rect key={key} x={cx-s/2} y={cy-s/2} width={s} height={s}
+          fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} />;
+      }
+      case 'cross': {
+        const t = r * 0.35;
+        return <path key={key}
+          d={`M${cx-r},${cy-t}H${cx-t}V${cy-r}H${cx+t}V${cy-t}H${cx+r}V${cy+t}H${cx+t}V${cy+r}H${cx-t}V${cy+t}H${cx-r}Z`}
+          fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} />;
+      }
+      default:
+        return <circle key={key} cx={cx} cy={cy} r={r}
+          fill={fill} fillOpacity={fillOpacity} stroke={stroke} strokeWidth={strokeWidth} />;
+    }
+  }
+
+  // Shape preview for HTML UI
+  function ShapePreview({ shape, size = 16, color = "#666" }) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" style={{ display: "block", flexShrink: 0 }}>
+        {renderPoint(shape, 8, 8, 6, { fill: color, fillOpacity: 1, stroke: "none", strokeWidth: 0 })}
+      </svg>
+    );
+  }
+
 
   const MARGIN = { top: 28, right: 28, bottom: 56, left: 70 };
   const VBW = 800, VBH = 500;
 
   const ScatterChart = forwardRef(function ScatterChart({
-  data, rawData, xcol, seriesList,
+  data, rawData, xCol, yCol,
   xMin, xMax, yMin, yMax, xLabel, yLabel, title,
   plotBg, showGrid, gridColor,
   refLines,
-  xDataMin, xDataMax, yDataMin, yDataMax,
+  pointColor, pointSize, pointOpacity, strokeColor, strokeWidth,
   colorMapCol, colorMapType, colorMapPalette, colorMapDiscrete, colorMapRange,
   sizeMapCol, sizeMapType, sizeMapMin, sizeMapMax, sizeMapDiscrete, sizeMapRange,
+  shapeMapCol, shapeMapDiscrete,
   svgLegend,
   }, ref) {
   const w = VBW - MARGIN.left - MARGIN.right;
@@ -73,7 +113,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const xTicks = makeTicks(xMin, xMax, 8);
   const yTicks = makeTicks(yMin, yMax, 6);
 
-  const getColor = (s, xVal, yVal, rowIdx) => {
+  const getColor = (xVal, yVal, rowIdx) => {
     if (colorMapCol != null && rawData) {
       const raw = rawData[rowIdx] ? rawData[rowIdx][colorMapCol] : null;
       if (raw != null && raw !== "") {
@@ -85,23 +125,14 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
             return interpolateColor(COLOR_PALETTES[colorMapPalette] || COLOR_PALETTES.viridis, t);
           }
         } else {
-          return colorMapDiscrete[raw] || s.color;
+          return colorMapDiscrete[raw] || pointColor;
         }
       }
     }
-    // Per-series fallback
-    if (s.colorMode === "by_x") {
-      const t = (xVal - xDataMin) / ((xDataMax - xDataMin) || 1);
-      return interpolateColor(COLOR_PALETTES[s.palette] || COLOR_PALETTES.viridis, Math.max(0, Math.min(1, t)));
-    }
-    if (s.colorMode === "by_y") {
-      const t = (yVal - yDataMin) / ((yDataMax - yDataMin) || 1);
-      return interpolateColor(COLOR_PALETTES[s.palette] || COLOR_PALETTES.viridis, Math.max(0, Math.min(1, t)));
-    }
-    return s.color;
+    return pointColor;
   };
 
-  const getSize = (s, rowIdx) => {
+  const getSize = (rowIdx) => {
     if (sizeMapCol != null && rawData) {
       const raw = rawData[rowIdx] ? rawData[rowIdx][sizeMapCol] : null;
       if (raw != null && raw !== "") {
@@ -113,11 +144,21 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
             return sizeMapMin + t * (sizeMapMax - sizeMapMin);
           }
         } else {
-          return sizeMapDiscrete[raw] !== undefined ? sizeMapDiscrete[raw] : s.pointSize;
+          return sizeMapDiscrete[raw] !== undefined ? sizeMapDiscrete[raw] : pointSize;
         }
       }
     }
-    return s.pointSize;
+    return pointSize;
+  };
+
+  const getShape = (rowIdx) => {
+    if (shapeMapCol != null && rawData) {
+      const raw = rawData[rowIdx] ? rawData[rowIdx][shapeMapCol] : null;
+      if (raw != null && raw !== "" && shapeMapDiscrete[raw] !== undefined) {
+        return shapeMapDiscrete[raw];
+      }
+    }
+    return "circle";
   };
 
   return (
@@ -180,18 +221,17 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
 
       {/* Data points */}
       <g clipPath="url(#sc-clip)">
-        {seriesList.map(s =>
-          data.map((row, ri) => {
-            const xVal = row[xcol], yVal = row[s.colIdx];
-            if (xVal == null || yVal == null) return null;
-            return (
-              <circle key={`${s.colIdx}-${ri}`}
-                cx={sx(xVal)} cy={sy(yVal)} r={getSize(s, ri)}
-                fill={getColor(s, xVal, yVal, ri)} fillOpacity={s.opacity}
-                stroke={s.strokeColor || "none"} strokeWidth={s.strokeWidth || 0} />
-            );
-          })
-        )}
+        {data.map((row, ri) => {
+          const xVal = row[xCol], yVal = row[yCol];
+          if (xVal == null || yVal == null) return null;
+          return renderPoint(getShape(ri), sx(xVal), sy(yVal), getSize(ri), {
+            key: ri,
+            fill: getColor(xVal, yVal, ri),
+            fillOpacity: pointOpacity,
+            stroke: strokeColor || "none",
+            strokeWidth: strokeWidth || 0,
+          });
+        })}
       </g>
 
       <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
@@ -217,97 +257,32 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   );
   });
 
-  // Legend components
-
-  function ContinuousColorLegend({ palette, minVal, maxVal, label }) {
-  const stops = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
-  const n = 80;
-  const mid = (minVal + maxVal) / 2;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, minWidth: 160 }}>
-      {label && <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", width: 160, height: 14, borderRadius: 4, overflow: "hidden", border: "1px solid #ddd" }}>
-        {Array.from({length: n}, (_, i) => (
-          <div key={i} style={{ flex: 1, background: interpolateColor(stops, i / (n - 1)) }} />
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", width: 160 }}>
-        <span style={{ fontSize: 10, color: "#777" }}>{fmtTick(minVal)}</span>
-        <span style={{ fontSize: 10, color: "#777" }}>{fmtTick(mid)}</span>
-        <span style={{ fontSize: 10, color: "#777" }}>{fmtTick(maxVal)}</span>
-      </div>
-    </div>
-  );
-  }
-
-  function DiscreteColorLegend({ categories, colorMap, label }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {label && <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {categories.map(cat => (
-          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#444" }}>
-            <div style={{ width: 11, height: 11, borderRadius: "50%", background: colorMap[cat] || "#ccc", border: "1px solid #ddd", flexShrink: 0 }} />
-            <span>{cat}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-  }
-
-  function ContinuousSizeLegend({ minSize, maxSize, minVal, maxVal, label }) {
-  const steps = 4;
-  const items = Array.from({length: steps}, (_, i) => {
-    const t = i / (steps - 1);
-    const r = minSize + t * (maxSize - minSize);
-    const v = minVal + t * (maxVal - minVal);
-    return { r, v };
-  });
-  const maxR = maxSize;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {label && <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-end" }}>
-        {items.map(({ r, v }, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <div style={{ width: maxR * 2, height: maxR * 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: r * 2, height: r * 2, borderRadius: "50%", background: "#648FFF", opacity: 0.8, border: "1px solid #ddd" }} />
-            </div>
-            <span style={{ fontSize: 10, color: "#777" }}>{fmtTick(v)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-  }
-
-  function DiscreteSizeLegend({ categories, sizeMap, label }) {
-  const maxR = Math.max(...Object.values(sizeMap), 5);
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {label && <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
-        {categories.map(cat => {
-          const r = sizeMap[cat] !== undefined ? sizeMap[cat] : 5;
-          return (
-            <div key={cat} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ width: maxR * 2, height: maxR * 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: r * 2, height: r * 2, borderRadius: "50%", background: "#648FFF", opacity: 0.8, border: "1px solid #ddd" }} />
-              </div>
-              <span style={{ fontSize: 10, color: "#777" }}>{cat}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-  }
-
-  // Style constants — scatter-specific (keep local)
+  // Style constants
   const scInp = { width: 80, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "4px 8px", fontSize: 13, textAlign: "center" };
   const dlBtn = { padding: "6px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#fff", border: "1px solid #ccc", color: "#555", fontFamily: "inherit" };
   const selSt = { background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer" };
+
+  // Aesthetic box themes
+  const aesTheme = {
+    color: { bg: "#eef2ff", border: "#b0c4ff", header: "#4f6bff", label: "Color" },
+    size:  { bg: "#f0fdf4", border: "#86efac", header: "#16a34a", label: "Size" },
+    shape: { bg: "#faf5ff", border: "#d8b4fe", header: "#9333ea", label: "Shape" },
+  };
+
+  function AesBox({ theme, children }) {
+    const t = aesTheme[theme];
+    return (
+      <div style={{ borderRadius: 10, border: `1.5px solid ${t.border}`, background: t.bg }}>
+        <div style={{ background: t.header, padding: "8px 14px", borderRadius: "8px 8px 0 0" }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.8px" }}>{t.label}</span>
+        </div>
+        <div style={{ padding: "12px 14px", minHeight: 40 }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
 
   // ── Upload Step ────────────────────────────────────────────────────────────
 
@@ -320,61 +295,34 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
           onFileLoad={handleFileLoad}
           hint="CSV · TSV · TXT — one column per variable, one row per data point"
         />
-        <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p>
+        <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>Max file size: 2 MB</p>
         <div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
           <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
             {toolIcon("scatter", 24, {circle:true})}
             <div>
               <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Scatter Plot — How to use</div>
-              <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Upload → Configure columns → Plot · Color & size mappings · Reference lines</div>
+              <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Upload → Pick X & Y → Map color, size, shape</div>
             </div>
           </div>
           <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
 
-            {/* Step 1 */}
             <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
               <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Data layout</div>
               <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:0}}>One <strong>row</strong> = one data point. One <strong>column</strong> = one variable. Any number of columns, any mix of numeric and text.</p>
             </div>
 
-            {/* Step 2 — Configure */}
-            <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Step 2 — Configure columns</div>
-              <p style={{fontSize:12,color:"#444",margin:"0 0 8px",lineHeight:1.6}}>After loading a file you land on the <strong>Configure</strong> step. Each column is listed with its auto-detected role. Change roles by clicking the controls on each row:</p>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {[
-                  {badge:"X", bg:"#dbeafe", bc:"#93c5fd", tc:"#1d4ed8", desc:"Radio button — select exactly one numeric column as the X axis. Only one column can be X at a time; selecting a new one automatically demotes the previous one."},
-                  {badge:"Y", bg:"#ede9fe", bc:"#c4b5fd", tc:"#6d28d9", desc:"Checkbox — select one or more numeric columns as Y series. Each Y column becomes an independently styled series on the plot."},
-                  {badge:"aes/filter", bg:"#f0fdf4", bc:"#86efac", tc:"#15803d", desc:"Default role for all other columns (numeric or text). Available as color-by / size-by mappings in the plot step, and as row filters in the Filter tile."},
-                  {badge:"ignore ✕", bg:"#fee2e2", bc:"#fca5a5", tc:"#dc2626", desc:"Click the ✕ button to exclude a column entirely — it will be hidden from the preview and omitted from CSV downloads. Click ↩ to restore it."},
-                ].map(({badge,bg,bc,tc,desc})=>(
-                  <div key={badge} style={{display:"flex",alignItems:"flex-start",gap:8}}>
-                    <span style={{flexShrink:0,fontSize:10,padding:"2px 8px",borderRadius:10,background:bg,border:`1px solid ${bc}`,color:tc,fontWeight:700,marginTop:2}}>{badge}</span>
-                    <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{desc}</span>
-                  </div>
-                ))}
-              </div>
-              <p style={{fontSize:11,color:"#777",margin:"10px 0 0",lineHeight:1.55}}>The <strong>Filter rows</strong> tile shows checkbox filters for all <em>aes/filter</em> columns with ≤ 30 unique values. The <strong>Preview</strong> tile updates live. Click <strong>→ Plot</strong> when ready — X and at least one Y must be assigned.</p>
+            <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>X & Y selection</div>
+              <p style={{fontSize:12,color:"#444",margin:0,lineHeight:1.6}}>After upload, pick any <strong>numeric</strong> column for <strong>X</strong> and <strong>Y</strong> via dropdowns. The plot updates instantly.</p>
             </div>
 
-            {/* Aesthetic mappings */}
             <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Color by column</div>
-              {[{label:"Numeric",desc:"Continuous gradient palette (viridis, plasma…). Gradient legend shown."},{label:"Categorical",desc:"Distinct auto-assigned editable colors per value. Swatch legend shown."}].map(({label,desc})=>(<div key={label} style={{marginBottom:7}}><span style={{fontSize:11,fontWeight:700,color:"#648FFF"}}>{label} — </span><span style={{fontSize:11,color:"#444"}}>{desc}</span></div>))}
-              <p style={{fontSize:11,color:"#888",margin:"6px 0 0"}}>Only <em>aes/filter</em> columns appear in this dropdown.</p>
-            </div>
-            <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Size by column</div>
-              {[{label:"Numeric",desc:"Min/max radius mapping. Bubble-size legend shown."},{label:"Categorical",desc:"Per-category size slider. Size legend shown."}].map(({label,desc})=>(<div key={label} style={{marginBottom:7}}><span style={{fontSize:11,fontWeight:700,color:"#648FFF"}}>{label} — </span><span style={{fontSize:11,color:"#444"}}>{desc}</span></div>))}
-              <p style={{fontSize:11,color:"#888",margin:"6px 0 0"}}>Only <em>aes/filter</em> columns appear in this dropdown.</p>
+              <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Aesthetics</div>
+              <p style={{fontSize:12,color:"#444",margin:0,lineHeight:1.6}}>Map any column to <strong>color</strong>, <strong>size</strong>, or <strong>shape</strong>. Numeric columns get continuous scales; categorical columns get discrete legends.</p>
             </div>
 
-            <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
-              <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Tip — </span>
-              <span style={{fontSize:11,color:"#444"}}>You can return to Configure at any time via the step buttons or the <em>edit</em> link in the plot panel. Column roles and filters are preserved. Reference lines can be added in the plot step.</span>
-            </div>
             <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
-              {["X/Y/filter role assignment","Row filtering","Per-series style controls","8 gradient palettes","100% browser-side"].map(t=>(<span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>))}
+              {["X/Y dropdown selection","Color / size / shape mapping","Row filtering","8 gradient palettes","100% browser-side"].map(t=>(<span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>))}
             </div>
           </div>
         </div>
@@ -382,176 +330,30 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     );
   }
 
-  // ── Configure Step ─────────────────────────────────────────────────────────
-
-  function ConfigureStep({
-    parsed, colRoles, setColRoles, colIsNumeric,
-    availableColIdxs, activeColIdxs, yColIdxs,
-    filterState, setFilterState, uniqueVals,
-    filteredData, goToPlot
-  }) {
-    const hasX = colRoles.indexOf("x") >= 0;
-    const hasY = yColIdxs.length > 0;
-    return (
-      <div>
-        {!hasX && <div style={{marginBottom:12,padding:"10px 14px",borderRadius:8,background:"#fef2f2",border:"1px solid #fca5a5",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:15}}>⚠</span><span style={{fontSize:12,color:"#dc2626",fontWeight:600}}>No X column selected — assign exactly one numeric column as X below.</span></div>}
-        {hasX && !hasY && <div style={{marginBottom:12,padding:"10px 14px",borderRadius:8,background:"#fef2f2",border:"1px solid #fca5a5",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:15}}>⚠</span><span style={{fontSize:12,color:"#dc2626",fontWeight:600}}>No Y column selected — assign at least one numeric column as Y below.</span></div>}
-
-        <div style={{display:"flex",gap:16,alignItems:"stretch",marginBottom:16}}>
-
-          {/* Column roles tile — indigo */}
-          <div style={{flex:"0 0 auto",minWidth:280,borderRadius:10,padding:16,border:"1px solid #c7d2fe",background:"#eef2ff",display:"flex",flexDirection:"column"}}>
-            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#4338ca",textTransform:"uppercase",letterSpacing:"0.8px"}}>Column roles</p>
-            <div style={{display:"flex",flexDirection:"column",gap:5,flex:1}}>
-              {parsed.headers.map((h, i) => {
-                const role = colRoles[i] || "available";
-                const isNum = colIsNumeric[i];
-                const setRole = newRole => {
-                  setColRoles(prev => {
-                    const next = [...prev];
-                    if (newRole === "x") next.forEach((r, j) => { if (r === "x") next[j] = "y"; });
-                    next[i] = newRole;
-                    return next;
-                  });
-                };
-                const roleColor = role === "x" ? {bg:"#dbeafe",border:"#93c5fd",text:"#1d4ed8"} :
-                                  role === "y" ? {bg:"#ede9fe",border:"#c4b5fd",text:"#6d28d9"} :
-                                  role === "ignore" ? {bg:"#fee2e2",border:"#fca5a5",text:"#dc2626"} :
-                                  {bg:"#f0fdf4",border:"#86efac",text:"#15803d"};
-                return (
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",borderRadius:6,background:"#fff",border:`1px solid ${roleColor.border}`}}>
-                    <span style={{flex:1,fontSize:12,color:"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={h}>{h}</span>
-                    <label style={{display:"flex",alignItems:"center",gap:2,fontSize:11,color:"#4338ca",flexShrink:0,cursor:isNum?"pointer":"not-allowed",opacity:isNum?1:0.4}}>
-                      <input type="radio" name="xrole" checked={role==="x"} disabled={!isNum}
-                        onChange={() => setRole("x")} style={{accentColor:"#4338ca"}} />
-                      X
-                    </label>
-                    <label style={{display:"flex",alignItems:"center",gap:2,fontSize:11,color:"#6d28d9",flexShrink:0,cursor:isNum?"pointer":"not-allowed",opacity:isNum?1:0.4}}>
-                      <input type="checkbox" checked={role==="y"} disabled={!isNum}
-                        onChange={e => setRole(e.target.checked ? "y" : "available")}
-                        style={{accentColor:"#6d28d9"}} />
-                      Y
-                    </label>
-                    <button onClick={() => setRole(role==="ignore" ? "available" : "ignore")}
-                      style={{fontSize:10,padding:"2px 6px",borderRadius:4,cursor:"pointer",border:"1px solid #ddd6fe",background:role==="ignore"?"#fee2e2":"#f5f3ff",color:role==="ignore"?"#dc2626":"#6d28d9",fontFamily:"inherit"}}>
-                      {role==="ignore"?"↩":"✕"}
-                    </button>
-                    <span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:roleColor.bg,border:`1px solid ${roleColor.border}`,color:roleColor.text,fontWeight:600,flexShrink:0}}>
-                      {role==="available"?"aes/filter":role}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Filter rows tile — blue */}
-          <div style={{flex:1,borderRadius:10,padding:16,border:"1px solid #bfdbfe",background:"#eff6ff",display:"flex",flexDirection:"column"}}>
-            <p style={{margin:"0 0 10px",fontSize:12,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:"0.8px"}}>Filter rows</p>
-            {availableColIdxs.length === 0 ? (
-              <p style={{fontSize:12,color:"#93c5fd",fontStyle:"italic"}}>No filter columns. Assign columns the "aes/filter" role to enable filtering.</p>
-            ) : (
-              <div style={{display:"flex",flexDirection:"column",gap:12,flex:1,overflowY:"auto",maxHeight:400}}>
-                {availableColIdxs.map(ci => {
-                  const vals = uniqueVals(ci);
-                  if (colIsNumeric[ci]) return (
-                    <div key={ci} style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                      <p style={{margin:0,fontSize:11,fontWeight:600,color:"#1d4ed8"}}>{parsed.headers[ci]}</p>
-                      <button onClick={() => setFilterState(prev => ({...prev,[ci]:[]}))}
-                        style={{fontSize:10,padding:"1px 6px",borderRadius:4,cursor:"pointer",border:"1px solid #93c5fd",background:"#dbeafe",color:"#1d4ed8",fontFamily:"inherit"}}>
-                        all
-                      </button>
-                      <span style={{fontSize:10,color:"#93c5fd",fontStyle:"italic"}}>numeric — use axis range in plot</span>
-                    </div>
-                  );
-                  const allowed = filterState[ci] || [];
-                  const allChecked = allowed.length === 0;
-                  return (
-                    <div key={ci}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                        <p style={{margin:0,fontSize:11,fontWeight:600,color:"#1d4ed8"}}>{parsed.headers[ci]}</p>
-                        <button onClick={() => setFilterState(prev => ({...prev,[ci]:[]}))}
-                          style={{fontSize:10,padding:"1px 6px",borderRadius:4,cursor:"pointer",border:"1px solid #93c5fd",background:"#dbeafe",color:"#1d4ed8",fontFamily:"inherit"}}>
-                          all
-                        </button>
-                        <button onClick={() => setFilterState(prev => ({...prev,[ci]:[]}))}
-                          style={{display:"none"}} />
-                      </div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                        {vals.map(v => {
-                          const checked = allChecked || allowed.includes(v);
-                          return (
-                            <label key={v} style={{display:"flex",alignItems:"center",gap:3,fontSize:11,padding:"2px 6px",borderRadius:4,background:checked?"#dbeafe":"#f0f9ff",border:`1px solid ${checked?"#93c5fd":"#e0f2fe"}`,cursor:"pointer",color:checked?"#1e40af":"#94a3b8"}}>
-                              <input type="checkbox" checked={checked}
-                                onChange={e => {
-                                  setFilterState(prev => {
-                                    const curr = prev[ci] || [];
-                                    if (curr.length === 0) {
-                                      return {...prev, [ci]: vals.filter(x => x !== v)};
-                                    } else if (e.target.checked) {
-                                      const next = [...curr, v];
-                                      return {...prev, [ci]: next.length === vals.length ? [] : next};
-                                    } else {
-                                      const next = curr.filter(x => x !== v);
-                                      return {...prev, [ci]: next};
-                                    }
-                                  });
-                                }}
-                                style={{accentColor:"#1d4ed8",margin:0}} />
-                              {v}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Preview tile — teal */}
-        <div style={{borderRadius:10,padding:16,marginBottom:16,border:"1px solid #99f6e4",background:"#f0fdfa"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <p style={{margin:0,fontSize:12,fontWeight:700,color:"#0f766e"}}>
-              Preview — {filteredData.length} of {parsed.data.length} rows · {activeColIdxs.length} columns
-            </p>
-            <button onClick={goToPlot} disabled={!hasX || !hasY}
-              style={{padding:"7px 20px",borderRadius:6,fontSize:12,fontWeight:700,
-                cursor:hasX&&hasY?"pointer":"not-allowed",
-                background:hasX&&hasY?"#16a34a":"#d1fae5",border:"none",
-                color:hasX&&hasY?"#fff":"#6ee7b7",fontFamily:"inherit"}}>
-              → Plot
-            </button>
-          </div>
-          <DataPreview
-            headers={activeColIdxs.map(i => parsed.headers[i])}
-            rows={filteredData.slice(0,15).map(row => activeColIdxs.map(i => row[i]!=null?row[i]:""))}
-            maxRows={15} />
-        </div>
-      </div>
-    );
-  }
 
   // ── Plot Step ──────────────────────────────────────────────────────────────
 
   function PlotStep({
-    parsed, fileName, filteredData, filteredRawRows, filteredIndices,
-    xcol, yColIdxs, colRoles, activeColIdxs,
-    seriesConfig, updateSeries, seriesList,
+    parsed, fileName, filteredData, filteredRawRows, activeColIdxs,
+    xCol, setXCol, yCol, setYCol, numericCols,
+    pointColor, setPointColor, pointSize, setPointSize,
+    pointOpacity, setPointOpacity, strokeColor, setStrokeColor, strokeWidth, setStrokeWidth,
     colorMapCol, setColorMapCol, colorMapType, colorMapPalette, setColorMapPalette,
     colorMapDiscrete, setColorMapDiscrete, colorMapCategories, colorMapRange,
     sizeMapCol, setSizeMapCol, sizeMapType, sizeMapMin, setSizeMapMin,
     sizeMapMax, setSizeMapMax, sizeMapDiscrete, setSizeMapDiscrete,
     sizeMapCategories, sizeMapRange,
+    shapeMapCol, setShapeMapCol, shapeMapCategories, shapeMapDiscrete, setShapeMapDiscrete, shapeWarning,
     vis, updVis,
     refLines, addRefLine, updateRefLine, removeRefLine,
-    xDataMin, xDataMax, yDataMin, yDataMax,
-    mappableCols, setStep, resetAll, svgRef
+    filterState, setFilterState, filterableCols, uniqueVals,
+    mappableCols,
+    resetAll, svgRef, svgLegend,
   }) {
     const hasColorMap = colorMapCol != null;
     const hasSizeMap  = sizeMapCol  != null;
+    const hasShapeMap = shapeMapCol != null;
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     return (
       <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
@@ -561,205 +363,190 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
 
           {/* File info */}
           <div style={{...sec,padding:"10px 12px"}}>
-            <div style={{fontSize:12,color:"#666",marginBottom:6}}>
+            <div style={{fontSize:12,color:"#666",marginBottom:4}}>
               <strong style={{color:"#333"}}>{fileName}</strong>
               <span style={{color:"#999",marginLeft:6}}>{parsed.data.length} rows · {parsed.headers.length} cols</span>
             </div>
           </div>
 
-          {/* Actions tile */}
+          {/* Actions */}
           <ActionsPanel
             onDownloadSvg={() => downloadSvg(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.svg`)}
             onReset={resetAll}
             extraButtons={[
               {
-                label: "⬇ Download CSV",
+                label: "Download CSV",
                 onClick: (e) => { downloadCsv(activeColIdxs.map(i=>parsed.headers[i]), filteredRawRows.map(r=>activeColIdxs.map(i=>r[i])), `scatter_${fileName.replace(/\.[^.]+$/, "")}.csv`); flashSaved(e.currentTarget); },
                 style: {padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#dcfce7",border:"1px solid #86efac",color:"#166534",fontFamily:"inherit",width:"100%",fontWeight:600}
               }
             ]}
           />
 
-          {/* Column mapping */}
+          {/* X / Y selection */}
           <div style={sec}>
-            <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" }}>Column mapping</p>
-            <div style={{marginBottom:10,fontSize:11,color:"#888"}}>
-              X: <strong style={{color:"#333"}}>{parsed.headers[xcol]}</strong>
-              {" · "}Y: <strong style={{color:"#333"}}>{yColIdxs.map(i => parsed.headers[i]).join(", ")}</strong>
-              {" "}<button onClick={() => setStep("configure")} style={{fontSize:10,padding:"2px 7px",borderRadius:4,cursor:"pointer",border:"1px solid #c7d2fe",background:"#eef2ff",color:"#4338ca",fontFamily:"inherit"}}>edit</button>
-            </div>
-
-            <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "#777", textTransform: "uppercase", letterSpacing: 1 }}>Y series</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-              {Object.entries(seriesConfig)
-                .filter(([ci]) => {
-                  const idx = parseInt(ci);
-                  return idx !== xcol && idx !== colorMapCol && idx !== sizeMapCol;
-                })
-                .map(([ci, cfg]) => {
-                  const idx = parseInt(ci);
-                  return (
-                    <div key={ci} style={{ display: "flex", flexDirection:"column", gap: 6,
-                      padding: "8px 10px", background: cfg.enabled ? "#f0f0f5" : "#fafafa",
-                      opacity: cfg.enabled ? 1 : 0.45, borderRadius: 8, border: "1px solid #ccc" }}>
-
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <input type="checkbox" checked={cfg.enabled} onChange={e => updateSeries(idx, "enabled", e.target.checked)}
-                          style={{ accentColor: "#648FFF" }} />
-                        <input value={cfg.label} onChange={e => updateSeries(idx, "label", e.target.value)}
-                          style={{ flex:1, background: "#fff", border: "1px solid #ccc", borderRadius: 4, color: "#333", padding: "3px 7px", fontSize: 12 }} />
-                      </div>
-
-                      {/* Color — only when no color map column is set */}
-                      {!hasColorMap && (<>
-                        <select value={cfg.colorMode} onChange={e => updateSeries(idx, "colorMode", e.target.value)} style={{...selSt,width:"100%"}}>
-                          <option value="solid">Solid color</option>
-                          <option value="by_x">By X value</option>
-                          <option value="by_y">By Y value</option>
-                        </select>
-                        {cfg.colorMode === "solid" && (
-                          <ColorInput value={cfg.color} onChange={v => updateSeries(idx, "color", v)} size={24} />
-                        )}
-                        {cfg.colorMode !== "solid" && (<>
-                          <select value={cfg.palette} onChange={e => updateSeries(idx, "palette", e.target.value)} style={{...selSt,width:"100%"}}>
-                            {Object.keys(COLOR_PALETTES).map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                          <PaletteStrip palette={cfg.palette} />
-                        </>)}
-                      </>)}
-
-                      {/* Size — only when no size map column is set */}
-                      {!hasSizeMap && (
-                        <SliderControl label="Size" value={cfg.pointSize} min={1} max={20} step={0.5}
-                          onChange={v => updateSeries(idx, "pointSize", v)} />
-                      )}
-
-                      <SliderControl label="Opacity" value={cfg.opacity} displayValue={cfg.opacity.toFixed(2)}
-                        min={0.05} max={1} step={0.05}
-                        onChange={v => updateSeries(idx, "opacity", v)} />
-
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{ fontSize: 11, color: "#777" }}>Stroke</span>
-                        <ColorInput value={cfg.strokeColor === "none" ? "#ffffff" : cfg.strokeColor}
-                          onChange={v => updateSeries(idx, "strokeColor", v)} size={20} />
-                      </div>
-
-                      <SliderControl label="Stroke width" value={cfg.strokeWidth}
-                        min={0} max={3} step={0.25}
-                        onChange={v => updateSeries(idx, "strokeWidth", v)} />
-                    </div>
-                  );
-                })}
-            </div>
-
-            {/* Aesthetic mappings */}
-            <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "#777", textTransform: "uppercase", letterSpacing: 1 }}>
-              Aesthetic mappings
-            </p>
-
-            {/* Color mapping */}
-            <div style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 8, padding: "10px 12px", marginBottom:8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#444", marginBottom:6 }}>Color by column</div>
-              <select
-                value={colorMapCol == null ? "" : colorMapCol}
-                onChange={e => { setColorMapCol(e.target.value === "" ? null : parseInt(e.target.value)); }}
-                style={{...selSt,width:"100%"}}>
-                <option value="">— None —</option>
-                {mappableCols.filter(({ i }) => i !== sizeMapCol).map(({ i, h }) =>
-                  <option key={i} value={i}>{h}</option>
-                )}
-              </select>
-
-              {hasColorMap && colorMapType && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop:8 }}>
-                  <div style={{ fontSize: 11, color: "#888" }}>
-                    Detected: <strong style={{ color: colorMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
-                      {colorMapType === "continuous" ? "numeric (continuous)" : `categorical (${colorMapCategories.length} groups)`}
-                    </strong>
-                  </div>
-
-                  {/* Continuous: palette picker */}
-                  {colorMapType === "continuous" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <select value={colorMapPalette} onChange={e => setColorMapPalette(e.target.value)} style={{...selSt,width:"100%",fontSize:11}}>
-                        {Object.keys(COLOR_PALETTES).map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      <PaletteStrip palette={colorMapPalette} />
-                      <span style={{ fontSize: 10, color: "#aaa" }}>
-                        range: {fmtTick(colorMapRange[0])} → {fmtTick(colorMapRange[1])}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Discrete: color swatches per category */}
-                  {colorMapType === "discrete" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto" }}>
-                      {colorMapCategories.map((cat, ci) => (
-                        <div key={cat} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <ColorInput value={colorMapDiscrete[cat] || PALETTE[ci % PALETTE.length]}
-                            onChange={v => setColorMapDiscrete(prev => ({ ...prev, [cat]: v }))} size={18} />
-                          <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Size mapping */}
-            <div style={{ background: "#fff", border: "1px solid #ccc", borderRadius: 8, padding: "10px 12px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#444", marginBottom:6 }}>Size by column</div>
-              <select
-                value={sizeMapCol == null ? "" : sizeMapCol}
-                onChange={e => { setSizeMapCol(e.target.value === "" ? null : parseInt(e.target.value)); }}
-                style={{...selSt,width:"100%"}}>
-                <option value="">— None —</option>
-                {mappableCols.filter(({ i }) => i !== colorMapCol).map(({ i, h }) =>
-                  <option key={i} value={i}>{h}</option>
-                )}
-              </select>
-
-              {hasSizeMap && sizeMapType && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop:8 }}>
-                  <div style={{ fontSize: 11, color: "#888" }}>
-                    Detected: <strong style={{ color: sizeMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
-                      {sizeMapType === "continuous" ? "numeric (continuous)" : `categorical (${sizeMapCategories.length} groups)`}
-                    </strong>
-                  </div>
-
-                  {/* Continuous: min/max size sliders */}
-                  {sizeMapType === "continuous" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <SliderControl label="Min size" value={sizeMapMin}
-                        min={1} max={20} step={0.5}
-                        onChange={v => setSizeMapMin(v)} />
-                      <SliderControl label="Max size" value={sizeMapMax}
-                        min={1} max={30} step={0.5}
-                        onChange={v => setSizeMapMax(v)} />
-                      <span style={{ fontSize: 10, color: "#aaa" }}>
-                        range: {fmtTick(sizeMapRange[0])} → {fmtTick(sizeMapRange[1])}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Discrete: size per category */}
-                  {sizeMapType === "discrete" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto" }}>
-                      {sizeMapCategories.map(cat => {
-                        const val = sizeMapDiscrete[cat] !== undefined ? sizeMapDiscrete[cat] : 5;
-                        return (
-                          <SliderControl key={cat} label={cat} value={val}
-                            min={1} max={20} step={0.5}
-                            onChange={v => setSizeMapDiscrete(prev => ({ ...prev, [cat]: v }))} />
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
+            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Variables</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div>
+                <div style={lbl}>X axis</div>
+                <select value={xCol} onChange={e => setXCol(parseInt(e.target.value))}
+                  style={{...selSt, width: "100%"}}>
+                  {numericCols.map(i => <option key={i} value={i}>{parsed.headers[i]}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={lbl}>Y axis</div>
+                <select value={yCol} onChange={e => setYCol(parseInt(e.target.value))}
+                  style={{...selSt, width: "100%"}}>
+                  {numericCols.map(i => <option key={i} value={i}>{parsed.headers[i]}</option>)}
+                </select>
+              </div>
             </div>
           </div>
+
+          {/* Point defaults */}
+          <div style={sec}>
+            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Point style</p>
+            {!hasColorMap && (
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:11,color:"#777"}}>Color</span>
+                <ColorInput value={pointColor} onChange={setPointColor} size={22} />
+              </div>
+            )}
+            {!hasSizeMap && (
+              <SliderControl label="Size" value={pointSize} min={1} max={20} step={0.5} onChange={setPointSize} />
+            )}
+            <SliderControl label="Opacity" value={pointOpacity} displayValue={pointOpacity.toFixed(2)}
+              min={0.05} max={1} step={0.05} onChange={setPointOpacity} />
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+              <span style={{fontSize:11,color:"#777"}}>Stroke</span>
+              <ColorInput value={strokeColor} onChange={setStrokeColor} size={20} />
+            </div>
+            <SliderControl label="Stroke width" value={strokeWidth} min={0} max={3} step={0.25} onChange={setStrokeWidth} />
+          </div>
+
+          {/* ── Color aesthetic ── */}
+          <AesBox theme="color">
+            <select
+              value={colorMapCol == null ? "" : colorMapCol}
+              onChange={e => setColorMapCol(e.target.value === "" ? null : parseInt(e.target.value))}
+              style={{...selSt, width: "100%", marginBottom: hasColorMap ? 8 : 0}}>
+              <option value="">— None —</option>
+              {mappableCols.filter(i => i !== sizeMapCol && i !== shapeMapCol).map(i =>
+                <option key={i} value={i}>{parsed.headers[i]}</option>
+              )}
+            </select>
+
+            {hasColorMap && colorMapType && (<>
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+                Detected: <strong style={{ color: colorMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
+                  {colorMapType === "continuous" ? "numeric (continuous)" : `categorical (${colorMapCategories.length} groups)`}
+                </strong>
+              </div>
+
+              {colorMapType === "continuous" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <select value={colorMapPalette} onChange={e => setColorMapPalette(e.target.value)} style={{...selSt,width:"100%",fontSize:11}}>
+                    {Object.keys(COLOR_PALETTES).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <PaletteStrip palette={colorMapPalette} />
+                  <span style={{ fontSize: 10, color: "#aaa" }}>
+                    range: {fmtTick(colorMapRange[0])} → {fmtTick(colorMapRange[1])}
+                  </span>
+                </div>
+              )}
+
+              {colorMapType === "discrete" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 160, overflowY: "auto" }}>
+                  {colorMapCategories.map((cat, ci) => (
+                    <div key={cat} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <ColorInput value={colorMapDiscrete[cat] || PALETTE[ci % PALETTE.length]}
+                        onChange={v => setColorMapDiscrete(prev => ({ ...prev, [cat]: v }))} size={18} />
+                      <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>)}
+          </AesBox>
+
+          {/* ── Size aesthetic ── */}
+          <AesBox theme="size">
+            <select
+              value={sizeMapCol == null ? "" : sizeMapCol}
+              onChange={e => setSizeMapCol(e.target.value === "" ? null : parseInt(e.target.value))}
+              style={{...selSt, width: "100%", marginBottom: hasSizeMap ? 8 : 0}}>
+              <option value="">— None —</option>
+              {mappableCols.filter(i => i !== colorMapCol && i !== shapeMapCol).map(i =>
+                <option key={i} value={i}>{parsed.headers[i]}</option>
+              )}
+            </select>
+
+            {hasSizeMap && sizeMapType && (<>
+              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+                Detected: <strong style={{ color: sizeMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
+                  {sizeMapType === "continuous" ? "numeric (continuous)" : `categorical (${sizeMapCategories.length} groups)`}
+                </strong>
+              </div>
+
+              {sizeMapType === "continuous" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <SliderControl label="Min size" value={sizeMapMin} min={1} max={20} step={0.5} onChange={setSizeMapMin} />
+                  <SliderControl label="Max size" value={sizeMapMax} min={1} max={30} step={0.5} onChange={setSizeMapMax} />
+                  <span style={{ fontSize: 10, color: "#aaa" }}>
+                    range: {fmtTick(sizeMapRange[0])} → {fmtTick(sizeMapRange[1])}
+                  </span>
+                </div>
+              )}
+
+              {sizeMapType === "discrete" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto" }}>
+                  {sizeMapCategories.map(cat => {
+                    const val = sizeMapDiscrete[cat] !== undefined ? sizeMapDiscrete[cat] : 5;
+                    return (
+                      <SliderControl key={cat} label={cat} value={val}
+                        min={1} max={20} step={0.5}
+                        onChange={v => setSizeMapDiscrete(prev => ({ ...prev, [cat]: v }))} />
+                    );
+                  })}
+                </div>
+              )}
+            </>)}
+          </AesBox>
+
+          {/* ── Shape aesthetic ── */}
+          <AesBox theme="shape">
+            <select
+              value={shapeMapCol == null ? "" : shapeMapCol}
+              onChange={e => setShapeMapCol(e.target.value === "" ? null : parseInt(e.target.value))}
+              style={{...selSt, width: "100%", marginBottom: hasShapeMap ? 8 : 0}}>
+              <option value="">— None —</option>
+              {mappableCols.filter(i => i !== colorMapCol && i !== sizeMapCol).map(i =>
+                <option key={i} value={i}>{parsed.headers[i]}</option>
+              )}
+            </select>
+
+            {hasShapeMap && (<>
+              {shapeWarning && (
+                <div style={{ padding: "6px 10px", borderRadius: 6, background: "#fef2f2", border: "1px solid #fca5a5", marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, color: "#dc2626" }}>{shapeWarning}</span>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 180, overflowY: "auto" }}>
+                {shapeMapCategories.map((cat, ci) => (
+                  <div key={cat} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <select
+                      value={shapeMapDiscrete[cat] || SHAPES[ci % SHAPES.length]}
+                      onChange={e => setShapeMapDiscrete(prev => ({ ...prev, [cat]: e.target.value }))}
+                      style={{...selSt, fontSize: 11, width: 90}}>
+                      {SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <ShapePreview shape={shapeMapDiscrete[cat] || SHAPES[ci % SHAPES.length]} color="#666" />
+                    <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
+                  </div>
+                ))}
+              </div>
+            </>)}
+          </AesBox>
 
           {/* Axes */}
           <div style={sec}>
@@ -845,58 +632,94 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
             </div>
           </div>
 
+          {/* Filters (collapsible) */}
+          {filterableCols.length > 0 && (
+            <div style={sec}>
+              <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}
+                onClick={() => setFiltersOpen(!filtersOpen)}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>
+                  Filters {filtersOpen ? "▾" : "▸"}
+                </p>
+                <span style={{fontSize:10,color:"#aaa"}}>{filteredData.length} of {parsed.data.length} rows</span>
+              </div>
+              {filtersOpen && (
+                <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:10,maxHeight:300,overflowY:"auto"}}>
+                  {filterableCols.map(ci => {
+                    const vals = uniqueVals(ci);
+                    if (vals.length === 0 || vals.length > 30) return null;
+                    const allowed = filterState[ci] || [];
+                    const allChecked = allowed.length === 0;
+                    return (
+                      <div key={ci}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                          <span style={{fontSize:11,fontWeight:600,color:"#555"}}>{parsed.headers[ci]}</span>
+                          <button onClick={() => setFilterState(prev => ({...prev,[ci]:[]}))}
+                            style={{fontSize:10,padding:"1px 6px",borderRadius:4,cursor:"pointer",border:"1px solid #ccc",background:"#f5f5f5",color:"#666",fontFamily:"inherit"}}>
+                            all
+                          </button>
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                          {vals.map(v => {
+                            const checked = allChecked || allowed.includes(v);
+                            return (
+                              <label key={v} style={{display:"flex",alignItems:"center",gap:3,fontSize:11,padding:"2px 6px",borderRadius:4,background:checked?"#e0e7ff":"#f8f8f8",border:`1px solid ${checked?"#a5b4fc":"#e5e5e5"}`,cursor:"pointer",color:checked?"#3730a3":"#999"}}>
+                                <input type="checkbox" checked={checked}
+                                  onChange={e => {
+                                    setFilterState(prev => {
+                                      const curr = prev[ci] || [];
+                                      if (curr.length === 0) {
+                                        return {...prev, [ci]: vals.filter(x => x !== v)};
+                                      } else if (e.target.checked) {
+                                        const next = [...curr, v];
+                                        return {...prev, [ci]: next.length === vals.length ? [] : next};
+                                      } else {
+                                        const next = curr.filter(x => x !== v);
+                                        return {...prev, [ci]: next};
+                                      }
+                                    });
+                                  }}
+                                  style={{accentColor:"#648FFF",margin:0}} />
+                                {v}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
 
         {/* RIGHT: chart area */}
         <div style={{flex:1,minWidth:0}}>
-
-          {/* Plot + Legend */}
           <div style={{ ...sec, padding: 20, background: "#fff" }}>
             <ScatterChart ref={svgRef}
-              data={filteredData} rawData={filteredRawRows} xcol={xcol} seriesList={seriesList}
+              data={filteredData} rawData={filteredRawRows} xCol={xCol} yCol={yCol}
               xMin={vis.xMin} xMax={vis.xMax} yMin={vis.yMin} yMax={vis.yMax}
               xLabel={vis.xLabel} yLabel={vis.yLabel} title={vis.plotTitle}
               plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
               refLines={refLines}
-              xDataMin={xDataMin} xDataMax={xDataMax}
-              yDataMin={yDataMin} yDataMax={yDataMax}
+              pointColor={pointColor} pointSize={pointSize} pointOpacity={pointOpacity}
+              strokeColor={strokeColor} strokeWidth={strokeWidth}
               colorMapCol={colorMapCol} colorMapType={colorMapType}
               colorMapPalette={colorMapPalette} colorMapDiscrete={colorMapDiscrete}
               colorMapRange={colorMapRange}
               sizeMapCol={sizeMapCol} sizeMapType={sizeMapType}
               sizeMapMin={sizeMapMin} sizeMapMax={sizeMapMax}
               sizeMapDiscrete={sizeMapDiscrete} sizeMapRange={sizeMapRange}
-              svgLegend={(() => {
-                const items = [];
-                if (!hasColorMap && seriesList.length > 1) {
-                  items.push({ title: null, items: seriesList.map(s => ({ label: s.label, color: s.color, shape: "dot" })) });
-                }
-                if (hasColorMap && colorMapType === "continuous") {
-                  const stops = COLOR_PALETTES[colorMapPalette] || COLOR_PALETTES.viridis;
-                  items.push({ title: parsed.headers[colorMapCol], gradient: { stops, min: colorMapRange[0].toFixed(2), max: colorMapRange[1].toFixed(2) } });
-                } else if (hasColorMap && colorMapType === "discrete") {
-                  items.push({ title: parsed.headers[colorMapCol], items: colorMapCategories.map(c => ({ label: c, color: colorMapDiscrete[c] || "#999", shape: "dot" })) });
-                }
-                if (hasSizeMap && sizeMapType === "discrete") {
-                  items.push({ title: parsed.headers[sizeMapCol], sizeItems: sizeMapCategories.map(c => ({ label: c, r: sizeMapDiscrete[c] || sizeMapMin })) });
-                } else if (hasSizeMap && sizeMapType === "continuous") {
-                  const sizeItems = Array.from({length: 4}, (_, i) => {
-                    const t = i / 3;
-                    return { label: (sizeMapRange[0] + t * (sizeMapRange[1] - sizeMapRange[0])).toFixed(1), r: sizeMapMin + t * (sizeMapMax - sizeMapMin) };
-                  });
-                  items.push({ title: parsed.headers[sizeMapCol], sizeItems });
-                }
-                return items.length > 0 ? items : null;
-              })()} />
-
+              shapeMapCol={shapeMapCol} shapeMapDiscrete={shapeMapDiscrete}
+              svgLegend={svgLegend} />
           </div>
-
         </div>
 
       </div>
     );
   }
+
 
   // ── App ────────────────────────────────────────────────────────────────────
 
@@ -911,9 +734,16 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const [parseError, setParseError] = useState(null);
   const [step, setStep]         = useState("upload");
 
-  const [colRoles, setColRoles]         = useState([]);   // "x"|"y"|"available"|"ignore"
-  const [filterState, setFilterState]   = useState({});   // {colIdx: string[]} — [] means all allowed
-  const [seriesConfig, setSeriesConfig] = useState({});
+  // Column selection
+  const [xCol, setXCol] = useState(0);
+  const [yCol, setYCol] = useState(1);
+
+  // Point defaults
+  const [pointColor, setPointColor]     = useState("#648FFF");
+  const [pointSize, setPointSize]       = useState(5);
+  const [pointOpacity, setPointOpacity] = useState(0.8);
+  const [strokeColor, setStrokeColor]   = useState("#000000");
+  const [strokeWidth, setStrokeWidth]   = useState(1);
 
   // Aesthetic mappings
   const [colorMapCol, setColorMapCol]       = useState(null);
@@ -925,7 +755,13 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const [sizeMapMax, setSizeMapMax]   = useState(15);
   const [sizeMapDiscrete, setSizeMapDiscrete] = useState({});
 
-  // Visual state (grouped)
+  const [shapeMapCol, setShapeMapCol] = useState(null);
+  const [shapeMapDiscrete, setShapeMapDiscrete] = useState({});
+
+  // Filter state
+  const [filterState, setFilterState] = useState({});
+
+  // Visual state
   const visInit={xMin:0,xMax:1,yMin:0,yMax:1,xLabel:"",yLabel:"",plotTitle:"",plotBg:"#ffffff",showGrid:true,gridColor:"#e0e0e0"};
   const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
 
@@ -935,13 +771,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
 
   const parsed = useMemo(() => rawText ? parseData(rawText, sepRef.current) : null, [rawText]);
 
-  // Derived from colRoles
-  const xcol = useMemo(() => { const i = colRoles.indexOf("x"); return i >= 0 ? i : 0; }, [colRoles]);
-  const yColIdxs = useMemo(() => colRoles.reduce((a, r, i) => r === "y" ? [...a, i] : a, []), [colRoles]);
-  const availableColIdxs = useMemo(() => colRoles.reduce((a, r, i) => r === "available" ? [...a, i] : a, []), [colRoles]);
-  const activeColIdxs = useMemo(() => colRoles.reduce((a, r, i) => r !== "ignore" ? [...a, i] : a, []), [colRoles]);
-
-  // Numeric detection per column
+  // Numeric column detection
   const colIsNumeric = useMemo(() => {
     if (!parsed) return {};
     return parsed.headers.reduce((acc, _, i) => {
@@ -950,6 +780,29 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
       return acc;
     }, {});
   }, [parsed]);
+
+  const numericCols = useMemo(() => {
+    if (!parsed) return [];
+    return parsed.headers.reduce((acc, _, i) => colIsNumeric[i] ? [...acc, i] : acc, []);
+  }, [parsed, colIsNumeric]);
+
+  // All column indices (active = not X or Y)
+  const activeColIdxs = useMemo(() => parsed ? parsed.headers.map((_, i) => i) : [], [parsed]);
+
+  // Columns available for aesthetic mapping (everything except X and Y)
+  const mappableCols = useMemo(() => {
+    if (!parsed) return [];
+    return parsed.headers.reduce((acc, _, i) => (i !== xCol && i !== yCol) ? [...acc, i] : acc, []);
+  }, [parsed, xCol, yCol]);
+
+  // Columns available for filtering (non-X, non-Y, non-aesthetic, categorical with ≤30 values)
+  const filterableCols = useMemo(() => {
+    if (!parsed) return [];
+    return mappableCols.filter(i => {
+      const vals = [...new Set(parsed.rawData.map(r => r[i]).filter(v => v != null && v !== ""))];
+      return vals.length > 0 && vals.length <= 30;
+    });
+  }, [parsed, mappableCols]);
 
   // Apply filterState to rows
   const filteredIndices = useMemo(() => {
@@ -976,7 +829,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const colorMapType = useMemo(() => detectColType(colorMapCol), [colorMapCol, detectColType]);
   const sizeMapType  = useMemo(() => detectColType(sizeMapCol),  [sizeMapCol,  detectColType]);
 
-  // Unique discrete values (sorted numerically if possible)
+  // Unique values (sorted)
   const uniqueVals = useCallback((colIdx) => {
     if (colIdx == null || !parsed) return [];
     const vals = [...new Set(parsed.rawData.map(r => r[colIdx]).filter(v => v != null && v !== ""))];
@@ -988,8 +841,16 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
 
   const colorMapCategories = useMemo(() => colorMapType === "discrete" ? uniqueVals(colorMapCol) : [], [colorMapCol, colorMapType, uniqueVals]);
   const sizeMapCategories  = useMemo(() => sizeMapType  === "discrete" ? uniqueVals(sizeMapCol)  : [], [sizeMapCol,  sizeMapType,  uniqueVals]);
+  const shapeMapCategories = useMemo(() => shapeMapCol != null ? uniqueVals(shapeMapCol) : [], [shapeMapCol, uniqueVals]);
 
-  // Numeric range for continuous columns
+  const shapeWarning = useMemo(() => {
+    if (shapeMapCategories.length > 4) {
+      return `This column has ${shapeMapCategories.length} unique values — only 4 shapes are available. Categories beyond the 4th will cycle through the same shapes.`;
+    }
+    return null;
+  }, [shapeMapCategories]);
+
+  // Numeric ranges for continuous mappings
   const numericRange = useCallback((colIdx) => {
     if (colIdx == null || !parsed) return [0, 1];
     const vals = parsed.rawData.map(r => parseFloat((r[colIdx] || "").replace(",", "."))).filter(v => !isNaN(v));
@@ -999,7 +860,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const colorMapRange = useMemo(() => numericRange(colorMapCol), [colorMapCol, numericRange]);
   const sizeMapRange  = useMemo(() => numericRange(sizeMapCol),  [sizeMapCol,  numericRange]);
 
-  // Auto-assign colors for discrete color mapping
+  // Auto-assign discrete colors
   useEffect(() => {
     if (colorMapCategories.length === 0) { setColorMapDiscrete({}); return; }
     setColorMapDiscrete(prev => {
@@ -1009,7 +870,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     });
   }, [colorMapCategories]);
 
-  // Auto-assign sizes for discrete size mapping
+  // Auto-assign discrete sizes
   useEffect(() => {
     if (sizeMapCategories.length === 0) { setSizeMapDiscrete({}); return; }
     setSizeMapDiscrete(prev => {
@@ -1019,38 +880,75 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     });
   }, [sizeMapCategories]);
 
-  const seriesList = useMemo(() =>
-    Object.entries(seriesConfig)
-      .filter(([ci, cfg]) => {
-        const idx = parseInt(ci);
-        return idx !== xcol && idx !== colorMapCol && idx !== sizeMapCol && cfg.enabled;
-      })
-      .map(([ci, cfg]) => ({ colIdx: parseInt(ci), ...cfg })),
-    [seriesConfig, xcol, colorMapCol, sizeMapCol]
-  );
+  // Auto-assign discrete shapes
+  useEffect(() => {
+    if (shapeMapCategories.length === 0) { setShapeMapDiscrete({}); return; }
+    setShapeMapDiscrete(prev => {
+      const next = {};
+      shapeMapCategories.forEach((cat, i) => { next[cat] = prev[cat] || SHAPES[i % SHAPES.length]; });
+      return next;
+    });
+  }, [shapeMapCategories]);
 
-  const { xDataMin, xDataMax, yDataMin, yDataMax } = useMemo(() => {
-    if (!parsed || !filteredData.length) return { xDataMin: 0, xDataMax: 1, yDataMin: 0, yDataMax: 1 };
-    const xVals = filteredData.map(r => r[xcol]).filter(v => v != null);
-    const yVals = seriesList.flatMap(s => filteredData.map(r => r[s.colIdx]).filter(v => v != null));
-    return {
-      xDataMin: xVals.length ? Math.min(...xVals) : 0,
-      xDataMax: xVals.length ? Math.max(...xVals) : 1,
-      yDataMin: yVals.length ? Math.min(...yVals) : 0,
-      yDataMax: yVals.length ? Math.max(...yVals) : 1,
-    };
-  }, [filteredData, xcol, seriesList]);
+  // Auto-compute axis ranges when X/Y columns change
+  useEffect(() => {
+    if (!parsed || xCol == null || yCol == null) return;
+    const data = parsed.data;
+    const xVals = data.map(r => r[xCol]).filter(v => v != null);
+    const yVals = data.map(r => r[yCol]).filter(v => v != null);
+    const xPad = xVals.length > 1 ? (Math.max(...xVals) - Math.min(...xVals)) * 0.05 : 0.5;
+    const yPad = yVals.length > 1 ? (Math.max(...yVals) - Math.min(...yVals)) * 0.05 : 0.5;
+    updVis({
+      xMin: xVals.length ? Math.min(...xVals) - xPad : 0,
+      xMax: xVals.length ? Math.max(...xVals) + xPad : 1,
+      yMin: yVals.length ? Math.min(...yVals) - yPad : 0,
+      yMax: yVals.length ? Math.max(...yVals) + yPad : 1,
+      xLabel: parsed.headers[xCol],
+      yLabel: parsed.headers[yCol],
+    });
+  }, [xCol, yCol, parsed]);
 
-  const autoAssignRoles = (headers, rawData) => {
-    const isNum = idx => {
-      const vals = rawData.map(r => r[idx]).filter(v => v !== "" && v != null);
-      return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5;
-    };
-    const roles = headers.map((_, i) => isNum(i) ? "y" : "available");
-    const firstY = roles.indexOf("y");
-    if (firstY >= 0) roles[firstY] = "x";
-    return roles;
-  };
+  // Clear aesthetic that refers to X or Y column
+  useEffect(() => {
+    if (colorMapCol === xCol || colorMapCol === yCol) setColorMapCol(null);
+    if (sizeMapCol === xCol || sizeMapCol === yCol) setSizeMapCol(null);
+    if (shapeMapCol === xCol || shapeMapCol === yCol) setShapeMapCol(null);
+  }, [xCol, yCol]);
+
+  // Build SVG legend
+  const svgLegend = useMemo(() => {
+    const items = [];
+    const hasColorMap = colorMapCol != null;
+    const hasSizeMap  = sizeMapCol  != null;
+    const hasShapeMap = shapeMapCol != null;
+
+    if (hasColorMap && colorMapType === "continuous") {
+      const stops = COLOR_PALETTES[colorMapPalette] || COLOR_PALETTES.viridis;
+      items.push({ title: parsed.headers[colorMapCol], gradient: { stops, min: colorMapRange[0].toFixed(2), max: colorMapRange[1].toFixed(2) } });
+    } else if (hasColorMap && colorMapType === "discrete") {
+      items.push({ title: parsed.headers[colorMapCol], items: colorMapCategories.map(c => ({ label: c, color: colorMapDiscrete[c] || "#999", shape: "dot" })) });
+    }
+
+    if (hasSizeMap && sizeMapType === "discrete") {
+      items.push({ title: parsed.headers[sizeMapCol], sizeItems: sizeMapCategories.map(c => ({ label: c, r: sizeMapDiscrete[c] || sizeMapMin })) });
+    } else if (hasSizeMap && sizeMapType === "continuous") {
+      const sizeItems = Array.from({length: 4}, (_, i) => {
+        const t = i / 3;
+        return { label: (sizeMapRange[0] + t * (sizeMapRange[1] - sizeMapRange[0])).toFixed(1), r: sizeMapMin + t * (sizeMapMax - sizeMapMin) };
+      });
+      items.push({ title: parsed.headers[sizeMapCol], sizeItems });
+    }
+
+    if (hasShapeMap) {
+      items.push({ title: parsed.headers[shapeMapCol], items: shapeMapCategories.map(c => ({
+        label: c, color: "#666", shape: shapeMapDiscrete[c] || "circle"
+      })) });
+    }
+
+    return items.length > 0 ? items : null;
+  }, [parsed, colorMapCol, colorMapType, colorMapPalette, colorMapDiscrete, colorMapCategories, colorMapRange,
+      sizeMapCol, sizeMapType, sizeMapMin, sizeMapMax, sizeMapDiscrete, sizeMapCategories, sizeMapRange,
+      shapeMapCol, shapeMapCategories, shapeMapDiscrete]);
 
   const doParse = useCallback((text, sep) => {
     sepRef.current = sep;
@@ -1060,44 +958,33 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     if (headers.length < 2 || data.length === 0) { setParseError("The file appears to be empty or has no data rows. Please check your file and try again."); return; }
     setParseError(null);
     setRawText(fixedText);
-    setColRoles(autoAssignRoles(headers, rawData));
-    setFilterState({});
-    setSeriesConfig({});
-    setRefLines([]);
-    setStep("configure");
-  }, []);
-  const handleFileLoad = useCallback((text, name) => { setFileName(name); doParse(text, sepOverride); }, [sepOverride, doParse]);
-  const resetAll = () => { setRawText(null); setFileName(""); setStep("upload"); };
 
-  const updateSeries = (colIdx, key, val) =>
-    setSeriesConfig(prev => ({ ...prev, [colIdx]: { ...prev[colIdx], [key]: val } }));
+    // Auto-assign X and Y to first two numeric columns
+    const isNum = idx => {
+      const vals = rawData.map(r => r[idx]).filter(v => v !== "" && v != null);
+      return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.5;
+    };
+    const nums = headers.reduce((acc, _, i) => isNum(i) ? [...acc, i] : acc, []);
+    setXCol(nums[0] !== undefined ? nums[0] : 0);
+    setYCol(nums[1] !== undefined ? nums[1] : (nums[0] !== undefined ? nums[0] : 1));
 
-  const goToPlot = () => {
-    if (!parsed || colRoles.indexOf("x") < 0 || yColIdxs.length === 0) return;
-    let colorIdx = 0;
-    const cfg = {};
-    yColIdxs.forEach(ci => {
-      cfg[ci] = {
-        enabled: true, label: parsed.headers[ci],
-        color: PALETTE[colorIdx++ % PALETTE.length],
-        colorMode: "solid", palette: "viridis",
-        pointSize: 5, opacity: 0.8, strokeColor: "#000000", strokeWidth: 1,
-      };
-    });
-    setSeriesConfig(cfg);
+    // Reset aesthetics
     setColorMapCol(null); setColorMapDiscrete({});
     setSizeMapCol(null);  setSizeMapDiscrete({});
-    const upd = {xLabel: parsed.headers[colRoles.indexOf("x")], yLabel: "", plotTitle: ""};
-    const xi = colRoles.indexOf("x");
-    const xVals = filteredData.map(r => r[xi]).filter(v => v != null);
-    const yVals = yColIdxs.flatMap(ci => filteredData.map(r => r[ci]).filter(v => v != null));
-    const xPad = xVals.length > 1 ? (Math.max(...xVals) - Math.min(...xVals)) * 0.05 : 0.5;
-    const yPad = yVals.length > 1 ? (Math.max(...yVals) - Math.min(...yVals)) * 0.05 : 0.5;
-    if (xVals.length) { upd.xMin = Math.min(...xVals) - xPad; upd.xMax = Math.max(...xVals) + xPad; }
-    if (yVals.length) { upd.yMin = Math.min(...yVals) - yPad; upd.yMax = Math.max(...yVals) + yPad; }
-    updVis(upd);
+    setShapeMapCol(null); setShapeMapDiscrete({});
+    setFilterState({});
+    setRefLines([]);
+    setPointColor("#648FFF");
+    setPointSize(5);
+    setPointOpacity(0.8);
+    setStrokeColor("#000000");
+    setStrokeWidth(1);
+
     setStep("plot");
-  };
+  }, []);
+
+  const handleFileLoad = useCallback((text, name) => { setFileName(name); doParse(text, sepOverride); }, [sepOverride, doParse]);
+  const resetAll = () => { setRawText(null); setFileName(""); setStep("upload"); };
 
   const addRefLine = dir =>
     setRefLines(prev => [...prev, {
@@ -1110,21 +997,10 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const removeRefLine = id =>
     setRefLines(prev => prev.filter(rl => rl.id !== id));
 
-  // Columns available for mapping (only "available" role columns)
-  const mappableCols = parsed && colRoles.length > 0
-    ? availableColIdxs.map(i => ({ i, h: parsed.headers[i] }))
-    : [];
-
-  const hasXY = !!parsed && colRoles.indexOf("x") >= 0 && yColIdxs.length > 0;
   const canNavigate = s => {
     if (s === "upload") return true;
-    if (s === "configure") return !!parsed;
-    if (s === "plot") return hasXY;
+    if (s === "plot") return !!parsed;
     return false;
-  };
-  const handleStepChange = s => {
-    if (s === "plot" && hasXY && Object.keys(seriesConfig).length === 0) { goToPlot(); return; }
-    setStep(s);
   };
 
   return (
@@ -1134,9 +1010,9 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
         subtitle="XY scatter — one row per data point, one column per variable" />
 
       <StepNavBar
-        steps={["upload","configure","plot"]}
+        steps={["upload","plot"]}
         currentStep={step}
-        onStepChange={handleStepChange}
+        onStepChange={setStep}
         canNavigate={canNavigate}
       />
 
@@ -1150,27 +1026,18 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
         />
       )}
 
-      {step === "configure" && parsed && (
-        <ConfigureStep
-          parsed={parsed} colRoles={colRoles} setColRoles={setColRoles}
-          colIsNumeric={colIsNumeric}
-          availableColIdxs={availableColIdxs} activeColIdxs={activeColIdxs}
-          yColIdxs={yColIdxs}
-          filterState={filterState} setFilterState={setFilterState}
-          uniqueVals={uniqueVals}
-          filteredData={filteredData} goToPlot={goToPlot}
-        />
-      )}
-
       {step === "plot" && parsed && (
         <PlotStep
           parsed={parsed} fileName={fileName}
           filteredData={filteredData} filteredRawRows={filteredRawRows}
-          filteredIndices={filteredIndices}
-          xcol={xcol} yColIdxs={yColIdxs} colRoles={colRoles}
           activeColIdxs={activeColIdxs}
-          seriesConfig={seriesConfig} updateSeries={updateSeries}
-          seriesList={seriesList}
+          xCol={xCol} setXCol={setXCol} yCol={yCol} setYCol={setYCol}
+          numericCols={numericCols}
+          pointColor={pointColor} setPointColor={setPointColor}
+          pointSize={pointSize} setPointSize={setPointSize}
+          pointOpacity={pointOpacity} setPointOpacity={setPointOpacity}
+          strokeColor={strokeColor} setStrokeColor={setStrokeColor}
+          strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth}
           colorMapCol={colorMapCol} setColorMapCol={setColorMapCol}
           colorMapType={colorMapType}
           colorMapPalette={colorMapPalette} setColorMapPalette={setColorMapPalette}
@@ -1182,16 +1049,20 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
           sizeMapMax={sizeMapMax} setSizeMapMax={setSizeMapMax}
           sizeMapDiscrete={sizeMapDiscrete} setSizeMapDiscrete={setSizeMapDiscrete}
           sizeMapCategories={sizeMapCategories} sizeMapRange={sizeMapRange}
+          shapeMapCol={shapeMapCol} setShapeMapCol={setShapeMapCol}
+          shapeMapCategories={shapeMapCategories}
+          shapeMapDiscrete={shapeMapDiscrete} setShapeMapDiscrete={setShapeMapDiscrete}
+          shapeWarning={shapeWarning}
           vis={vis} updVis={updVis}
           refLines={refLines} addRefLine={addRefLine}
           updateRefLine={updateRefLine} removeRefLine={removeRefLine}
-          xDataMin={xDataMin} xDataMax={xDataMax}
-          yDataMin={yDataMin} yDataMax={yDataMax}
-          mappableCols={mappableCols} setStep={setStep}
+          filterState={filterState} setFilterState={setFilterState}
+          filterableCols={filterableCols} uniqueVals={uniqueVals}
+          mappableCols={mappableCols}
           resetAll={resetAll} svgRef={svgRef}
+          svgLegend={svgLegend}
         />
       )}
-
 
     </div>
   );
