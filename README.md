@@ -70,7 +70,7 @@ XY scatter plots with continuous and categorical aesthetic mappings.
 - **Streamlined interface**: X and Y column dropdowns directly on the plot page (no separate configure step)
 - **Color mapping**: 8 continuous palettes (viridis, plasma, RdBu, etc.) or discrete per-category
 - **Size mapping**: continuous radius scaling or discrete per-category
-- **Shape mapping**: discrete shapes (circle, square, triangle, diamond, cross, star) by category
+- **Shape mapping**: discrete shapes (circle, square, triangle, cross) by category
 - Auto-fill axis ranges when scale inputs are cleared
 - Reference lines (horizontal or vertical, labeled)
 - Row filtering by any column value
