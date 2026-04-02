@@ -13,7 +13,7 @@ cd dataviz
 open index.html
 ```
 
-## Aim and pilosophy
+## Aim and philosophy
 
 - Speed-up your participation to friday drinks by reducing time spent on classical data analysis.
 - Drop / click analyses
@@ -32,6 +32,8 @@ Luminescence time-course plots with optional Ca²⁺ concentration calibration.
 - Adjustable calibration constants (Kr, Ktr, Kd, n)
 - Baseline correction, per-replicate summation
 - Inset bar plot of summed/calibrated values
+- **Condition toggle**: enable/disable conditions from the plot panel, synced with sample selector
+- **Sample selector**: per-column enable/disable with pool/individual modes
 
 ---
 
@@ -43,6 +45,8 @@ Distribution plots with median, IQR, and whiskers.
 - Facet into separate charts by a category column
 - Show/hide jittered data points
 - Per-group color picker, box width/opacity, y-axis range control
+- **Condition toggle**: check/uncheck groups to include or exclude from the plot
+- Composition pie charts beneath each group (when color-by is active)
 - Summary stats output: n, median, Q1/Q3, IQR, whiskers
 
 ---
@@ -56,18 +60,21 @@ Mean ± error bar plots with optional jittered point overlays.
 - Color individual points by a secondary categorical column
 - Facet into separate charts by a category column
 - Per-group color picker, x-axis label rotation, bar width/opacity controls
+- **Condition toggle**: check/uncheck groups to include or exclude from the plot
 
 ---
 
 ### Scatter Plot
 XY scatter plots with continuous and categorical aesthetic mappings.
 
-- Column role assignment: x, y, color-by, size-by, filter, ignore
+- **Streamlined interface**: X and Y column dropdowns directly on the plot page (no separate configure step)
 - **Color mapping**: 8 continuous palettes (viridis, plasma, RdBu, etc.) or discrete per-category
 - **Size mapping**: continuous radius scaling or discrete per-category
+- **Shape mapping**: discrete shapes (circle, square, triangle, diamond, cross, star) by category
+- Auto-fill axis ranges when scale inputs are cleared
 - Reference lines (horizontal or vertical, labeled)
 - Row filtering by any column value
-- Gradient and discrete color legends
+- Gradient, discrete color, and shape legends
 
 ---
 
@@ -77,11 +84,11 @@ All tools share:
 
 | Feature | Details |
 |---|---|
-| **How to** | Help to get you started |
+| **How to** | Built-in help panel to get you started |
 | **Input** | CSV, TSV, TXT, DAT — comma or tab, auto-detected |
 | **Data preview** | First 15 rows with column type hints before plotting |
 | **Decimal handling** | Auto-detects and fixes comma decimal separators |
-| **Export** | SVG (publication-ready vector) + CSV (processed data) |
+| **Export** | SVG (publication-ready vector) + PNG (2x resolution) + CSV (processed data) |
 | **Column control** | Rename columns, assign roles, filter by value |
 | **Styling** | Background color, grid toggle, axis labels, plot title |
 
@@ -91,8 +98,10 @@ All tools share:
 
 | | |
 |---|---|
-| **UI** | React 18 (via Babel Standalone — no build step) |
+| **UI** | React 18 (vendored) |
+| **Build** | esbuild (JSX compilation, ~5 ms rebuilds) |
 | **Charts** | Custom SVG rendering |
 | **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo |
 | **Hosting** | GitHub Pages (static files) |
+| **Tests** | 157 tests across 4 suites (utilities, parsing, integration, component smoke tests) |
 
