@@ -389,10 +389,12 @@ function PlotControls({
   dataFormat,
   fileName,
   effectiveGroups,
+  allDisplayGroups,
   displayGroups,
   handleColorChange,
   plotGroupRenames,
   setPlotGroupRenames,
+  onToggleGroup,
   vis,
   updVis,
   colorByCol,
@@ -432,15 +434,16 @@ function PlotControls({
       onDownloadPng: handleDownloadPng,
       onReset: resetAll
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 12, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName)), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 11, color: "#999" } }, effectiveGroups.length, " condition", effectiveGroups.length > 1 ? "s" : "", " detected"), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 11, color: "#888" } }, allDisplayGroups.filter((g) => g.enabled).length, " of ", allDisplayGroups.length, " selected \xB7 ", renamedRows.length, " obs"), /* @__PURE__ */ React.createElement(
     GroupColorEditor,
     {
-      groups: displayGroups.map((g) => ({ ...g, displayName: g.name })),
+      groups: allDisplayGroups,
       onColorChange: handleColorChange,
       onNameChange: (i, newName) => {
         const origName = effectiveGroups[i].name;
         setPlotGroupRenames((p) => ({ ...p, [origName]: newName }));
-      }
+      },
+      onToggle: onToggleGroup
     }
   ), effectiveGroups.some((g) => g.sources.length > 1) && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, padding: "8px 10px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 6, display: "flex", alignItems: "flex-start", gap: 7 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, flexShrink: 0 } }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, fontWeight: 600, color: "#92400e" } }, "Duplicate column headers detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#b45309" } }, "Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column.")))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
     BaseStyleControls,
@@ -719,6 +722,7 @@ function App() {
   const [sepOverride, setSepOverride] = useState("");
   const [groups, setGroups] = useState([]);
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
+  const [disabledGroups, setDisabledGroups] = useState({});
   const [plotGroupColors, setPlotGroupColors] = useState({});
   const [parsedHeaders, setParsedHeaders] = useState([]);
   const [parsedRows, setParsedRows] = useState([]);
@@ -771,9 +775,18 @@ function App() {
     return effectiveOrder.map((n) => raw.find((g) => g.name === n)).filter(Boolean);
   }, [dataFormat, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol]);
   const effectiveGroups = dataFormat === "wide" ? groups : longGroups;
+  const allDisplayGroups = useMemo(
+    () => effectiveGroups.map((g) => ({
+      ...g,
+      displayName: plotGroupRenames[g.name] ?? g.name,
+      color: plotGroupColors[g.name] ?? g.color,
+      enabled: !disabledGroups[g.name]
+    })),
+    [effectiveGroups, plotGroupRenames, plotGroupColors, disabledGroups]
+  );
   const displayGroups = useMemo(
-    () => effectiveGroups.map((g) => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color })),
-    [effectiveGroups, plotGroupRenames, plotGroupColors]
+    () => allDisplayGroups.filter((g) => g.enabled).map((g) => ({ ...g, name: g.displayName })),
+    [allDisplayGroups]
   );
   const longStats = useMemo(() => {
     if (dataFormat !== "long" || groupColIdx < 0 || valueColIdx < 0) return [];
@@ -813,10 +826,10 @@ function App() {
       groupsFromLong(catRows, groupColIdx, valueColIdx, colorByCol).forEach((g) => {
         rawMap[g.name] = { ...g, color: globalColorMap[g.name] || g.color };
       });
-      const groups2 = effectiveOrder.filter((n) => rawMap[n]).map((n) => rawMap[n]);
+      const groups2 = effectiveOrder.filter((n) => rawMap[n] && !disabledGroups[n]).map((n) => rawMap[n]);
       return { category: cat, groups: groups2 };
     });
-  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups]);
+  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups, disabledGroups]);
   const wideData = useMemo(() => {
     if (groupColIdx < 0 || valueColIdx < 0) return null;
     const g = {};
@@ -851,6 +864,7 @@ function App() {
       setGroups(groupColumns(wh, columns));
       setPlotGroupRenames({});
       setPlotGroupColors({});
+      setDisabledGroups({});
       setDataFormat("wide");
       setFacetByCol(-1);
       setColorByCol(-1);
@@ -872,6 +886,7 @@ function App() {
       setValueRenames({});
       setPlotGroupRenames({});
       setPlotGroupColors({});
+      setDisabledGroups({});
       setGroupOrder([]);
       setFacetByCol(-1);
       setColorByCol(-1);
@@ -1019,10 +1034,15 @@ function App() {
       dataFormat,
       fileName,
       effectiveGroups,
+      allDisplayGroups,
       displayGroups,
       handleColorChange,
       plotGroupRenames,
       setPlotGroupRenames,
+      onToggleGroup: (i) => {
+        const name = effectiveGroups[i].name;
+        setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
+      },
       vis,
       updVis,
       colorByCol,

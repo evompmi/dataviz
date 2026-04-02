@@ -554,23 +554,31 @@ function StatsTable(props) {
 // Condition/group color editor with ColorInput per group
 function GroupColorEditor(props) {
   var groups = props.groups, onColorChange = props.onColorChange, onNameChange = props.onNameChange;
+  var onToggle = props.onToggle;
   return React.createElement('div', {style:{display:"flex",flexDirection:"column",gap:4}},
     groups.map(function(g, i) {
+      var enabled = g.enabled !== false;
+      var children = [];
+      if (onToggle) {
+        children.push(React.createElement('input', {key:"cb", type:"checkbox", checked:enabled,
+          onChange:function(){onToggle(i);},
+          style:{accentColor:g.color, flexShrink:0, cursor:"pointer"}}));
+      }
+      children.push(React.createElement(ColorInput, {key:"clr", value:g.color,
+        onChange:function(c){onColorChange(i,c);}, size:18}));
+      children.push(React.createElement('input', {key:"nm",
+        value:g.displayName || g.name,
+        onChange:function(e){if(onNameChange)onNameChange(i,e.target.value);},
+        style:{flex:1,minWidth:0,background:"#fff",border:"1px solid #ccc",borderRadius:4,
+          color:"#333",padding:"2px 4px",fontSize:11,fontFamily:"inherit"}
+      }));
+      children.push(React.createElement('span', {key:"n", style:{color:"#999",fontSize:10,flexShrink:0}},
+        "n="+(g.stats?g.stats.n:0)));
       return React.createElement('div', {key:g.name,
         style:{display:"flex",alignItems:"center",gap:6,padding:"3px 8px",borderRadius:6,
-          fontSize:12,background:"#f0f0f5",border:"1px solid #ccc"}
-      },
-        React.createElement(ColorInput, {value:g.color,
-          onChange:function(c){onColorChange(i,c);}, size:18}),
-        React.createElement('input', {
-          value:g.displayName || g.name,
-          onChange:function(e){if(onNameChange)onNameChange(i,e.target.value);},
-          style:{flex:1,minWidth:0,background:"#fff",border:"1px solid #ccc",borderRadius:4,
-            color:"#333",padding:"2px 4px",fontSize:11,fontFamily:"inherit"}
-        }),
-        React.createElement('span', {style:{color:"#999",fontSize:10}},
-          "n="+(g.stats?g.stats.n:0))
-      );
+          fontSize:12,background:enabled?"#f0f0f5":"#fafafa",
+          opacity:enabled?1:0.4,border:"1px solid #ccc"}
+      }, children);
     })
   );
 }

@@ -404,8 +404,8 @@ function OutputStep({ groupColIdx, valueColIdx, colNames, longStats, activeColId
   );
 }
 
-function PlotControls({ dataFormat, fileName, effectiveGroups, displayGroups, handleColorChange,
-  plotGroupRenames, setPlotGroupRenames, vis, updVis,
+function PlotControls({ dataFormat, fileName, effectiveGroups, allDisplayGroups, displayGroups, handleColorChange,
+  plotGroupRenames, setPlotGroupRenames, onToggleGroup, vis, updVis,
   colorByCol, setColorByCol, categoryColors, setCategoryColors, colorByCategories, renamedRows, colNames,
   facetByCandidates, facetByCol, setFacetByCol,
   resetAll, chartRef, facetRefs, facetedData }) {
@@ -449,19 +449,16 @@ function PlotControls({ dataFormat, fileName, effectiveGroups, displayGroups, ha
 
       {/* Conditions / group colors */}
       <div style={sec}>
-        <p style={{margin:"0 0 8px",fontSize:12,color:"#666"}}>
-          <strong style={{color:"#333"}}>{fileName}</strong>
-        </p>
-        <p style={{margin:"0 0 8px",fontSize:11,color:"#999"}}>
-          {effectiveGroups.length} condition{effectiveGroups.length > 1 ? "s" : ""} detected
-        </p>
+        <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#555"}}>Conditions</p>
+        <p style={{margin:"0 0 6px",fontSize:11,color:"#888"}}>{allDisplayGroups.filter(g=>g.enabled).length} of {allDisplayGroups.length} selected · {renamedRows.length} obs</p>
         <GroupColorEditor
-          groups={displayGroups.map(g => ({ ...g, displayName: g.name }))}
+          groups={allDisplayGroups}
           onColorChange={handleColorChange}
           onNameChange={(i, newName) => {
             const origName = effectiveGroups[i].name;
             setPlotGroupRenames(p => ({ ...p, [origName]: newName }));
           }}
+          onToggle={onToggleGroup}
         />
         {effectiveGroups.some(g => g.sources.length > 1) && (
           <div style={{marginTop:8,padding:"8px 10px",background:"#fff7ed",border:"1px solid #fdba74",borderRadius:6,display:"flex",alignItems:"flex-start",gap:7}}>
@@ -665,6 +662,7 @@ function App() {
   const [sepOverride, setSepOverride] = useState("");
   const [groups, setGroups] = useState([]);
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
+  const [disabledGroups, setDisabledGroups] = useState({});
   const [plotGroupColors, setPlotGroupColors] = useState({});
   // Long-format state
   const [parsedHeaders, setParsedHeaders] = useState([]);
@@ -719,9 +717,19 @@ function App() {
   // Effective groups for plotting
   const effectiveGroups = dataFormat === "wide" ? groups : longGroups;
 
+  const allDisplayGroups = useMemo(() =>
+    effectiveGroups.map(g => ({
+      ...g,
+      displayName: plotGroupRenames[g.name] ?? g.name,
+      color: plotGroupColors[g.name] ?? g.color,
+      enabled: !disabledGroups[g.name],
+    })),
+    [effectiveGroups, plotGroupRenames, plotGroupColors, disabledGroups]
+  );
+
   const displayGroups = useMemo(() =>
-    effectiveGroups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color })),
-    [effectiveGroups, plotGroupRenames, plotGroupColors]
+    allDisplayGroups.filter(g => g.enabled).map(g => ({ ...g, name: g.displayName })),
+    [allDisplayGroups]
   );
 
   // Long-format stats for output
@@ -763,10 +771,10 @@ function App() {
       const rawMap = {};
       groupsFromLong(catRows, groupColIdx, valueColIdx, colorByCol)
         .forEach(g => { rawMap[g.name] = { ...g, color: globalColorMap[g.name] || g.color }; });
-      const groups = effectiveOrder.filter(n => rawMap[n]).map(n => rawMap[n]);
+      const groups = effectiveOrder.filter(n => rawMap[n] && !disabledGroups[n]).map(n => rawMap[n]);
       return { category: cat, groups };
     });
-  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups]);
+  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups, disabledGroups]);
 
   // Wide data reshape from long
   const wideData = useMemo(() => {
@@ -793,7 +801,7 @@ function App() {
       const columns = dataToColumns(pd.data, pd.headers.length);
       const wh = pd.headers;
       setGroups(groupColumns(wh, columns));
-      setPlotGroupRenames({}); setPlotGroupColors({});
+      setPlotGroupRenames({}); setPlotGroupColors({}); setDisabledGroups({});
       setDataFormat("wide");
       setFacetByCol(-1);
       setColorByCol(-1); setCategoryColors({});
@@ -805,7 +813,7 @@ function App() {
       setColNames([...headers]);
       const f = {};
       headers.forEach((_, i) => { const u = [...new Set(rows.map(r => r[i]))].sort(); f[i] = { unique: u, included: new Set(u) }; });
-      setFilters(f); setValueRenames({}); setPlotGroupRenames({}); setPlotGroupColors({}); setGroupOrder([]); setFacetByCol(-1); setColorByCol(-1); setCategoryColors({}); updVis({yMinCustom:"", yMaxCustom:""}); setDataFormat("long"); setStep("configure");
+      setFilters(f); setValueRenames({}); setPlotGroupRenames({}); setPlotGroupColors({}); setDisabledGroups({}); setGroupOrder([]); setFacetByCol(-1); setColorByCol(-1); setCategoryColors({}); updVis({yMinCustom:"", yMaxCustom:""}); setDataFormat("long"); setStep("configure");
     }
   }, []);
   const handleFileLoad = useCallback((text, name) => { setFileName(name); doParse(text, sepOverride); }, [sepOverride, doParse]);
@@ -898,9 +906,11 @@ function App() {
         <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
           <PlotControls
             dataFormat={dataFormat} fileName={fileName}
-            effectiveGroups={effectiveGroups} displayGroups={displayGroups}
+            effectiveGroups={effectiveGroups} allDisplayGroups={allDisplayGroups}
+            displayGroups={displayGroups}
             handleColorChange={handleColorChange}
             plotGroupRenames={plotGroupRenames} setPlotGroupRenames={setPlotGroupRenames}
+            onToggleGroup={(i)=>{const name=effectiveGroups[i].name;setDisabledGroups(p=>({...p,[name]:!p[name]}));}}
             vis={vis} updVis={updVis}
             colorByCol={colorByCol} setColorByCol={setColorByCol}
             categoryColors={categoryColors} setCategoryColors={setCategoryColors}

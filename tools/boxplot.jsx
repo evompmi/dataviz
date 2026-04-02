@@ -381,7 +381,7 @@ function OutputStep({parsedRows, parsedHeaders, colRoles, colNames, groupColIdx,
   );
 }
 
-function PlotControls({dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs}) {
+function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayGroups, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, onToggleGroup, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs}) {
   const sv=k=>v=>updVis({[k]:v});
   return (
     <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
@@ -407,11 +407,13 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, boxplotGrou
 
       {/* Conditions / group color editor */}
       <div style={{...sec,marginBottom:0}}>
-        <p style={{margin:"0 0 6px",fontSize:11,color:"#666"}}>{boxplotGroups.length} condition{boxplotGroups.length>1?"s":""} · {renamedRows.length} obs</p>
+        <p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:"#555"}}>Conditions</p>
+        <p style={{margin:"0 0 6px",fontSize:11,color:"#888"}}>{allDisplayGroups.filter(g=>g.enabled).length} of {allDisplayGroups.length} selected · {renamedRows.length} obs</p>
         <GroupColorEditor
-          groups={boxplotGroups.map(g=>({...g, displayName: plotGroupRenames[g.name]??g.name}))}
+          groups={allDisplayGroups}
           onColorChange={(i,c)=>{const name=boxplotGroups[i].name;setBoxplotColors(p=>({...p,[name]:c}));}}
           onNameChange={(i,v)=>{const name=boxplotGroups[i].name;setPlotGroupRenames(p=>({...p,[name]:v}));}}
+          onToggle={onToggleGroup}
         />
       </div>
 
@@ -554,6 +556,7 @@ function App() {
   // Plot state
   const [boxplotColors, setBoxplotColors] = useState({});
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
+  const [disabledGroups, setDisabledGroups] = useState({});
   const [groupOrder, setGroupOrder] = useState([]);
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
@@ -567,6 +570,7 @@ function App() {
     setValueRenames({});
     setBoxplotColors({});
     setPlotGroupRenames({});
+    setDisabledGroups({});
     setGroupOrder([]);
     setColorByCol(-1);
     setCategoryColors({});
@@ -737,9 +741,18 @@ function App() {
     });
   }, [renamedRows, groupColIdx, valueColIdx, boxplotColors, effectiveOrder, colorByCol, colorByCategories]);
 
+  const allDisplayGroups = useMemo(() =>
+    boxplotGroups.map(g => ({
+      ...g,
+      displayName: plotGroupRenames[g.name] ?? g.name,
+      enabled: !disabledGroups[g.name],
+    })),
+    [boxplotGroups, plotGroupRenames, disabledGroups]
+  );
+
   const displayBoxplotGroups = useMemo(() =>
-    boxplotGroups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name })),
-    [boxplotGroups, plotGroupRenames]
+    allDisplayGroups.filter(g => g.enabled).map(g => ({ ...g, name: g.displayName })),
+    [allDisplayGroups]
   );
 
   // Facet column candidates (same pool as colorBy)
@@ -770,7 +783,7 @@ function App() {
         }
       });
       const cats = colorByCol >= 0 ? colorByCategories : ["_all"];
-      const groups = effectiveOrder.filter(name => gm[name]).map((name, gi) => {
+      const groups = effectiveOrder.filter(name => gm[name] && !disabledGroups[name]).map((name, gi) => {
         const catMap = gm[name];
         const sources = cats.filter(c => catMap[c]).map((c, si) => ({
           colIndex: si, values: catMap[c], category: c
@@ -784,7 +797,7 @@ function App() {
       });
       return { category: cat, groups };
     });
-  }, [facetByCol, facetByCategories, colorByCol, colorByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, boxplotColors, boxplotGroups]);
+  }, [facetByCol, facetByCategories, colorByCol, colorByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, boxplotColors, boxplotGroups, disabledGroups]);
 
   const toggleFilter = (ci, v) => setFilters(p => {
     const f = { ...p }, s = new Set(f[ci].included);
@@ -929,9 +942,11 @@ function App() {
           <PlotControls
             dataFormat={dataFormat} setDataFormat={setDataFormat}
             setStep={setStep} resetAll={resetAll}
+            allDisplayGroups={allDisplayGroups}
             boxplotGroups={boxplotGroups} renamedRows={renamedRows}
             plotGroupRenames={plotGroupRenames} setPlotGroupRenames={setPlotGroupRenames}
             boxplotColors={boxplotColors} setBoxplotColors={setBoxplotColors}
+            onToggleGroup={(i)=>{const name=boxplotGroups[i].name;setDisabledGroups(p=>({...p,[name]:!p[name]}));}}
             vis={vis} updVis={updVis}
             colorByCol={colorByCol} setColorByCol={setColorByCol}
             colorByCandidates={colorByCandidates} colNames={colNames}

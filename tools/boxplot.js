@@ -335,7 +335,7 @@ function OutputStep({ parsedRows, parsedHeaders, colRoles, colNames, groupColIdx
     flashSaved(e.currentTarget);
   }, style: { padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 } }, "\u2B07 Wide CSV")), /* @__PURE__ */ React.createElement(DataPreview, { headers: wideData.headers, rows: wideData.rows, maxRows: 8 })), (groupColIdx < 0 || valueColIdx < 0) && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fff8e8", borderColor: "#f0d060" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#886600" } }, "\u26A0 Assign ", /* @__PURE__ */ React.createElement("strong", null, "group"), " + ", /* @__PURE__ */ React.createElement("strong", null, "value"), " columns to enable reshaping & stats.")), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Go back to Configure and assign a numeric column as value.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnSecondary }, "\u2190 Filter"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
 }
-function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs }) {
+function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplayGroups, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, onToggleGroup, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   return /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, dataFormat === "wide" && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#ecfdf5", borderColor: "#6ee7b7", padding: "10px 12px", marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u26A1"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected")), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setDataFormat("long");
@@ -351,10 +351,10 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGro
       ],
       onReset: resetAll
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 11, color: "#666" } }, boxplotGroups.length, " condition", boxplotGroups.length > 1 ? "s" : "", " \xB7 ", renamedRows.length, " obs"), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 11, color: "#888" } }, allDisplayGroups.filter((g) => g.enabled).length, " of ", allDisplayGroups.length, " selected \xB7 ", renamedRows.length, " obs"), /* @__PURE__ */ React.createElement(
     GroupColorEditor,
     {
-      groups: boxplotGroups.map((g) => ({ ...g, displayName: plotGroupRenames[g.name] ?? g.name })),
+      groups: allDisplayGroups,
       onColorChange: (i, c) => {
         const name = boxplotGroups[i].name;
         setBoxplotColors((p) => ({ ...p, [name]: c }));
@@ -362,7 +362,8 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, boxplotGro
       onNameChange: (i, v) => {
         const name = boxplotGroups[i].name;
         setPlotGroupRenames((p) => ({ ...p, [name]: v }));
-      }
+      },
+      onToggle: onToggleGroup
     }
   )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 9 } }, /* @__PURE__ */ React.createElement(
     BaseStyleControls,
@@ -488,6 +489,7 @@ function App() {
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [boxplotColors, setBoxplotColors] = useState({});
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
+  const [disabledGroups, setDisabledGroups] = useState({});
   const [groupOrder, setGroupOrder] = useState([]);
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
@@ -499,6 +501,7 @@ function App() {
     setValueRenames({});
     setBoxplotColors({});
     setPlotGroupRenames({});
+    setDisabledGroups({});
     setGroupOrder([]);
     setColorByCol(-1);
     setCategoryColors({});
@@ -657,9 +660,17 @@ function App() {
       };
     });
   }, [renamedRows, groupColIdx, valueColIdx, boxplotColors, effectiveOrder, colorByCol, colorByCategories]);
+  const allDisplayGroups = useMemo(
+    () => boxplotGroups.map((g) => ({
+      ...g,
+      displayName: plotGroupRenames[g.name] ?? g.name,
+      enabled: !disabledGroups[g.name]
+    })),
+    [boxplotGroups, plotGroupRenames, disabledGroups]
+  );
   const displayBoxplotGroups = useMemo(
-    () => boxplotGroups.map((g) => ({ ...g, name: plotGroupRenames[g.name] ?? g.name })),
-    [boxplotGroups, plotGroupRenames]
+    () => allDisplayGroups.filter((g) => g.enabled).map((g) => ({ ...g, name: g.displayName })),
+    [allDisplayGroups]
   );
   const facetByCategories = useMemo(() => {
     if (facetByCol < 0) return [];
@@ -688,7 +699,7 @@ function App() {
         }
       });
       const cats = colorByCol >= 0 ? colorByCategories : ["_all"];
-      const groups = effectiveOrder.filter((name) => gm[name]).map((name, gi) => {
+      const groups = effectiveOrder.filter((name) => gm[name] && !disabledGroups[name]).map((name, gi) => {
         const catMap = gm[name];
         const sources = cats.filter((c) => catMap[c]).map((c, si) => ({
           colIndex: si,
@@ -706,7 +717,7 @@ function App() {
       });
       return { category: cat, groups };
     });
-  }, [facetByCol, facetByCategories, colorByCol, colorByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, boxplotColors, boxplotGroups]);
+  }, [facetByCol, facetByCategories, colorByCol, colorByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, boxplotColors, boxplotGroups, disabledGroups]);
   const toggleFilter = (ci, v) => setFilters((p) => {
     const f = { ...p }, s = new Set(f[ci].included);
     if (s.has(v)) s.delete(v);
@@ -838,12 +849,17 @@ function App() {
       setDataFormat,
       setStep,
       resetAll,
+      allDisplayGroups,
       boxplotGroups,
       renamedRows,
       plotGroupRenames,
       setPlotGroupRenames,
       boxplotColors,
       setBoxplotColors,
+      onToggleGroup: (i) => {
+        const name = boxplotGroups[i].name;
+        setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
+      },
       vis,
       updVis,
       colorByCol,
