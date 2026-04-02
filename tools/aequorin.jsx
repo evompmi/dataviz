@@ -135,7 +135,7 @@ function detectConditions(headers, poolReplicates = true, columnEnabled = null) 
 function computeCalStats(calData, headers, conditions) {
   const nRows = calData.length;
   return conditions.map(cond => {
-    const idxs = cond.colIndices;
+    const idxs = cond.activeColIndices || cond.colIndices;
     const means = [], sds = [];
     for (let r = 0; r < nRows; r++) {
       const vals = idxs.map(i => calData[r][i]).filter(v => v != null);
@@ -374,9 +374,9 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
       for (let r = xStart; r <= xEnd && r < cond.means.length; r++) {
         rows.push({ t: r, mean: sm[r], sd: ssd[r] });
       }
-      return { prefix: cond.prefix, label: cond.label, color: cond.color, n: cond.colIndices.length, rows };
+      return { prefix: cond.prefix, label: cond.label, color: cond.color, n: (cond.activeColIndices || cond.colIndices).length, rows };
     });
-  }, [activeStats.length, activeStats.map(s => s.prefix + s.color + s.enabled + ":" + s.colIndices.join(":")).join(","), xStart, xEnd, smoothWidth]);
+  }, [activeStats.length, activeStats.map(s => s.prefix + s.color + s.enabled + ":" + (s.activeColIndices || s.colIndices).join(":")).join(","), xStart, xEnd, smoothWidth]);
 
   const ts = timeStep || 1;
   const bUnit = baseUnit || "s";
@@ -743,7 +743,7 @@ function ConfigureStep({ parsed, formula, setFormula, Kr, setKr, Ktr, setKtr, Kd
   );
 }
 
-function PlotControls({ stats, vis, updVis, setStep, plotPanelRef, downloadCalibrated, resetAll,
+function PlotControls({ stats, conditions, setConditions, vis, updVis, setStep, plotPanelRef, downloadCalibrated, resetAll,
   insetColors, setInsetColors, insetStrokeColors, setInsetStrokeColors }) {
   const sv = k => v => updVis({[k]: v});
   return (
@@ -763,7 +763,7 @@ function PlotControls({ stats, vis, updVis, setStep, plotPanelRef, downloadCalib
       {/* Conditions */}
       <div style={sec}>
         <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Conditions</p>
-        <ConditionEditor conditions={stats} onChange={() => {}} />
+        <ConditionEditor conditions={conditions} onChange={setConditions} />
         <details style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
           <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
           <pre style={{ whiteSpace: "pre-wrap", marginTop: 4, fontSize: 10, background: "#eee", padding: 8, borderRadius: 4 }}>
@@ -999,7 +999,7 @@ function App() {
     const r0 = Math.max(0, Math.floor(vis.xStart));
     const r1 = Math.min(calData.length - 1, Math.ceil(vis.xEnd));
     return stats.map(s => {
-      const repSums = s.colIndices.map(ci => {
+      const repSums = (s.activeColIndices || s.colIndices).map(ci => {
         const vals = [];
         for (let r = r0; r <= r1; r++) {
           const v = calData[r] ? calData[r][ci] : null;
@@ -1046,14 +1046,20 @@ function App() {
 
   const applyGrouping = (pool, ce, prevConds) => {
     const prevMap = Object.fromEntries(prevConds.map(c => [c.prefix, c]));
-    const newConds = detectConditions(parsed.headers, pool, ce).map(c => ({
-      ...c, enabled: true,
-      label: prevMap[c.prefix]?.label ?? c.label,
-      color: prevMap[c.prefix]?.color ?? c.color,
-    }));
-    setConditions(newConds);
+    // Build conditions from ALL columns, then mark enabled based on columnEnabled
+    const allConds = detectConditions(parsed.headers, pool, null).map(c => {
+      const activeCols = c.colIndices.filter(ci => ce[ci] !== false);
+      return {
+        ...c,
+        activeColIndices: activeCols,
+        enabled: activeCols.length > 0,
+        label: prevMap[c.prefix]?.label ?? c.label,
+        color: prevMap[c.prefix]?.color ?? c.color,
+      };
+    });
+    setConditions(allConds);
     const ic = { ...insetColors }, isc = { ...insetStrokeColors };
-    newConds.forEach(c => { if (!ic[c.prefix]) ic[c.prefix] = c.color; if (!isc[c.prefix]) isc[c.prefix] = c.color; });
+    allConds.forEach(c => { if (!ic[c.prefix]) ic[c.prefix] = c.color; if (!isc[c.prefix]) isc[c.prefix] = c.color; });
     setInsetColors(ic); setInsetStrokeColors(isc);
   };
 
@@ -1062,6 +1068,15 @@ function App() {
     const ce = { ...columnEnabled, [i]: val };
     setColumnEnabled(ce);
     applyGrouping(poolReplicates, ce, conditions);
+  };
+  const handleConditionsChange = (newConds) => {
+    const ce = { ...columnEnabled };
+    const updated = newConds.map(c => {
+      c.colIndices.forEach(ci => { ce[ci] = c.enabled; });
+      return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+    });
+    setConditions(updated);
+    setColumnEnabled(ce);
   };
 
   const plotPanelRef = useRef();
@@ -1178,7 +1193,8 @@ function App() {
 
           <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
             {/* LEFT: controls panel */}
-            <PlotControls stats={stats} vis={vis} updVis={updVis} setStep={setStep}
+            <PlotControls stats={stats} conditions={conditions} setConditions={handleConditionsChange}
+              vis={vis} updVis={updVis} setStep={setStep}
               plotPanelRef={plotPanelRef} downloadCalibrated={downloadCalibrated} resetAll={resetAll}
               insetColors={insetColors} setInsetColors={setInsetColors}
               insetStrokeColors={insetStrokeColors} setInsetStrokeColors={setInsetStrokeColors} />

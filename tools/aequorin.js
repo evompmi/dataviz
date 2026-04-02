@@ -139,7 +139,7 @@ function detectConditions(headers, poolReplicates = true, columnEnabled = null) 
 function computeCalStats(calData, headers, conditions) {
   const nRows = calData.length;
   return conditions.map((cond) => {
-    const idxs = cond.colIndices;
+    const idxs = cond.activeColIndices || cond.colIndices;
     const means = [], sds = [];
     for (let r = 0; r < nRows; r++) {
       const vals = idxs.map((i) => calData[r][i]).filter((v) => v != null);
@@ -438,9 +438,9 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
       for (let r = xStart; r <= xEnd && r < cond.means.length; r++) {
         rows.push({ t: r, mean: sm[r], sd: ssd[r] });
       }
-      return { prefix: cond.prefix, label: cond.label, color: cond.color, n: cond.colIndices.length, rows };
+      return { prefix: cond.prefix, label: cond.label, color: cond.color, n: (cond.activeColIndices || cond.colIndices).length, rows };
     });
-  }, [activeStats.length, activeStats.map((s) => s.prefix + s.color + s.enabled + ":" + s.colIndices.join(":")).join(","), xStart, xEnd, smoothWidth]);
+  }, [activeStats.length, activeStats.map((s) => s.prefix + s.color + s.enabled + ":" + (s.activeColIndices || s.colIndices).join(":")).join(","), xStart, xEnd, smoothWidth]);
   const ts = timeStep || 1;
   const bUnit = baseUnit || "s";
   const dUnit = displayUnit || bUnit;
@@ -673,6 +673,8 @@ function ConfigureStep({
 }
 function PlotControls({
   stats,
+  conditions,
+  setConditions,
   vis,
   updVis,
   setStep,
@@ -706,8 +708,7 @@ function PlotControls({
         }
       ]
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement(ConditionEditor, { conditions: stats, onChange: () => {
-  } }), /* @__PURE__ */ React.createElement("details", { style: { marginTop: 8, fontSize: 11, color: "#999" } }, /* @__PURE__ */ React.createElement("summary", { style: { cursor: "pointer" } }, "Debug: column grouping"), /* @__PURE__ */ React.createElement("pre", { style: { whiteSpace: "pre-wrap", marginTop: 4, fontSize: 10, background: "#eee", padding: 8, borderRadius: 4 } }, stats.map((c) => `"${c.prefix}" \u2192 ${c.colIndices.length} replicate(s) (col indices: ${c.colIndices.join(", ")})`).join("\n")))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Plot parameters"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X start"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xStart, onChange: (e) => updVis({ xStart: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X end"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xEnd, onChange: (e) => updVis({ xEnd: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMin, onChange: (e) => updVis({ yMin: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" }, step: "0.1" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMax, onChange: (e) => updVis({ yMax: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" }, step: "0.1" })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Smooth (\xB1pts)", value: vis.smoothWidth, min: 0, max: 20, step: 1, onChange: sv("smoothWidth") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Subtitle"), /* @__PURE__ */ React.createElement("input", { value: vis.plotSubtitle, onChange: (e) => updVis({ plotSubtitle: e.target.value }), style: { ...inpN, width: "100%", textAlign: "left" } })))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Style"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement(ConditionEditor, { conditions, onChange: setConditions }), /* @__PURE__ */ React.createElement("details", { style: { marginTop: 8, fontSize: 11, color: "#999" } }, /* @__PURE__ */ React.createElement("summary", { style: { cursor: "pointer" } }, "Debug: column grouping"), /* @__PURE__ */ React.createElement("pre", { style: { whiteSpace: "pre-wrap", marginTop: 4, fontSize: 10, background: "#eee", padding: 8, borderRadius: 4 } }, stats.map((c) => `"${c.prefix}" \u2192 ${c.colIndices.length} replicate(s) (col indices: ${c.colIndices.join(", ")})`).join("\n")))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Plot parameters"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X start"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xStart, onChange: (e) => updVis({ xStart: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "X end"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.xEnd, onChange: (e) => updVis({ xEnd: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMin, onChange: (e) => updVis({ yMin: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" }, step: "0.1" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { type: "number", value: vis.yMax, onChange: (e) => updVis({ yMax: Number(e.target.value) }), style: { ...inpN, width: "100%", textAlign: "left" }, step: "0.1" })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Smooth (\xB1pts)", value: vis.smoothWidth, min: 0, max: 20, step: 1, onChange: sv("smoothWidth") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inpN, width: "100%", textAlign: "left" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Subtitle"), /* @__PURE__ */ React.createElement("input", { value: vis.plotSubtitle, onChange: (e) => updVis({ plotSubtitle: e.target.value }), style: { ...inpN, width: "100%", textAlign: "left" } })))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Style"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement(
     BaseStyleControls,
     {
       plotBg: vis.plotBg,
@@ -902,7 +903,7 @@ function App() {
     const r0 = Math.max(0, Math.floor(vis.xStart));
     const r1 = Math.min(calData.length - 1, Math.ceil(vis.xEnd));
     return stats.map((s) => {
-      const repSums = s.colIndices.map((ci) => {
+      const repSums = (s.activeColIndices || s.colIndices).map((ci) => {
         const vals = [];
         for (let r = r0; r <= r1; r++) {
           const v = calData[r] ? calData[r][ci] : null;
@@ -952,15 +953,19 @@ function App() {
   }, [parsed]);
   const applyGrouping = (pool, ce, prevConds) => {
     const prevMap = Object.fromEntries(prevConds.map((c) => [c.prefix, c]));
-    const newConds = detectConditions(parsed.headers, pool, ce).map((c) => ({
-      ...c,
-      enabled: true,
-      label: prevMap[c.prefix]?.label ?? c.label,
-      color: prevMap[c.prefix]?.color ?? c.color
-    }));
-    setConditions(newConds);
+    const allConds = detectConditions(parsed.headers, pool, null).map((c) => {
+      const activeCols = c.colIndices.filter((ci) => ce[ci] !== false);
+      return {
+        ...c,
+        activeColIndices: activeCols,
+        enabled: activeCols.length > 0,
+        label: prevMap[c.prefix]?.label ?? c.label,
+        color: prevMap[c.prefix]?.color ?? c.color
+      };
+    });
+    setConditions(allConds);
     const ic = { ...insetColors }, isc = { ...insetStrokeColors };
-    newConds.forEach((c) => {
+    allConds.forEach((c) => {
       if (!ic[c.prefix]) ic[c.prefix] = c.color;
       if (!isc[c.prefix]) isc[c.prefix] = c.color;
     });
@@ -975,6 +980,17 @@ function App() {
     const ce = { ...columnEnabled, [i]: val };
     setColumnEnabled(ce);
     applyGrouping(poolReplicates, ce, conditions);
+  };
+  const handleConditionsChange = (newConds) => {
+    const ce = { ...columnEnabled };
+    const updated = newConds.map((c) => {
+      c.colIndices.forEach((ci) => {
+        ce[ci] = c.enabled;
+      });
+      return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+    });
+    setConditions(updated);
+    setColumnEnabled(ce);
   };
   const plotPanelRef = useRef();
   const doParse = useCallback((text, sep) => {
@@ -1144,6 +1160,8 @@ function App() {
     PlotControls,
     {
       stats,
+      conditions,
+      setConditions: handleConditionsChange,
       vis,
       updVis,
       setStep,
