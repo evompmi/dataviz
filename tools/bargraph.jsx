@@ -595,6 +595,18 @@ function ChartArea({ dataFormat, facetByCol, facetedData, displayGroups, plotGro
   }] : null;
   const vp = {...vis, yMin: yMinVal, yMax: yMaxVal, catColors: colorByCol >= 0 ? categoryColors : null, svgLegend};
 
+  if (displayGroups.length === 0 && (facetByCol < 0 || dataFormat !== "long" || facetedData.length === 0)) {
+    return (
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{...sec,padding:20,background:"#fff"}}>
+          <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+            No conditions selected. Enable at least one to display the plot.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{flex:1,minWidth:0}}>
       {colorByCol >= 0 && colorByCategories.length > 0 && (

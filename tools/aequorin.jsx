@@ -364,9 +364,9 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
   const activeStats = stats.filter(s => s.enabled);
   const combinedRef = useRef();
   const facetRefs = useRef({});
-  if (activeStats.length === 0) return <p style={{ color: "#777" }}>No conditions selected.</p>;
 
   const series = useMemo(() => {
+    if (activeStats.length === 0) return [];
     return activeStats.map(cond => {
       const sm = smooth(cond.means, smoothWidth);
       const ssd = smooth(cond.sds, smoothWidth);
@@ -419,6 +419,12 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
   }), [faceted, displaySeries, showInset]);
 
   const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
+
+  if (activeStats.length === 0) return (
+    <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+      No conditions or samples selected. Enable at least one to display the plot.
+    </div>
+  );
 
   const insetBarProps = { series, insetColors, insetStrokeColors, insetFillOpacity, insetStrokeOpacity,
     insetW, insetH, insetErrorType, insetBarStrokeWidth, insetShowGrid, insetGridColor,
@@ -1179,7 +1185,7 @@ function App() {
           downloadCalibrated={downloadCalibrated} setStep={setStep} />
       )}
 
-      {step === "plot" && stats.length > 0 && (
+      {step === "plot" && parsed && calData && (
         <div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
             <button onClick={() => updVis({faceted:false})} style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, fontFamily: "inherit",

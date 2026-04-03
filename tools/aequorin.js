@@ -429,8 +429,8 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
   const activeStats = stats.filter((s) => s.enabled);
   const combinedRef = useRef();
   const facetRefs = useRef({});
-  if (activeStats.length === 0) return /* @__PURE__ */ React.createElement("p", { style: { color: "#777" } }, "No conditions selected.");
   const series = useMemo(() => {
+    if (activeStats.length === 0) return [];
     return activeStats.map((cond) => {
       const sm = smooth(cond.means, smoothWidth);
       const ssd = smooth(cond.sds, smoothWidth);
@@ -478,6 +478,7 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
     }
   }), [faceted, displaySeries, showInset]);
   const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
+  if (activeStats.length === 0) return /* @__PURE__ */ React.createElement("div", { style: { padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 } }, "No conditions or samples selected. Enable at least one to display the plot.");
   const insetBarProps = {
     series,
     insetColors,
@@ -1136,7 +1137,7 @@ function App() {
       downloadCalibrated,
       setStep
     }
-  ), step === "plot" && stats.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => updVis({ faceted: false }), style: {
+  ), step === "plot" && parsed && calData && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 16, alignItems: "center" } }, /* @__PURE__ */ React.createElement("button", { onClick: () => updVis({ faceted: false }), style: {
     padding: "6px 14px",
     borderRadius: 6,
     fontSize: 12,
