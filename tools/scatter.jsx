@@ -105,7 +105,12 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   }, ref) {
   const w = VBW - MARGIN.left - MARGIN.right;
   const h = VBH - MARGIN.top - MARGIN.bottom;
-  const legendH = computeLegendHeight(svgLegend, VBW - MARGIN.left - MARGIN.right);
+  const legendItemWidth = (block) => {
+    if (!block.items) return 88;
+    const maxLen = block.items.reduce((m, it) => Math.max(m, (it.label || "").length), 0);
+    return Math.max(88, Math.min(260, maxLen * 6.2 + 22));
+  };
+  const legendH = computeLegendHeight(svgLegend, VBW - MARGIN.left - MARGIN.right, legendItemWidth);
   const xRange = xMax - xMin || 1;
   const yRange = yMax - yMin || 1;
   const sx = v => MARGIN.left + ((v - xMin) / xRange) * w;
@@ -252,7 +257,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
       {xLabel && <text x={MARGIN.left + w/2} y={VBH - 6} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{xLabel}</text>}
       {yLabel && <text transform={`translate(14,${MARGIN.top + h/2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>}
       {title && <text x={VBW/2} y={16} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{title}</text>}
-      {renderSvgLegend(svgLegend, VBH + 10, MARGIN.left, VBW - MARGIN.left - MARGIN.right)}
+      {renderSvgLegend(svgLegend, VBH + 10, MARGIN.left, VBW - MARGIN.left - MARGIN.right, legendItemWidth)}
     </svg>
   );
   });

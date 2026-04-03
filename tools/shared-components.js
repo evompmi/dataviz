@@ -91,7 +91,16 @@ function computeLegendHeight(blocks, usableW, itemWidth) {
     if (b.gradient) t += 30;
     if (b.sizeItems && b.sizeItems.length) {
       var mr = Math.max.apply(null, b.sizeItems.map(function(i) { return i.r; }).concat([3]));
-      t += mr * 2 + 4;
+      var rowH = mr * 2 + 4;
+      // Compute per-item widths and wrap into rows
+      var cx = 0, rows = 1;
+      b.sizeItems.forEach(function(item, ii) {
+        var labelW = (item.label || "").length * 5.6 + 6;
+        var itemW = mr * 2 + 4 + labelW + 12;
+        if (ii > 0 && cx + itemW > usableW) { rows++; cx = 0; }
+        cx += itemW;
+      });
+      t += rows * rowH;
     }
     if (bi < blocks.length - 1) t += 8;
   });
@@ -178,13 +187,18 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
       ));
     }
 
-    // Size items (scatter)
+    // Size items (scatter) — label-aware spacing with row wrapping
     if (block.sizeItems && block.sizeItems.length) {
       var sth = block.title ? TH : 0;
       var maxR = Math.max.apply(null, block.sizeItems.map(function(i) { return i.r; }).concat([3]));
-      var spacing = maxR * 2 + 30;
+      var rowH = maxR * 2 + 4;
+      var cx = 0, row = 0;
       var sizeChildren = block.sizeItems.map(function(item, ii) {
-        return h("g", { key: ii, transform: "translate(" + (ii * spacing) + ", 0)" },
+        var labelW = (item.label || "").length * 5.6 + 6;
+        var itemW = maxR * 2 + 4 + labelW + 12;
+        if (ii > 0 && cx + itemW > usableW) { row++; cx = 0; }
+        var tx = cx; cx += itemW;
+        return h("g", { key: ii, transform: "translate(" + tx + ", " + (row * rowH) + ")" },
           h("circle", { cx: maxR, cy: 0, r: item.r, fill: "#888", fillOpacity: "0.35", stroke: "#888", strokeWidth: "0.8" }),
           h("text", { x: maxR * 2 + 4, y: 4, fontSize: "9", fill: "#444", fontFamily: "sans-serif" }, item.label)
         );
