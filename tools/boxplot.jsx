@@ -472,6 +472,17 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayG
 }
 
 function PlotArea({colorByCol, colorByCategories, colNames, categoryColors, facetByCol, facetedData, facetRefs, chartRef, displayBoxplotGroups, vis, yMinVal, yMaxVal, plotGroupRenames, boxplotColors}) {
+  if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
+    return (
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{...sec,padding:20,background:"#fff"}}>
+          <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+            No conditions selected. Enable at least one to display the plot.
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{flex:1,minWidth:0}}>
       {colorByCol>=0&&colorByCategories.length>0&&(

@@ -653,6 +653,9 @@ function ChartArea({
     items: colorByCategories.map((c) => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
   }] : null;
   const vp = { ...vis, yMin: yMinVal, yMax: yMaxVal, catColors: colorByCol >= 0 ? categoryColors : null, svgLegend };
+  if (displayGroups.length === 0 && (facetByCol < 0 || dataFormat !== "long" || facetedData.length === 0)) {
+    return /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 } }, "No conditions selected. Enable at least one to display the plot.")));
+  }
   return /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, colorByCol >= 0 && colorByCategories.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12, background: "#f8f8fa", borderRadius: 8, padding: "8px 14px", border: "1px solid #ddd", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Points colored by: ", colNames[colorByCol]), colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: categoryColors[cat] || "#999" } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#444" } }, cat)))), (facetByCol < 0 || dataFormat !== "long") && /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement(
     BarChart,
     {
