@@ -21,11 +21,12 @@ No test framework — custom harness in `tests/harness.js` using `suite()`, `tes
 ## Architecture
 
 ### Tool structure
-- `index.html` — landing page with 2x2 tool grid; loads tools in iframes; prefetches vendor scripts with progress bar
+- `index.html` — landing page with tool grid; loads tools in iframes; prefetches vendor scripts with progress bar
 - `tools/aequorin.html` — Ca2+ luminescence calibration plots
 - `tools/bargraph.html` — mean +/- error bar plots
 - `tools/boxplot.html` — distribution plots with jittered points
 - `tools/scatter.html` — XY scatter with color/size mapping
+- `tools/venn.html` — area-proportional Venn diagrams (2–3 sets) with data extraction
 
 Each tool HTML loads vendored React/ReactDOM and shared scripts in `<head>`, then loads a compiled `.js` file. The editable source is in `tools/<tool>.jsx` — run `npm run build` to compile.
 
