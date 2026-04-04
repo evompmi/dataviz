@@ -4,36 +4,15 @@ const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRe
 
 // ── Set Parsing ──────────────────────────────────────────────────────────────
 
-function detectSetFormat(headers, rows) {
-  // Long format: exactly 2 columns, col2 has few unique values relative to col1
-  if (headers.length === 2) {
-    const col0 = new Set(rows.map(r => r[0]).filter(Boolean));
-    const col1 = new Set(rows.map(r => r[1]).filter(Boolean));
-    if (col1.size <= 20 && col1.size < col0.size * 0.3) return "long";
-  }
-  return "wide";
-}
-
-function parseSetData(headers, rows, format) {
+function parseSetData(headers, rows) {
   const sets = new Map();
-  if (format === "long") {
+  for (let ci = 0; ci < headers.length; ci++) {
+    const s = new Set();
     for (const r of rows) {
-      const item = (r[0] || "").trim();
-      const setName = (r[1] || "").trim();
-      if (!item || !setName) continue;
-      if (!sets.has(setName)) sets.set(setName, new Set());
-      sets.get(setName).add(item);
+      const v = (r[ci] || "").trim();
+      if (v) s.add(v);
     }
-  } else {
-    // Wide: each column is a set
-    for (let ci = 0; ci < headers.length; ci++) {
-      const s = new Set();
-      for (const r of rows) {
-        const v = (r[ci] || "").trim();
-        if (v) s.add(v);
-      }
-      if (s.size > 0) sets.set(headers[ci], s);
-    }
+    if (s.size > 0) sets.set(headers[ci], s);
   }
   const setNames = [...sets.keys()];
   return { setNames, sets };
@@ -113,20 +92,6 @@ function circleIntersectionPoints(c1, c2) {
 function isInsideCircle(px, py, c) {
   const dx = px - c.cx, dy = py - c.cy;
   return dx * dx + dy * dy < c.r * c.r + 1e-6;
-}
-
-// Build polyline arc points on a circle from angle a1 to a2 (CCW)
-function arcPolyline(cx, cy, r, a1, a2, n) {
-  let span = a2 - a1;
-  while (span < 0) span += 2 * Math.PI;
-  while (span > 2 * Math.PI) span -= 2 * Math.PI;
-  const pts = [];
-  const steps = n || Math.max(16, Math.round(span / (Math.PI / 32)));
-  for (let i = 0; i <= steps; i++) {
-    const a = a1 + span * (i / steps);
-    pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-  }
-  return pts;
 }
 
 // Normalize angle to [0, 2π)
@@ -407,9 +372,9 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint, radii)
         const pull = (dist - maxDist) / 2 + 1;
         const ux = dx / Math.max(dist, 1e-9), uy = dy / Math.max(dist, 1e-9);
         fixed[i].cx += ux * pull;
-        fixed[i].cy -= uy * pull; // intentional: just nudge together
+        fixed[i].cy += uy * pull;
         fixed[j].cx -= ux * pull;
-        fixed[j].cy += uy * pull;
+        fixed[j].cy -= uy * pull;
         warnings.push(`"${setNames[i]}" and "${setNames[j]}" share items — ensured overlap`);
       }
     }
@@ -421,6 +386,21 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint, radii)
   }
 
   return { circles: fixed, warnings };
+}
+
+function fitCirclesToViewport(circles, viewW, viewH, margin = 15) {
+  const minX = Math.min(...circles.map(c => c.cx - c.r));
+  const maxX = Math.max(...circles.map(c => c.cx + c.r));
+  const minY = Math.min(...circles.map(c => c.cy - c.r));
+  const maxY = Math.max(...circles.map(c => c.cy + c.r));
+  const bw = maxX - minX, bh = maxY - minY;
+  const s = Math.min((viewW - 2 * margin) / bw, (viewH - 2 * margin) / bh, 1);
+  const bcx = (minX + maxX) / 2, bcy = (minY + maxY) / 2;
+  return circles.map(c => ({
+    cx: viewW / 2 + (c.cx - bcx) * s,
+    cy: viewH / 2 + (c.cy - bcy) * s,
+    r: c.r * s
+  }));
 }
 
 function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
@@ -445,8 +425,8 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
 
   const subsets = detectSubsets(setNames, sets);
   const disjoint = detectDisjoint(setNames, sets);
-  const { circles, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
-  return { circles, warnings, proportional: warnings.length === 0 };
+  const { circles: fixed, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
+  return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
 }
 
 function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
@@ -506,8 +486,86 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   }));
 
   // Validate and fix: correctness > proportionality
-  const { circles, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
-  return { circles, warnings, proportional: warnings.length === 0 };
+  const { circles: fixed, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
+  return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
+}
+
+function buildVenn4Layout(setNames, sets, intersections, viewW, viewH) {
+  const sizes = setNames.map(n => sets.get(n).size);
+  const maxR = Math.min(viewW, viewH) * 0.28;
+  const scale = maxR / Math.sqrt(Math.max(...sizes));
+  const radii = sizes.map(s => scale * Math.sqrt(s));
+
+  const subsets = detectSubsets(setNames, sets);
+  const disjoint = detectDisjoint(setNames, sets);
+  const warnings = [];
+
+  // Compute pairwise overlap distances
+  const pairDists = [];
+  const pairs = [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+  for (const [i, j] of pairs) {
+    let totalPairwise = 0;
+    for (const g of intersections) {
+      if ((g.mask & (1 << i)) && (g.mask & (1 << j))) totalPairwise += g.size;
+    }
+    const targetOA = Math.PI * scale * scale * totalPairwise;
+    pairDists.push({ i, j, d: solveDistance(radii[i], radii[j], targetOA) });
+  }
+
+  // Diamond layout: place circles at 4 corners, use average pairwise distance for spacing
+  const cx = viewW / 2, cy = viewH / 2;
+  const avgDist = pairDists.reduce((s, p) => s + p.d, 0) / pairDists.length;
+  const spread = Math.max(avgDist * 0.55, Math.max(...radii) * 0.8);
+
+  // Diamond: top, right, bottom, left
+  const diamondAngles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
+  const rawCircles = diamondAngles.map((a, i) => ({
+    cx: cx + spread * Math.cos(a),
+    cy: cy + spread * Math.sin(a),
+    r: radii[i]
+  }));
+
+  // Check for regions that have items but no geometric area
+  const { circles: fixedCircles, warnings: fixWarnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
+  warnings.push(...fixWarnings);
+
+  // Fit circles into viewport
+  const circles = fitCirclesToViewport(fixedCircles, viewW, viewH);
+
+  // Detect missing regions: regions that exist in data but may not render geometrically
+  const existingMasks = new Set(intersections.filter(g => g.size > 0).map(g => g.mask));
+  // With 4 circles some 3-way-only or 4-way regions may be absent geometrically
+  // Sample to verify
+  const n = 4;
+  const bbox = {
+    x1: Math.min(...circles.map(c => c.cx - c.r)) - 5,
+    y1: Math.min(...circles.map(c => c.cy - c.r)) - 5,
+    x2: Math.max(...circles.map(c => c.cx + c.r)) + 5,
+    y2: Math.max(...circles.map(c => c.cy + c.r)) + 5,
+  };
+  const step = Math.max(bbox.x2 - bbox.x1, bbox.y2 - bbox.y1) / 100;
+  const foundMasks = new Set();
+  for (let x = bbox.x1; x <= bbox.x2; x += step) {
+    for (let y = bbox.y1; y <= bbox.y2; y += step) {
+      let m = 0;
+      for (let i = 0; i < n; i++) {
+        if (isInsideCircle(x, y, circles[i])) m |= (1 << i);
+      }
+      if (m > 0) foundMasks.add(m);
+    }
+  }
+  for (const mask of existingMasks) {
+    if (!foundMasks.has(mask)) {
+      const names = setNames.filter((_, i) => mask & (1 << i));
+      warnings.push(`Region "${names.join(" ∩ ")}" exists in data but may not be visible with circles`);
+    }
+  }
+
+  if (warnings.length === 0) {
+    warnings.push("4-set layout uses circles — some regions may have approximate proportions");
+  }
+
+  return { circles, warnings, proportional: false };
 }
 
 // ── Region Centroids (for label placement) ───────────────────────────────────
@@ -568,7 +626,8 @@ const VennChart = forwardRef(function VennChart({
 
   const layout = useMemo(() => {
     if (n === 2) return buildVenn2Layout(setNames, sets, intersections, VW, VH);
-    return buildVenn3Layout(setNames, sets, intersections, VW, VH);
+    if (n === 3) return buildVenn3Layout(setNames, sets, intersections, VW, VH);
+    return buildVenn4Layout(setNames, sets, intersections, VW, VH);
   }, [setNames, sets, intersections, n]);
 
   const circles = layout.circles;
@@ -647,58 +706,70 @@ const VennChart = forwardRef(function VennChart({
 
 // ── UI Components ────────────────────────────────────────────────────────────
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+function UploadStep({ sepOverride, setSepOverride, handleFileLoad }) {
   return (
     <div>
       <UploadPanel sepOverride={sepOverride} onSepChange={setSepOverride} onFileLoad={handleFileLoad}
-        hint="CSV · TSV · TXT — one column per set (wide) or item+set columns (long)" />
-      {rawText && (
-        <div style={{ marginTop: 12 }}>
-          <button onClick={() => doParse(rawText, sepOverride)} style={btnPrimary}>Re-parse with new separator</button>
+        hint="CSV · TSV · TXT — one column per set (2–4), items listed in rows" />
+      <p style={{margin:"4px 0 12px",fontSize:11,color:"#aaa",textAlign:"right"}}>⚠ Max file size: 2 MB</p>
+      <div style={{marginTop:24,borderRadius:14,overflow:"hidden",border:"2px solid #648FFF",boxShadow:"0 4px 20px rgba(100,143,255,0.12)"}}>
+        <div style={{background:"linear-gradient(135deg,#4a6cf7,#648FFF)",padding:"14px 24px",display:"flex",alignItems:"center",gap:12}}>
+          {toolIcon("venn", 24, {circle:true})}
+          <div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:15}}>Venn Diagram — How to use</div>
+            <div style={{color:"rgba(255,255,255,0.75)",fontSize:11,marginTop:2}}>Upload wide-format data → review sets → plot</div>
+          </div>
         </div>
-      )}
+        <div style={{background:"#eef2ff",padding:"20px 24px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:8,textTransform:"uppercase",letterSpacing:"1px"}}>Data layout (wide format)</div>
+            <p style={{fontSize:12,lineHeight:1.75,color:"#444",margin:"0 0 10px"}}>Each <strong>column</strong> = one set (2 to 4 columns). Each <strong>row</strong> lists one item per set. Columns can have different lengths — empty cells are ignored.</p>
+            <table style={{borderCollapse:"collapse",fontSize:11,width:"100%"}}>
+              <thead>
+                <tr style={{background:"#e8eeff"}}>
+                  {["Set A","Set B","Set C","Set D"].map(h => <th key={h} style={{padding:"4px 10px",textAlign:"left",color:"#648FFF",fontWeight:700,borderBottom:"1.5px solid #b0c4ff"}}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {[["gene1","gene2","gene1","gene2"],["gene3","gene3","gene4","gene5"],["gene5","gene1","gene6","gene1"],["gene7","","",""]].map((r,i) => (
+                  <tr key={i} style={{background:i%2===0?"#f0f4ff":"#fff"}}>
+                    {r.map((v,j) => <td key={j} style={{padding:"3px 10px",color:v?"#333":"#ccc",fontFamily:"monospace"}}>{v || "—"}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Features</div>
+            <p style={{fontSize:12,color:"#444",margin:0,lineHeight:1.6}}>Area-proportional circles for 2–3 sets, best-effort circle layout for 4 sets. Click any region count to highlight it and view its items. Rename sets, adjust colors and opacity from the plot controls.</p>
+          </div>
+
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#648FFF",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>Export</div>
+            <p style={{fontSize:12,color:"#444",margin:0,lineHeight:1.6}}>Download the diagram as <strong>SVG</strong> or <strong>PNG</strong>. Export item lists per region or a full membership matrix as <strong>CSV</strong>.</p>
+          </div>
+
+          <div style={{gridColumn:"1/-1",display:"flex",gap:6,flexWrap:"wrap"}}>
+            {["2–4 sets","Area-proportional (2–3)","Subset detection","Item extraction","SVG / PNG / CSV export","100% browser-side"].map(t=>(<span key={t} style={{fontSize:10,padding:"3px 10px",borderRadius:20,background:"#fff",border:"1px solid #b0c4ff",color:"#555"}}>{t}</span>))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function ConfigureStep({ fileName, setNames, sets, intersections, setColors, onColorChange, formatOverride, setFormatOverride, setStep, rawText, doParse, sepOverride }) {
-  const totalUnion = useMemo(() => {
-    const all = new Set();
-    for (const s of sets.values()) for (const item of s) all.add(item);
-    return all.size;
-  }, [sets]);
+function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
 
   return (
     <div>
       <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
-          Loaded <strong style={{ color: "#333" }}>{fileName}</strong> — {setNames.length} sets, {totalUnion} unique items
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#666" }}>
+          <strong style={{ color: "#333" }}>{fileName}</strong> — {parsedHeaders.length} cols × {parsedRows.length} rows
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12 }}>
-          {setNames.map((name, i) => (
-            <div key={name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px",
-              background: "#f0f0f5", borderRadius: 6, border: "1px solid #ddd" }}>
-              <ColorInput value={setColors[name] || PALETTE[i % PALETTE.length]}
-                onChange={v => onColorChange(name, v)} size={22} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#333", flex: 1 }}>{name}</span>
-              <span style={{ fontSize: 12, color: "#888" }}>{sets.get(name).size} items</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={sec}>
-        <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>Format detection</p>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <select value={formatOverride} onChange={e => {
-            setFormatOverride(e.target.value);
-            if (rawText) doParse(rawText, sepOverride, e.target.value);
-          }} style={selStyle}>
-            <option value="">Auto-detect</option>
-            <option value="wide">Wide (columns = sets)</option>
-            <option value="long">Long (item + set columns)</option>
-          </select>
-        </div>
+        <p style={{ fontSize: 11, color: "#999", marginBottom: 10 }}>Preview (first 8 rows):</p>
+        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
       </div>
 
       <button onClick={() => setStep("plot")} style={btnPrimary}>Plot →</button>
@@ -764,7 +835,7 @@ function ItemListPanel({ intersection, allSetNames, setColors }) {
   );
 }
 
-function PlotControls({ setNames, sets, setColors, onColorChange, onRename, vis, updVis, chartRef, resetAll, intersections }) {
+function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onToggleSet, setColors, onColorChange, onRename, vis, updVis, chartRef, resetAll, intersections }) {
   const sv = k => v => updVis({ [k]: v });
   return (
     <div style={{ width: 300, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -775,9 +846,9 @@ function PlotControls({ setNames, sets, setColors, onColorChange, onRename, vis,
         extraButtons={[
           { label: "⬇ All items CSV", onClick: (e) => {
             const allItems = new Set();
-            for (const s of sets.values()) for (const item of s) allItems.add(item);
-            const headers = ["Item", ...setNames];
-            const rows = [...allItems].sort().map(item => [item, ...setNames.map(n => sets.get(n).has(item) ? "1" : "0")]);
+            for (const n of activeSetNames) for (const item of allSets.get(n)) allItems.add(item);
+            const headers = ["Item", ...activeSetNames];
+            const rows = [...allItems].sort().map(item => [item, ...activeSetNames.map(n => allSets.get(n).has(item) ? "1" : "0")]);
             downloadCsv(headers, rows, "venn_membership.csv");
             flashSaved(e.currentTarget);
           }, style: { ...btnSecondary, background: "#dcfce7", border: "1px solid #86efac", color: "#166534", width: "100%", fontWeight: 600 } }
@@ -787,21 +858,33 @@ function PlotControls({ setNames, sets, setColors, onColorChange, onRename, vis,
       <div style={sec}>
         <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Sets</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {setNames.map((name, i) => (
-            <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px",
-              borderRadius: 6, fontSize: 12, background: "#f0f0f5", border: "1px solid #ccc" }}>
-              <ColorInput value={setColors[name] || PALETTE[i % PALETTE.length]}
-                onChange={v => onColorChange(name, v)} size={20} />
-              <input key={name} defaultValue={name} style={{ flex: 1, minWidth: 0, fontWeight: 600, color: "#333",
-                border: "1px solid #ccc", background: "#fff", fontFamily: "monospace", fontSize: 12,
-                padding: "2px 6px", borderRadius: 3, outline: "none" }}
-                onFocus={e => { e.target.style.borderColor = "#648FFF"; e.target.style.boxShadow = "0 0 0 2px rgba(100,143,255,0.2)"; }}
-                onBlur={e => { e.target.style.borderColor = "#ccc"; e.target.style.boxShadow = "none";
-                  const nv = e.target.value.trim(); if (nv && nv !== name) onRename(name, nv); }}
-                onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }} />
-              <span style={{ color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>({sets.get(name).size})</span>
-            </div>
-          ))}
+          {allSetNames.map((name, i) => {
+            const active = activeSets.has(name);
+            const canUncheck = activeSets.size > 2;
+            return (
+              <div key={name} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px",
+                borderRadius: 6, fontSize: 12, background: active ? "#f0f0f5" : "#fafafa",
+                border: active ? "1px solid #ccc" : "1px solid #e8e8e8", opacity: active ? 1 : 0.5 }}>
+                <input type="checkbox" checked={active}
+                  disabled={active && !canUncheck}
+                  onChange={() => onToggleSet(name)}
+                  style={{ accentColor: setColors[name] || PALETTE[i % PALETTE.length], flexShrink: 0 }} />
+                <ColorInput value={setColors[name] || PALETTE[i % PALETTE.length]}
+                  onChange={v => onColorChange(name, v)} size={20} />
+                <input key={name} defaultValue={name} style={{ flex: 1, minWidth: 0, fontWeight: 600,
+                  color: active ? "#333" : "#999",
+                  border: "1px solid #ccc", background: "#fff", fontFamily: "monospace", fontSize: 12,
+                  padding: "2px 6px", borderRadius: 3, outline: "none" }}
+                  onFocus={e => { e.target.style.borderColor = "#648FFF"; e.target.style.boxShadow = "0 0 0 2px rgba(100,143,255,0.2)"; }}
+                  onBlur={e => { e.target.style.borderColor = "#ccc"; e.target.style.boxShadow = "none";
+                    const nv = e.target.value.trim();
+                    if (nv && nv !== name) { if (!onRename(name, nv)) e.target.value = name; }
+                    else if (!nv) e.target.value = name; }}
+                  onKeyDown={e => { if (e.key === "Enter") e.target.blur(); }} />
+                <span style={{ color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>({allSets.get(name).size})</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -832,12 +915,13 @@ function App() {
   const [sepOverride, setSepOverride] = useState("");
   const [commaFixed, setCommaFixed] = useState(false);
   const [commaFixCount, setCommaFixCount] = useState(0);
-  const [formatOverride, setFormatOverride] = useState("");
-
   const [setNames, setSetNames] = useState([]);
   const [sets, setSets] = useState(new Map());
   const [setColors, setSetColors] = useState({});
+  const [parsedHeaders, setParsedHeaders] = useState([]);
+  const [parsedRows, setParsedRows] = useState([]);
   const [selectedMask, setSelectedMask] = useState(null);
+  const [activeSets, setActiveSets] = useState(new Set());
 
   const visInit = { plotTitle: "", plotBg: "#ffffff", showCounts: true, fontSize: 14, fillOpacity: 0.25 };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
@@ -845,10 +929,17 @@ function App() {
   const chartRef = useRef();
   const [layoutInfo, setLayoutInfo] = useState({ warnings: [], proportional: true });
 
+  const activeSetNames = useMemo(() => setNames.filter(n => activeSets.has(n)), [setNames, activeSets]);
+  const activeSetsMap = useMemo(() => {
+    const m = new Map();
+    for (const n of activeSetNames) m.set(n, sets.get(n));
+    return m;
+  }, [activeSetNames, sets]);
+
   const intersections = useMemo(() => {
-    if (setNames.length < 2) return [];
-    return computeIntersections(setNames, sets);
-  }, [setNames, sets]);
+    if (activeSetNames.length < 2) return [];
+    return computeIntersections(activeSetNames, activeSetsMap);
+  }, [activeSetNames, activeSetsMap]);
 
   const canNavigate = useCallback(target => {
     if (target === "upload") return true;
@@ -857,23 +948,24 @@ function App() {
     return false;
   }, [setNames]);
 
-  const doParse = useCallback((text, sep, fmtOverride) => {
+  const doParse = useCallback((text, sep) => {
     const dc = fixDecimalCommas(text, sep);
     setCommaFixed(dc.commaFixed); setCommaFixCount(dc.count);
     setRawText(dc.text);
     const { headers, rows } = parseRaw(dc.text, sep);
     if (!headers.length || !rows.length) { setParseError("The file appears to be empty or has no data rows."); return; }
 
-    const fmt = fmtOverride || detectSetFormat(headers, rows);
-    const { setNames: sn, sets: ss } = parseSetData(headers, rows, fmt);
+    const { setNames: sn, sets: ss } = parseSetData(headers, rows);
 
-    if (sn.length < 2) { setParseError("Need at least 2 sets. Check your data format."); return; }
-    if (sn.length > 3) { setParseError(`Detected ${sn.length} sets — this tool supports 2–3 sets. For more sets, UpSet plot support is coming soon.`); return; }
+    if (sn.length < 2) { setParseError("Need at least 2 sets — each column header becomes a set name."); return; }
+    if (sn.length > 4) { setParseError(`Detected ${sn.length} sets (columns) — this tool supports 2–4 sets. For more sets, UpSet plot support is coming soon.`); return; }
 
     setParseError(null);
+    setParsedHeaders(headers);
+    setParsedRows(rows);
     setSetNames(sn);
     setSets(ss);
-    // Initialize colors
+    setActiveSets(new Set(sn));
     const cols = {};
     sn.forEach((n, i) => { cols[n] = PALETTE[i % PALETTE.length]; });
     setSetColors(cols);
@@ -883,15 +975,15 @@ function App() {
 
   const handleFileLoad = useCallback((text, name) => {
     setFileName(name);
-    doParse(text, sepOverride, formatOverride || undefined);
-  }, [sepOverride, formatOverride, doParse]);
+    doParse(text, sepOverride);
+  }, [sepOverride, doParse]);
 
   const handleColorChange = (name, color) => {
     setSetColors(prev => ({ ...prev, [name]: color }));
   };
 
   const handleRename = (oldName, newName) => {
-    if (oldName === newName || setNames.includes(newName)) return;
+    if (oldName === newName || setNames.includes(newName)) return false;
     setSetNames(prev => prev.map(n => n === oldName ? newName : n));
     setSets(prev => {
       const m = new Map();
@@ -903,11 +995,26 @@ function App() {
       for (const [k, v] of Object.entries(prev)) c[k === oldName ? newName : k] = v;
       return c;
     });
+    setActiveSets(prev => {
+      const s = new Set(prev);
+      if (s.has(oldName)) { s.delete(oldName); s.add(newName); }
+      return s;
+    });
+    return true;
+  };
+
+  const handleToggleSet = (name) => {
+    setActiveSets(prev => {
+      const s = new Set(prev);
+      if (s.has(name)) s.delete(name); else s.add(name);
+      return s;
+    });
+    setSelectedMask(null);
   };
 
   const resetAll = () => {
     setStep("upload"); setRawText(null); setFileName(""); setSetNames([]); setSets(new Map());
-    setSetColors({}); setParseError(null); setSelectedMask(null); updVis({ _reset: true });
+    setSetColors({}); setActiveSets(new Set()); setParseError(null); setSelectedMask(null); updVis({ _reset: true });
   };
 
   const selectedIntersection = intersections.find(g => g.mask === selectedMask) || null;
@@ -932,29 +1039,28 @@ function App() {
 
       {step === "upload" && (
         <UploadStep sepOverride={sepOverride} setSepOverride={setSepOverride}
-          rawText={rawText} doParse={doParse} handleFileLoad={handleFileLoad} />
+          handleFileLoad={handleFileLoad} />
       )}
 
       {step === "configure" && setNames.length >= 2 && (
-        <ConfigureStep fileName={fileName} setNames={setNames} sets={sets}
-          intersections={intersections} setColors={setColors} onColorChange={handleColorChange}
-          formatOverride={formatOverride} setFormatOverride={setFormatOverride}
-          setStep={setStep} rawText={rawText} doParse={doParse} sepOverride={sepOverride} />
+        <ConfigureStep fileName={fileName} setStep={setStep}
+          parsedHeaders={parsedHeaders} parsedRows={parsedRows} />
       )}
 
-      {step === "plot" && setNames.length >= 2 && (
+      {step === "plot" && activeSetNames.length >= 2 && (
         <div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
             <button onClick={() => setStep("configure")} style={btnSecondary}>← Configure</button>
           </div>
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-            <PlotControls setNames={setNames} sets={sets} setColors={setColors}
-              onColorChange={handleColorChange} onRename={handleRename} vis={vis} updVis={updVis}
-              chartRef={chartRef} resetAll={resetAll} intersections={intersections} />
+            <PlotControls allSetNames={setNames} allSets={sets}
+              activeSetNames={activeSetNames} activeSets={activeSets} onToggleSet={handleToggleSet}
+              setColors={setColors} onColorChange={handleColorChange} onRename={handleRename}
+              vis={vis} updVis={updVis} chartRef={chartRef} resetAll={resetAll} intersections={intersections} />
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ ...sec, padding: 20, background: "#fff" }}>
-                <VennChart ref={chartRef} setNames={setNames} sets={sets}
+                <VennChart ref={chartRef} setNames={activeSetNames} sets={activeSetsMap}
                   intersections={intersections} colors={setColors}
                   selectedMask={selectedMask} onRegionClick={setSelectedMask}
                   showCounts={vis.showCounts} plotTitle={vis.plotTitle}
@@ -980,12 +1086,12 @@ function App() {
               {/* Data extraction panel */}
               <div style={{ ...sec, marginTop: 16 }}>
                 <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Intersections</p>
-                <IntersectionTable intersections={intersections} allSetNames={setNames}
+                <IntersectionTable intersections={intersections} allSetNames={activeSetNames}
                   selectedMask={selectedMask} onSelect={setSelectedMask} />
               </div>
               <div style={{ ...sec, marginTop: 16 }}>
                 <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Items</p>
-                <ItemListPanel intersection={selectedIntersection} allSetNames={setNames} setColors={setColors} />
+                <ItemListPanel intersection={selectedIntersection} allSetNames={activeSetNames} setColors={setColors} />
               </div>
             </div>
           </div>
