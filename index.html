@@ -31,7 +31,7 @@
     .landing-header .version { font-size: 11px; font-weight: 400; color: #aaa; vertical-align: super; margin-left: 4px; }
     .landing-header .tagline { margin-top: 8px; font-size: 13px; color: #888; font-style: italic; }
     .landing-header p { margin-top: 6px; font-size: 13px; color: #888; }
-    .tiles { display: grid; grid-template-columns: repeat(2, 220px); gap: 20px; justify-content: center; }
+    .tiles { display: grid; grid-template-columns: repeat(3, 220px); gap: 20px; justify-content: center; }
     .tile {
       width: 220px; height: 180px; background: #fff; border: 1px solid #ddd; border-radius: 14px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
@@ -132,6 +132,11 @@
         <span class="tile-label">Scatter Plot</span>
         <span class="tile-desc">XY with color<br/>&amp; size mapping</span>
       </button>
+      <button class="tile" data-tool="venn">
+        <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke-width="1.5"><circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)"/><circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)"/></svg></span>
+        <span class="tile-label">Venn Diagram</span>
+        <span class="tile-desc">Set overlaps &amp; data extraction<br/>2–4 sets, area-proportional</span>
+      </button>
     </div>
     <div class="prefetch-bar" id="prefetch-bar">
       <div class="pf-track"><div class="pf-fill" id="pf-fill" style="width:0%"></div></div>
@@ -169,6 +174,13 @@
       <span class="tool-name"><svg viewBox="0 0 44 44" fill="#648FFF" stroke="none" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>Scatter Plot</span>
     </div>
     <iframe id="frame-scatter" src="tools/scatter.html"></iframe>
+  </div>
+  <div class="tool-view" id="view-venn">
+    <div class="tool-topbar">
+      <button class="back-btn" data-back>&larr; Back</button>
+      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke-width="1.5" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)"/><circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)"/></svg>Venn Diagram</span>
+    </div>
+    <iframe id="frame-venn" src="tools/venn.html"></iframe>
   </div>
 
   <script>
