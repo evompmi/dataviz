@@ -79,10 +79,9 @@ XY scatter plots with continuous and categorical aesthetic mappings.
 ---
 
 ### Venn Diagram
-Area-proportional Venn diagrams with data extraction.
+Venn diagrams with data extraction (2–3 sets).
 
-- Supports 2, 3, and 4 sets
-- Area-proportional layout (circles for 2–3 sets, ellipses for 4 sets)
+- Equal-size circles by default, with optional area-proportional mode
 - Toggle individual sets on/off
 - Interactive regions: click to highlight and extract members
 - Per-set color picker with adjustable opacity

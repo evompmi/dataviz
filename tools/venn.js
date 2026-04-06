@@ -27,9 +27,11 @@ function computeIntersections(setNames, sets) {
     groups.get(mask).push(item);
   }
   const result = [];
-  for (const [mask, items] of groups) {
-    const active = setNames.filter((_, i) => mask & 1 << i);
+  const totalMasks = (1 << n) - 1;
+  for (let mask = 1; mask <= totalMasks; mask++) {
+    const items = groups.has(mask) ? groups.get(mask) : [];
     items.sort();
+    const active = setNames.filter((_, i) => mask & 1 << i);
     result.push({ mask, setNames: active, degree: active.length, items, size: items.length });
   }
   return result.sort((a, b) => b.size - a.size);
@@ -345,6 +347,21 @@ function fitCirclesToViewport(circles, viewW, viewH, margin = 15) {
     r: c.r * s
   }));
 }
+const MIN_RADIUS_FRAC = 0.5;
+const READABILITY_BLEND = 0.45;
+function clampRadii(radii) {
+  const maxR = Math.max(...radii);
+  const minAllowed = maxR * MIN_RADIUS_FRAC;
+  let adjusted = false;
+  const clamped = radii.map((r) => {
+    if (r < minAllowed) {
+      adjusted = true;
+      return minAllowed;
+    }
+    return r;
+  });
+  return { radii: clamped, adjusted };
+}
 function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   const s0 = sets.get(setNames[0]).size;
   const s1 = sets.get(setNames[1]).size;
@@ -352,26 +369,47 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   const interSize = inter ? inter.size : 0;
   const maxR = Math.min(viewW, viewH) * 0.38;
   const scale = maxR / Math.sqrt(Math.max(s0, s1));
-  const r0 = scale * Math.sqrt(s0);
-  const r1 = scale * Math.sqrt(s1);
-  const radii = [r0, r1];
+  let radii = [scale * Math.sqrt(s0), scale * Math.sqrt(s1)];
+  const warnings = [];
+  const rc = clampRadii(radii);
+  if (rc.adjusted) warnings.push("Circle sizes adjusted for readability (small set enlarged)");
+  radii = rc.radii;
+  const [r0, r1] = radii;
   const targetOA = Math.PI * scale * scale * interSize;
   const d = solveDistance(r0, r1, targetOA);
   const cx = viewW / 2, cy = viewH / 2;
-  const rawCircles = [
+  const propCircles = [
     { cx: cx - d / 2, cy, r: r0 },
     { cx: cx + d / 2, cy, r: r1 }
   ];
+  const classicR = Math.min(viewW, viewH) * 0.34;
+  const classicD = classicR;
+  const classicCircles = [
+    { cx: cx - classicD / 2, cy, r: classicR },
+    { cx: cx + classicD / 2, cy, r: classicR }
+  ];
+  const b = READABILITY_BLEND;
+  const blended = propCircles.map((pc, i) => ({
+    cx: pc.cx * (1 - b) + classicCircles[i].cx * b,
+    cy: pc.cy * (1 - b) + classicCircles[i].cy * b,
+    r: pc.r * (1 - b) + classicCircles[i].r * b
+  }));
+  if (b > 0) warnings.push("Layout adjusted for readability \u2014 areas are approximate");
   const subsets = detectSubsets(setNames, sets);
   const disjoint = detectDisjoint(setNames, sets);
-  const { circles: fixed, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
+  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(blended, setNames, sets, subsets, disjoint, radii);
+  warnings.push(...fixWarnings);
   return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
 }
 function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const sizes = setNames.map((n) => sets.get(n).size);
   const maxR = Math.min(viewW, viewH) * 0.32;
   const scale = maxR / Math.sqrt(Math.max(...sizes));
-  const radii = sizes.map((s) => scale * Math.sqrt(s));
+  let radii = sizes.map((s) => scale * Math.sqrt(s));
+  const warnings = [];
+  const rc = clampRadii(radii);
+  if (rc.adjusted) warnings.push("Circle sizes adjusted for readability (small set enlarged)");
+  radii = rc.radii;
   const pairMasks = [[0, 1, 3], [0, 2, 5], [1, 2, 6]];
   const pairDists = [];
   for (const [i, j, mask] of pairMasks) {
@@ -410,73 +448,51 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   }
   const centX = pts.reduce((s, p) => s + p.x, 0) / 3;
   const centY = pts.reduce((s, p) => s + p.y, 0) / 3;
-  const rawCircles = pts.map((p, i) => ({
+  const propCircles = pts.map((p, i) => ({
     cx: cx + (p.x - centX),
     cy: cy + (p.y - centY),
     r: radii[i]
   }));
-  const { circles: fixed, warnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
+  const classicR = Math.min(viewW, viewH) * 0.3;
+  const classicD = classicR * 0.65;
+  const classicAngles = [-Math.PI / 2, Math.PI / 6, 5 * Math.PI / 6];
+  const classicCircles = classicAngles.map((a) => ({
+    cx: cx + classicD * Math.cos(a),
+    cy: cy + classicD * Math.sin(a),
+    r: classicR
+  }));
+  const b = READABILITY_BLEND;
+  const blended = propCircles.map((pc, i) => ({
+    cx: pc.cx * (1 - b) + classicCircles[i].cx * b,
+    cy: pc.cy * (1 - b) + classicCircles[i].cy * b,
+    r: pc.r * (1 - b) + classicCircles[i].r * b
+  }));
+  if (b > 0) warnings.push("Layout adjusted for readability \u2014 areas are approximate");
+  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(blended, setNames, sets, subsets, disjoint, radii);
+  warnings.push(...fixWarnings);
   return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
 }
-function buildVenn4Layout(setNames, sets, intersections, viewW, viewH) {
-  const sizes = setNames.map((n2) => sets.get(n2).size);
-  const maxR = Math.min(viewW, viewH) * 0.28;
-  const scale = maxR / Math.sqrt(Math.max(...sizes));
-  const radii = sizes.map((s) => scale * Math.sqrt(s));
-  const subsets = detectSubsets(setNames, sets);
-  const disjoint = detectDisjoint(setNames, sets);
-  const warnings = [];
-  const pairDists = [];
-  const pairs = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
-  for (const [i, j] of pairs) {
-    let totalPairwise = 0;
-    for (const g of intersections) {
-      if (g.mask & 1 << i && g.mask & 1 << j) totalPairwise += g.size;
-    }
-    const targetOA = Math.PI * scale * scale * totalPairwise;
-    pairDists.push({ i, j, d: solveDistance(radii[i], radii[j], targetOA) });
-  }
+function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
+  const R = Math.min(viewW, viewH) * 0.34;
   const cx = viewW / 2, cy = viewH / 2;
-  const avgDist = pairDists.reduce((s, p) => s + p.d, 0) / pairDists.length;
-  const spread = Math.max(avgDist * 0.55, Math.max(...radii) * 0.8);
-  const diamondAngles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
-  const rawCircles = diamondAngles.map((a, i) => ({
-    cx: cx + spread * Math.cos(a),
-    cy: cy + spread * Math.sin(a),
-    r: radii[i]
+  const d = R;
+  const circles = [
+    { cx: cx - d / 2, cy, r: R },
+    { cx: cx + d / 2, cy, r: R }
+  ];
+  return { circles: fitCirclesToViewport(circles, viewW, viewH), warnings: [], proportional: false };
+}
+function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
+  const R = Math.min(viewW, viewH) * 0.3;
+  const cx = viewW / 2, cy = viewH / 2;
+  const d = R * 0.65;
+  const angles = [-Math.PI / 2, Math.PI / 6, 5 * Math.PI / 6];
+  const circles = angles.map((a) => ({
+    cx: cx + d * Math.cos(a),
+    cy: cy + d * Math.sin(a),
+    r: R
   }));
-  const { circles: fixedCircles, warnings: fixWarnings } = validateAndFixLayout(rawCircles, setNames, sets, subsets, disjoint, radii);
-  warnings.push(...fixWarnings);
-  const circles = fitCirclesToViewport(fixedCircles, viewW, viewH);
-  const existingMasks = new Set(intersections.filter((g) => g.size > 0).map((g) => g.mask));
-  const n = 4;
-  const bbox = {
-    x1: Math.min(...circles.map((c) => c.cx - c.r)) - 5,
-    y1: Math.min(...circles.map((c) => c.cy - c.r)) - 5,
-    x2: Math.max(...circles.map((c) => c.cx + c.r)) + 5,
-    y2: Math.max(...circles.map((c) => c.cy + c.r)) + 5
-  };
-  const step = Math.max(bbox.x2 - bbox.x1, bbox.y2 - bbox.y1) / 100;
-  const foundMasks = /* @__PURE__ */ new Set();
-  for (let x = bbox.x1; x <= bbox.x2; x += step) {
-    for (let y = bbox.y1; y <= bbox.y2; y += step) {
-      let m = 0;
-      for (let i = 0; i < n; i++) {
-        if (isInsideCircle(x, y, circles[i])) m |= 1 << i;
-      }
-      if (m > 0) foundMasks.add(m);
-    }
-  }
-  for (const mask of existingMasks) {
-    if (!foundMasks.has(mask)) {
-      const names = setNames.filter((_, i) => mask & 1 << i);
-      warnings.push(`Region "${names.join(" \u2229 ")}" exists in data but may not be visible with circles`);
-    }
-  }
-  if (warnings.length === 0) {
-    warnings.push("4-set layout uses circles \u2014 some regions may have approximate proportions");
-  }
-  return { circles, warnings, proportional: false };
+  return { circles: fitCirclesToViewport(circles, viewW, viewH), warnings: [], proportional: false };
 }
 function computeRegionCentroids(circles, regionPaths, intersections) {
   const centroids = {};
@@ -523,19 +539,22 @@ const VennChart = forwardRef(function VennChart2({
   colors,
   selectedMask,
   onRegionClick,
-  showCounts,
   plotTitle,
   plotBg,
   fontSize,
   fillOpacity,
-  onLayoutInfo
+  onLayoutInfo,
+  proportional
 }, ref) {
   const n = setNames.length;
   const layout = useMemo(() => {
-    if (n === 2) return buildVenn2Layout(setNames, sets, intersections, VW, VH);
-    if (n === 3) return buildVenn3Layout(setNames, sets, intersections, VW, VH);
-    return buildVenn4Layout(setNames, sets, intersections, VW, VH);
-  }, [setNames, sets, intersections, n]);
+    if (proportional) {
+      if (n === 2) return buildVenn2Layout(setNames, sets, intersections, VW, VH);
+      return buildVenn3Layout(setNames, sets, intersections, VW, VH);
+    }
+    if (n === 2) return buildVenn2LayoutClassic(setNames, sets, intersections, VW, VH);
+    return buildVenn3LayoutClassic(setNames, sets, intersections, VW, VH);
+  }, [setNames, sets, intersections, n, proportional]);
   const circles = layout.circles;
   useEffect(() => {
     if (onLayoutInfo) onLayoutInfo({ warnings: layout.warnings, proportional: layout.proportional });
@@ -584,7 +603,7 @@ const VennChart = forwardRef(function VennChart2({
         style: { pointerEvents: "none" }
       }
     ),
-    showCounts && intersections.map((inter) => {
+    intersections.map((inter) => {
       const c = centroids[inter.mask];
       if (!c) return null;
       const isSelected = selectedMask === inter.mask;
@@ -650,9 +669,9 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad }) {
       sepOverride,
       onSepChange: setSepOverride,
       onFileLoad: handleFileLoad,
-      hint: "CSV \xB7 TSV \xB7 TXT \u2014 one column per set (2\u20134), items listed in rows"
+      hint: "CSV \xB7 TSV \xB7 TXT \u2014 one column per set (2\u20133), items listed in rows"
     }
-  ), /* @__PURE__ */ React.createElement("p", { style: { margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" } }, "\u26A0 Max file size: 2 MB"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, borderRadius: 14, overflow: "hidden", border: "2px solid #648FFF", boxShadow: "0 4px 20px rgba(100,143,255,0.12)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#4a6cf7,#648FFF)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 } }, toolIcon("venn", 24, { circle: true }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Venn Diagram \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Upload wide-format data \u2192 review sets \u2192 plot"))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef2ff", padding: "20px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff", gridColumn: "1/-1" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Data layout (wide format)"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: "0 0 10px" } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "column"), " = one set (2 to 4 columns). Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " lists one item per set. Columns can have different lengths \u2014 empty cells are ignored."), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#e8eeff" } }, ["Set A", "Set B", "Set C", "Set D"].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "4px 10px", textAlign: "left", color: "#648FFF", fontWeight: 700, borderBottom: "1.5px solid #b0c4ff" } }, h)))), /* @__PURE__ */ React.createElement("tbody", null, [["gene1", "gene2", "gene1", "gene2"], ["gene3", "gene3", "gene4", "gene5"], ["gene5", "gene1", "gene6", "gene1"], ["gene7", "", "", ""]].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: { padding: "3px 10px", color: v ? "#333" : "#ccc", fontFamily: "monospace" } }, v || "\u2014"))))))), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Features"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Area-proportional circles for 2\u20133 sets, best-effort circle layout for 4 sets. Click any region count to highlight it and view its items. Rename sets, adjust colors and opacity from the plot controls.")), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Export"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Download the diagram as ", /* @__PURE__ */ React.createElement("strong", null, "SVG"), " or ", /* @__PURE__ */ React.createElement("strong", null, "PNG"), ". Export item lists per region or a full membership matrix as ", /* @__PURE__ */ React.createElement("strong", null, "CSV"), ".")), /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, ["2\u20134 sets", "Area-proportional (2\u20133)", "Subset detection", "Item extraction", "SVG / PNG / CSV export", "100% browser-side"].map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: { fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "#fff", border: "1px solid #b0c4ff", color: "#555" } }, t))))));
+  ), /* @__PURE__ */ React.createElement("p", { style: { margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" } }, "\u26A0 Max file size: 2 MB"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, borderRadius: 14, overflow: "hidden", border: "2px solid #648FFF", boxShadow: "0 4px 20px rgba(100,143,255,0.12)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#4a6cf7,#648FFF)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 } }, toolIcon("venn", 24, { circle: true }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Venn Diagram \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Upload wide-format data \u2192 review sets \u2192 plot"))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef2ff", padding: "20px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff", gridColumn: "1/-1" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Data layout (wide format)"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: "0 0 10px" } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "column"), " = one set (2 to 3 columns). Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " lists one item per set. Columns can have different lengths \u2014 empty cells are ignored."), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#e8eeff" } }, ["Set A", "Set B", "Set C"].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "4px 10px", textAlign: "left", color: "#648FFF", fontWeight: 700, borderBottom: "1.5px solid #b0c4ff" } }, h)))), /* @__PURE__ */ React.createElement("tbody", null, [["gene1", "gene2", "gene1"], ["gene3", "gene3", "gene4"], ["gene5", "gene1", "gene6"], ["gene7", "", ""]].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: { padding: "3px 10px", color: v ? "#333" : "#ccc", fontFamily: "monospace" } }, v || "\u2014"))))))), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Features"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Equal-size circles by default, with optional area-proportional mode. Click any region count to highlight it and view its items. Rename sets, adjust colors and opacity from the plot controls.")), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Export"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Download the diagram as ", /* @__PURE__ */ React.createElement("strong", null, "SVG"), " or ", /* @__PURE__ */ React.createElement("strong", null, "PNG"), ". Export item lists per region or a full membership matrix as ", /* @__PURE__ */ React.createElement("strong", null, "CSV"), ".")), /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, ["2\u20133 sets", "Proportional toggle", "Subset detection", "Item extraction", "SVG / PNG / CSV export", "100% browser-side"].map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: { fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "#fff", border: "1px solid #b0c4ff", color: "#555" } }, t))))));
 }
 function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), " \u2014 ", parsedHeaders.length, " cols \xD7 ", parsedRows.length, " rows"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#999", marginBottom: 10 } }, "Preview (first 8 rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: parsedHeaders, rows: parsedRows, maxRows: 8 })), /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPrimary }, "Plot \u2192"));
@@ -687,7 +706,7 @@ function ItemListPanel({ intersection, allSetNames, setColors }) {
     fontFamily: "monospace"
   } }, item))));
 }
-function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onToggleSet, setColors, onColorChange, onRename, vis, updVis, chartRef, resetAll, intersections }) {
+function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onToggleSet, setColors, onColorChange, onRename, vis, updVis, chartRef, resetAll, intersections, proportional, onProportionalChange }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   return /* @__PURE__ */ React.createElement("div", { style: { width: 300, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
     ActionsPanel,
@@ -770,7 +789,7 @@ function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onTogg
         }
       }
     ), /* @__PURE__ */ React.createElement("span", { style: { color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 } }, "(", allSets.get(name).size, ")"));
-  }))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Display"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Show counts"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showCounts, onChange: (e) => updVis({ showCounts: e.target.checked }), style: { accentColor: "#648FFF" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%" } })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Fill opacity", value: vis.fillOpacity, min: 0.05, max: 0.8, step: 0.05, onChange: sv("fillOpacity") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Font size", value: vis.fontSize, min: 8, max: 24, step: 1, onChange: sv("fontSize") }), /* @__PURE__ */ React.createElement(BaseStyleControls, { plotBg: vis.plotBg, onPlotBgChange: sv("plotBg"), showGrid: false, onShowGridChange: () => {
+  }))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Display"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Proportional areas"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: proportional, onChange: (e) => onProportionalChange(e.target.checked), style: { accentColor: "#648FFF" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%" } })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Fill opacity", value: vis.fillOpacity, min: 0.05, max: 0.8, step: 0.05, onChange: sv("fillOpacity") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Font size", value: vis.fontSize, min: 8, max: 24, step: 1, onChange: sv("fontSize") }), /* @__PURE__ */ React.createElement(BaseStyleControls, { plotBg: vis.plotBg, onPlotBgChange: sv("plotBg"), showGrid: false, onShowGridChange: () => {
   }, gridColor: "#e0e0e0", onGridColorChange: () => {
   } }))));
 }
@@ -789,7 +808,8 @@ function App() {
   const [parsedRows, setParsedRows] = useState([]);
   const [selectedMask, setSelectedMask] = useState(null);
   const [activeSets, setActiveSets] = useState(/* @__PURE__ */ new Set());
-  const visInit = { plotTitle: "", plotBg: "#ffffff", showCounts: true, fontSize: 14, fillOpacity: 0.25 };
+  const [proportional, setProportional] = useState(false);
+  const visInit = { plotTitle: "", plotBg: "#ffffff", fontSize: 14, fillOpacity: 0.25 };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const chartRef = useRef();
   const [layoutInfo, setLayoutInfo] = useState({ warnings: [], proportional: true });
@@ -824,8 +844,8 @@ function App() {
       setParseError("Need at least 2 sets \u2014 each column header becomes a set name.");
       return;
     }
-    if (sn.length > 4) {
-      setParseError(`Detected ${sn.length} sets (columns) \u2014 this tool supports 2\u20134 sets. For more sets, UpSet plot support is coming soon.`);
+    if (sn.length > 3) {
+      setParseError(`Detected ${sn.length} sets (columns) \u2014 this tool supports 2\u20133 sets.`);
       return;
     }
     setParseError(null);
@@ -891,6 +911,7 @@ function App() {
     setActiveSets(/* @__PURE__ */ new Set());
     setParseError(null);
     setSelectedMask(null);
+    setProportional(false);
     updVis({ _reset: true });
   };
   const selectedIntersection = intersections.find((g) => g.mask === selectedMask) || null;
@@ -899,7 +920,7 @@ function App() {
     {
       toolName: "venn",
       title: "Venn Diagram",
-      subtitle: "Area-proportional set overlaps with data extraction"
+      subtitle: "Set overlaps with data extraction (2\u20133 sets)"
     }
   ), /* @__PURE__ */ React.createElement(
     StepNavBar,
@@ -948,7 +969,9 @@ function App() {
       updVis,
       chartRef,
       resetAll,
-      intersections
+      intersections,
+      proportional,
+      onProportionalChange: setProportional
     }
   ), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement(
     VennChart,
@@ -960,14 +983,14 @@ function App() {
       colors: setColors,
       selectedMask,
       onRegionClick: setSelectedMask,
-      showCounts: vis.showCounts,
       plotTitle: vis.plotTitle,
       plotBg: vis.plotBg,
       fontSize: vis.fontSize,
       fillOpacity: vis.fillOpacity,
-      onLayoutInfo: setLayoutInfo
+      onLayoutInfo: setLayoutInfo,
+      proportional
     }
-  )), layoutInfo.proportional ? /* @__PURE__ */ React.createElement("div", { style: {
+  )), proportional && layoutInfo.proportional ? /* @__PURE__ */ React.createElement("div", { style: {
     margin: "8px 0 0",
     padding: "6px 12px",
     borderRadius: 6,
@@ -975,7 +998,7 @@ function App() {
     border: "1px solid #86efac",
     fontSize: 11,
     color: "#166534"
-  } }, "Areas are proportional to set sizes") : layoutInfo.warnings.length > 0 && /* @__PURE__ */ React.createElement("div", { style: {
+  } }, "Areas are proportional to set sizes") : proportional && layoutInfo.warnings.length > 0 ? /* @__PURE__ */ React.createElement("div", { style: {
     margin: "8px 0 0",
     padding: "6px 12px",
     borderRadius: 6,
@@ -983,7 +1006,7 @@ function App() {
     border: "1px solid #fcd34d",
     fontSize: 11,
     color: "#92400e"
-  } }, layoutInfo.warnings.map((w, i) => /* @__PURE__ */ React.createElement("div", { key: i }, w)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 2, color: "#b45309", fontStyle: "italic" } }, "Area proportionality adjusted to preserve correctness")), /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Intersections"), /* @__PURE__ */ React.createElement(
+  } }, layoutInfo.warnings.map((w, i) => /* @__PURE__ */ React.createElement("div", { key: i }, w)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 2, color: "#b45309", fontStyle: "italic" } }, "Area proportionality adjusted to preserve correctness")) : null, /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Intersections"), /* @__PURE__ */ React.createElement(
     IntersectionTable,
     {
       intersections,
