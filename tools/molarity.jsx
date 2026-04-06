@@ -133,7 +133,7 @@ function MolarityMode() {
   }, [mw, mass, massUnit, vol, volUnit, conc, concUnit, solveFor]);
 
   const fields = [
-    { key: "mw", label: "Molecular weight (g/mol)" },
+    { key: "mw", label: "Mol. weight (g/mol)" },
     { key: "mass", label: "Mass" },
     { key: "volume", label: "Volume" },
     { key: "conc", label: "Concentration" },
@@ -142,7 +142,7 @@ function MolarityMode() {
   return (
     <div>
       <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
-        <div style={{ ...sec, flex: "0 0 auto", marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Solve for:</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {fields.map(f => (
@@ -164,6 +164,7 @@ function MolarityMode() {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
+          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Inputs:</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>MW (g/mol)</label>
             <input
@@ -214,20 +215,20 @@ function MolarityMode() {
             highlight={false}
             placeholder={solveFor === "conc" ? "calculated" : ""}
           />
+
+          {result && (
+            <div style={{
+              background: "#f0fdf4", borderRadius: 8, border: "1px solid #86efac",
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 10,
+            }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+                {formatResult(result.value)}
+              </span>
+              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
+            </div>
+          )}
         </div>
       </div>
-
-      {result && (
-        <div style={{
-          ...sec, background: "#f0fdf4", borderColor: "#86efac",
-          display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
-        }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
-            {formatResult(result.value)}
-          </span>
-          <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -285,7 +286,7 @@ function DilutionMode() {
   return (
     <div>
       <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
-        <div style={{ ...sec, flex: "0 0 auto", marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" }}>
             C1 × V1 = C2 × V2
           </p>
@@ -310,6 +311,7 @@ function DilutionMode() {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
+          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Inputs:</p>
           <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>Stock solution</p>
           <UnitInput
             label="C1 (concentration)"
@@ -352,20 +354,20 @@ function DilutionMode() {
             disabled={solveFor === "v2"}
             placeholder={solveFor === "v2" ? "calculated" : ""}
           />
+
+          {result && (
+            <div style={{
+              background: "#f0fdf4", borderRadius: 8, border: "1px solid #86efac",
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 10,
+            }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+                {formatResult(result.value)}
+              </span>
+              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
+            </div>
+          )}
         </div>
       </div>
-
-      {result && (
-        <div style={{
-          ...sec, background: "#f0fdf4", borderColor: "#86efac",
-          display: "flex", alignItems: "center", gap: 12, padding: "16px 20px",
-        }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
-            {formatResult(result.value)}
-          </span>
-          <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
-        </div>
-      )}
     </div>
   );
 }
