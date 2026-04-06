@@ -78,6 +78,30 @@ XY scatter plots with continuous and categorical aesthetic mappings.
 
 ---
 
+### Venn Diagram
+Area-proportional Venn diagrams with data extraction.
+
+- Supports 2, 3, and 4 sets
+- Area-proportional layout (circles for 2–3 sets, ellipses for 4 sets)
+- Toggle individual sets on/off
+- Interactive regions: click to highlight and extract members
+- Per-set color picker with adjustable opacity
+- Data preview with QC checks
+- Export intersection lists as CSV
+
+---
+
+### Calculator
+Solution preparation calculator for common lab calculations.
+
+- **Molarity**: mass ↔ concentration from molecular weight and volume
+- **Dilution**: C₁V₁ = C₂V₂ with unit conversions
+- **Ligation**: insert:vector molar ratio calculations
+- **Batch mode**: paste a table of reagents to generate a prep sheet
+- Printable / exportable output
+
+---
+
 ## Common Features
 
 All tools share:
