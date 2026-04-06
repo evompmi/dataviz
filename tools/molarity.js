@@ -112,12 +112,12 @@ function MolarityMode() {
     return null;
   }, [mw, mass, massUnit, vol, volUnit, conc, concUnit, solveFor]);
   const fields = [
-    { key: "mw", label: "Molecular weight (g/mol)" },
+    { key: "mw", label: "Mol. weight (g/mol)" },
     { key: "mass", label: "Mass" },
     { key: "volume", label: "Volume" },
     { key: "conc", label: "Concentration" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 auto", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: f.key,
@@ -136,7 +136,7 @@ function MolarityMode() {
       }
     },
     f.label
-  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, "MW (g/mol)"), /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, "MW (g/mol)"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "number",
@@ -192,15 +192,16 @@ function MolarityMode() {
       highlight: false,
       placeholder: solveFor === "conc" ? "calculated" : ""
     }
-  ))), result && /* @__PURE__ */ React.createElement("div", { style: {
-    ...sec,
+  ), result && /* @__PURE__ */ React.createElement("div", { style: {
     background: "#f0fdf4",
-    borderColor: "#86efac",
+    borderRadius: 8,
+    border: "1px solid #86efac",
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "16px 20px"
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)));
+    padding: "12px 16px",
+    marginTop: 10
+  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)))));
 }
 function DilutionMode() {
   const [c1, setC1] = useState("");
@@ -245,7 +246,7 @@ function DilutionMode() {
     { key: "c2", label: "C2 (final conc.)" },
     { key: "v2", label: "V2 (final vol.)" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 auto", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: f.key,
@@ -264,7 +265,7 @@ function DilutionMode() {
       }
     },
     f.label
-  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" } }, "Stock solution"), /* @__PURE__ */ React.createElement(
+  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" } }, "Stock solution"), /* @__PURE__ */ React.createElement(
     UnitInput,
     {
       label: "C1 (concentration)",
@@ -312,15 +313,16 @@ function DilutionMode() {
       disabled: solveFor === "v2",
       placeholder: solveFor === "v2" ? "calculated" : ""
     }
-  ))), result && /* @__PURE__ */ React.createElement("div", { style: {
-    ...sec,
+  ), result && /* @__PURE__ */ React.createElement("div", { style: {
     background: "#f0fdf4",
-    borderColor: "#86efac",
+    borderRadius: 8,
+    border: "1px solid #86efac",
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "16px 20px"
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)));
+    padding: "12px 16px",
+    marginTop: 10
+  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)))));
 }
 const BATCH_EXAMPLE = `Name	MW	Concentration	Volume
 NaCl	58.44	150 mM	500 mL
