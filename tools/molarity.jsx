@@ -61,10 +61,10 @@ function UnitInput({ label, value, onValueChange, unit, onUnitChange, units, dis
           width: 130,
           fontSize: 13,
           textAlign: "left",
-          background: disabled ? "#f0f8ff" : highlight ? "#eef6ee" : "#fff",
-          fontWeight: highlight ? 700 : 400,
-          color: highlight ? "#16a34a" : "#333",
-          border: highlight ? "2px solid #16a34a" : "1px solid #ccc",
+          background: disabled ? "#f0fdf4" : "#fff",
+          fontWeight: 400,
+          color: "#333",
+          border: "1px solid #ccc",
         }}
       />
       <select
@@ -141,7 +141,7 @@ function MolarityMode() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
         <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Solve for:</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -174,9 +174,9 @@ function MolarityMode() {
               disabled={solveFor === "mw"}
               placeholder={solveFor === "mw" ? "calculated" : ""}
               style={{
-                ...inp, width: 130, fontSize: 13, textAlign: "right",
-                background: solveFor === "mw" ? "#f0f8ff" : "#fff",
-                fontWeight: solveFor === "mw" ? 700 : 400,
+                ...inp, width: 130, fontSize: 13, textAlign: "left",
+                background: solveFor === "mw" ? "#f0fdf4" : "#fff",
+                fontWeight: 400,
               }}
             />
             <span style={{ fontSize: 12, color: "#999" }}>g/mol</span>
@@ -285,7 +285,7 @@ function DilutionMode() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
         <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" }}>
             C1 × V1 = C2 × V2

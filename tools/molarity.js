@@ -46,10 +46,10 @@ function UnitInput({ label, value, onValueChange, unit, onUnitChange, units, dis
         width: 130,
         fontSize: 13,
         textAlign: "left",
-        background: disabled ? "#f0f8ff" : highlight ? "#eef6ee" : "#fff",
-        fontWeight: highlight ? 700 : 400,
-        color: highlight ? "#16a34a" : "#333",
-        border: highlight ? "2px solid #16a34a" : "1px solid #ccc"
+        background: disabled ? "#f0fdf4" : "#fff",
+        fontWeight: 400,
+        color: "#333",
+        border: "1px solid #ccc"
       }
     }
   ), /* @__PURE__ */ React.createElement(
@@ -117,7 +117,7 @@ function MolarityMode() {
     { key: "volume", label: "Volume" },
     { key: "conc", label: "Concentration" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: f.key,
@@ -148,9 +148,9 @@ function MolarityMode() {
         ...inp,
         width: 130,
         fontSize: 13,
-        textAlign: "right",
-        background: solveFor === "mw" ? "#f0f8ff" : "#fff",
-        fontWeight: solveFor === "mw" ? 700 : 400
+        textAlign: "left",
+        background: solveFor === "mw" ? "#f0fdf4" : "#fff",
+        fontWeight: 400
       }
     }
   ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#999" } }, "g/mol")), /* @__PURE__ */ React.createElement(
@@ -246,7 +246,7 @@ function DilutionMode() {
     { key: "c2", label: "C2 (final conc.)" },
     { key: "v2", label: "V2 (final vol.)" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: f.key,
