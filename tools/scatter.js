@@ -405,6 +405,19 @@ function PlotStep({
   const hasSizeMap = sizeMapCol != null;
   const hasShapeMap = shapeMapCol != null;
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const handleFilterToggle = (ci, v, vals, checked) => {
+    setFilterState((prev) => {
+      const curr = prev[ci] || [];
+      if (curr.length === 0) {
+        return { ...prev, [ci]: vals.filter((x) => x !== v) };
+      } else if (checked) {
+        const next = [...curr, v];
+        return { ...prev, [ci]: next.length === vals.length ? [] : next };
+      } else {
+        return { ...prev, [ci]: curr.filter((x) => x !== v) };
+      }
+    });
+  };
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: "10px 12px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#666", marginBottom: 4 } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), /* @__PURE__ */ React.createElement("span", { style: { color: "#999", marginLeft: 6 } }, parsed.data.length, " rows \xB7 ", parsed.headers.length, " cols"))), /* @__PURE__ */ React.createElement(
     ActionsPanel,
     {
@@ -626,20 +639,7 @@ function PlotStep({
         {
           type: "checkbox",
           checked,
-          onChange: (e) => {
-            setFilterState((prev) => {
-              const curr = prev[ci] || [];
-              if (curr.length === 0) {
-                return { ...prev, [ci]: vals.filter((x) => x !== v) };
-              } else if (e.target.checked) {
-                const next = [...curr, v];
-                return { ...prev, [ci]: next.length === vals.length ? [] : next };
-              } else {
-                const next = curr.filter((x) => x !== v);
-                return { ...prev, [ci]: next };
-              }
-            });
-          },
+          onChange: (e) => handleFilterToggle(ci, v, vals, e.target.checked),
           style: { accentColor: "#648FFF", margin: 0 }
         }
       ), v);

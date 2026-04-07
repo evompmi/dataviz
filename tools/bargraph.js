@@ -3,6 +3,7 @@ function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
   const map = {};
   const order = [];
   rows.forEach((r) => {
+    if (groupColIdx >= r.length || valueColIdx >= r.length) return;
     const name = r[groupColIdx] ?? "?";
     const raw = r[valueColIdx] ?? "";
     const v = Number(raw);
@@ -413,6 +414,22 @@ function PlotControls({
   facetedData
 }) {
   const sv = (k) => (v) => updVis({ [k]: v });
+  const handleGroupNameChange = (i, newName) => {
+    const origName = effectiveGroups[i].name;
+    setPlotGroupRenames((p) => ({ ...p, [origName]: newName }));
+  };
+  const handleColorByChange = (e) => {
+    const v = Number(e.target.value);
+    setColorByCol(v);
+    if (v >= 0) {
+      const cats = [...new Set(renamedRows.map((r) => r[v]))].sort();
+      const cc = {};
+      cats.forEach((c, ci) => {
+        cc[c] = PALETTE[(ci + 2) % PALETTE.length];
+      });
+      setCategoryColors(cc);
+    }
+  };
   const handleDownloadSvg = () => {
     if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
       facetedData.forEach((fd) => downloadSvg(facetRefs.current[fd.category], `bargraph_${fd.category}.svg`));
@@ -439,10 +456,7 @@ function PlotControls({
     {
       groups: allDisplayGroups,
       onColorChange: handleColorChange,
-      onNameChange: (i, newName) => {
-        const origName = effectiveGroups[i].name;
-        setPlotGroupRenames((p) => ({ ...p, [origName]: newName }));
-      },
+      onNameChange: handleGroupNameChange,
       onToggle: onToggleGroup
     }
   ), effectiveGroups.some((g) => g.sources.length > 1) && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, padding: "8px 10px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 6, display: "flex", alignItems: "flex-start", gap: 7 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, flexShrink: 0 } }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, fontWeight: 600, color: "#92400e" } }, "Duplicate column headers detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#b45309" } }, "Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column.")))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
@@ -568,18 +582,7 @@ function PlotControls({
       step: 0.05,
       onChange: sv("pointOpacity")
     }
-  ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: (e) => {
-    const v = Number(e.target.value);
-    setColorByCol(v);
-    if (v >= 0) {
-      const cats = [...new Set(renamedRows.map((r) => r[v]))].sort();
-      const cc = {};
-      cats.forEach((c, ci) => {
-        cc[c] = PALETTE[(ci + 2) % PALETTE.length];
-      });
-      setCategoryColors(cc);
-    }
-  }, style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))))), /* @__PURE__ */ React.createElement(
+  ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: handleColorByChange, style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))))), /* @__PURE__ */ React.createElement(
     SliderControl,
     {
       label: "X label angle",
@@ -947,6 +950,10 @@ function App() {
     return vals.length > 0 && vals.filter((v) => isNumericValue(v)).length / vals.length > 0.5;
   }, [parsedRows, valueColIdx]);
   const canPlot = effectiveGroups.length > 0;
+  const handleToggleGroup = (i) => {
+    const name = effectiveGroups[i].name;
+    setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
+  };
   const allSteps = dataFormat === "long" ? ["upload", "configure", "filter", "output", "plot"] : ["upload", "plot"];
   return /* @__PURE__ */ React.createElement("div", { style: {
     minHeight: "100vh",
@@ -1042,10 +1049,7 @@ function App() {
       handleColorChange,
       plotGroupRenames,
       setPlotGroupRenames,
-      onToggleGroup: (i) => {
-        const name = effectiveGroups[i].name;
-        setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
-      },
+      onToggleGroup: handleToggleGroup,
       vis,
       updVis,
       colorByCol,

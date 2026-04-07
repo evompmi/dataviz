@@ -383,6 +383,24 @@ function OutputStep({parsedRows, parsedHeaders, colRoles, colNames, groupColIdx,
 
 function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayGroups, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, onToggleGroup, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs}) {
   const sv=k=>v=>updVis({[k]:v});
+  const handleColorChange = (i, c) => {
+    const name = boxplotGroups[i].name;
+    setBoxplotColors(p => ({...p, [name]: c}));
+  };
+  const handleNameChange = (i, v) => {
+    const name = boxplotGroups[i].name;
+    setPlotGroupRenames(p => ({...p, [name]: v}));
+  };
+  const handleColorByChange = (e) => {
+    const v = Number(e.target.value);
+    setColorByCol(v);
+    if (v >= 0) {
+      const cats = [...new Set(renamedRows.map(r => r[v]))].sort();
+      const cc = {};
+      cats.forEach((c, ci) => { cc[c] = PALETTE[(ci + 2) % PALETTE.length]; });
+      setCategoryColors(cc);
+    }
+  };
   return (
     <div style={{width:328,flexShrink:0,position:"sticky",top:24,maxHeight:"calc(100vh - 90px)",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
 
@@ -411,8 +429,8 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayG
         <p style={{margin:"0 0 6px",fontSize:11,color:"#888"}}>{allDisplayGroups.filter(g=>g.enabled).length} of {allDisplayGroups.length} selected · {renamedRows.length} obs</p>
         <GroupColorEditor
           groups={allDisplayGroups}
-          onColorChange={(i,c)=>{const name=boxplotGroups[i].name;setBoxplotColors(p=>({...p,[name]:c}));}}
-          onNameChange={(i,v)=>{const name=boxplotGroups[i].name;setPlotGroupRenames(p=>({...p,[name]:v}));}}
+          onColorChange={handleColorChange}
+          onNameChange={handleNameChange}
           onToggle={onToggleGroup}
         />
       </div>
@@ -431,7 +449,7 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayG
         {vis.showPoints&&(<>
           <div>
             <div style={lbl}>Color by</div>
-            <select value={colorByCol} onChange={e=>{const v=Number(e.target.value);setColorByCol(v);if(v>=0){const cats=[...new Set(renamedRows.map(r=>r[v]))].sort();const cc={};cats.forEach((c,ci)=>{cc[c]=PALETTE[(ci+2)%PALETTE.length];});setCategoryColors(cc);}}} style={{...inp,cursor:"pointer",fontSize:11,width:"100%"}}>
+            <select value={colorByCol} onChange={handleColorByChange} style={{...inp,cursor:"pointer",fontSize:11,width:"100%"}}>
               <option value={-1}>— none —</option>
               {colorByCandidates.map(ci=><option key={ci} value={ci}>{colNames[ci]}</option>)}
             </select>
@@ -725,11 +743,12 @@ function App() {
     if (groupColIdx < 0 || valueColIdx < 0) return [];
     const gm = {};
     renamedRows.forEach(r => {
+      if (groupColIdx >= r.length || valueColIdx >= r.length) return;
       const g = r[groupColIdx], v = Number(r[valueColIdx]);
       if (r[valueColIdx] === "" || isNaN(v)) return;
       if (!gm[g]) gm[g] = {};
       if (colorByCol >= 0) {
-        const cat = r[colorByCol] || "?";
+        const cat = (colorByCol < r.length ? r[colorByCol] : null) || "?";
         if (!gm[g][cat]) gm[g][cat] = [];
         gm[g][cat].push(v);
       } else {
@@ -781,11 +800,12 @@ function App() {
       const catRows = renamedRows.filter(r => r[facetByCol] === cat);
       const gm = {};
       catRows.forEach(r => {
+        if (groupColIdx >= r.length || valueColIdx >= r.length) return;
         const g = r[groupColIdx], v = Number(r[valueColIdx]);
         if (r[valueColIdx] === "" || isNaN(v)) return;
         if (!gm[g]) gm[g] = {};
         if (colorByCol >= 0) {
-          const cc = r[colorByCol] || "?";
+          const cc = (colorByCol < r.length ? r[colorByCol] : null) || "?";
           if (!gm[g][cc]) gm[g][cc] = [];
           gm[g][cc].push(v);
         } else {
@@ -843,6 +863,10 @@ function App() {
   }, [parsedRows, valueColIdx]);
 
   const canPlot = groupColIdx >= 0 && valueColIdx >= 0 && valueColIsNumeric && boxplotGroups.length > 0;
+  const handleToggleGroup = (i) => {
+    const name = boxplotGroups[i].name;
+    setDisabledGroups(p => ({...p, [name]: !p[name]}));
+  };
 
   const handleDownloadSvg = useCallback((e) => {
     if(facetByCol>=0&&facetedData.length>0){
@@ -957,7 +981,7 @@ function App() {
             boxplotGroups={boxplotGroups} renamedRows={renamedRows}
             plotGroupRenames={plotGroupRenames} setPlotGroupRenames={setPlotGroupRenames}
             boxplotColors={boxplotColors} setBoxplotColors={setBoxplotColors}
-            onToggleGroup={(i)=>{const name=boxplotGroups[i].name;setDisabledGroups(p=>({...p,[name]:!p[name]}));}}
+            onToggleGroup={handleToggleGroup}
             vis={vis} updVis={updVis}
             colorByCol={colorByCol} setColorByCol={setColorByCol}
             colorByCandidates={colorByCandidates} colNames={colNames}

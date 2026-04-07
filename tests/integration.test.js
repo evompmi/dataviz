@@ -29,6 +29,12 @@ test("returns n distinct colours for multiple sources", () => {
   assert(new Set(c).size === 3, "expected 3 distinct colours");
 });
 
+test("returns valid colours for large nSources without overflow", () => {
+  const colors = getPointColors("#648FFF", 100);
+  eq(colors.length, 100);
+  colors.forEach(c => assert(/^#[0-9a-f]{6}$/.test(c), `invalid hex: ${c}`));
+});
+
 test("first colour is darker and last is lighter than base", () => {
   // With factor range -0.4 to +0.3, first should be darker, last lighter
   const base = "#808080";
@@ -331,6 +337,35 @@ test("computeStats with negative values", () => {
   eq(s.min, -10);
   eq(s.max, 10);
   approx(s.median, 0);
+});
+
+test("quartiles with single element", () => {
+  const q = quartiles([42]);
+  eq(q.min, 42);
+  eq(q.max, 42);
+  eq(q.q1, 42);
+  eq(q.med, 42);
+  eq(q.q3, 42);
+  eq(q.iqr, 0);
+  eq(q.n, 1);
+});
+
+test("quartiles interpolation stays in bounds with large arrays", () => {
+  const arr = Array.from({length: 1000}, (_, i) => i);
+  const q = quartiles(arr);
+  assert(q.q1 >= 0 && q.q1 <= 999, "q1 in bounds");
+  assert(q.med >= 0 && q.med <= 999, "med in bounds");
+  assert(q.q3 >= 0 && q.q3 <= 999, "q3 in bounds");
+  approx(q.med, 499.5);
+});
+
+test("computeStats single element produces correct min/max/median", () => {
+  const s = computeStats([7]);
+  eq(s.min, 7);
+  eq(s.max, 7);
+  eq(s.median, 7);
+  eq(s.mean, 7);
+  eq(s.n, 1);
 });
 
 summary();

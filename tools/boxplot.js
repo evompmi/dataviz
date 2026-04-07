@@ -337,6 +337,26 @@ function OutputStep({ parsedRows, parsedHeaders, colRoles, colNames, groupColIdx
 }
 function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplayGroups, boxplotGroups, renamedRows, plotGroupRenames, setPlotGroupRenames, boxplotColors, setBoxplotColors, onToggleGroup, vis, updVis, colorByCol, setColorByCol, colorByCandidates, colNames, categoryColors, setCategoryColors, colorByCategories, facetByCol, setFacetByCol, onDownloadSvg, onDownloadPng, chartRef, facetedData, facetRefs }) {
   const sv = (k) => (v) => updVis({ [k]: v });
+  const handleColorChange = (i, c) => {
+    const name = boxplotGroups[i].name;
+    setBoxplotColors((p) => ({ ...p, [name]: c }));
+  };
+  const handleNameChange = (i, v) => {
+    const name = boxplotGroups[i].name;
+    setPlotGroupRenames((p) => ({ ...p, [name]: v }));
+  };
+  const handleColorByChange = (e) => {
+    const v = Number(e.target.value);
+    setColorByCol(v);
+    if (v >= 0) {
+      const cats = [...new Set(renamedRows.map((r) => r[v]))].sort();
+      const cc = {};
+      cats.forEach((c, ci) => {
+        cc[c] = PALETTE[(ci + 2) % PALETTE.length];
+      });
+      setCategoryColors(cc);
+    }
+  };
   return /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, dataFormat === "wide" && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#ecfdf5", borderColor: "#6ee7b7", padding: "10px 12px", marginBottom: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 15 } }, "\u26A1"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected")), /* @__PURE__ */ React.createElement("button", { onClick: () => {
     setDataFormat("long");
     setStep("configure");
@@ -355,14 +375,8 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplay
     GroupColorEditor,
     {
       groups: allDisplayGroups,
-      onColorChange: (i, c) => {
-        const name = boxplotGroups[i].name;
-        setBoxplotColors((p) => ({ ...p, [name]: c }));
-      },
-      onNameChange: (i, v) => {
-        const name = boxplotGroups[i].name;
-        setPlotGroupRenames((p) => ({ ...p, [name]: v }));
-      },
+      onColorChange: handleColorChange,
+      onNameChange: handleNameChange,
       onToggle: onToggleGroup
     }
   )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 9 } }, /* @__PURE__ */ React.createElement(
@@ -375,18 +389,7 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplay
       gridColor: vis.gridColor,
       onGridColorChange: sv("gridColor")
     }
-  ), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box width", value: vis.boxWidth, displayValue: vis.boxWidth + "%", min: 20, max: 100, step: 5, onChange: sv("boxWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box gap", value: vis.boxGap, displayValue: vis.boxGap + "%", min: 0, max: 80, step: 5, onChange: sv("boxGap") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box opacity", value: vis.boxFillOpacity, displayValue: vis.boxFillOpacity.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("boxFillOpacity") }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showPoints, onChange: (e) => updVis({ showPoints: e.target.checked }), style: { accentColor: "#648FFF" } })), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: (e) => {
-    const v = Number(e.target.value);
-    setColorByCol(v);
-    if (v >= 0) {
-      const cats = [...new Set(renamedRows.map((r) => r[v]))].sort();
-      const cc = {};
-      cats.forEach((c, ci) => {
-        cc[c] = PALETTE[(ci + 2) % PALETTE.length];
-      });
-      setCategoryColors(cc);
-    }
-  }, style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showCompPie, onChange: (e) => updVis({ showCompPie: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, "Composition pies")), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))), /* @__PURE__ */ React.createElement(SliderControl, { label: "Size", value: vis.pointSize, displayValue: vis.pointSize, min: 1, max: 6, step: 0.5, onChange: sv("pointSize") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Jitter", value: vis.jitterWidth, displayValue: vis.jitterWidth.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("jitterWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Opacity", value: vis.pointOpacity, displayValue: vis.pointOpacity.toFixed(2), min: 0.1, max: 1, step: 0.05, onChange: sv("pointOpacity") })), /* @__PURE__ */ React.createElement(SliderControl, { label: "X angle", value: vis.xLabelAngle, displayValue: vis.xLabelAngle + "\xB0", min: -90, max: 0, step: 5, onChange: sv("xLabelAngle") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement("select", { value: facetByCol, onChange: (e) => setFacetByCol(Number(e.target.value)), style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { value: vis.yMinCustom, onChange: (e) => updVis({ yMinCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { value: vis.yMaxCustom, onChange: (e) => updVis({ yMaxCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })))));
+  ), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box width", value: vis.boxWidth, displayValue: vis.boxWidth + "%", min: 20, max: 100, step: 5, onChange: sv("boxWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box gap", value: vis.boxGap, displayValue: vis.boxGap + "%", min: 0, max: 80, step: 5, onChange: sv("boxGap") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box opacity", value: vis.boxFillOpacity, displayValue: vis.boxFillOpacity.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("boxFillOpacity") }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showPoints, onChange: (e) => updVis({ showPoints: e.target.checked }), style: { accentColor: "#648FFF" } })), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: handleColorByChange, style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showCompPie, onChange: (e) => updVis({ showCompPie: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, "Composition pies")), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))), /* @__PURE__ */ React.createElement(SliderControl, { label: "Size", value: vis.pointSize, displayValue: vis.pointSize, min: 1, max: 6, step: 0.5, onChange: sv("pointSize") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Jitter", value: vis.jitterWidth, displayValue: vis.jitterWidth.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("jitterWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Opacity", value: vis.pointOpacity, displayValue: vis.pointOpacity.toFixed(2), min: 0.1, max: 1, step: 0.05, onChange: sv("pointOpacity") })), /* @__PURE__ */ React.createElement(SliderControl, { label: "X angle", value: vis.xLabelAngle, displayValue: vis.xLabelAngle + "\xB0", min: -90, max: 0, step: 5, onChange: sv("xLabelAngle") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement("select", { value: facetByCol, onChange: (e) => setFacetByCol(Number(e.target.value)), style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { value: vis.yMinCustom, onChange: (e) => updVis({ yMinCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { value: vis.yMaxCustom, onChange: (e) => updVis({ yMaxCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })))));
 }
 function PlotArea({ colorByCol, colorByCategories, colNames, categoryColors, facetByCol, facetedData, facetRefs, chartRef, displayBoxplotGroups, vis, yMinVal, yMaxVal, plotGroupRenames, boxplotColors }) {
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
@@ -633,11 +636,12 @@ function App() {
     if (groupColIdx < 0 || valueColIdx < 0) return [];
     const gm = {};
     renamedRows.forEach((r) => {
+      if (groupColIdx >= r.length || valueColIdx >= r.length) return;
       const g = r[groupColIdx], v = Number(r[valueColIdx]);
       if (r[valueColIdx] === "" || isNaN(v)) return;
       if (!gm[g]) gm[g] = {};
       if (colorByCol >= 0) {
-        const cat = r[colorByCol] || "?";
+        const cat = (colorByCol < r.length ? r[colorByCol] : null) || "?";
         if (!gm[g][cat]) gm[g][cat] = [];
         gm[g][cat].push(v);
       } else {
@@ -689,11 +693,12 @@ function App() {
       const catRows = renamedRows.filter((r) => r[facetByCol] === cat);
       const gm = {};
       catRows.forEach((r) => {
+        if (groupColIdx >= r.length || valueColIdx >= r.length) return;
         const g = r[groupColIdx], v = Number(r[valueColIdx]);
         if (r[valueColIdx] === "" || isNaN(v)) return;
         if (!gm[g]) gm[g] = {};
         if (colorByCol >= 0) {
-          const cc = r[colorByCol] || "?";
+          const cc = (colorByCol < r.length ? r[colorByCol] : null) || "?";
           if (!gm[g][cc]) gm[g][cc] = [];
           gm[g][cc].push(v);
         } else {
@@ -749,6 +754,10 @@ function App() {
     return vals.length > 0 && vals.filter((v) => isNumericValue(v)).length / vals.length > 0.5;
   }, [parsedRows, valueColIdx]);
   const canPlot = groupColIdx >= 0 && valueColIdx >= 0 && valueColIsNumeric && boxplotGroups.length > 0;
+  const handleToggleGroup = (i) => {
+    const name = boxplotGroups[i].name;
+    setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
+  };
   const handleDownloadSvg = useCallback((e) => {
     if (facetByCol >= 0 && facetedData.length > 0) {
       facetedData.forEach((fd) => downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`));
@@ -859,10 +868,7 @@ function App() {
       setPlotGroupRenames,
       boxplotColors,
       setBoxplotColors,
-      onToggleGroup: (i) => {
-        const name = boxplotGroups[i].name;
-        setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
-      },
+      onToggleGroup: handleToggleGroup,
       vis,
       updVis,
       colorByCol,

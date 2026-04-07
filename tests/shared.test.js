@@ -132,6 +132,14 @@ test("handles zero-range without crashing", () => {
   assert(Array.isArray(ticks), "should return an array");
 });
 
+test("does not produce ticks beyond max", () => {
+  // Test ranges that are prone to floating-point accumulation errors
+  const ticks = makeTicks(0, 1, 10);
+  assert(ticks.every(t => t <= 1 + 1e-9), `last tick ${ticks[ticks.length - 1]} exceeds max 1`);
+  const ticks2 = makeTicks(0, 0.3, 3);
+  assert(ticks2.every(t => t <= 0.3 + 1e-9), `tick exceeds max 0.3`);
+});
+
 // ── Color helpers ─────────────────────────────────────────────────────────────
 
 suite("hexToRgb / rgbToHex");

@@ -359,6 +359,19 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     const hasSizeMap  = sizeMapCol  != null;
     const hasShapeMap = shapeMapCol != null;
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const handleFilterToggle = (ci, v, vals, checked) => {
+      setFilterState(prev => {
+        const curr = prev[ci] || [];
+        if (curr.length === 0) {
+          return {...prev, [ci]: vals.filter(x => x !== v)};
+        } else if (checked) {
+          const next = [...curr, v];
+          return {...prev, [ci]: next.length === vals.length ? [] : next};
+        } else {
+          return {...prev, [ci]: curr.filter(x => x !== v)};
+        }
+      });
+    };
 
     return (
       <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
@@ -670,20 +683,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
                             return (
                               <label key={v} style={{display:"flex",alignItems:"center",gap:3,fontSize:11,padding:"2px 6px",borderRadius:4,background:checked?"#e0e7ff":"#f8f8f8",border:`1px solid ${checked?"#a5b4fc":"#e5e5e5"}`,cursor:"pointer",color:checked?"#3730a3":"#999"}}>
                                 <input type="checkbox" checked={checked}
-                                  onChange={e => {
-                                    setFilterState(prev => {
-                                      const curr = prev[ci] || [];
-                                      if (curr.length === 0) {
-                                        return {...prev, [ci]: vals.filter(x => x !== v)};
-                                      } else if (e.target.checked) {
-                                        const next = [...curr, v];
-                                        return {...prev, [ci]: next.length === vals.length ? [] : next};
-                                      } else {
-                                        const next = curr.filter(x => x !== v);
-                                        return {...prev, [ci]: next};
-                                      }
-                                    });
-                                  }}
+                                  onChange={e => handleFilterToggle(ci, v, vals, e.target.checked)}
                                   style={{accentColor:"#648FFF",margin:0}} />
                                 {v}
                               </label>

@@ -16,7 +16,7 @@ function getPointColors(baseColor, nSources) {
   if (nSources <= 1) return [baseColor];
   const colors = [];
   for (let i = 0; i < nSources; i++) {
-    const t = nSources === 1 ? 0 : (i / (nSources - 1));
+    const t = nSources === 1 ? 0 : Math.min(1, i / (nSources - 1));
     colors.push(shadeColor(baseColor, -0.4 + t * 0.7));
   }
   return colors;
@@ -106,8 +106,10 @@ function makeTicks(min, max, approxN) {
   const step = niceStep(max - min || 1, approxN);
   const start = Math.ceil(min / step) * step;
   const ticks = [];
-  for (let v = start; v <= max + step * 0.001; v += step)
-    ticks.push(parseFloat(v.toPrecision(10)));
+  for (let v = start; v <= max + step * 0.001; v += step) {
+    const tick = parseFloat(v.toPrecision(10));
+    if (tick <= max + step * 1e-9) ticks.push(tick);
+  }
   return ticks;
 }
 
@@ -265,7 +267,7 @@ function computeStats(arr) {
 function quartiles(arr) {
   const s = [...arr].sort((a, b) => a - b), n = s.length;
   if (n === 0) return null;
-  const q = p => { const i = p*(n-1), lo = Math.floor(i), hi = Math.ceil(i); return lo === hi ? s[lo] : s[lo]*(hi-i)+s[hi]*(i-lo); };
+  const q = p => { const i = p*(n-1), lo = Math.floor(i), hi = Math.min(Math.ceil(i), n-1); return lo === hi ? s[lo] : s[lo]*(hi-i)+s[hi]*(i-lo); };
   const q1 = q(.25), med = q(.5), q3 = q(.75), iqr = q3 - q1;
   return { min: s[0], max: s[n-1], q1, med, q3, iqr,
     wLo: s.find(v => v >= q1 - 1.5*iqr) ?? s[0],
