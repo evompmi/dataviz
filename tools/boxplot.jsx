@@ -1,6 +1,6 @@
 // boxplot.jsx — editable source. Run `npm run build` to compile to boxplot.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
 const BoxplotChart = forwardRef(function BoxplotChart({
   groups, yLabel, plotTitle, plotBg, showGrid, gridColor,
@@ -94,7 +94,9 @@ const BoxplotChart = forwardRef(function BoxplotChart({
   return (
     <svg ref={ref} viewBox={`0 0 ${vbW} ${vbH}`}
       style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={plotTitle || "Box plot"}>
+      <title>{plotTitle || "Box plot"}</title>
+      <desc>{`Box plot with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
 
       <rect x={M.left} y={M.top} width={w} height={h} fill={plotBg} />
 
@@ -117,7 +119,7 @@ const BoxplotChart = forwardRef(function BoxplotChart({
         const cx = bx(gi);
         const { q1, med, q3, wLo, wHi } = g.stats;
         return (
-          <g key={g.name}>
+          <g key={g.name} role="group" aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}>
             <line x1={cx} x2={cx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
             <line x1={cx} x2={cx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
             <line x1={cx - halfBox * .5} x2={cx + halfBox * .5} y1={sy(wHi)} y2={sy(wHi)} stroke="#333" strokeWidth="1" />
@@ -489,6 +491,24 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayG
   );
 }
 
+const FacetBoxplotItem = memo(function FacetBoxplotItem({ fd, facetRefs, chartProps, categoryColors }) {
+  const localRef = useRef();
+  useEffect(() => {
+    facetRefs.current[fd.category] = localRef.current;
+    return () => { delete facetRefs.current[fd.category]; };
+  }, [fd.category, facetRefs]);
+  return (
+    <div style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd",flex:"0 1 auto",minWidth:180}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:categoryColors[fd.category]||"#999"}}/>
+        <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
+        <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a,g)=>a+g.allValues.length,0)} pts)</span>
+      </div>
+      <BoxplotChart ref={localRef} {...chartProps} />
+    </div>
+  );
+});
+
 function PlotArea({colorByCol, colorByCategories, colNames, categoryColors, facetByCol, facetedData, facetRefs, chartRef, displayBoxplotGroups, vis, yMinVal, yMaxVal, plotGroupRenames, boxplotColors}) {
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
@@ -527,20 +547,18 @@ function PlotArea({colorByCol, colorByCategories, colNames, categoryColors, face
         <div style={{display:"flex",flexWrap:"wrap",gap:16}}>
           {facetedData.map(fd=>{
             const displayFdGroups = fd.groups.map(g => ({...g, name: plotGroupRenames[g.name]??g.name, color: boxplotColors[g.name]??g.color}));
-            return (
-            <div key={fd.category} style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd",flex:"0 1 auto",minWidth:180}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                <div style={{width:10,height:10,borderRadius:"50%",background:categoryColors[fd.category]||"#999"}}/>
-                <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
-                <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a,g)=>a+g.allValues.length,0)} pts)</span>
-              </div>
-              <BoxplotChart ref={el=>{facetRefs.current[fd.category]=el;}} groups={displayFdGroups} yLabel={vis.yLabel} plotTitle={[vis.plotTitle, fd.category].filter(Boolean).join(" — ")} plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor} boxWidth={vis.boxWidth} boxFillOpacity={vis.boxFillOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints} jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={vis.boxGap} showCompPie={vis.showCompPie}
-                svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
-                  title: `Points colored by: ${colNames[colorByCol]}`,
-                  items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
-                }] : null}/>
-            </div>
-            );
+            const chartProps = {
+              groups: displayFdGroups, yLabel: vis.yLabel, plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
+              plotBg: vis.plotBg, showGrid: vis.showGrid, gridColor: vis.gridColor, boxWidth: vis.boxWidth,
+              boxFillOpacity: vis.boxFillOpacity, pointSize: vis.pointSize, showPoints: vis.showPoints,
+              jitterWidth: vis.jitterWidth, pointOpacity: vis.pointOpacity, xLabelAngle: vis.xLabelAngle,
+              yMin: yMinVal, yMax: yMaxVal, categoryColors, colorByCol, boxGap: vis.boxGap, showCompPie: vis.showCompPie,
+              svgLegend: colorByCol >= 0 && colorByCategories.length > 0 ? [{
+                title: `Points colored by: ${colNames[colorByCol]}`,
+                items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
+              }] : null
+            };
+            return <FacetBoxplotItem key={fd.category} fd={fd} facetRefs={facetRefs} chartProps={chartProps} categoryColors={categoryColors} />;
           })}
         </div>
       )}

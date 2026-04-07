@@ -40,9 +40,9 @@ const TOOL_ICONS = {
 function toolIcon(name, size, opts) {
   size = size || 22;
   opts = opts || {};
-  var svg = TOOL_ICONS[name].replace('<svg ', '<svg width="' + size + '" height="' + size + '" ');
-  var pad = Math.round(size * 0.3);
-  var outerSize = size + pad * 2;
+  const svg = TOOL_ICONS[name].replace('<svg ', '<svg width="' + size + '" height="' + size + '" ');
+  const pad = Math.round(size * 0.3);
+  const outerSize = size + pad * 2;
   if (opts.circle) {
     return React.createElement('span', {
       style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -307,27 +307,27 @@ function downloadSvg(svgEl, filename) {
 function downloadPng(svgEl, filename, scale) {
   if (!svgEl) return;
   scale = scale || 2;
-  var serializer = new XMLSerializer();
-  var svgStr = serializer.serializeToString(svgEl);
-  var vb = svgEl.getAttribute("viewBox");
-  var parts = vb ? vb.split(/[\s,]+/) : [];
-  var w = parts.length >= 4 ? parseFloat(parts[2]) : svgEl.clientWidth || 800;
-  var h = parts.length >= 4 ? parseFloat(parts[3]) : svgEl.clientHeight || 600;
-  var canvas = document.createElement("canvas");
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(svgEl);
+  const vb = svgEl.getAttribute("viewBox");
+  const parts = vb ? vb.split(/[\s,]+/) : [];
+  const w = parts.length >= 4 ? parseFloat(parts[2]) : svgEl.clientWidth || 800;
+  const h = parts.length >= 4 ? parseFloat(parts[3]) : svgEl.clientHeight || 600;
+  const canvas = document.createElement("canvas");
   canvas.width = w * scale;
   canvas.height = h * scale;
-  var ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  var img = new Image();
-  var blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-  var url = URL.createObjectURL(blob);
+  const img = new Image();
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
   img.onload = function() {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     URL.revokeObjectURL(url);
     canvas.toBlob(function(pngBlob) {
-      var pngUrl = URL.createObjectURL(pngBlob);
-      var a = document.createElement("a");
+      const pngUrl = URL.createObjectURL(pngBlob);
+      const a = document.createElement("a");
       a.href = pngUrl; a.download = filename; a.style.display = "none";
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function() { URL.revokeObjectURL(pngUrl); }, 1000);

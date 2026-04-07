@@ -367,7 +367,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   const s1 = sets.get(setNames[1]).size;
   const inter = intersections.find((g) => g.mask === 3);
   const interSize = inter ? inter.size : 0;
-  const maxR = Math.min(viewW, viewH) * 0.38;
+  const maxR = Math.min(viewW, viewH) * 0.304;
   const scale = maxR / Math.sqrt(Math.max(s0, s1));
   let radii = [scale * Math.sqrt(s0), scale * Math.sqrt(s1)];
   const warnings = [];
@@ -382,7 +382,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
     { cx: cx - d / 2, cy, r: r0 },
     { cx: cx + d / 2, cy, r: r1 }
   ];
-  const classicR = Math.min(viewW, viewH) * 0.34;
+  const classicR = Math.min(viewW, viewH) * 0.272;
   const classicD = classicR;
   const classicCircles = [
     { cx: cx - classicD / 2, cy, r: classicR },
@@ -403,7 +403,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
 }
 function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const sizes = setNames.map((n) => sets.get(n).size);
-  const maxR = Math.min(viewW, viewH) * 0.32;
+  const maxR = Math.min(viewW, viewH) * 0.256;
   const scale = maxR / Math.sqrt(Math.max(...sizes));
   let radii = sizes.map((s) => scale * Math.sqrt(s));
   const warnings = [];
@@ -473,7 +473,7 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
 }
 function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
-  const R = Math.min(viewW, viewH) * 0.34;
+  const R = Math.min(viewW, viewH) * 0.272;
   const cx = viewW / 2, cy = viewH / 2;
   const d = R;
   const circles = [
@@ -483,7 +483,7 @@ function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
   return { circles: fitCirclesToViewport(circles, viewW, viewH), warnings: [], proportional: false };
 }
 function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
-  const R = Math.min(viewW, viewH) * 0.3;
+  const R = Math.min(viewW, viewH) * 0.24;
   const cx = viewW / 2, cy = viewH / 2;
   const d = R * 0.65;
   const angles = [-Math.PI / 2, Math.PI / 6, 5 * Math.PI / 6];
@@ -574,8 +574,12 @@ const VennChart = forwardRef(function VennChart2({
       ref,
       viewBox: `0 0 ${VW} ${VH}`,
       style: { width: "100%", height: "auto", display: "block" },
-      xmlns: "http://www.w3.org/2000/svg"
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img",
+      "aria-label": plotTitle || "Venn diagram"
     },
+    /* @__PURE__ */ React.createElement("title", null, plotTitle || "Venn diagram"),
+    /* @__PURE__ */ React.createElement("desc", null, `Venn diagram with ${n} set${n !== 1 ? "s" : ""}: ${setNames.join(", ")}`),
     /* @__PURE__ */ React.createElement("rect", { width: VW, height: VH, fill: plotBg || "#fff", rx: "8" }),
     plotTitle && /* @__PURE__ */ React.createElement("text", { x: VW / 2, y: 24, textAnchor: "middle", fontSize: "16", fontWeight: "700", fill: "#222", fontFamily: "sans-serif" }, plotTitle),
     circles.map((c, i) => /* @__PURE__ */ React.createElement(
@@ -589,7 +593,8 @@ const VennChart = forwardRef(function VennChart2({
         fillOpacity: fOpacity,
         stroke: colors[setNames[i]] || PALETTE[i],
         strokeWidth: "2",
-        strokeOpacity: "0.6"
+        strokeOpacity: "0.6",
+        "aria-label": `Set ${setNames[i]}: ${sets[setNames[i]] || 0} elements`
       }
     )),
     selectedMask != null && regionPaths[selectedMask] && /* @__PURE__ */ React.createElement(

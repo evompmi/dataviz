@@ -1,4 +1,4 @@
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
   const map = {};
   const order = [];
@@ -107,8 +107,12 @@ const BarChart = forwardRef(function BarChart2({
       ref,
       viewBox: `0 0 ${vbW} ${vbH}`,
       style: { width: "100%", height: "auto", display: "block" },
-      xmlns: "http://www.w3.org/2000/svg"
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img",
+      "aria-label": plotTitle || "Bar chart"
     },
+    /* @__PURE__ */ React.createElement("title", null, plotTitle || "Bar chart"),
+    /* @__PURE__ */ React.createElement("desc", null, `Bar chart with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`),
     /* @__PURE__ */ React.createElement("rect", { x: MChart.left, y: MChart.top, width: w, height: h, fill: plotBg }),
     showGrid && yTicks.map((t) => /* @__PURE__ */ React.createElement(
       "line",
@@ -133,7 +137,7 @@ const BarChart = forwardRef(function BarChart2({
       const barTop = sy(mean);
       const yBar = mean >= 0 ? barTop : baseline;
       const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
-      return /* @__PURE__ */ React.createElement("g", { key: g.name }, /* @__PURE__ */ React.createElement(
+      return /* @__PURE__ */ React.createElement("g", { key: g.name, role: "group", "aria-label": `${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}` }, /* @__PURE__ */ React.createElement(
         "rect",
         {
           x: cx - halfBar,
@@ -634,6 +638,16 @@ function PlotControls({
     }
   ))));
 }
+const FacetBarItem = memo(function FacetBarItem2({ fd, facetRefs, chartProps }) {
+  const localRef = useRef();
+  useEffect(() => {
+    facetRefs.current[fd.category] = localRef.current;
+    return () => {
+      delete facetRefs.current[fd.category];
+    };
+  }, [fd.category, facetRefs]);
+  return /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: "#648FFF" } }), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#333" } }, fd.category), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#999" } }, "(", fd.groups.reduce((a, g) => a + g.allValues.length, 0), " pts)")), /* @__PURE__ */ React.createElement(BarChart, { ref: localRef, ...chartProps }));
+});
 function ChartArea({
   dataFormat,
   facetByCol,
@@ -687,35 +701,37 @@ function ChartArea({
     }
   )), facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 } }, facetedData.map((fd) => {
     const displayFdGroups = fd.groups.map((g) => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
-    return /* @__PURE__ */ React.createElement("div", { key: fd.category, style: { background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: "#648FFF" } }), /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#333" } }, fd.category), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#999" } }, "(", fd.groups.reduce((a, g) => a + g.allValues.length, 0), " pts)")), /* @__PURE__ */ React.createElement(
-      BarChart,
+    return /* @__PURE__ */ React.createElement(
+      FacetBarItem,
       {
-        ref: (el) => {
-          facetRefs.current[fd.category] = el;
-        },
-        groups: displayFdGroups,
-        yLabel: vis.yLabel,
-        plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" \u2014 "),
-        plotBg: vis.plotBg,
-        showGrid: vis.showGrid,
-        gridColor: vis.gridColor,
-        barWidth: vis.barWidth,
-        barOpacity: vis.barOpacity,
-        pointSize: vis.pointSize,
-        showPoints: vis.showPoints,
-        jitterWidth: vis.jitterWidth,
-        pointOpacity: vis.pointOpacity,
-        xLabelAngle: vis.xLabelAngle,
-        errorType: vis.errorType,
-        yMin: yMinVal,
-        yMax: yMaxVal,
-        catColors: vp.catColors,
-        errStrokeWidth: vis.errStrokeWidth,
-        showBarOutline: vis.showBarOutline,
-        barOutlineWidth: vis.barOutlineWidth,
-        svgLegend
+        key: fd.category,
+        fd,
+        facetRefs,
+        chartProps: {
+          groups: displayFdGroups,
+          yLabel: vis.yLabel,
+          plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" \u2014 "),
+          plotBg: vis.plotBg,
+          showGrid: vis.showGrid,
+          gridColor: vis.gridColor,
+          barWidth: vis.barWidth,
+          barOpacity: vis.barOpacity,
+          pointSize: vis.pointSize,
+          showPoints: vis.showPoints,
+          jitterWidth: vis.jitterWidth,
+          pointOpacity: vis.pointOpacity,
+          xLabelAngle: vis.xLabelAngle,
+          errorType: vis.errorType,
+          yMin: yMinVal,
+          yMax: yMaxVal,
+          catColors: vp.catColors,
+          errStrokeWidth: vis.errStrokeWidth,
+          showBarOutline: vis.showBarOutline,
+          barOutlineWidth: vis.barOutlineWidth,
+          svgLegend
+        }
       }
-    ));
+    );
   })));
 }
 function App() {

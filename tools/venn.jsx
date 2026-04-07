@@ -429,7 +429,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   const inter = intersections.find(g => g.mask === 3);
   const interSize = inter ? inter.size : 0;
 
-  const maxR = Math.min(viewW, viewH) * 0.38;
+  const maxR = Math.min(viewW, viewH) * 0.304;
   const scale = maxR / Math.sqrt(Math.max(s0, s1));
   let radii = [scale * Math.sqrt(s0), scale * Math.sqrt(s1)];
   const warnings = [];
@@ -451,7 +451,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   ];
 
   // Classic positions (equal radius, moderate overlap)
-  const classicR = Math.min(viewW, viewH) * 0.34;
+  const classicR = Math.min(viewW, viewH) * 0.272;
   const classicD = classicR;
   const classicCircles = [
     { cx: cx - classicD / 2, cy, r: classicR },
@@ -476,7 +476,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
 
 function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const sizes = setNames.map(n => sets.get(n).size);
-  const maxR = Math.min(viewW, viewH) * 0.32;
+  const maxR = Math.min(viewW, viewH) * 0.256;
   const scale = maxR / Math.sqrt(Math.max(...sizes));
   let radii = sizes.map(s => scale * Math.sqrt(s));
   const warnings = [];
@@ -564,7 +564,7 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
 // ── Non-proportional Layouts ─────────────────────────────────────────────────
 
 function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
-  const R = Math.min(viewW, viewH) * 0.34;
+  const R = Math.min(viewW, viewH) * 0.272;
   const cx = viewW / 2, cy = viewH / 2;
   // Overlap so all regions are visible — distance = R (moderate overlap)
   const d = R;
@@ -576,7 +576,7 @@ function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
 }
 
 function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
-  const R = Math.min(viewW, viewH) * 0.30;
+  const R = Math.min(viewW, viewH) * 0.24;
   const cx = viewW / 2, cy = viewH / 2;
   // Equilateral triangle, top vertex pointing up
   // d = 0.65R gives ~35% pairwise overlap — clear regions for all 7 zones
@@ -676,7 +676,9 @@ const VennChart = forwardRef(function VennChart({
 
   return (
     <svg ref={ref} viewBox={`0 0 ${VW} ${VH}`} style={{ width: "100%", height: "auto", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={plotTitle || "Venn diagram"}>
+      <title>{plotTitle || "Venn diagram"}</title>
+      <desc>{`Venn diagram with ${n} set${n !== 1 ? "s" : ""}: ${setNames.join(", ")}`}</desc>
       <rect width={VW} height={VH} fill={plotBg || "#fff"} rx="8" />
       {plotTitle && <text x={VW / 2} y={24} textAnchor="middle" fontSize="16" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>}
 
@@ -684,7 +686,8 @@ const VennChart = forwardRef(function VennChart({
       {circles.map((c, i) => (
         <circle key={`circle-${i}`} cx={c.cx} cy={c.cy} r={c.r}
           fill={colors[setNames[i]] || PALETTE[i]} fillOpacity={fOpacity}
-          stroke={colors[setNames[i]] || PALETTE[i]} strokeWidth="2" strokeOpacity="0.6" />
+          stroke={colors[setNames[i]] || PALETTE[i]} strokeWidth="2" strokeOpacity="0.6"
+          aria-label={`Set ${setNames[i]}: ${sets[setNames[i]] || 0} elements`} />
       ))}
 
       {/* Selected region highlight */}

@@ -97,7 +97,7 @@ function renderPoint(shape, cx, cy, r, props) {
   }
 }
 function ShapePreview({ shape, size = 16, color = "#666" }) {
-  return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", style: { display: "block", flexShrink: 0 } }, renderPoint(shape, 8, 8, 6, { fill: color, fillOpacity: 1, stroke: "none", strokeWidth: 0 }));
+  return /* @__PURE__ */ React.createElement("svg", { width: size, height: size, viewBox: "0 0 16 16", style: { display: "block", flexShrink: 0 }, "aria-hidden": "true" }, renderPoint(shape, 8, 8, 6, { fill: color, fillOpacity: 1, stroke: "none", strokeWidth: 0 }));
 }
 const MARGIN = { top: 28, right: 28, bottom: 56, left: 70 };
 const VBW = 800, VBH = 500;
@@ -202,8 +202,12 @@ const ScatterChart = forwardRef(function ScatterChart2({
       ref,
       viewBox: `0 0 ${VBW} ${VBH + legendH}`,
       style: { width: "100%", height: "auto", display: "block" },
-      xmlns: "http://www.w3.org/2000/svg"
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img",
+      "aria-label": title || "Scatter plot"
     },
+    /* @__PURE__ */ React.createElement("title", null, title || "Scatter plot"),
+    /* @__PURE__ */ React.createElement("desc", null, `Scatter plot with ${data.length} data point${data.length !== 1 ? "s" : ""}${xLabel ? `, X: ${xLabel}` : ""}${yLabel ? `, Y: ${yLabel}` : ""}`),
     /* @__PURE__ */ React.createElement("defs", null, /* @__PURE__ */ React.createElement("clipPath", { id: "sc-clip" }, /* @__PURE__ */ React.createElement("rect", { x: MARGIN.left, y: MARGIN.top, width: w, height: h }))),
     /* @__PURE__ */ React.createElement("rect", { width: VBW, height: VBH, fill: plotBg || "#fff" }),
     /* @__PURE__ */ React.createElement("rect", { x: MARGIN.left, y: MARGIN.top, width: w, height: h, fill: plotBg || "#fff" }),
@@ -291,7 +295,7 @@ const ScatterChart = forwardRef(function ScatterChart2({
         );
       }
     }),
-    /* @__PURE__ */ React.createElement("g", { clipPath: "url(#sc-clip)" }, data.map((row, ri) => {
+    /* @__PURE__ */ React.createElement("g", { clipPath: "url(#sc-clip)", role: "group", "aria-label": `${data.length} data points` }, data.map((row, ri) => {
       const xVal = row[xCol], yVal = row[yCol];
       if (xVal == null || yVal == null) return null;
       return renderPoint(getShape(ri), sx(xVal), sy(yVal), getSize(ri), {

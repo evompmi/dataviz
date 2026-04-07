@@ -79,24 +79,24 @@ function FileDropZone({ onFileLoad, accept = ".csv,.tsv,.txt,.dat", hint = "CSV 
 // itemWidth: number (fixed) or function(block) => number (dynamic per block)
 function computeLegendHeight(blocks, usableW, itemWidth) {
   if (!blocks || !blocks.length) return 0;
-  var IH = 18, TH = 15;
-  var iw = itemWidth || 88;
-  var t = 10;
+  const IH = 18, TH = 15;
+  const iw = itemWidth || 88;
+  let t = 10;
   blocks.forEach(function(b, bi) {
     if (b.title) t += TH;
     if (b.items) {
-      var bIW = typeof iw === "function" ? iw(b) : iw;
+      const bIW = typeof iw === "function" ? iw(b) : iw;
       t += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / bIW))) * IH;
     }
     if (b.gradient) t += 30;
     if (b.sizeItems && b.sizeItems.length) {
-      var mr = Math.max.apply(null, b.sizeItems.map(function(i) { return i.r; }).concat([3]));
-      var rowH = mr * 2 + 4;
+      const mr = Math.max(...b.sizeItems.map(function(i) { return i.r; }), 3);
+      const rowH = mr * 2 + 4;
       // Compute per-item widths and wrap into rows
-      var cx = 0, rows = 1;
+      let cx = 0, rows = 1;
       b.sizeItems.forEach(function(item, ii) {
-        var labelW = (item.label || "").length * 5.6 + 6;
-        var itemW = mr * 2 + 4 + labelW + 12;
+        const labelW = (item.label || "").length * 5.6 + 6;
+        const itemW = mr * 2 + 4 + labelW + 12;
         if (ii > 0 && cx + itemW > usableW) { rows++; cx = 0; }
         cx += itemW;
       });
@@ -113,28 +113,34 @@ function computeLegendHeight(blocks, usableW, itemWidth) {
 // truncateLabel: optional max char length for labels (falsy = no truncation)
 function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabel) {
   if (!blocks || !blocks.length) return null;
-  var h = React.createElement;
-  var IH = 18, TH = 15;
-  var iw = itemWidth || 88;
+  const h = React.createElement;
+  const IH = 18, TH = 15;
+  const iw = itemWidth || 88;
+
+  // Pre-compute block Y offsets in a single pass (avoids O(n²) slice+reduce)
+  const blockOffsets = [0];
+  for (let bi = 0; bi < blocks.length - 1; bi++) {
+    const b = blocks[bi];
+    let off = blockOffsets[bi];
+    if (b.title) off += TH;
+    if (b.items) {
+      const w = typeof iw === "function" ? iw(b) : iw;
+      off += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / w))) * IH;
+    }
+    if (b.gradient) off += 30;
+    if (b.sizeItems && b.sizeItems.length) {
+      const mr = Math.max(...b.sizeItems.map(function(i) { return i.r; }).concat([3]));
+      off += mr * 2 + 4;
+    }
+    off += 8;
+    blockOffsets.push(off);
+  }
 
   return blocks.map(function(block, bi) {
-    var bIW = typeof iw === "function" ? iw(block) : iw;
-    var blockY = startY + (bi > 0 ? blocks.slice(0, bi).reduce(function(acc, b) {
-      if (b.title) acc += TH;
-      if (b.items) {
-        var w = typeof iw === "function" ? iw(b) : iw;
-        acc += Math.ceil(b.items.length / Math.max(1, Math.floor(usableW / w))) * IH;
-      }
-      if (b.gradient) acc += 30;
-      if (b.sizeItems && b.sizeItems.length) {
-        var mr = Math.max.apply(null, b.sizeItems.map(function(i) { return i.r; }).concat([3]));
-        acc += mr * 2 + 4;
-      }
-      acc += 8;
-      return acc;
-    }, 0) : 0);
-    var itemsPerRow = Math.max(1, Math.floor(usableW / bIW));
-    var children = [];
+    const bIW = typeof iw === "function" ? iw(block) : iw;
+    const blockY = startY + blockOffsets[bi];
+    const itemsPerRow = Math.max(1, Math.floor(usableW / bIW));
+    const children = [];
 
     // Title
     if (block.title) {
@@ -144,11 +150,11 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
     // Items (circles or lines)
     if (block.items) {
       block.items.forEach(function(item, ii) {
-        var row = Math.floor(ii / itemsPerRow);
-        var col = ii % itemsPerRow;
-        var label = item.label || "";
+        const row = Math.floor(ii / itemsPerRow);
+        const col = ii % itemsPerRow;
+        let label = item.label || "";
         if (truncateLabel && label.length > truncateLabel) label = label.slice(0, truncateLabel - 2) + "\u2026";
-        var shape;
+        let shape;
         if (item.shape === "line") {
           shape = h("line", { key: "s", x1: 0, x2: 14, y1: 7, y2: 7, stroke: item.color, strokeWidth: "2.5" });
         } else if (item.shape === "triangle") {
@@ -160,7 +166,7 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
         } else {
           shape = h("circle", { key: "s", cx: 6, cy: 7, r: 5, fill: item.color });
         }
-        var text = h("text", {
+        const text = h("text", {
           key: "t", x: item.shape === "line" ? 18 : 14, y: 11,
           fontSize: "10", fill: "#444", fontFamily: "sans-serif"
         }, label);
@@ -173,10 +179,10 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
 
     // Gradient
     if (block.gradient) {
-      var gw = Math.min(usableW * 0.6, 200), gh = 12;
-      var th = block.title ? TH : 0;
-      var gradId = "svggrad-" + bi;
-      var stops = block.gradient.stops.map(function(c, si) {
+      const gw = Math.min(usableW * 0.6, 200), gh = 12;
+      const th = block.title ? TH : 0;
+      const gradId = "svggrad-" + bi;
+      const stops = block.gradient.stops.map(function(c, si) {
         return h("stop", { key: si, offset: (si / (block.gradient.stops.length - 1) * 100) + "%", stopColor: c });
       });
       children.push(h("g", { key: "grad", transform: "translate(0, " + th + ")" },
@@ -189,15 +195,15 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
 
     // Size items (scatter) — label-aware spacing with row wrapping
     if (block.sizeItems && block.sizeItems.length) {
-      var sth = block.title ? TH : 0;
-      var maxR = Math.max.apply(null, block.sizeItems.map(function(i) { return i.r; }).concat([3]));
-      var rowH = maxR * 2 + 4;
-      var cx = 0, row = 0;
-      var sizeChildren = block.sizeItems.map(function(item, ii) {
-        var labelW = (item.label || "").length * 5.6 + 6;
-        var itemW = maxR * 2 + 4 + labelW + 12;
+      const sth = block.title ? TH : 0;
+      const maxR = Math.max(...block.sizeItems.map(function(i) { return i.r; }), 3);
+      const rowH = maxR * 2 + 4;
+      let cx = 0, row = 0;
+      const sizeChildren = block.sizeItems.map(function(item, ii) {
+        const labelW = (item.label || "").length * 5.6 + 6;
+        const itemW = maxR * 2 + 4 + labelW + 12;
         if (ii > 0 && cx + itemW > usableW) { row++; cx = 0; }
-        var tx = cx; cx += itemW;
+        const tx = cx; cx += itemW;
         return h("g", { key: ii, transform: "translate(" + tx + ", " + (row * rowH) + ")" },
           h("circle", { cx: maxR, cy: 0, r: item.r, fill: "#888", fillOpacity: "0.35", stroke: "#888", strokeWidth: "0.8" }),
           h("text", { x: maxR * 2 + 4, y: 4, fontSize: "9", fill: "#444", fontFamily: "sans-serif" }, item.label)
@@ -214,9 +220,9 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
 
 // Slider with label + value display on top, range input below
 function SliderControl(props) {
-  var label = props.label, value = props.value, displayValue = props.displayValue,
+  const label = props.label, value = props.value, displayValue = props.displayValue,
       min = props.min, max = props.max, step = props.step, onChange = props.onChange;
-  var dv = displayValue != null ? displayValue : value;
+  const dv = displayValue != null ? displayValue : value;
   return React.createElement('div', null,
     React.createElement('div', {style:{display:"flex",justifyContent:"space-between",marginBottom:2}},
       React.createElement('span', {style:lbl}, label),
@@ -232,11 +238,11 @@ function SliderControl(props) {
 
 // Step navigation bar
 function StepNavBar(props) {
-  var steps = props.steps, currentStep = props.currentStep, onStepChange = props.onStepChange,
+  const steps = props.steps, currentStep = props.currentStep, onStepChange = props.onStepChange,
       canNavigate = props.canNavigate;
   return React.createElement('div', {style:{display:"flex",gap:8,marginBottom:20}},
     steps.map(function(s, i) {
-      var enabled = canNavigate ? canNavigate(s) : true;
+      const enabled = canNavigate ? canNavigate(s) : true;
       return React.createElement('button', {
         key:s, onClick:function(){if(enabled)onStepChange(s);},
         style:{padding:"6px 16px",borderRadius:6,fontSize:12,fontWeight:600,
@@ -290,7 +296,7 @@ function PageHeader(props) {
 
 // Separator selector + FileDropZone combo for upload step
 function UploadPanel(props) {
-  var sepOverride = props.sepOverride, onSepChange = props.onSepChange,
+  const sepOverride = props.sepOverride, onSepChange = props.onSepChange,
       onFileLoad = props.onFileLoad, hint = props.hint;
   return React.createElement('div', {style:sec},
     React.createElement('div', {
@@ -332,7 +338,7 @@ function UploadPanel(props) {
 
 // Actions tile for plot step
 function ActionsPanel(props) {
-  var children = [];
+  const children = [];
   if (props.onDownloadSvg) {
     children.push(React.createElement('button', {
       key:"dl", onClick:function(e){props.onDownloadSvg(e);flashSaved(e.currentTarget);},
@@ -366,13 +372,13 @@ function ActionsPanel(props) {
 
 // Column role assignment editor (used in boxplot, bargraph long format)
 function ColumnRoleEditor(props) {
-  var headers = props.headers, rows = props.rows, colRoles = props.colRoles,
+  const headers = props.headers, rows = props.rows, colRoles = props.colRoles,
       colNames = props.colNames, onRoleChange = props.onRoleChange, onNameChange = props.onNameChange;
   return React.createElement('div', {style:sec},
     React.createElement('p', {style:{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#555"}}, "Column roles"),
     React.createElement('div', {style:{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}},
       Object.entries(roleColors).map(function(entry) {
-        var r = entry[0], c = entry[1];
+        const r = entry[0], c = entry[1];
         return React.createElement('span', {key:r,
           style:{fontSize:10,padding:"2px 8px",borderRadius:4,background:c,
             color:r==="ignore"?"#666":"#fff",fontWeight:600}}, r);
@@ -380,10 +386,10 @@ function ColumnRoleEditor(props) {
     ),
     React.createElement('div', {style:{display:"flex",flexDirection:"column",gap:8}},
       headers.map(function(h, i) {
-        var u = [];
-        var seen = {};
-        rows.forEach(function(r) { var v = r[i]; if (!seen[v]) { seen[v] = true; u.push(v); } });
-        var pv = u.slice(0,5).join(", ") + (u.length > 5 ? " \u2026 (" + u.length + ")" : "");
+        const u = [];
+        const seen = {};
+        rows.forEach(function(r) { const v = r[i]; if (!seen[v]) { seen[v] = true; u.push(v); } });
+        const pv = u.slice(0,5).join(", ") + (u.length > 5 ? " \u2026 (" + u.length + ")" : "");
         return React.createElement('div', {key:"col-"+i,
           style:{display:"flex",gap:10,alignItems:"center",padding:"8px 12px",background:"#fff",
             borderRadius:6,border:"2px solid "+(roleColors[colRoles[i]]||"#ccc")}
@@ -412,7 +418,7 @@ function ColumnRoleEditor(props) {
 
 // Filter panel with checkboxes for each column
 function FilterCheckboxPanel(props) {
-  var headers = props.headers, colNames = props.colNames, colRoles = props.colRoles,
+  const headers = props.headers, colNames = props.colNames, colRoles = props.colRoles,
       filters = props.filters, filteredCount = props.filteredCount, totalCount = props.totalCount,
       onToggle = props.onToggle, onToggleAll = props.onToggleAll;
   return React.createElement('div', {
@@ -424,8 +430,8 @@ function FilterCheckboxPanel(props) {
     React.createElement('div', {style:{display:"flex",gap:16,flexWrap:"wrap",alignItems:"stretch",flex:1}},
       headers.map(function(h, i) {
         if (colRoles[i] === "ignore") return null;
-        var u = filters[i] ? filters[i].unique : [];
-        var isNumCol = u.length > 0 && u.filter(function(v){return isNumericValue(v);}).length / u.length > 0.5;
+        const u = filters[i] ? filters[i].unique : [];
+        const isNumCol = u.length > 0 && u.filter(function(v){return isNumericValue(v);}).length / u.length > 0.5;
         if (isNumCol) {
           return React.createElement('div', {key:"col-"+i,
             style:{minWidth:140,flex:1,background:"#fff",borderRadius:6,border:"1px solid #ddd",padding:10}
@@ -450,7 +456,7 @@ function FilterCheckboxPanel(props) {
               style:{fontSize:9,padding:"2px 6px",background:"#eee",border:"1px solid #ccc",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}, "None")
           ),
           u.map(function(v) {
-            var checked = filters[i] && filters[i].included ? filters[i].included.has(v) : false;
+            const checked = filters[i] && filters[i].included ? filters[i].included.has(v) : false;
             return React.createElement('label', {key:v,
               style:{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#444",cursor:"pointer",marginBottom:2}
             },
@@ -467,7 +473,7 @@ function FilterCheckboxPanel(props) {
 
 // Rename values & reorder groups panel
 function RenameReorderPanel(props) {
-  var headers = props.headers, colNames = props.colNames, colRoles = props.colRoles,
+  const headers = props.headers, colNames = props.colNames, colRoles = props.colRoles,
       filters = props.filters, valueRenames = props.valueRenames, groupColIdx = props.groupColIdx,
       effectiveOrder = props.effectiveOrder, applyRename = props.applyRename,
       onRenameVal = props.onRenameVal, onReorder = props.onReorder,
@@ -482,29 +488,29 @@ function RenameReorderPanel(props) {
     React.createElement('div', {style:{display:"flex",gap:16,flexWrap:"wrap"}},
       headers.map(function(h, i) {
         if (colRoles[i] !== "group" && colRoles[i] !== "filter") return null;
-        var u = (filters[i] ? filters[i].unique : []).filter(function(v) {
+        const u = (filters[i] ? filters[i].unique : []).filter(function(v) {
           return filters[i] && filters[i].included && filters[i].included.has(v);
         });
-        var isGrp = (i === groupColIdx);
-        var renamedU = u.map(function(v){return {orig:v, renamed:applyRename(i,v)};});
-        var orderedU = isGrp && effectiveOrder
+        const isGrp = (i === groupColIdx);
+        const renamedU = u.map(function(v){return {orig:v, renamed:applyRename(i,v)};});
+        const orderedU = isGrp && effectiveOrder
           ? effectiveOrder.map(function(g){return renamedU.find(function(x){return x.renamed===g;});}).filter(Boolean)
           : renamedU;
-        var displayList = orderedU.length > 0 ? orderedU : renamedU;
+        const displayList = orderedU.length > 0 ? orderedU : renamedU;
         return React.createElement('div', {key:"col-"+i,
           style:{minWidth:200,background:"#fff",borderRadius:6,border:"1px solid #ddd",padding:10}
         },
           React.createElement('p', {style:{fontSize:11,fontWeight:600,color:"#333",marginBottom:6}}, colNames[i]),
           displayList.map(function(item, vi) {
-            var v = item.orig;
+            const v = item.orig;
             return React.createElement('div', {key:v,
               draggable:isGrp,
               onDragStart:function(){onDragStart(vi);},
               onDragOver:function(e){e.preventDefault();},
               onDrop:function(){
                 if(!isGrp||dragIdx===null||dragIdx===vi){onDragEnd();return;}
-                var cur=displayList.map(function(x){return x.renamed;});
-                var moved=cur[dragIdx];cur.splice(dragIdx,1);cur.splice(vi,0,moved);
+                const cur=displayList.map(function(x){return x.renamed;});
+                const moved=cur[dragIdx];cur.splice(dragIdx,1);cur.splice(vi,0,moved);
                 onReorder(cur);onDragEnd();
               },
               onDragEnd:function(){onDragEnd();},
@@ -532,9 +538,9 @@ function RenameReorderPanel(props) {
 
 // Summary stats table (used in boxplot & bargraph output step)
 function StatsTable(props) {
-  var stats = props.stats, groupLabel = props.groupLabel;
+  const stats = props.stats, groupLabel = props.groupLabel;
   if (!stats || stats.length === 0) return null;
-  var headers = ["Group","n","Mean","Median","SD","SEM","Min","Max"];
+  const headers = ["Group","n","Mean","Median","SD","SEM","Min","Max"];
   return React.createElement('div', {style:sec},
     React.createElement('p', {style:{margin:"0 0 10px",fontSize:13,fontWeight:600,color:"#555"}},
       "Summary \u2014 grouped by \""+groupLabel+"\""),
@@ -567,12 +573,12 @@ function StatsTable(props) {
 
 // Condition/group color editor with ColorInput per group
 function GroupColorEditor(props) {
-  var groups = props.groups, onColorChange = props.onColorChange, onNameChange = props.onNameChange;
-  var onToggle = props.onToggle;
+  const groups = props.groups, onColorChange = props.onColorChange, onNameChange = props.onNameChange;
+  const onToggle = props.onToggle;
   return React.createElement('div', {style:{display:"flex",flexDirection:"column",gap:4}},
     groups.map(function(g, i) {
-      var enabled = g.enabled !== false;
-      var children = [];
+      const enabled = g.enabled !== false;
+      const children = [];
       if (onToggle) {
         children.push(React.createElement('input', {key:"cb", type:"checkbox", checked:enabled,
           onChange:function(){onToggle(i);},
@@ -599,10 +605,10 @@ function GroupColorEditor(props) {
 
 // Style controls section (background, grid, grid color)
 function BaseStyleControls(props) {
-  var plotBg = props.plotBg, onPlotBgChange = props.onPlotBgChange,
+  const plotBg = props.plotBg, onPlotBgChange = props.onPlotBgChange,
       showGrid = props.showGrid, onShowGridChange = props.onShowGridChange,
       gridColor = props.gridColor, onGridColorChange = props.onGridColorChange;
-  var children = [
+  const children = [
     React.createElement('div', {key:"bg",style:{display:"flex",alignItems:"center",justifyContent:"space-between"}},
       React.createElement('span', {style:lbl}, "Background"),
       React.createElement(ColorInput, {value:plotBg, onChange:onPlotBgChange, size:24})),

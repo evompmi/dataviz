@@ -1,6 +1,6 @@
 // bargraph.jsx — editable source. Run `npm run build` to compile to bargraph.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
 // Helper: build groups structure from long-format data (group col + value col)
 function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
@@ -96,7 +96,9 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
 
   return (
     <svg ref={ref} viewBox={`0 0 ${vbW} ${vbH}`} style={{ width: "100%", height: "auto", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={plotTitle || "Bar chart"}>
+      <title>{plotTitle || "Bar chart"}</title>
+      <desc>{`Bar chart with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
       <rect x={MChart.left} y={MChart.top} width={w} height={h} fill={plotBg} />
 
       {showGrid && yTicks.map(t => (
@@ -127,7 +129,7 @@ const BarChart = forwardRef(function BarChart({ groups, yLabel, plotTitle, plotB
         const barH = mean >= 0 ? (baseline - barTop) : (sy(mean) - baseline);
 
         return (
-          <g key={g.name}>
+          <g key={g.name} role="group" aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}>
             {/* Bar rectangle */}
             <rect x={cx - halfBar} y={yBar} width={halfBar * 2} height={Math.max(0, barH)}
               fill={g.color} fillOpacity={barOpacity}
@@ -588,6 +590,24 @@ function PlotControls({ dataFormat, fileName, effectiveGroups, allDisplayGroups,
   );
 }
 
+const FacetBarItem = memo(function FacetBarItem({ fd, facetRefs, chartProps }) {
+  const localRef = useRef();
+  useEffect(() => {
+    facetRefs.current[fd.category] = localRef.current;
+    return () => { delete facetRefs.current[fd.category]; };
+  }, [fd.category, facetRefs]);
+  return (
+    <div style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd"}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        <div style={{width:10,height:10,borderRadius:"50%",background:"#648FFF"}} />
+        <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
+        <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)</span>
+      </div>
+      <BarChart ref={localRef} {...chartProps} />
+    </div>
+  );
+});
+
 function ChartArea({ dataFormat, facetByCol, facetedData, displayGroups, plotGroupRenames,
   plotGroupColors, colorByCol, colorByCategories, categoryColors, colNames,
   vis, yMinVal, yMaxVal, chartRef, facetRefs }) {
@@ -642,21 +662,18 @@ function ChartArea({ dataFormat, facetByCol, facetedData, displayGroups, plotGro
           {facetedData.map(fd => {
             const displayFdGroups = fd.groups.map(g => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
             return (
-              <div key={fd.category} style={{background:"#fff",borderRadius:8,padding:12,border:"1px solid #ddd"}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                  <div style={{width:10,height:10,borderRadius:"50%",background:"#648FFF"}} />
-                  <p style={{margin:0,fontSize:13,fontWeight:600,color:"#333"}}>{fd.category}</p>
-                  <span style={{fontSize:11,color:"#999"}}>({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)</span>
-                </div>
-                <BarChart ref={el => { facetRefs.current[fd.category] = el; }} groups={displayFdGroups} yLabel={vis.yLabel} plotTitle={[vis.plotTitle, fd.category].filter(Boolean).join(" — ")}
-                  plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
-                  barWidth={vis.barWidth} barOpacity={vis.barOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints}
-                  jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle}
-                  errorType={vis.errorType} yMin={yMinVal} yMax={yMaxVal}
-                  catColors={vp.catColors}
-                  errStrokeWidth={vis.errStrokeWidth} showBarOutline={vis.showBarOutline} barOutlineWidth={vis.barOutlineWidth}
-                  svgLegend={svgLegend} />
-              </div>
+              <FacetBarItem key={fd.category} fd={fd} facetRefs={facetRefs}
+                chartProps={{
+                  groups: displayFdGroups, yLabel: vis.yLabel,
+                  plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
+                  plotBg: vis.plotBg, showGrid: vis.showGrid, gridColor: vis.gridColor,
+                  barWidth: vis.barWidth, barOpacity: vis.barOpacity, pointSize: vis.pointSize,
+                  showPoints: vis.showPoints, jitterWidth: vis.jitterWidth, pointOpacity: vis.pointOpacity,
+                  xLabelAngle: vis.xLabelAngle, errorType: vis.errorType, yMin: yMinVal, yMax: yMaxVal,
+                  catColors: vp.catColors, errStrokeWidth: vis.errStrokeWidth,
+                  showBarOutline: vis.showBarOutline, barOutlineWidth: vis.barOutlineWidth,
+                  svgLegend: svgLegend
+                }} />
             );
           })}
         </div>

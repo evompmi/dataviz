@@ -1,6 +1,6 @@
 // aequorin.jsx — editable source. Run `npm run build` to compile to aequorin.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
 const DEFAULT_KR  = 7;
 const DEFAULT_KTR = 118;
@@ -210,7 +210,9 @@ const Chart = forwardRef(function Chart({ series, xStart, xEnd, yMin, yMax, vbW,
 
   return (
     <svg ref={ref} viewBox={`0 0 ${vbW} ${vbH + legendH + topPad}`} style={{ width: "100%", height: "auto", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={plotTitle || "Aequorin luminescence chart"}>
+      <title>{plotTitle || "Aequorin luminescence chart"}</title>
+      <desc>{`Time series chart with ${series.length} series${xLabel ? `, X: ${xLabel}` : ""}${yLabel ? `, Y: ${yLabel}` : ""}`}</desc>
       {plotTitle && <text x={vbW / 2} y={17} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>}
       {plotSubtitle && <text x={vbW / 2} y={plotTitle ? 34 : 17} textAnchor="middle" fontSize="12" fill="#888" fontFamily="sans-serif">{plotSubtitle}</text>}
       <g transform={`translate(0, ${topPad})`}>
@@ -303,7 +305,8 @@ const InsetBarplot = forwardRef(function InsetBarplot({ series, insetColors, ins
 
   return (
     <svg ref={ref} viewBox={`0 0 ${iW} ${iH + topPad}`} style={{ width: "100%", height: "100%", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={plotTitle || "Inset bar plot"}>
+      <title>{plotTitle || "Inset bar plot"}</title>
       {plotTitle && <text x={iW / 2} y={15} textAnchor="middle" fontSize="11" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>}
       {plotSubtitle && <text x={iW / 2} y={plotTitle ? 28 : 15} textAnchor="middle" fontSize="9" fill="#888" fontFamily="sans-serif">{plotSubtitle}</text>}
       <g transform={`translate(0, ${topPad})`}>
@@ -351,6 +354,22 @@ const InsetBarplot = forwardRef(function InsetBarplot({ series, insetColors, ins
         fontSize={insetYFontSize || 7} fill="#444" fontFamily="sans-serif">{corrected ? `\u03A3 (corrected)` : `\u03A3`}</text>
       </g>
     </svg>
+  );
+});
+
+const FacetChartItem = memo(function FacetChartItem({ s, facetRefs, chartProps }) {
+  const localRef = useRef();
+  useEffect(() => {
+    facetRefs.current[s.prefix] = localRef.current;
+    return () => { delete facetRefs.current[s.prefix]; };
+  }, [s.prefix, facetRefs]);
+  return (
+    <div style={{ background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
+      <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color }}>
+        {s.label} <span style={{ fontSize: 11, fontWeight: 400, color: "#999" }}>number of repeats used = {s.n}</span>
+      </p>
+      <Chart ref={localRef} {...chartProps} />
+    </div>
   );
 });
 
@@ -503,18 +522,15 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
     return (
       <div>
         <div style={{ display: "grid", gridTemplateColumns: `repeat(${nCols}, 1fr)`, gap: 16, alignItems: "stretch" }}>
-          {displaySeries.map(s => (
-            <div key={s.prefix} style={{ background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color }}>
-                {s.label} <span style={{ fontSize: 11, fontWeight: 400, color: "#999" }}>number of repeats used = {s.n}</span>
-              </p>
-              <Chart ref={el => { facetRefs.current[s.prefix] = el; }}
-                series={[s]} xStart={displayXStart} xEnd={displayXEnd} yMin={yMin} yMax={yMax}
-                vbW={400} vbH={260} xLabel={xLabelText} yLabel={formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)"}
-                plotBg={plotBg} showGrid={showGrid} lineWidth={lineWidth} ribbonOpacity={ribbonOpacity} gridColor={gridColor}
-                plotTitle={s.label} svgLegend={null} />
-            </div>
-          ))}
+          {displaySeries.map(s => {
+            const chartProps = {
+              series: [s], xStart: displayXStart, xEnd: displayXEnd, yMin, yMax,
+              vbW: 400, vbH: 260, xLabel: xLabelText, yLabel: formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)",
+              plotBg, showGrid, lineWidth, ribbonOpacity, gridColor,
+              plotTitle: s.label, svgLegend: null
+            };
+            return <FacetChartItem key={s.prefix} s={s} facetRefs={facetRefs} chartProps={chartProps} />;
+          })}
         </div>
         {BarTiles}
       </div>

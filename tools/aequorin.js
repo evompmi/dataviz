@@ -1,4 +1,4 @@
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 const DEFAULT_KR = 7;
 const DEFAULT_KTR = 118;
 const DEFAULT_KD = 7;
@@ -233,8 +233,12 @@ const Chart = forwardRef(function Chart2({
       ref,
       viewBox: `0 0 ${vbW} ${vbH + legendH + topPad}`,
       style: { width: "100%", height: "auto", display: "block" },
-      xmlns: "http://www.w3.org/2000/svg"
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img",
+      "aria-label": plotTitle || "Aequorin luminescence chart"
     },
+    /* @__PURE__ */ React.createElement("title", null, plotTitle || "Aequorin luminescence chart"),
+    /* @__PURE__ */ React.createElement("desc", null, `Time series chart with ${series.length} series${xLabel ? `, X: ${xLabel}` : ""}${yLabel ? `, Y: ${yLabel}` : ""}`),
     plotTitle && /* @__PURE__ */ React.createElement("text", { x: vbW / 2, y: 17, textAnchor: "middle", fontSize: "15", fontWeight: "700", fill: "#222", fontFamily: "sans-serif" }, plotTitle),
     plotSubtitle && /* @__PURE__ */ React.createElement("text", { x: vbW / 2, y: plotTitle ? 34 : 17, textAnchor: "middle", fontSize: "12", fill: "#888", fontFamily: "sans-serif" }, plotSubtitle),
     /* @__PURE__ */ React.createElement("g", { transform: `translate(0, ${topPad})` }, /* @__PURE__ */ React.createElement("rect", { x: MARGIN.left, y: MARGIN.top, width: w, height: h, fill: plotBg || "#fff" }), showGrid && yTicks.map((t) => /* @__PURE__ */ React.createElement("line", { key: t, x1: MARGIN.left, x2: MARGIN.left + w, y1: sy(t), y2: sy(t), stroke: gridColor || "#e0e0e0", strokeWidth: "0.5" })), showGrid && xTicks.map((t) => /* @__PURE__ */ React.createElement("line", { key: t, x1: sx(t), x2: sx(t), y1: MARGIN.top, y2: MARGIN.top + h, stroke: gridColor || "#e0e0e0", strokeWidth: "0.5" })), paths.map((p) => p.areaD ? /* @__PURE__ */ React.createElement(
@@ -323,8 +327,11 @@ const InsetBarplot = forwardRef(function InsetBarplot2({
       ref,
       viewBox: `0 0 ${iW} ${iH + topPad}`,
       style: { width: "100%", height: "100%", display: "block" },
-      xmlns: "http://www.w3.org/2000/svg"
+      xmlns: "http://www.w3.org/2000/svg",
+      role: "img",
+      "aria-label": plotTitle || "Inset bar plot"
     },
+    /* @__PURE__ */ React.createElement("title", null, plotTitle || "Inset bar plot"),
     plotTitle && /* @__PURE__ */ React.createElement("text", { x: iW / 2, y: 15, textAnchor: "middle", fontSize: "11", fontWeight: "700", fill: "#222", fontFamily: "sans-serif" }, plotTitle),
     plotSubtitle && /* @__PURE__ */ React.createElement("text", { x: iW / 2, y: plotTitle ? 28 : 15, textAnchor: "middle", fontSize: "9", fill: "#888", fontFamily: "sans-serif" }, plotSubtitle),
     /* @__PURE__ */ React.createElement("g", { transform: `translate(0, ${topPad})` }, /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: plotBg || "#fff" }), insetShowGrid && yTicks.map((t) => /* @__PURE__ */ React.createElement("line", { key: t, x1: M.left, x2: M.left + w, y1: sy(t), y2: sy(t), stroke: insetGridColor || "#e0e0e0", strokeWidth: "0.4" })), yTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: M.left - 3, x2: M.left, y1: sy(t), y2: sy(t), stroke: "#333", strokeWidth: "0.5" }), /* @__PURE__ */ React.createElement("text", { x: M.left - 5, y: sy(t) + 3, textAnchor: "end", fontSize: insetYFontSize || 7, fill: "#555", fontFamily: "sans-serif" }, t % 1 === 0 ? t : t.toFixed(1)))), bars.map((b, i) => {
@@ -386,6 +393,16 @@ const InsetBarplot = forwardRef(function InsetBarplot2({
       corrected ? `\u03A3 (corrected)` : `\u03A3`
     ))
   );
+});
+const FacetChartItem = memo(function FacetChartItem2({ s, facetRefs, chartProps }) {
+  const localRef = useRef();
+  useEffect(() => {
+    facetRefs.current[s.prefix] = localRef.current;
+    return () => {
+      delete facetRefs.current[s.prefix];
+    };
+  }, [s.prefix, facetRefs]);
+  return /* @__PURE__ */ React.createElement("div", { style: { background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color } }, s.label, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 400, color: "#999" } }, "number of repeats used = ", s.n)), /* @__PURE__ */ React.createElement(Chart, { ref: localRef, ...chartProps }));
 });
 const PlotPanel = React.forwardRef(function PlotPanel2({
   stats,
@@ -511,12 +528,8 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
   }, style: { padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 } }, "\u2B07 CSV")), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { borderBottom: "2px solid #99f6e4" } }, ["Condition", "Replicate", "Corrected Sum"].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "3px 8px", textAlign: "left", color: "#0f766e", fontWeight: 700 } }, h)))), /* @__PURE__ */ React.createElement("tbody", null, replicateSums.map((rs) => rs.repSums.map((rep, ri) => /* @__PURE__ */ React.createElement("tr", { key: `${rs.prefix}-${ri}`, style: { borderBottom: "1px solid #ccfbf1" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "3px 8px", color: "#334155", fontWeight: 600 } }, rs.label), /* @__PURE__ */ React.createElement("td", { style: { padding: "3px 8px", color: "#64748b" } }, "Rep ", ri + 1), /* @__PURE__ */ React.createElement("td", { style: { padding: "3px 8px", color: "#0f766e", fontFamily: "monospace" } }, rep.corrSum != null ? rep.corrSum.toFixed(4) : "\u2014"))))))))) : null;
   if (faceted) {
     const nCols = Math.min(displaySeries.length, 3);
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${nCols}, 1fr)`, gap: 16, alignItems: "stretch" } }, displaySeries.map((s) => /* @__PURE__ */ React.createElement("div", { key: s.prefix, style: { background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color } }, s.label, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 400, color: "#999" } }, "number of repeats used = ", s.n)), /* @__PURE__ */ React.createElement(
-      Chart,
-      {
-        ref: (el) => {
-          facetRefs.current[s.prefix] = el;
-        },
+    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: `repeat(${nCols}, 1fr)`, gap: 16, alignItems: "stretch" } }, displaySeries.map((s) => {
+      const chartProps = {
         series: [s],
         xStart: displayXStart,
         xEnd: displayXEnd,
@@ -533,8 +546,9 @@ const PlotPanel = React.forwardRef(function PlotPanel2({
         gridColor,
         plotTitle: s.label,
         svgLegend: null
-      }
-    )))), BarTiles);
+      };
+      return /* @__PURE__ */ React.createElement(FacetChartItem, { key: s.prefix, s, facetRefs, chartProps });
+    })), BarTiles);
   }
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" } }, /* @__PURE__ */ React.createElement(
     Chart,

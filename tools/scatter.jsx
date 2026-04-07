@@ -82,7 +82,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   // Shape preview for HTML UI
   function ShapePreview({ shape, size = 16, color = "#666" }) {
     return (
-      <svg width={size} height={size} viewBox="0 0 16 16" style={{ display: "block", flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox="0 0 16 16" style={{ display: "block", flexShrink: 0 }} aria-hidden="true">
         {renderPoint(shape, 8, 8, 6, { fill: color, fillOpacity: 1, stroke: "none", strokeWidth: 0 })}
       </svg>
     );
@@ -168,7 +168,9 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
 
   return (
     <svg ref={ref} viewBox={`0 0 ${VBW} ${VBH + legendH}`} style={{ width: "100%", height: "auto", display: "block" }}
-      xmlns="http://www.w3.org/2000/svg">
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label={title || "Scatter plot"}>
+      <title>{title || "Scatter plot"}</title>
+      <desc>{`Scatter plot with ${data.length} data point${data.length !== 1 ? "s" : ""}${xLabel ? `, X: ${xLabel}` : ""}${yLabel ? `, Y: ${yLabel}` : ""}`}</desc>
       <defs>
         <clipPath id="sc-clip">
           <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} />
@@ -225,7 +227,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
       })}
 
       {/* Data points */}
-      <g clipPath="url(#sc-clip)">
+      <g clipPath="url(#sc-clip)" role="group" aria-label={`${data.length} data points`}>
         {data.map((row, ri) => {
           const xVal = row[xCol], yVal = row[yCol];
           if (xVal == null || yVal == null) return null;
