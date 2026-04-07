@@ -24,7 +24,8 @@ function getPointColors(baseColor, nSources) {
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 
-const PALETTE = ["#648FFF","#785EF0","#DC267F","#FE6100","#FFB000","#2EC4B6","#E71D36","#011627","#8AC926","#6A4C93"];
+// Okabe-Ito colorblind-safe palette (Wong 2011, Nature Methods)
+const PALETTE = ["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","#000000","#88CCEE","#AA4499"];
 
 // ── Tool icons (raw SVG strings) ─────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ const inp       = {background:"#fff",border:"1px solid #ccc",borderRadius:4,colo
 const inpN      = {width:72,background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:13,textAlign:"center"};
 const sec       = {background:"#f8f8fa",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #ddd"};
 const lbl       = {fontSize:12,color:"#777",marginBottom:2};
-const roleColors = {group:"#648FFF",value:"#2EC4B6",filter:"#FFB000",text:"#785EF0",ignore:"#ccc"};
+const roleColors = {group:"#0072B2",value:"#009E73",filter:"#E69F00",text:"#CC79A7",ignore:"#ccc"};
 
 const btnPrimary  = {padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#648FFF",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"};
 const btnSecondary = {padding:"6px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fff",border:"1px solid #ccc",color:"#555",fontFamily:"inherit"};
