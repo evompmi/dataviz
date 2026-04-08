@@ -903,7 +903,7 @@ function App() {
               What do these numbers mean?
             </div>
             <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7 }}>
-              <b>Power</b> is the chance your experiment will detect a real effect if one truly exists. A power of 0.80 (the dashed line) means an 80% chance of success — this is the standard minimum. Higher is better but costs more subjects.
+              <b>Power</b> is the probability that you will correctly reject the null hypothesis (i.e. to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance of success — this is the standard minimum. Higher is better but costs more subjects.
               <br/><br/><b>Significance level (α)</b> is the risk of a false positive — concluding there is an effect when there is none. The standard α&nbsp;=&nbsp;0.05 means you accept a 5% chance of a false alarm. Lowering α (e.g. to 0.01) makes you more conservative but requires more subjects to keep power high.
               <br/><br/><b>Sample size ({test.nLabel})</b> is the number of observations you need to collect. More subjects give you more power to detect a given effect.
               <br/><br/><b>Effect size</b> measures how large the real difference or relationship is, scaled by variability. Use the "From my data" tab to compute it from values you expect (e.g. group means and standard deviation from pilot data or published studies).
