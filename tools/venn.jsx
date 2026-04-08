@@ -926,7 +926,7 @@ function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onTogg
           <div><div style={lbl}>Title</div><input value={vis.plotTitle} onChange={e => updVis({ plotTitle: e.target.value })} style={{ ...inp, width: "100%" }} /></div>
           <SliderControl label="Fill opacity" value={vis.fillOpacity} min={0.05} max={0.8} step={0.05} onChange={sv("fillOpacity")} />
           <SliderControl label="Font size" value={vis.fontSize} min={8} max={24} step={1} onChange={sv("fontSize")} />
-          <BaseStyleControls plotBg={vis.plotBg} onPlotBgChange={sv("plotBg")} showGrid={false} onShowGridChange={() => {}} gridColor="#e0e0e0" onGridColorChange={() => {}} />
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={lbl}>Background</span><ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} /></div>
         </div>
       </div>
     </div>
