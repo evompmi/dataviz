@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx --outdir=tools --jsx=transform",
-    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx --outdir=tools --jsx=transform --watch"
+    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform",
+    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --watch"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"
