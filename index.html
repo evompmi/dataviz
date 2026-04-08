@@ -51,19 +51,10 @@
     .tile.help-tile .tile-icon { font-size: 18px; }
     .tile.help-tile .tile-label { font-size: 11px; color: #888; }
 
-    .prefetch-bar {
-      display: flex; align-items: center; gap: 10px; font-size: 11px; color: #999;
-      margin-top: -20px;
+    .quote-progress {
+      font-size: 13px; font-style: italic; margin-top: -10px;
     }
-    .prefetch-bar .pf-track {
-      width: 120px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden;
-    }
-    .prefetch-bar .pf-fill {
-      height: 100%; background: #648FFF; border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-    .prefetch-bar.ready { color: #16a34a; }
-    .prefetch-bar.ready .pf-fill { background: #16a34a; }
+    .quote-progress .qch { color: #ddd; transition: color 0.4s ease; }
 
     .tool-view { display: none; flex-direction: column; height: 100vh; }
     .tool-view.active { display: flex; }
@@ -157,13 +148,7 @@
         </button>
       </div>
     </div>
-    <div class="prefetch-bar" id="prefetch-bar">
-      <div class="pf-track"><div class="pf-fill" id="pf-fill" style="width:0%"></div></div>
-      <span id="pf-label">Loading dependencies…</span>
-    </div>
-    <div class="landing-header">
-      <p><i>"In God we trust. All others must bring data."</i> — W. E. Deming</p>
-    </div>
+    <p class="quote-progress" id="quote-progress"></p>
   </div>
 
   <div class="tool-view" id="view-boxplot">
@@ -217,52 +202,52 @@
   </div>
 
   <script>
-    // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
+    // ── Prefetch vendor + shared scripts; cascade-colorize quote on completion ──
     (function() {
+      var quotes = [
+        "\u201CIn God we trust. All others must bring data.\u201D \u2014 W.\u00A0E.\u00A0Deming",
+        "\u201CThe greatest value of a picture is when it forces us to notice what we never expected to see.\u201D \u2014 John Tukey",
+        "\u201CIt is a capital mistake to theorize before one has data.\u201D \u2014 Arthur Conan Doyle",
+        "\u201CNot everything that counts can be counted, and not everything that can be counted counts.\u201D \u2014 William Bruce Cameron",
+        "\u201CThe goal is to turn data into information, and information into insight.\u201D \u2014 Carly Fiorina",
+        "\u201CAbove all else, show the data.\u201D \u2014 Edward Tufte",
+        "\u201CTorture the data, and it will confess to anything.\u201D \u2014 Ronald Coase",
+        "\u201CAn approximate answer to the right problem is worth a good deal more than an exact answer to an approximate problem.\u201D \u2014 John Tukey",
+        "\u201CThere are three kinds of lies: lies, damned lies, and statistics.\u201D \u2014 Mark Twain",
+        "\u201CAll models are wrong, but some are useful.\u201D \u2014 George Box",
+        "\u201CCorrelation does not imply causation, but it does waggle its eyebrows suggestively.\u201D \u2014 Randall Munroe",
+        "\u201CData is like garbage. You\u2019d better know what you are going to do with it before you collect it.\u201D \u2014 Mark Twain",
+        "\u201CThe plural of anecdote is not data.\u201D \u2014 Roger Brinner",
+      ];
+      var quote = quotes[Math.floor(Math.random() * quotes.length)];
+      var el = document.getElementById("quote-progress");
+      el.innerHTML = quote.split("").map(function(ch) {
+        return ch === " " ? " " : '<span class="qch">' + (ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch) + "</span>";
+      }).join("");
+      var spans = el.querySelectorAll(".qch");
+
+      function cascade() {
+        for (var i = 0; i < spans.length; i++) {
+          (function(span, delay) {
+            setTimeout(function() { span.style.color = "#555"; }, delay);
+          })(spans[i], i * 18);
+        }
+      }
+
       var scripts = [
         { src: "vendor/react.production.min.js",     size: 6 },
         { src: "vendor/react-dom.production.min.js",  size: 130 },
         { src: "tools/shared.js",                     size: 5 },
         { src: "tools/shared-components.js",          size: 8 }
       ];
-      var totalWeight = scripts.reduce(function(s, f) { return s + f.size; }, 0);
-      var progress = scripts.map(function() { return 0; });
-      var bar = document.getElementById("prefetch-bar");
-      var fill = document.getElementById("pf-fill");
-      var label = document.getElementById("pf-label");
       var done = 0;
 
-      function update() {
-        var loaded = progress.reduce(function(s, v) { return s + v; }, 0);
-        var pct = Math.min(100, Math.round((loaded / totalWeight) * 100));
-        fill.style.width = pct + "%";
-        if (done < scripts.length) {
-          label.textContent = "Loading dependencies\u2026 " + pct + "%";
-        } else {
-          fill.style.width = "100%";
-          label.textContent = "Loading dependencies\u2026";
-          setTimeout(function() {
-            label.textContent = "Ready";
-            bar.classList.add("ready");
-          }, 350);
-        }
-      }
-
-      scripts.forEach(function(file, i) {
+      scripts.forEach(function(file) {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", file.src);
-        xhr.onprogress = function(e) {
-          if (e.lengthComputable) {
-            progress[i] = (e.loaded / e.total) * file.size;
-          } else {
-            progress[i] = file.size * 0.5;
-          }
-          update();
-        };
         xhr.onload = xhr.onerror = function() {
-          progress[i] = file.size;
           done++;
-          update();
+          if (done >= scripts.length) cascade();
         };
         xhr.send();
       });
