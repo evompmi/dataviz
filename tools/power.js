@@ -174,9 +174,56 @@ function chi2inv(p, k) {
   }
   return (lo + hi) / 2;
 }
+let _glCache;
+function _gaussLegendre(n) {
+  if (_glCache && _glCache.n === n) return _glCache;
+  const nodes = new Array(n), weights = new Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let x = Math.cos(Math.PI * (i + 0.75) / (n + 0.5));
+    for (let it = 0; it < 100; it++) {
+      let pm12 = 1, p2 = x;
+      for (let j = 2; j <= n; j++) {
+        const pp = ((2 * j - 1) * x * p2 - (j - 1) * pm12) / j;
+        pm12 = p2;
+        p2 = pp;
+      }
+      const dp2 = n * (x * p2 - pm12) / (x * x - 1);
+      const dx = p2 / dp2;
+      x -= dx;
+      if (Math.abs(dx) < 1e-15) break;
+    }
+    let pm1 = 1, p = x;
+    for (let j = 2; j <= n; j++) {
+      const pp = ((2 * j - 1) * x * p - (j - 1) * pm1) / j;
+      pm1 = p;
+      p = pp;
+    }
+    const dp = n * (x * p - pm1) / (x * x - 1);
+    const w = 2 / ((1 - x * x) * dp * dp);
+    nodes[i] = -x;
+    nodes[n - 1 - i] = x;
+    weights[i] = w;
+    weights[n - 1 - i] = w;
+  }
+  return _glCache = { nodes, weights, n };
+}
 function nctcdf(t, df, delta) {
-  const z = (t * Math.sqrt(1 - 1 / (4 * df)) - delta) / Math.sqrt(1 + t * t / (2 * df));
-  return normcdf(z);
+  if (Math.abs(delta) < 1e-14) return tcdf(t, df);
+  const halfDf = df / 2;
+  const logC = halfDf * Math.log(2) + gammaln(halfDf);
+  const sqrtDf = Math.sqrt(df);
+  const uLo = Math.max(0, sqrtDf - 8);
+  const uHi = sqrtDf + 8;
+  const gl = _gaussLegendre(48);
+  const half = (uHi - uLo) / 2, mid = (uHi + uLo) / 2;
+  let sum = 0;
+  for (let i = 0; i < 48; i++) {
+    const u = mid + half * gl.nodes[i];
+    if (u <= 0) continue;
+    const logH = Math.log(2) + (df - 1) * Math.log(u) - u * u / 2 - logC;
+    sum += half * gl.weights[i] * normcdf(t * u / sqrtDf - delta) * Math.exp(logH);
+  }
+  return Math.max(0, Math.min(1, sum));
 }
 function ncf_sf(f, d1, d2, lambda) {
   if (f <= 0) return 1;

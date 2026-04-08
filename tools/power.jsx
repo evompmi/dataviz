@@ -168,11 +168,57 @@ function chi2inv(p, k) {
   return (lo + hi) / 2;
 }
 
-// Noncentral t CDF — Laubscher's normal approximation (accurate for df > 5)
-// P(T ≤ t | ν, δ) ≈ Φ(z) where z = t√(1 - 1/(4ν)) - δ) / √(1 + t²/(2ν))
+// Gauss-Legendre quadrature nodes and weights (computed once, cached)
+let _glCache;
+function _gaussLegendre(n) {
+  if (_glCache && _glCache.n === n) return _glCache;
+  const nodes = new Array(n), weights = new Array(n);
+  for (let i = 0; i < Math.ceil(n / 2); i++) {
+    let x = Math.cos(Math.PI * (i + 0.75) / (n + 0.5));
+    for (let it = 0; it < 100; it++) {
+      let pm1 = 1, p = x;
+      for (let j = 2; j <= n; j++) {
+        const pp = ((2 * j - 1) * x * p - (j - 1) * pm1) / j;
+        pm1 = p; p = pp;
+      }
+      const dp = n * (x * p - pm1) / (x * x - 1);
+      const dx = p / dp; x -= dx;
+      if (Math.abs(dx) < 1e-15) break;
+    }
+    let pm1 = 1, p = x;
+    for (let j = 2; j <= n; j++) {
+      const pp = ((2 * j - 1) * x * p - (j - 1) * pm1) / j;
+      pm1 = p; p = pp;
+    }
+    const dp = n * (x * p - pm1) / (x * x - 1);
+    const w = 2 / ((1 - x * x) * dp * dp);
+    nodes[i] = -x; nodes[n - 1 - i] = x;
+    weights[i] = w; weights[n - 1 - i] = w;
+  }
+  return (_glCache = { nodes, weights, n });
+}
+
+// Noncentral t CDF — Gauss-Legendre quadrature of chi-square mixture.
+// P(T ≤ t | ν, δ) = ∫₀^∞ Φ(t√(s/ν) − δ) · f_χ²(s; ν) ds
+// Substitution u = √s removes density singularity for small ν, giving:
+// = ∫₀^∞ Φ(tu/√ν − δ) · 2u^{ν−1} e^{−u²/2} / (2^{ν/2} Γ(ν/2)) du
 function nctcdf(t, df, delta) {
-  const z = (t * Math.sqrt(1 - 1 / (4 * df)) - delta) / Math.sqrt(1 + t * t / (2 * df));
-  return normcdf(z);
+  if (Math.abs(delta) < 1e-14) return tcdf(t, df);
+  const halfDf = df / 2;
+  const logC = halfDf * Math.log(2) + gammaln(halfDf);
+  const sqrtDf = Math.sqrt(df);
+  const uLo = Math.max(0, sqrtDf - 8);
+  const uHi = sqrtDf + 8;
+  const gl = _gaussLegendre(48);
+  const half = (uHi - uLo) / 2, mid = (uHi + uLo) / 2;
+  let sum = 0;
+  for (let i = 0; i < 48; i++) {
+    const u = mid + half * gl.nodes[i];
+    if (u <= 0) continue;
+    const logH = Math.log(2) + (df - 1) * Math.log(u) - u * u / 2 - logC;
+    sum += half * gl.weights[i] * normcdf(t * u / sqrtDf - delta) * Math.exp(logH);
+  }
+  return Math.max(0, Math.min(1, sum));
 }
 
 // Noncentral F survival P(F' > f) — Poisson mixture
