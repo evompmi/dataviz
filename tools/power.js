@@ -182,31 +182,56 @@ function ncf_sf(f, d1, d2, lambda) {
   if (f <= 0) return 1;
   if (lambda <= 0) return 1 - fcdf(f, d1, d2);
   const halfLam = lambda / 2;
-  let sum = 0;
-  let poissonTerm = Math.exp(-halfLam);
-  for (let j = 0; j < 200; j++) {
-    if (j > 0) poissonTerm *= halfLam / j;
+  const jMode = Math.max(0, Math.floor(halfLam));
+  function sfTerm(j) {
     const d1j = d1 + 2 * j;
-    const fAdj = f * d1 / d1j;
-    const contrib = poissonTerm * (1 - fcdf(fAdj, d1j, d2));
-    sum += contrib;
-    if (j > 5 && contrib < 1e-14) break;
+    return 1 - fcdf(f * d1 / d1j, d1j, d2);
   }
-  return sum;
+  let logPMode = -halfLam + (jMode > 0 ? jMode * Math.log(halfLam) - gammaln(jMode + 1) : 0);
+  let pTerm = Math.exp(logPMode);
+  let sum = pTerm * sfTerm(jMode);
+  let pUp = pTerm;
+  for (let j = jMode + 1; j < jMode + 500; j++) {
+    pUp *= halfLam / j;
+    const contrib = pUp * sfTerm(j);
+    sum += contrib;
+    if (j > jMode + 5 && contrib < 1e-14) break;
+  }
+  let pDown = pTerm;
+  for (let j = jMode - 1; j >= 0; j--) {
+    pDown *= (j + 1) / halfLam;
+    const contrib = pDown * sfTerm(j);
+    sum += contrib;
+    if (jMode - j > 5 && contrib < 1e-14) break;
+  }
+  return Math.min(1, Math.max(0, sum));
 }
 function ncchi2cdf(x, k, lambda) {
   if (x <= 0) return 0;
   if (lambda <= 0) return chi2cdf(x, k);
   const halfLam = lambda / 2;
-  let sum = 0;
-  let poissonTerm = Math.exp(-halfLam);
-  for (let j = 0; j < 200; j++) {
-    if (j > 0) poissonTerm *= halfLam / j;
-    const contrib = poissonTerm * gammainc(k / 2 + j, x / 2);
-    sum += contrib;
-    if (j > 5 && contrib < 1e-14) break;
+  const jMode = Math.max(0, Math.floor(halfLam));
+  function cdfTerm(j) {
+    return gammainc(k / 2 + j, x / 2);
   }
-  return sum;
+  let logPMode = -halfLam + (jMode > 0 ? jMode * Math.log(halfLam) - gammaln(jMode + 1) : 0);
+  let pTerm = Math.exp(logPMode);
+  let sum = pTerm * cdfTerm(jMode);
+  let pUp = pTerm;
+  for (let j = jMode + 1; j < jMode + 500; j++) {
+    pUp *= halfLam / j;
+    const contrib = pUp * cdfTerm(j);
+    sum += contrib;
+    if (j > jMode + 5 && contrib < 1e-14) break;
+  }
+  let pDown = pTerm;
+  for (let j = jMode - 1; j >= 0; j--) {
+    pDown *= (j + 1) / halfLam;
+    const contrib = pDown * cdfTerm(j);
+    sum += contrib;
+    if (jMode - j > 5 && contrib < 1e-14) break;
+  }
+  return Math.min(1, Math.max(0, sum));
 }
 function bisect(fn, target, lo, hi, tol = 1e-6, maxIter = 200) {
   for (let i = 0; i < maxIter; i++) {

@@ -178,37 +178,75 @@ function nctcdf(t, df, delta) {
 // Noncentral F survival P(F' > f) — Poisson mixture
 // F' = (χ²_{d1+2J}/d1) / (χ²_{d2}/d2), J~Poisson(λ/2)
 // P(F'>f) = Σ_j P(J=j) × P(F(d1+2j, d2) > f × d1/(d1+2j))
+// Starts at Poisson mode to avoid underflow for large λ.
 function ncf_sf(f, d1, d2, lambda) {
   if (f <= 0) return 1;
   if (lambda <= 0) return 1 - fcdf(f, d1, d2);
   const halfLam = lambda / 2;
-  let sum = 0;
-  let poissonTerm = Math.exp(-halfLam);
-  for (let j = 0; j < 200; j++) {
-    if (j > 0) poissonTerm *= halfLam / j;
+  const jMode = Math.max(0, Math.floor(halfLam));
+
+  // Compute log-Poisson at the mode, then work in absolute terms from there
+  function sfTerm(j) {
     const d1j = d1 + 2 * j;
-    const fAdj = f * d1 / d1j; // adjust critical value
-    const contrib = poissonTerm * (1 - fcdf(fAdj, d1j, d2));
-    sum += contrib;
-    if (j > 5 && contrib < 1e-14) break;
+    return 1 - fcdf(f * d1 / d1j, d1j, d2);
   }
-  return sum;
+
+  // Start at mode
+  let logPMode = -halfLam + (jMode > 0 ? jMode * Math.log(halfLam) - gammaln(jMode + 1) : 0);
+  let pTerm = Math.exp(logPMode);
+  let sum = pTerm * sfTerm(jMode);
+
+  // Sum upward from mode
+  let pUp = pTerm;
+  for (let j = jMode + 1; j < jMode + 500; j++) {
+    pUp *= halfLam / j;
+    const contrib = pUp * sfTerm(j);
+    sum += contrib;
+    if (j > jMode + 5 && contrib < 1e-14) break;
+  }
+
+  // Sum downward from mode
+  let pDown = pTerm;
+  for (let j = jMode - 1; j >= 0; j--) {
+    pDown *= (j + 1) / halfLam;
+    const contrib = pDown * sfTerm(j);
+    sum += contrib;
+    if (jMode - j > 5 && contrib < 1e-14) break;
+  }
+
+  return Math.min(1, Math.max(0, sum));
 }
 
-// Noncentral chi-square CDF — Poisson mixture
+// Noncentral chi-square CDF — Poisson mixture (starts at mode to avoid underflow)
 function ncchi2cdf(x, k, lambda) {
   if (x <= 0) return 0;
   if (lambda <= 0) return chi2cdf(x, k);
   const halfLam = lambda / 2;
-  let sum = 0;
-  let poissonTerm = Math.exp(-halfLam);
-  for (let j = 0; j < 200; j++) {
-    if (j > 0) poissonTerm *= halfLam / j;
-    const contrib = poissonTerm * gammainc((k / 2) + j, x / 2);
+  const jMode = Math.max(0, Math.floor(halfLam));
+
+  function cdfTerm(j) { return gammainc((k / 2) + j, x / 2); }
+
+  let logPMode = -halfLam + (jMode > 0 ? jMode * Math.log(halfLam) - gammaln(jMode + 1) : 0);
+  let pTerm = Math.exp(logPMode);
+  let sum = pTerm * cdfTerm(jMode);
+
+  let pUp = pTerm;
+  for (let j = jMode + 1; j < jMode + 500; j++) {
+    pUp *= halfLam / j;
+    const contrib = pUp * cdfTerm(j);
     sum += contrib;
-    if (j > 5 && contrib < 1e-14) break;
+    if (j > jMode + 5 && contrib < 1e-14) break;
   }
-  return sum;
+
+  let pDown = pTerm;
+  for (let j = jMode - 1; j >= 0; j--) {
+    pDown *= (j + 1) / halfLam;
+    const contrib = pDown * cdfTerm(j);
+    sum += contrib;
+    if (jMode - j > 5 && contrib < 1e-14) break;
+  }
+
+  return Math.min(1, Math.max(0, sum));
 }
 
 // ── Power computation functions ─────────────────────────────────────────────
