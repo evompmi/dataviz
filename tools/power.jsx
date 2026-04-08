@@ -958,7 +958,7 @@ function App() {
               {testKey === "t-one" && <><br/><br/>For a <b>one-sample t-test</b>, the effect size (Cohen's d) is how far the true mean deviates from the reference value, divided by the standard deviation.</>}
               {testKey === "anova" && <><br/><br/>For <b>ANOVA</b>, the effect size (Cohen's f) captures how spread out the group means are relative to within-group variability. An f of 0.10 is small, 0.25 is medium, and 0.40 is large.</>}
               {testKey === "correlation" && <><br/><br/>For <b>correlation</b>, the effect size is simply the expected Pearson r. An r of 0.1 is small, 0.3 is medium, and 0.5 is large.</>}
-              {testKey === "chi2" && <><br/><br/>For a <b>chi-square test</b>, the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large. Degrees of freedom = categories − 1 for goodness-of-fit, or (rows−1)×(cols−1) for independence tests.</>}
+              {testKey === "chi2" && <><br/><br/>For a <b>chi-square test</b>, the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large.<br/><br/>Degrees of freedom:<br/>&bull; Goodness-of-fit: <b>df = categories − 1</b><br/>&bull; Independence: <b>df = (rows − 1) × (cols − 1)</b></>}
             </div>
           </div>
         </div>
