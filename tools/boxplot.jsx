@@ -69,13 +69,13 @@ const BoxplotChart = forwardRef(function BoxplotChart({
       const a1 = (cum + pct) * Math.PI * 2;
       cum += pct;
       const col = (catCols && src.category) ? catCols[src.category] || "#999" : "#999";
-      if (pct >= 1) return <circle key={si} cx={lx} cy={cy2} r={r} fill={col} />;
+      if (pct >= 1) return <circle key={si} cx={lx} cy={cy2} r={r} fill={col} stroke="#000" strokeWidth="0.5" />;
       const x0 = lx + Math.sin(a0) * r;
       const y0 = cy2 - Math.cos(a0) * r;
       const x1 = lx + Math.sin(a1) * r;
       const y1 = cy2 - Math.cos(a1) * r;
       const lg = pct > 0.5 ? 1 : 0;
-      return <path key={si} d={`M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`} fill={col} />;
+      return <path key={si} d={`M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`} fill={col} stroke="#000" strokeWidth="0.5" />;
     });
 
     const labels = g.sources.map((src, si) => {
@@ -95,7 +95,7 @@ const BoxplotChart = forwardRef(function BoxplotChart({
     return (
       <g key={`cb-${g.name}`}>
         {slices}
-        <circle cx={lx} cy={cy2} r={r} fill="none" stroke="#ddd" strokeWidth="0.5" />
+        <circle cx={lx} cy={cy2} r={r} fill="none" stroke="#000" strokeWidth="0.5" />
         {labels}
       </g>
     );
