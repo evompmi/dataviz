@@ -132,6 +132,7 @@ const BoxplotChart = forwardRef(function BoxplotChart({
               const rng = seededRandom(gi * 1000 + si * 100 + 42);
               const ptColor = pointColor(g, src, si);
               return src.values.map((v, vi) => {
+                if (v < wLo || v > wHi) { rng(); return null; }
                 const j = (rng() - .5) * jitterWidth * halfBox * 2;
                 return (
                   <circle key={`${g.name}-${si}-${vi}`} cx={cx + j} cy={sy(v)} r={pointSize}
@@ -141,6 +142,12 @@ const BoxplotChart = forwardRef(function BoxplotChart({
                 );
               });
             })}
+            {g.sources.flatMap((src, si) =>
+              src.values.filter(v => v < wLo || v > wHi).map((v, oi) =>
+                <circle key={`out-${g.name}-${si}-${oi}`} cx={cx} cy={sy(v)} r={2.5}
+                  fill="#000" fillOpacity={0.8} stroke="none" />
+              )
+            )}
           </g>
         );
       })}
