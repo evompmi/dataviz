@@ -290,7 +290,7 @@ function PageHeader(props) {
   return React.createElement('div', {style:{marginBottom:28,borderBottom:"1px solid #ccc",paddingBottom:16}},
     React.createElement('h1', {style:{margin:0,fontSize:22,fontWeight:700,color:"#222"}},
       toolIcon(props.toolName), props.title),
-    props.subtitle ? React.createElement('p', {style:{margin:"4px 0 0",fontSize:12,color:"#888"}}, props.subtitle) : null
+    props.subtitle ? React.createElement('p', {style:{margin:"4px 0 0",fontSize:10,color:"#aaa"}}, props.subtitle) : null
   );
 }
 

@@ -1071,12 +1071,15 @@ function App() {
     // Build conditions from ALL columns, then mark enabled based on columnEnabled
     const allConds = detectConditions(parsed.headers, pool, null).map(c => {
       const activeCols = c.colIndices.filter(ci => ce[ci] !== false);
+      const prev = prevMap[c.prefix];
+      // If no active columns, force disabled. Otherwise preserve previous toggle state.
+      const enabled = activeCols.length > 0 && (prev ? prev.enabled : true);
       return {
         ...c,
         activeColIndices: activeCols,
-        enabled: activeCols.length > 0,
-        label: prevMap[c.prefix]?.label ?? c.label,
-        color: prevMap[c.prefix]?.color ?? c.color,
+        enabled,
+        label: prev?.label ?? c.label,
+        color: prev?.color ?? c.color,
       };
     });
     setConditions(allConds);
@@ -1093,9 +1096,14 @@ function App() {
   };
   const handleConditionsChange = (newConds) => {
     const ce = { ...columnEnabled };
-    const updated = newConds.map(c => {
-      c.colIndices.forEach(ci => { ce[ci] = c.enabled; });
-      return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+    const updated = newConds.map((c, idx) => {
+      const prev = conditions[idx];
+      // Only sync columnEnabled for conditions whose enabled state actually changed
+      if (prev && c.enabled !== prev.enabled) {
+        c.colIndices.forEach(ci => { ce[ci] = c.enabled; });
+        return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+      }
+      return c;
     });
     setConditions(updated);
     setColumnEnabled(ce);

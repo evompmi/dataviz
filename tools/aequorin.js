@@ -970,12 +970,14 @@ function App() {
     const prevMap = Object.fromEntries(prevConds.map((c) => [c.prefix, c]));
     const allConds = detectConditions(parsed.headers, pool, null).map((c) => {
       const activeCols = c.colIndices.filter((ci) => ce[ci] !== false);
+      const prev = prevMap[c.prefix];
+      const enabled = activeCols.length > 0 && (prev ? prev.enabled : true);
       return {
         ...c,
         activeColIndices: activeCols,
-        enabled: activeCols.length > 0,
-        label: prevMap[c.prefix]?.label ?? c.label,
-        color: prevMap[c.prefix]?.color ?? c.color
+        enabled,
+        label: prev?.label ?? c.label,
+        color: prev?.color ?? c.color
       };
     });
     setConditions(allConds);
@@ -998,11 +1000,15 @@ function App() {
   };
   const handleConditionsChange = (newConds) => {
     const ce = { ...columnEnabled };
-    const updated = newConds.map((c) => {
-      c.colIndices.forEach((ci) => {
-        ce[ci] = c.enabled;
-      });
-      return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+    const updated = newConds.map((c, idx) => {
+      const prev = conditions[idx];
+      if (prev && c.enabled !== prev.enabled) {
+        c.colIndices.forEach((ci) => {
+          ce[ci] = c.enabled;
+        });
+        return { ...c, activeColIndices: c.enabled ? c.colIndices : [] };
+      }
+      return c;
     });
     setConditions(updated);
     setColumnEnabled(ce);
