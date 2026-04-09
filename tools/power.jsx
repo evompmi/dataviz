@@ -804,10 +804,10 @@ function App() {
 
   const inputStyle = { ...inpN, width: "100%" };
   const chipStyle = (active) => ({
-    padding: "5px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer",
-    border: active ? "2px solid #0072B2" : "2px solid #ddd",
-    background: active ? "#e8f4fd" : "#fff", fontWeight: active ? 700 : 400,
-    color: active ? "#0072B2" : "#555", fontFamily: "sans-serif",
+    padding: "4px 8px", borderRadius: 4, fontSize: 12, cursor: "pointer",
+    border: active ? "1px solid #648FFF" : "1px solid #ccc",
+    background: active ? "#648FFF" : "#fff", fontWeight: active ? 600 : 400,
+    color: active ? "#fff" : "#333", fontFamily: "inherit",
     flex: 1, textAlign: "center", boxSizing: "border-box",
   });
 
