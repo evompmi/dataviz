@@ -156,6 +156,10 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
         const rng = seededRandom(gi * 1e3 + si * 100 + 42);
         const ptColor = pointColor(g, src, si);
         return src.values.map((v, vi) => {
+          if (v < wLo || v > wHi) {
+            rng();
+            return null;
+          }
           const j = (rng() - 0.5) * jitterWidth * halfBox * 2;
           return /* @__PURE__ */ React.createElement(
             "circle",
@@ -172,7 +176,22 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
             }
           );
         });
-      }));
+      }), g.sources.flatMap(
+        (src, si) => src.values.filter((v) => v < wLo || v > wHi).map(
+          (v, oi) => /* @__PURE__ */ React.createElement(
+            "circle",
+            {
+              key: `out-${g.name}-${si}-${oi}`,
+              cx,
+              cy: sy(v),
+              r: 2.5,
+              fill: "#000",
+              fillOpacity: 0.8,
+              stroke: "none"
+            }
+          )
+        )
+      ));
     }),
     /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }),
     groups.map((g, gi) => {
