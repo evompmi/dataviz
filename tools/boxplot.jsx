@@ -178,7 +178,6 @@ const BoxplotChart = forwardRef(function BoxplotChart({
           const rng = seededRandom(gi * 1000 + si * 100 + 42);
           const ptColor = pointColor(g, src, si);
           return src.values.map((v, vi) => {
-            if (v < wLo || v > wHi) { rng(); return null; }
             const j = isRain
               ? ptOffset + Math.abs(rng() - .5) * jitterWidth * halfBox
               : (rng() - .5) * jitterWidth * halfBox * 2;
@@ -192,9 +191,10 @@ const BoxplotChart = forwardRef(function BoxplotChart({
         });
 
         /* ── Outlier dots (always visible) ── */
+        const outlierCx = isRain ? cx + ptOffset : cx;
         const outlierEls = g.sources.flatMap((src, si) =>
           src.values.filter(v => v < wLo || v > wHi).map((v, oi) =>
-            <circle key={`out-${g.name}-${si}-${oi}`} cx={isRain ? cx + ptOffset : cx} cy={sy(v)} r={2.5}
+            <circle key={`out-${g.name}-${si}-${oi}`} cx={outlierCx} cy={sy(v)} r={2.5}
               fill="#000" fillOpacity={0.8} stroke="none" />
           )
         );
