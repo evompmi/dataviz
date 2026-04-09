@@ -307,7 +307,7 @@ function UploadStep({sepOverride, onSepChange, rawText, doParse, handleFileLoad,
               {icon:"⚙️",text:"Configure: assign roles — group (X axis), value (Y axis), filter, text, or ignore."},
               {icon:"🔍",text:"Filter & Rename: tick values to keep, rename labels, drag to reorder groups."},
               {icon:"📊",text:"Output: summary stats (n, mean, median, SD, SEM), long & wide CSV exports."},
-              {icon:"🎨",text:"Plot: choose box, violin, or raincloud style. Color-by, facet-by, jitter controls, and SVG download."}
+              {icon:"🎨",text:"Plot: color-by, facet-by, jitter controls, and SVG download."}
             ].map(({icon,text})=>(
               <div key={icon} style={{display:"flex",gap:10,marginBottom:7,alignItems:"flex-start"}}>
                 <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
@@ -330,7 +330,6 @@ function UploadStep({sepOverride, onSepChange, rawText, doParse, handleFileLoad,
                 </div>
               ))}
             </div>
-            <p style={{fontSize:10,color:"#888",marginTop:8,marginBottom:0,lineHeight:1.5}}>Each slice is colored to match the jitter points. Percentage labels are shown for categories ≥ 8 % of the pie. Useful for quickly spotting unbalanced group compositions (e.g. sex ratio across genotypes).</p>
           </div>
           <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff",gridColumn:"1/-1"}}>
             <div style={{fontSize:10,fontWeight:700,color:"#7c3aed",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>🎻 Plot Styles</div>
