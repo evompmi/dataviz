@@ -342,7 +342,7 @@ function UploadStep({sepOverride, onSepChange, rawText, doParse, handleFileLoad,
                 {step:"Raincloud",text:"Half-violin on the left + narrow box in the center + jitter points on the right. Best for showing raw data alongside the distribution shape."}
               ].map(({step,text})=>(
                 <div key={step} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-                  <span style={{fontSize:11,fontWeight:700,color:"#7c3aed",flexShrink:0,minWidth:52}}>{step}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:"#7c3aed",flexShrink:0,width:62,display:"inline-block"}}>{step}</span>
                   <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
                 </div>
               ))}
