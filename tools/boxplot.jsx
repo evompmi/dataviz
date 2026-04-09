@@ -681,7 +681,7 @@ function App() {
   // Visual settings
   const visInit = {
     plotTitle: "", yLabel: "Value", plotBg: "#ffffff",
-    showGrid: true, gridColor: "#e0e0e0",
+    showGrid: false, gridColor: "#e0e0e0",
     boxFillOpacity: 0.15, boxWidth: 70, boxGap: 0,
     pointSize: 2.5, showPoints: true, jitterWidth: 0.6, pointOpacity: 0.6,
     xLabelAngle: 0, yMinCustom: "", yMaxCustom: "", showCompPie: false,
