@@ -1,4 +1,4 @@
-const { useState, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 function normcdf(x) {
   if (x === 0) return 0.5;
   const t = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -465,13 +465,16 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
     "div",
     {
       style: {
-        padding: "3px 8px",
+        padding: "5px 8px",
         borderRadius: 4,
         fontSize: 11,
         cursor: "pointer",
-        background: mode === "helper" ? "#0072B2" : "#eee",
+        background: mode === "helper" ? "#648FFF" : "#eee",
         color: mode === "helper" ? "#fff" : "#666",
-        fontWeight: mode === "helper" ? 700 : 400
+        fontWeight: mode === "helper" ? 700 : 400,
+        flex: 1,
+        textAlign: "center",
+        boxSizing: "border-box"
       },
       onClick: () => setMode("helper")
     },
@@ -480,13 +483,16 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
     "div",
     {
       style: {
-        padding: "3px 8px",
+        padding: "5px 8px",
         borderRadius: 4,
         fontSize: 11,
         cursor: "pointer",
-        background: mode === "direct" ? "#0072B2" : "#eee",
+        background: mode === "direct" ? "#648FFF" : "#eee",
         color: mode === "direct" ? "#fff" : "#666",
-        fontWeight: mode === "direct" ? 700 : 400
+        fontWeight: mode === "direct" ? 700 : 400,
+        flex: 1,
+        textAlign: "center",
+        boxSizing: "border-box"
       },
       onClick: () => setMode("direct")
     },
@@ -714,7 +720,9 @@ function App() {
   const [tails, setTails] = useState(2);
   const [kInput, setKInput] = useState("3");
   const [dfInput, setDfInput] = useState("1");
-  const chartRef = useRef();
+  const resultRef = useRef();
+  const prevResultRef = useRef();
+  const [resultFlash, setResultFlash] = useState(false);
   const test = TESTS[testKey];
   const es = parseFloat(effectSize) || 0;
   const n = parseInt(nInput) || 2;
@@ -749,15 +757,22 @@ function App() {
     n: `Required ${test.nLabel}`,
     power: "Statistical power"
   }[solveFor];
+  useEffect(() => {
+    if (prevResultRef.current !== void 0 && result !== prevResultRef.current && result != null) {
+      setResultFlash(true);
+      const id = setTimeout(() => setResultFlash(false), 300);
+      return () => clearTimeout(id);
+    }
+    prevResultRef.current = result;
+  }, [result]);
+  useEffect(() => {
+    if (resultFlash) prevResultRef.current = result;
+  }, [resultFlash]);
   const handleTestChange = useCallback((e) => {
     const key = e.target.value;
     setTestKey(key);
     setSolveFor("n");
     if (key === "anova" || key === "chi2") setTails(2);
-  }, []);
-  const handleDownload = useCallback(() => {
-    if (!chartRef.current) return;
-    downloadSvg(chartRef.current, "power-curve.svg");
   }, []);
   const inputStyle = { ...inpN, width: "100%" };
   const chipStyle = (active) => ({
@@ -769,12 +784,15 @@ function App() {
     background: active ? "#e8f4fd" : "#fff",
     fontWeight: active ? 700 : 400,
     color: active ? "#0072B2" : "#555",
-    fontFamily: "sans-serif"
+    fontFamily: "sans-serif",
+    flex: 1,
+    textAlign: "center",
+    boxSizing: "border-box"
   });
-  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 960, margin: "0 auto", padding: "32px 24px" } }, /* @__PURE__ */ React.createElement(PageHeader, { title: "Power Analysis", icon: toolIcon("power") }), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: "12px 16px", marginBottom: 16, borderLeft: "4px solid #0072B2" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#333", lineHeight: 1.5 } }, test.question)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Statistical test"), /* @__PURE__ */ React.createElement("select", { value: testKey, onChange: handleTestChange, style: { ...selStyle, width: "100%" } }, Object.entries(TESTS).map(([key, t]) => /* @__PURE__ */ React.createElement("option", { key, value: key }, t.label)))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { ...lbl, marginBottom: 6 } }, "What do you need to find?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [
+  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 960, margin: "0 auto", padding: "32px 24px" } }, /* @__PURE__ */ React.createElement(PageHeader, { title: "Power Analysis", icon: toolIcon("power") }), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: "12px 16px", marginBottom: 16, borderLeft: "4px solid #0072B2" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#333", lineHeight: 1.5 } }, test.question)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, marginBottom: 6, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, flex: 1, minWidth: 200 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Statistical test"), /* @__PURE__ */ React.createElement("select", { value: testKey, onChange: handleTestChange, style: { ...selStyle, width: "100%" } }, Object.entries(TESTS).map(([key, t]) => /* @__PURE__ */ React.createElement("option", { key, value: key }, t.label)))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, flex: 1, minWidth: 200 } }, /* @__PURE__ */ React.createElement("div", { style: { ...lbl, marginBottom: 6 } }, "What do you need to find?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [
     ["n", "Sample size"],
     ["power", "Power"]
-  ].map(([key, label]) => /* @__PURE__ */ React.createElement("div", { key, style: chipStyle(solveFor === key), onClick: () => setSolveFor(key) }, label)))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { ...lbl, marginBottom: 6 } }, "Expected effect size"), /* @__PURE__ */ React.createElement(
+  ].map(([key, label]) => /* @__PURE__ */ React.createElement("div", { key, style: chipStyle(solveFor === key), onClick: () => setSolveFor(key) }, label))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, alignItems: "stretch", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { ...lbl, marginBottom: 6 } }, "Expected effect size"), /* @__PURE__ */ React.createElement(
     EffectSizePanel,
     {
       testKey,
@@ -782,7 +800,7 @@ function App() {
       onEffectChange: setEffectSize,
       disabled: solveFor === "effect"
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { opacity: solveFor === "n" ? 0.4 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, test.nLabel), /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10, flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { opacity: solveFor === "n" ? 0.4 : 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, test.nLabel), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "number",
@@ -827,16 +845,21 @@ function App() {
       onChange: (e) => setDfInput(e.target.value),
       style: inputStyle
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "#999", marginTop: 2 } }, "Goodness-of-fit: categories \u2212 1. Independence: (rows\u22121)(cols\u22121).")))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 16, textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#777", marginBottom: 4 } }, resultLabel), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 36, fontWeight: 700, color: result != null ? "#0072B2" : "#ccc", fontFamily: "monospace" } }, resultText), solveFor === "n" && result != null && test.totalLabel && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#888", marginTop: 4 } }, test.totalLabel(result, k))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "#999", marginTop: 2 } }, "Goodness-of-fit: categories \u2212 1.", /* @__PURE__ */ React.createElement("br", null), "Independence: (rows\u22121)(cols\u22121).")))), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, flex: 1 } }, /* @__PURE__ */ React.createElement(
     PowerCurve,
     {
-      ref: chartRef,
       testKey,
       powerFn: test.power,
       params: { es, n, alpha, tails, k, df },
       solveFor,
       result
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: handleDownload, style: btnDownload }, "Download SVG"))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" } }, "What do these numbers mean?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#555", lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("b", null, "Power"), " is the probability that you will correctly reject the null hypothesis (i.e. to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance of success \u2014 this is the standard minimum. Higher is better but costs more subjects.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Significance level (\u03B1)"), " is the risk of a false positive \u2014 concluding there is an effect when there is none. The standard \u03B1\xA0=\xA00.05 means you accept a 5% chance of a false alarm. Lowering \u03B1 (e.g. to 0.01) makes you more conservative but requires more subjects to keep power high.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Sample size (", test.nLabel, ")"), " is the number of observations you need to collect. More subjects give you more power to detect a given effect.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Effect size"), ' measures how large the real difference or relationship is, scaled by variability. Use the "From my data" tab to compute it from values you expect (e.g. group means and standard deviation from pilot data or published studies).', testKey === "t-ind" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "two-sample t-test"), ", the effect size (Cohen's d) is the difference between the two group means divided by their common standard deviation. A d of 0.2 is small, 0.5 is medium, and 0.8 is large."), testKey === "t-paired" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "paired t-test"), ", the effect size (Cohen's d) is the expected mean of the paired differences divided by the standard deviation of those differences."), testKey === "t-one" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "one-sample t-test"), ", the effect size (Cohen's d) is how far the true mean deviates from the reference value, divided by the standard deviation."), testKey === "anova" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For ", /* @__PURE__ */ React.createElement("b", null, "ANOVA"), ", the effect size (Cohen's f) captures how spread out the group means are relative to within-group variability. An f of 0.10 is small, 0.25 is medium, and 0.40 is large."), testKey === "correlation" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For ", /* @__PURE__ */ React.createElement("b", null, "correlation"), ", the effect size is simply the expected Pearson r. An r of 0.1 is small, 0.3 is medium, and 0.5 is large."), testKey === "chi2" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "chi-square test"), ", the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "Degrees of freedom:", /* @__PURE__ */ React.createElement("br", null), "\u2022 Goodness-of-fit: ", /* @__PURE__ */ React.createElement("b", null, "df = categories \u2212 1"), /* @__PURE__ */ React.createElement("br", null), "\u2022 Independence: ", /* @__PURE__ */ React.createElement("b", null, "df = (rows \u2212 1) \xD7 (cols \u2212 1)")))))));
+  )), /* @__PURE__ */ React.createElement("div", { style: {
+    ...sec,
+    padding: 16,
+    textAlign: "center",
+    background: resultFlash ? "#d4edda" : sec.background || "#fff",
+    transition: "background 0.3s ease"
+  } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#777", marginBottom: 4 } }, resultLabel), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 36, fontWeight: 700, color: result != null ? "#0072B2" : "#ccc", fontFamily: "monospace" } }, resultText), solveFor === "n" && result != null && test.totalLabel && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#888", marginTop: 4 } }, test.totalLabel(result, k))))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginTop: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" } }, "What do these numbers mean?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#555", lineHeight: 1.7 } }, /* @__PURE__ */ React.createElement("b", null, "Power"), " is the probability that you will correctly reject the null hypothesis (i.e. to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance of success \u2014 this is the standard minimum. Higher is better but costs more subjects.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Significance level (\u03B1)"), " is the risk of a false positive \u2014 concluding there is an effect when there is none. The standard \u03B1\xA0=\xA00.05 means you accept a 5% chance of a false alarm. Lowering \u03B1 (e.g. to 0.01) makes you more conservative but requires more subjects to keep power high.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Sample size (", test.nLabel, ")"), " is the number of observations you need to collect. More subjects give you more power to detect a given effect.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("b", null, "Effect size"), ' measures how large the real difference or relationship is, scaled by variability. Use the "From my data" tab to compute it from values you expect (e.g. group means and standard deviation from pilot data or published studies).', testKey === "t-ind" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "two-sample t-test"), ", the effect size (Cohen's d) is the difference between the two group means divided by their common standard deviation. A d of 0.2 is small, 0.5 is medium, and 0.8 is large."), testKey === "t-paired" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "paired t-test"), ", the effect size (Cohen's d) is the expected mean of the paired differences divided by the standard deviation of those differences."), testKey === "t-one" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "one-sample t-test"), ", the effect size (Cohen's d) is how far the true mean deviates from the reference value, divided by the standard deviation."), testKey === "anova" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For ", /* @__PURE__ */ React.createElement("b", null, "ANOVA"), ", the effect size (Cohen's f) captures how spread out the group means are relative to within-group variability. An f of 0.10 is small, 0.25 is medium, and 0.40 is large."), testKey === "correlation" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For ", /* @__PURE__ */ React.createElement("b", null, "correlation"), ", the effect size is simply the expected Pearson r. An r of 0.1 is small, 0.3 is medium, and 0.5 is large."), testKey === "chi2" && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "For a ", /* @__PURE__ */ React.createElement("b", null, "chi-square test"), ", the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large.", /* @__PURE__ */ React.createElement("br", null), /* @__PURE__ */ React.createElement("br", null), "Degrees of freedom:", /* @__PURE__ */ React.createElement("br", null), "\u2022 Goodness-of-fit: ", /* @__PURE__ */ React.createElement("b", null, "df = categories \u2212 1"), /* @__PURE__ */ React.createElement("br", null), "\u2022 Independence: ", /* @__PURE__ */ React.createElement("b", null, "df = (rows \u2212 1) \xD7 (cols \u2212 1)")))));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
