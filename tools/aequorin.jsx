@@ -459,7 +459,7 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
           <InsetBarplot ref={insetBarRef} {...insetBarProps} insetYMin={insetYMin} insetYMax={insetYMax} corrected={false} />
         </div>
         {replicateSums && replicateSums.length > 0 && (
-          <div style={{ borderRadius: 10, padding: 14, border: "1px solid #bfdbfe", background: "#eff6ff" }}>
+          <div style={{ borderRadius: 10, padding: 14, border: "1px solid #bfdbfe", background: "#eff6ff", flex: 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#1d4ed8" }}>Σ Raw — per replicate</p>
               <button onClick={(e) => {
@@ -490,7 +490,7 @@ const PlotPanel = React.forwardRef(function PlotPanel({ stats, xStart, xEnd, yMi
           <InsetBarplot ref={insetBarCorrRef} {...insetBarProps} insetYMin={insetYMin} insetYMax={insetYMax} corrected={true} />
         </div>
         {replicateSums && replicateSums.length > 0 && (
-          <div style={{ borderRadius: 10, padding: 14, border: "1px solid #99f6e4", background: "#f0fdfa" }}>
+          <div style={{ borderRadius: 10, padding: 14, border: "1px solid #99f6e4", background: "#f0fdfa", flex: 1 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#0f766e" }}>Σ Baseline-corrected — per replicate</p>
               <button onClick={(e) => {
