@@ -307,7 +307,7 @@ function UploadStep({sepOverride, onSepChange, rawText, doParse, handleFileLoad,
               {icon:"⚙️",text:"Configure: assign roles — group (X axis), value (Y axis), filter, text, or ignore."},
               {icon:"🔍",text:"Filter & Rename: tick values to keep, rename labels, drag to reorder groups."},
               {icon:"📊",text:"Output: summary stats (n, mean, median, SD, SEM), long & wide CSV exports."},
-              {icon:"🎨",text:"Plot: boxplots with color-by, facet-by, jitter controls, and SVG download."}
+              {icon:"🎨",text:"Plot: choose box, violin, or raincloud style. Color-by, facet-by, jitter controls, and SVG download."}
             ].map(({icon,text})=>(
               <div key={icon} style={{display:"flex",gap:10,marginBottom:7,alignItems:"flex-start"}}>
                 <span style={{fontSize:14,flexShrink:0}}>{icon}</span>
@@ -331,6 +331,23 @@ function UploadStep({sepOverride, onSepChange, rawText, doParse, handleFileLoad,
               ))}
             </div>
             <p style={{fontSize:10,color:"#888",marginTop:8,marginBottom:0,lineHeight:1.5}}>Each slice is colored to match the jitter points. Percentage labels are shown for categories ≥ 8 % of the pie. Useful for quickly spotting unbalanced group compositions (e.g. sex ratio across genotypes).</p>
+          </div>
+          <div style={{background:"#fff",borderRadius:10,padding:"14px 18px",border:"1.5px solid #b0c4ff"}}>
+            <div style={{fontSize:10,fontWeight:700,color:"#7c3aed",marginBottom:10,textTransform:"uppercase",letterSpacing:"1px"}}>🎻 Plot Styles</div>
+            <p style={{fontSize:11,color:"#555",marginBottom:8,lineHeight:1.6}}>Use the <strong>Plot style</strong> dropdown in the style controls to switch between three visualization modes:</p>
+            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+              {[
+                {step:"Box",text:"Classic box-and-whisker plot. Median line, IQR box, 1.5×IQR whiskers, outlier dots."},
+                {step:"Violin",text:"Symmetric kernel density (KDE) shape showing the full distribution, with a narrow box overlay for quartiles."},
+                {step:"Raincloud",text:"Half-violin on the left + narrow box in the center + jitter points on the right. Best for showing raw data alongside the distribution shape."}
+              ].map(({step,text})=>(
+                <div key={step} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:"#7c3aed",flexShrink:0,minWidth:52}}>{step}</span>
+                  <span style={{fontSize:11,color:"#444",lineHeight:1.55}}>{text}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{fontSize:10,color:"#888",marginTop:8,marginBottom:0,lineHeight:1.5}}>All styles support color-by, facet-by, and outlier dots. The Y-axis auto-adjusts to fit the violin/raincloud density curves.</p>
           </div>
           <div style={{borderLeft:"4px solid #648FFF",background:"#dbeafe",padding:"10px 14px",borderRadius:"0 8px 8px 0",gridColumn:"1/-1"}}>
             <span style={{fontSize:11,fontWeight:700,color:"#3b6cf7"}}>💡 Tip — </span>
