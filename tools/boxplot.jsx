@@ -7,7 +7,7 @@ const BoxplotChart = forwardRef(function BoxplotChart({
   boxWidth, boxFillOpacity, pointSize, showPoints, jitterWidth,
   pointOpacity, xLabelAngle, yMin: yMinP, yMax: yMaxP,
   categoryColors: catCols, colorByCol: cbc, boxGap,
-  svgLegend, showCompPie
+  svgLegend, showCompPie, plotStyle = "box"
 }, ref) {
   const angle = xLabelAngle || 0;
   const absA = Math.abs(angle);
@@ -18,8 +18,18 @@ const BoxplotChart = forwardRef(function BoxplotChart({
   const allV = groups.flatMap(g => g.allValues);
   if (allV.length === 0) return null;
 
-  const dMin = Math.min(...allV);
-  const dMax = Math.max(...allV);
+  let dMin = Math.min(...allV);
+  let dMax = Math.max(...allV);
+  if ((plotStyle === "violin" || plotStyle === "raincloud")) {
+    for (const g of groups) {
+      if (g.allValues.length >= 2) {
+        const pts = kde(g.allValues, 60);
+        const kMin = pts[0].x, kMax = pts[pts.length - 1].x;
+        if (kMin < dMin) dMin = kMin;
+        if (kMax > dMax) dMax = kMax;
+      }
+    }
+  }
   const pad = (dMax - dMin) * 0.08 || 1;
   const yMin = yMinP != null ? yMinP : dMin - pad;
   const yMax = yMaxP != null ? yMaxP : dMax + pad;
@@ -118,36 +128,83 @@ const BoxplotChart = forwardRef(function BoxplotChart({
         if (!g.stats) return null;
         const cx = bx(gi);
         const { q1, med, q3, wLo, wHi } = g.stats;
+        const isRain = plotStyle === "raincloud";
+        const isViolin = plotStyle === "violin" || isRain;
+
+        /* ── Violin / raincloud KDE shape ── */
+        let violinPath = null;
+        if (isViolin && g.allValues.length >= 2) {
+          const pts = kde(g.allValues, 60);
+          const maxD = Math.max(...pts.map(p => p.d));
+          if (maxD > 0) {
+            const sc = d => (d / maxD) * halfBox;
+            if (isRain) {
+              // Half-violin on the left side only
+              let d = `M ${cx},${sy(pts[0].x)}`;
+              for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+              d += ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
+              violinPath = <path d={d} fill={g.color} fillOpacity={boxFillOpacity} stroke={g.color} strokeWidth="1" />;
+            } else {
+              // Full symmetric violin
+              let d = `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
+              for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+              d += ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
+              for (let i = pts.length - 1; i >= 0; i--) d += ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
+              d += " Z";
+              violinPath = <path d={d} fill={g.color} fillOpacity={boxFillOpacity} stroke={g.color} strokeWidth="1" />;
+            }
+          }
+        }
+
+        /* ── Box elements ── */
+        const boxHalf = isViolin ? halfBox * 0.35 : halfBox;
+        const boxCx = isRain ? cx + halfBox * 0.15 : cx;
+        const boxEls = (
+          <>
+            <line x1={boxCx} x2={boxCx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
+            <line x1={boxCx} x2={boxCx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
+            <line x1={boxCx - boxHalf * .5} x2={boxCx + boxHalf * .5} y1={sy(wHi)} y2={sy(wHi)} stroke="#333" strokeWidth="1" />
+            <line x1={boxCx - boxHalf * .5} x2={boxCx + boxHalf * .5} y1={sy(wLo)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
+            <rect x={boxCx - boxHalf} y={sy(q3)} width={boxHalf * 2} height={sy(q1) - sy(q3)}
+              fill={isViolin ? "#fff" : g.color} fillOpacity={isViolin ? 0.7 : boxFillOpacity} stroke={g.color} strokeWidth="1.5" rx="2" />
+            <line x1={boxCx - boxHalf} x2={boxCx + boxHalf} y1={sy(med)} y2={sy(med)}
+              stroke={g.color} strokeWidth="2.5" />
+          </>
+        );
+
+        /* ── Jitter points ── */
+        const ptOffset = isRain ? halfBox * 0.55 : 0;
+        const jitterEls = showPoints && g.sources.map((src, si) => {
+          const rng = seededRandom(gi * 1000 + si * 100 + 42);
+          const ptColor = pointColor(g, src, si);
+          return src.values.map((v, vi) => {
+            if (v < wLo || v > wHi) { rng(); return null; }
+            const j = isRain
+              ? ptOffset + Math.abs(rng() - .5) * jitterWidth * halfBox
+              : (rng() - .5) * jitterWidth * halfBox * 2;
+            return (
+              <circle key={`${g.name}-${si}-${vi}`} cx={cx + j} cy={sy(v)} r={pointSize}
+                fill={ptColor} fillOpacity={pointOpacity || .6}
+                stroke={ptColor} strokeOpacity={Math.min(1, (pointOpacity || .6) + .15)}
+                strokeWidth="0.3" />
+            );
+          });
+        });
+
+        /* ── Outlier dots (always visible) ── */
+        const outlierEls = g.sources.flatMap((src, si) =>
+          src.values.filter(v => v < wLo || v > wHi).map((v, oi) =>
+            <circle key={`out-${g.name}-${si}-${oi}`} cx={isRain ? cx + ptOffset : cx} cy={sy(v)} r={2.5}
+              fill="#000" fillOpacity={0.8} stroke="none" />
+          )
+        );
+
         return (
           <g key={g.name} role="group" aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}>
-            <line x1={cx} x2={cx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
-            <line x1={cx} x2={cx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
-            <line x1={cx - halfBox * .5} x2={cx + halfBox * .5} y1={sy(wHi)} y2={sy(wHi)} stroke="#333" strokeWidth="1" />
-            <line x1={cx - halfBox * .5} x2={cx + halfBox * .5} y1={sy(wLo)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
-            <rect x={cx - halfBox} y={sy(q3)} width={halfBox * 2} height={sy(q1) - sy(q3)}
-              fill={g.color} fillOpacity={boxFillOpacity} stroke={g.color} strokeWidth="1.5" rx="2" />
-            <line x1={cx - halfBox} x2={cx + halfBox} y1={sy(med)} y2={sy(med)}
-              stroke={g.color} strokeWidth="2.5" />
-            {showPoints && g.sources.map((src, si) => {
-              const rng = seededRandom(gi * 1000 + si * 100 + 42);
-              const ptColor = pointColor(g, src, si);
-              return src.values.map((v, vi) => {
-                if (v < wLo || v > wHi) { rng(); return null; }
-                const j = (rng() - .5) * jitterWidth * halfBox * 2;
-                return (
-                  <circle key={`${g.name}-${si}-${vi}`} cx={cx + j} cy={sy(v)} r={pointSize}
-                    fill={ptColor} fillOpacity={pointOpacity || .6}
-                    stroke={ptColor} strokeOpacity={Math.min(1, (pointOpacity || .6) + .15)}
-                    strokeWidth="0.3" />
-                );
-              });
-            })}
-            {g.sources.flatMap((src, si) =>
-              src.values.filter(v => v < wLo || v > wHi).map((v, oi) =>
-                <circle key={`out-${g.name}-${si}-${oi}`} cx={cx} cy={sy(v)} r={2.5}
-                  fill="#000" fillOpacity={0.8} stroke="none" />
-              )
-            )}
+            {violinPath}
+            {boxEls}
+            {jitterEls}
+            {outlierEls}
           </g>
         );
       })}
@@ -446,14 +503,22 @@ function PlotControls({dataFormat, setDataFormat, setStep, resetAll, allDisplayG
 
       {/* Style controls */}
       <div style={{...sec,padding:12,marginBottom:0,display:"flex",flexDirection:"column",gap:9}}>
+        <div>
+          <div style={lbl}>Plot style</div>
+          <select value={vis.plotStyle} onChange={e=>updVis({plotStyle:e.target.value})} style={{...inp,cursor:"pointer",fontSize:11,width:"100%"}}>
+            <option value="box">Box plot</option>
+            <option value="violin">Violin plot</option>
+            <option value="raincloud">Raincloud plot</option>
+          </select>
+        </div>
         <BaseStyleControls
           plotBg={vis.plotBg} onPlotBgChange={sv("plotBg")}
           showGrid={vis.showGrid} onShowGridChange={sv("showGrid")}
           gridColor={vis.gridColor} onGridColorChange={sv("gridColor")}
         />
-        <SliderControl label="Box width" value={vis.boxWidth} displayValue={vis.boxWidth+"%"} min={20} max={100} step={5} onChange={sv("boxWidth")}/>
-        <SliderControl label="Box gap" value={vis.boxGap} displayValue={vis.boxGap+"%"} min={0} max={80} step={5} onChange={sv("boxGap")}/>
-        <SliderControl label="Box opacity" value={vis.boxFillOpacity} displayValue={vis.boxFillOpacity.toFixed(2)} min={0} max={1} step={0.05} onChange={sv("boxFillOpacity")}/>
+        <SliderControl label={vis.plotStyle==="box"?"Box width":"Width"} value={vis.boxWidth} displayValue={vis.boxWidth+"%"} min={20} max={100} step={5} onChange={sv("boxWidth")}/>
+        <SliderControl label={vis.plotStyle==="box"?"Box gap":"Gap"} value={vis.boxGap} displayValue={vis.boxGap+"%"} min={0} max={80} step={5} onChange={sv("boxGap")}/>
+        <SliderControl label="Fill opacity" value={vis.boxFillOpacity} displayValue={vis.boxFillOpacity.toFixed(2)} min={0} max={1} step={0.05} onChange={sv("boxFillOpacity")}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={lbl}>Points</span><input type="checkbox" checked={vis.showPoints} onChange={e=>updVis({showPoints:e.target.checked})} style={{accentColor:"#648FFF"}}/></div>
         {vis.showPoints&&(<>
           <div>
@@ -543,7 +608,7 @@ function PlotArea({colorByCol, colorByCategories, colNames, categoryColors, face
       )}
       {(facetByCol<0)&&(
         <div style={{background:"#fff",borderRadius:10,padding:20,border:"1px solid #ddd"}}>
-          <BoxplotChart ref={chartRef} groups={displayBoxplotGroups} yLabel={vis.yLabel} plotTitle={vis.plotTitle} plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor} boxWidth={vis.boxWidth} boxFillOpacity={vis.boxFillOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints} jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={vis.boxGap} showCompPie={vis.showCompPie}
+          <BoxplotChart ref={chartRef} groups={displayBoxplotGroups} yLabel={vis.yLabel} plotTitle={vis.plotTitle} plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor} boxWidth={vis.boxWidth} boxFillOpacity={vis.boxFillOpacity} pointSize={vis.pointSize} showPoints={vis.showPoints} jitterWidth={vis.jitterWidth} pointOpacity={vis.pointOpacity} xLabelAngle={vis.xLabelAngle} yMin={yMinVal} yMax={yMaxVal} categoryColors={categoryColors} colorByCol={colorByCol} boxGap={vis.boxGap} showCompPie={vis.showCompPie} plotStyle={vis.plotStyle}
             svgLegend={colorByCol >= 0 && colorByCategories.length > 0 ? [{
               title: `Points colored by: ${colNames[colorByCol]}`,
               items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
@@ -559,7 +624,7 @@ function PlotArea({colorByCol, colorByCategories, colNames, categoryColors, face
               plotBg: vis.plotBg, showGrid: vis.showGrid, gridColor: vis.gridColor, boxWidth: vis.boxWidth,
               boxFillOpacity: vis.boxFillOpacity, pointSize: vis.pointSize, showPoints: vis.showPoints,
               jitterWidth: vis.jitterWidth, pointOpacity: vis.pointOpacity, xLabelAngle: vis.xLabelAngle,
-              yMin: yMinVal, yMax: yMaxVal, categoryColors, colorByCol, boxGap: vis.boxGap, showCompPie: vis.showCompPie,
+              yMin: yMinVal, yMax: yMaxVal, categoryColors, colorByCol, boxGap: vis.boxGap, showCompPie: vis.showCompPie, plotStyle: vis.plotStyle,
               svgLegend: colorByCol >= 0 && colorByCategories.length > 0 ? [{
                 title: `Points colored by: ${colNames[colorByCol]}`,
                 items: colorByCategories.map(c => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
@@ -603,7 +668,8 @@ function App() {
     showGrid: true, gridColor: "#e0e0e0",
     boxFillOpacity: 0.15, boxWidth: 70, boxGap: 0,
     pointSize: 2.5, showPoints: true, jitterWidth: 0.6, pointOpacity: 0.6,
-    xLabelAngle: 0, yMinCustom: "", yMaxCustom: "", showCompPie: false
+    xLabelAngle: 0, yMinCustom: "", yMaxCustom: "", showCompPie: false,
+    plotStyle: "box"
   };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
 

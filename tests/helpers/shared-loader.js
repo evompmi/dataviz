@@ -49,5 +49,6 @@ module.exports = {
   // Statistics
   computeStats:      ctx.computeStats,
   quartiles:         ctx.quartiles,
+  kde:               ctx.kde,
   computeGroupStats: ctx.computeGroupStats,
 };

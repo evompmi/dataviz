@@ -277,6 +277,30 @@ function quartiles(arr) {
     wHi: [...s].reverse().find(v => v <= q3 + 1.5*iqr) ?? s[n-1], n };
 }
 
+function kde(values, nPoints = 50) {
+  const n = values.length;
+  if (n === 0) return [];
+  const sorted = [...values].sort((a, b) => a - b);
+  const min = sorted[0], max = sorted[n - 1];
+  const iqr = n >= 4 ? sorted[Math.floor(n * 0.75)] - sorted[Math.floor(n * 0.25)] : max - min;
+  const bw = 1.06 * Math.min(Math.sqrt(values.reduce((s, v) => s + (v - values.reduce((a, b) => a + b, 0) / n) ** 2, 0) / n), (iqr || 1) / 1.34) * n ** -0.2 || 1;
+  const pad = bw * 2;
+  const lo = min - pad, hi = max + pad;
+  const step = (hi - lo) / (nPoints - 1);
+  const pts = [];
+  for (let i = 0; i < nPoints; i++) {
+    const x = lo + i * step;
+    let density = 0;
+    for (let j = 0; j < n; j++) {
+      const z = (x - values[j]) / bw;
+      density += Math.exp(-0.5 * z * z);
+    }
+    density /= n * bw * Math.sqrt(2 * Math.PI);
+    pts.push({ x, d: density });
+  }
+  return pts;
+}
+
 function computeGroupStats(groups) {
   return Object.entries(groups).map(([name, vals]) => {
     const nums = vals.filter(v => v !== "" && isNumericValue(v)).map(Number);

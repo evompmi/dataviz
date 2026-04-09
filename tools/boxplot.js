@@ -19,7 +19,8 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
   colorByCol: cbc,
   boxGap,
   svgLegend,
-  showCompPie
+  showCompPie,
+  plotStyle = "box"
 }, ref) {
   const angle = xLabelAngle || 0;
   const absA = Math.abs(angle);
@@ -28,8 +29,18 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
   const M = { top: 24, right: 24, bottom: botM, left: 62 };
   const allV = groups.flatMap((g) => g.allValues);
   if (allV.length === 0) return null;
-  const dMin = Math.min(...allV);
-  const dMax = Math.max(...allV);
+  let dMin = Math.min(...allV);
+  let dMax = Math.max(...allV);
+  if (plotStyle === "violin" || plotStyle === "raincloud") {
+    for (const g of groups) {
+      if (g.allValues.length >= 2) {
+        const pts = kde(g.allValues, 60);
+        const kMin = pts[0].x, kMax = pts[pts.length - 1].x;
+        if (kMin < dMin) dMin = kMin;
+        if (kMax > dMax) dMax = kMax;
+      }
+    }
+  }
   const pad = (dMax - dMin) * 0.08 || 1;
   const yMin = yMinP != null ? yMinP : dMin - pad;
   const yMax = yMaxP != null ? yMaxP : dMax + pad;
@@ -129,15 +140,40 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
       if (!g.stats) return null;
       const cx = bx(gi);
       const { q1, med, q3, wLo, wHi } = g.stats;
-      return /* @__PURE__ */ React.createElement("g", { key: g.name, role: "group", "aria-label": `${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}` }, /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(wHi), y2: sy(q3), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx, x2: cx, y1: sy(q1), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wHi), y2: sy(wHi), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: cx - halfBox * 0.5, x2: cx + halfBox * 0.5, y1: sy(wLo), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement(
+      const isRain = plotStyle === "raincloud";
+      const isViolin = plotStyle === "violin" || isRain;
+      let violinPath = null;
+      if (isViolin && g.allValues.length >= 2) {
+        const pts = kde(g.allValues, 60);
+        const maxD = Math.max(...pts.map((p) => p.d));
+        if (maxD > 0) {
+          const sc = (d) => d / maxD * halfBox;
+          if (isRain) {
+            let d = `M ${cx},${sy(pts[0].x)}`;
+            for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+            d += ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
+            violinPath = /* @__PURE__ */ React.createElement("path", { d, fill: g.color, fillOpacity: boxFillOpacity, stroke: g.color, strokeWidth: "1" });
+          } else {
+            let d = `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
+            for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+            d += ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
+            for (let i = pts.length - 1; i >= 0; i--) d += ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
+            d += " Z";
+            violinPath = /* @__PURE__ */ React.createElement("path", { d, fill: g.color, fillOpacity: boxFillOpacity, stroke: g.color, strokeWidth: "1" });
+          }
+        }
+      }
+      const boxHalf = isViolin ? halfBox * 0.35 : halfBox;
+      const boxCx = isRain ? cx + halfBox * 0.15 : cx;
+      const boxEls = /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("line", { x1: boxCx, x2: boxCx, y1: sy(wHi), y2: sy(q3), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: boxCx, x2: boxCx, y1: sy(q1), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: boxCx - boxHalf * 0.5, x2: boxCx + boxHalf * 0.5, y1: sy(wHi), y2: sy(wHi), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("line", { x1: boxCx - boxHalf * 0.5, x2: boxCx + boxHalf * 0.5, y1: sy(wLo), y2: sy(wLo), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement(
         "rect",
         {
-          x: cx - halfBox,
+          x: boxCx - boxHalf,
           y: sy(q3),
-          width: halfBox * 2,
+          width: boxHalf * 2,
           height: sy(q1) - sy(q3),
-          fill: g.color,
-          fillOpacity: boxFillOpacity,
+          fill: isViolin ? "#fff" : g.color,
+          fillOpacity: isViolin ? 0.7 : boxFillOpacity,
           stroke: g.color,
           strokeWidth: "1.5",
           rx: "2"
@@ -145,14 +181,16 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
       ), /* @__PURE__ */ React.createElement(
         "line",
         {
-          x1: cx - halfBox,
-          x2: cx + halfBox,
+          x1: boxCx - boxHalf,
+          x2: boxCx + boxHalf,
           y1: sy(med),
           y2: sy(med),
           stroke: g.color,
           strokeWidth: "2.5"
         }
-      ), showPoints && g.sources.map((src, si) => {
+      ));
+      const ptOffset = isRain ? halfBox * 0.55 : 0;
+      const jitterEls = showPoints && g.sources.map((src, si) => {
         const rng = seededRandom(gi * 1e3 + si * 100 + 42);
         const ptColor = pointColor(g, src, si);
         return src.values.map((v, vi) => {
@@ -160,7 +198,7 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
             rng();
             return null;
           }
-          const j = (rng() - 0.5) * jitterWidth * halfBox * 2;
+          const j = isRain ? ptOffset + Math.abs(rng() - 0.5) * jitterWidth * halfBox : (rng() - 0.5) * jitterWidth * halfBox * 2;
           return /* @__PURE__ */ React.createElement(
             "circle",
             {
@@ -176,13 +214,14 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
             }
           );
         });
-      }), g.sources.flatMap(
+      });
+      const outlierEls = g.sources.flatMap(
         (src, si) => src.values.filter((v) => v < wLo || v > wHi).map(
           (v, oi) => /* @__PURE__ */ React.createElement(
             "circle",
             {
               key: `out-${g.name}-${si}-${oi}`,
-              cx,
+              cx: isRain ? cx + ptOffset : cx,
               cy: sy(v),
               r: 2.5,
               fill: "#000",
@@ -191,7 +230,8 @@ const BoxplotChart = forwardRef(function BoxplotChart2({
             }
           )
         )
-      ));
+      );
+      return /* @__PURE__ */ React.createElement("g", { key: g.name, role: "group", "aria-label": `${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}` }, violinPath, boxEls, jitterEls, outlierEls);
     }),
     /* @__PURE__ */ React.createElement("rect", { x: M.left, y: M.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }),
     groups.map((g, gi) => {
@@ -402,7 +442,7 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplay
       onNameChange: handleNameChange,
       onToggle: onToggleGroup
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 9 } }, /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 9 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Plot style"), /* @__PURE__ */ React.createElement("select", { value: vis.plotStyle, onChange: (e) => updVis({ plotStyle: e.target.value }), style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: "box" }, "Box plot"), /* @__PURE__ */ React.createElement("option", { value: "violin" }, "Violin plot"), /* @__PURE__ */ React.createElement("option", { value: "raincloud" }, "Raincloud plot"))), /* @__PURE__ */ React.createElement(
     BaseStyleControls,
     {
       plotBg: vis.plotBg,
@@ -412,7 +452,7 @@ function PlotControls({ dataFormat, setDataFormat, setStep, resetAll, allDisplay
       gridColor: vis.gridColor,
       onGridColorChange: sv("gridColor")
     }
-  ), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box width", value: vis.boxWidth, displayValue: vis.boxWidth + "%", min: 20, max: 100, step: 5, onChange: sv("boxWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box gap", value: vis.boxGap, displayValue: vis.boxGap + "%", min: 0, max: 80, step: 5, onChange: sv("boxGap") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Box opacity", value: vis.boxFillOpacity, displayValue: vis.boxFillOpacity.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("boxFillOpacity") }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showPoints, onChange: (e) => updVis({ showPoints: e.target.checked }), style: { accentColor: "#648FFF" } })), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: handleColorByChange, style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showCompPie, onChange: (e) => updVis({ showCompPie: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, "Composition pies")), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))), /* @__PURE__ */ React.createElement(SliderControl, { label: "Size", value: vis.pointSize, displayValue: vis.pointSize, min: 1, max: 6, step: 0.5, onChange: sv("pointSize") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Jitter", value: vis.jitterWidth, displayValue: vis.jitterWidth.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("jitterWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Opacity", value: vis.pointOpacity, displayValue: vis.pointOpacity.toFixed(2), min: 0.1, max: 1, step: 0.05, onChange: sv("pointOpacity") })), /* @__PURE__ */ React.createElement(SliderControl, { label: "X angle", value: vis.xLabelAngle, displayValue: vis.xLabelAngle + "\xB0", min: -90, max: 0, step: 5, onChange: sv("xLabelAngle") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement("select", { value: facetByCol, onChange: (e) => setFacetByCol(Number(e.target.value)), style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { value: vis.yMinCustom, onChange: (e) => updVis({ yMinCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { value: vis.yMaxCustom, onChange: (e) => updVis({ yMaxCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })))));
+  ), /* @__PURE__ */ React.createElement(SliderControl, { label: vis.plotStyle === "box" ? "Box width" : "Width", value: vis.boxWidth, displayValue: vis.boxWidth + "%", min: 20, max: 100, step: 5, onChange: sv("boxWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: vis.plotStyle === "box" ? "Box gap" : "Gap", value: vis.boxGap, displayValue: vis.boxGap + "%", min: 0, max: 80, step: 5, onChange: sv("boxGap") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Fill opacity", value: vis.boxFillOpacity, displayValue: vis.boxFillOpacity.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("boxFillOpacity") }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showPoints, onChange: (e) => updVis({ showPoints: e.target.checked }), style: { accentColor: "#648FFF" } })), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: handleColorByChange, style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: vis.showCompPie, onChange: (e) => updVis({ showCompPie: e.target.checked }) }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, "Composition pies")), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))), /* @__PURE__ */ React.createElement(SliderControl, { label: "Size", value: vis.pointSize, displayValue: vis.pointSize, min: 1, max: 6, step: 0.5, onChange: sv("pointSize") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Jitter", value: vis.jitterWidth, displayValue: vis.jitterWidth.toFixed(2), min: 0, max: 1, step: 0.05, onChange: sv("jitterWidth") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Opacity", value: vis.pointOpacity, displayValue: vis.pointOpacity.toFixed(2), min: 0.1, max: 1, step: 0.05, onChange: sv("pointOpacity") })), /* @__PURE__ */ React.createElement(SliderControl, { label: "X angle", value: vis.xLabelAngle, displayValue: vis.xLabelAngle + "\xB0", min: -90, max: 0, step: 5, onChange: sv("xLabelAngle") }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement("select", { value: facetByCol, onChange: (e) => setFacetByCol(Number(e.target.value)), style: { ...inp, cursor: "pointer", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), colorByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement("input", { value: vis.yLabel, onChange: (e) => updVis({ yLabel: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min"), /* @__PURE__ */ React.createElement("input", { value: vis.yMinCustom, onChange: (e) => updVis({ yMinCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max"), /* @__PURE__ */ React.createElement("input", { value: vis.yMaxCustom, onChange: (e) => updVis({ yMaxCustom: e.target.value }), style: { ...inp, width: "100%", fontSize: 11 }, placeholder: "auto" })))));
 }
 const FacetBoxplotItem = memo(function FacetBoxplotItem2({ fd, facetRefs, chartProps, categoryColors }) {
   const localRef = useRef();
@@ -451,6 +491,7 @@ function PlotArea({ colorByCol, colorByCategories, colNames, categoryColors, fac
       colorByCol,
       boxGap: vis.boxGap,
       showCompPie: vis.showCompPie,
+      plotStyle: vis.plotStyle,
       svgLegend: colorByCol >= 0 && colorByCategories.length > 0 ? [{
         title: `Points colored by: ${colNames[colorByCol]}`,
         items: colorByCategories.map((c) => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
@@ -478,6 +519,7 @@ function PlotArea({ colorByCol, colorByCategories, colNames, categoryColors, fac
       colorByCol,
       boxGap: vis.boxGap,
       showCompPie: vis.showCompPie,
+      plotStyle: vis.plotStyle,
       svgLegend: colorByCol >= 0 && colorByCategories.length > 0 ? [{
         title: `Points colored by: ${colNames[colorByCol]}`,
         items: colorByCategories.map((c) => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
@@ -518,7 +560,8 @@ function App() {
     xLabelAngle: 0,
     yMinCustom: "",
     yMaxCustom: "",
-    showCompPie: false
+    showCompPie: false,
+    plotStyle: "box"
   };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [boxplotColors, setBoxplotColors] = useState({});
