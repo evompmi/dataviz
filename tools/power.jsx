@@ -1,7 +1,7 @@
 // power.jsx — editable source. Run `npm run build` to compile to power.js
 // Do NOT edit the .js file directly.
 
-const { useState, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
 // ── Statistical distribution functions ──────────────────────────────────────
 
@@ -521,13 +521,13 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
     <div style={{ opacity: disabled ? 0.4 : 1 }}>
       {/* Mode toggle */}
       <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-        <div style={{ padding: "3px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer",
-          background: mode === "helper" ? "#0072B2" : "#eee", color: mode === "helper" ? "#fff" : "#666",
-          fontWeight: mode === "helper" ? 700 : 400 }}
+        <div style={{ padding: "5px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer",
+          background: mode === "helper" ? "#648FFF" : "#eee", color: mode === "helper" ? "#fff" : "#666",
+          fontWeight: mode === "helper" ? 700 : 400, flex: 1, textAlign: "center", boxSizing: "border-box" }}
           onClick={() => setMode("helper")}>From my data</div>
-        <div style={{ padding: "3px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer",
-          background: mode === "direct" ? "#0072B2" : "#eee", color: mode === "direct" ? "#fff" : "#666",
-          fontWeight: mode === "direct" ? 700 : 400 }}
+        <div style={{ padding: "5px 8px", borderRadius: 4, fontSize: 11, cursor: "pointer",
+          background: mode === "direct" ? "#648FFF" : "#eee", color: mode === "direct" ? "#fff" : "#666",
+          fontWeight: mode === "direct" ? 700 : 400, flex: 1, textAlign: "center", boxSizing: "border-box" }}
           onClick={() => setMode("direct")}>Direct value</div>
       </div>
 
@@ -739,7 +739,9 @@ function App() {
   const [tails, setTails] = useState(2);
   const [kInput, setKInput] = useState("3");
   const [dfInput, setDfInput] = useState("1");
-  const chartRef = useRef();
+  const resultRef = useRef();
+  const prevResultRef = useRef();
+  const [resultFlash, setResultFlash] = useState(false);
 
   const test = TESTS[testKey];
 
@@ -778,6 +780,19 @@ function App() {
     power: "Statistical power",
   }[solveFor];
 
+  useEffect(() => {
+    if (prevResultRef.current !== undefined && result !== prevResultRef.current && result != null) {
+      setResultFlash(true);
+      const id = setTimeout(() => setResultFlash(false), 300);
+      return () => clearTimeout(id);
+    }
+    prevResultRef.current = result;
+  }, [result]);
+
+  useEffect(() => {
+    if (resultFlash) prevResultRef.current = result;
+  }, [resultFlash]);
+
   const handleTestChange = useCallback((e) => {
     const key = e.target.value;
     setTestKey(key);
@@ -785,10 +800,7 @@ function App() {
     if (key === "anova" || key === "chi2") setTails(2);
   }, []);
 
-  const handleDownload = useCallback(() => {
-    if (!chartRef.current) return;
-    downloadSvg(chartRef.current, "power-curve.svg");
-  }, []);
+
 
   const inputStyle = { ...inpN, width: "100%" };
   const chipStyle = (active) => ({
@@ -796,6 +808,7 @@ function App() {
     border: active ? "2px solid #0072B2" : "2px solid #ddd",
     background: active ? "#e8f4fd" : "#fff", fontWeight: active ? 700 : 400,
     color: active ? "#0072B2" : "#555", fontFamily: "sans-serif",
+    flex: 1, textAlign: "center", boxSizing: "border-box",
   });
 
   return (
@@ -809,34 +822,35 @@ function App() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+      {/* ── Top row: test type + solve for ── */}
+      <div style={{ display: "flex", gap: 20, marginBottom: 6, flexWrap: "wrap" }}>
+        <div style={{ ...sec, padding: 12, flex: 1, minWidth: 200 }}>
+          <div style={lbl}>Statistical test</div>
+          <select value={testKey} onChange={handleTestChange} style={{ ...selStyle, width: "100%" }}>
+            {Object.entries(TESTS).map(([key, t]) => (
+              <option key={key} value={key}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+        <div style={{ ...sec, padding: 12, flex: 1, minWidth: 200 }}>
+          <div style={{ ...lbl, marginBottom: 6 }}>What do you need to find?</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {[
+              ["n", "Sample size"],
+              ["power", "Power"],
+            ].map(([key, label]) => (
+              <div key={key} style={chipStyle(solveFor === key)} onClick={() => setSolveFor(key)}>
+                {label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main row: controls (left) + plot/result (right) ── */}
+      <div style={{ display: "flex", gap: 20, alignItems: "stretch", flexWrap: "wrap" }}>
         {/* ── Left panel ── */}
-        <div style={{ width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-
-          {/* Test type */}
-          <div style={{ ...sec, padding: 12 }}>
-            <div style={lbl}>Statistical test</div>
-            <select value={testKey} onChange={handleTestChange} style={{ ...selStyle, width: "100%" }}>
-              {Object.entries(TESTS).map(([key, t]) => (
-                <option key={key} value={key}>{t.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Solve for */}
-          <div style={{ ...sec, padding: 12 }}>
-            <div style={{ ...lbl, marginBottom: 6 }}>What do you need to find?</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {[
-                ["n", "Sample size"],
-                ["power", "Power"],
-              ].map(([key, label]) => (
-                <div key={key} style={chipStyle(solveFor === key)} onClick={() => setSolveFor(key)}>
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div style={{ width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}>
 
           {/* Effect size */}
           <div style={{ ...sec, padding: 12 }}>
@@ -846,7 +860,7 @@ function App() {
           </div>
 
           {/* Other parameters */}
-          <div style={{ ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
             {/* Sample size */}
             <div style={{ opacity: solveFor === "n" ? 0.4 : 1 }}>
               <div style={lbl}>{test.nLabel}</div>
@@ -909,7 +923,8 @@ function App() {
                 <input type="number" min="1" max="100" step="1" value={dfInput}
                   onChange={e => setDfInput(e.target.value)} style={inputStyle} />
                 <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
-                  Goodness-of-fit: categories − 1. Independence: (rows−1)(cols−1).
+                  Goodness-of-fit: categories − 1.<br/>
+                  Independence: (rows−1)(cols−1).
                 </div>
               </div>
             )}
@@ -917,10 +932,20 @@ function App() {
         </div>
 
         {/* ── Right panel ── */}
-        <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 6 }}>
+
+          {/* Power curve */}
+          <div style={{ ...sec, padding: 12, flex: 1 }}>
+            <PowerCurve testKey={testKey}
+              powerFn={test.power}
+              params={{ es, n, alpha, tails, k, df }}
+              solveFor={solveFor} result={result} />
+          </div>
 
           {/* Result */}
-          <div style={{ ...sec, padding: 16, textAlign: "center" }}>
+          <div style={{ ...sec, padding: 16, textAlign: "center",
+            background: resultFlash ? "#d4edda" : (sec.background || "#fff"),
+            transition: "background 0.3s ease" }}>
             <div style={{ fontSize: 12, color: "#777", marginBottom: 4 }}>{resultLabel}</div>
             <div style={{ fontSize: 36, fontWeight: 700, color: result != null ? "#0072B2" : "#ccc", fontFamily: "monospace" }}>
               {resultText}
@@ -931,36 +956,25 @@ function App() {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Power curve */}
-          <div style={{ ...sec, padding: 12 }}>
-            <PowerCurve ref={chartRef} testKey={testKey}
-              powerFn={test.power}
-              params={{ es, n, alpha, tails, k, df }}
-              solveFor={solveFor} result={result} />
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-              <button onClick={handleDownload} style={btnDownload}>Download SVG</button>
-            </div>
-          </div>
-
-          {/* Explainer */}
-          <div style={{ ...sec, padding: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              What do these numbers mean?
-            </div>
-            <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7 }}>
-              <b>Power</b> is the probability that you will correctly reject the null hypothesis (i.e. to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance of success — this is the standard minimum. Higher is better but costs more subjects.
-              <br/><br/><b>Significance level (α)</b> is the risk of a false positive — concluding there is an effect when there is none. The standard α&nbsp;=&nbsp;0.05 means you accept a 5% chance of a false alarm. Lowering α (e.g. to 0.01) makes you more conservative but requires more subjects to keep power high.
-              <br/><br/><b>Sample size ({test.nLabel})</b> is the number of observations you need to collect. More subjects give you more power to detect a given effect.
-              <br/><br/><b>Effect size</b> measures how large the real difference or relationship is, scaled by variability. Use the "From my data" tab to compute it from values you expect (e.g. group means and standard deviation from pilot data or published studies).
-              {testKey === "t-ind" && <><br/><br/>For a <b>two-sample t-test</b>, the effect size (Cohen's d) is the difference between the two group means divided by their common standard deviation. A d of 0.2 is small, 0.5 is medium, and 0.8 is large.</>}
-              {testKey === "t-paired" && <><br/><br/>For a <b>paired t-test</b>, the effect size (Cohen's d) is the expected mean of the paired differences divided by the standard deviation of those differences.</>}
-              {testKey === "t-one" && <><br/><br/>For a <b>one-sample t-test</b>, the effect size (Cohen's d) is how far the true mean deviates from the reference value, divided by the standard deviation.</>}
-              {testKey === "anova" && <><br/><br/>For <b>ANOVA</b>, the effect size (Cohen's f) captures how spread out the group means are relative to within-group variability. An f of 0.10 is small, 0.25 is medium, and 0.40 is large.</>}
-              {testKey === "correlation" && <><br/><br/>For <b>correlation</b>, the effect size is simply the expected Pearson r. An r of 0.1 is small, 0.3 is medium, and 0.5 is large.</>}
-              {testKey === "chi2" && <><br/><br/>For a <b>chi-square test</b>, the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large.<br/><br/>Degrees of freedom:<br/>&bull; Goodness-of-fit: <b>df = categories − 1</b><br/>&bull; Independence: <b>df = (rows − 1) × (cols − 1)</b></>}
-            </div>
-          </div>
+      {/* Explainer — full width */}
+      <div style={{ ...sec, padding: 12, marginTop: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          What do these numbers mean?
+        </div>
+        <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7 }}>
+          <b>Power</b> is the probability that you will correctly reject the null hypothesis (i.e. to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance of success — this is the standard minimum. Higher is better but costs more subjects.
+          <br/><br/><b>Significance level (α)</b> is the risk of a false positive — concluding there is an effect when there is none. The standard α&nbsp;=&nbsp;0.05 means you accept a 5% chance of a false alarm. Lowering α (e.g. to 0.01) makes you more conservative but requires more subjects to keep power high.
+          <br/><br/><b>Sample size ({test.nLabel})</b> is the number of observations you need to collect. More subjects give you more power to detect a given effect.
+          <br/><br/><b>Effect size</b> measures how large the real difference or relationship is, scaled by variability. Use the "From my data" tab to compute it from values you expect (e.g. group means and standard deviation from pilot data or published studies).
+          {testKey === "t-ind" && <><br/><br/>For a <b>two-sample t-test</b>, the effect size (Cohen's d) is the difference between the two group means divided by their common standard deviation. A d of 0.2 is small, 0.5 is medium, and 0.8 is large.</>}
+          {testKey === "t-paired" && <><br/><br/>For a <b>paired t-test</b>, the effect size (Cohen's d) is the expected mean of the paired differences divided by the standard deviation of those differences.</>}
+          {testKey === "t-one" && <><br/><br/>For a <b>one-sample t-test</b>, the effect size (Cohen's d) is how far the true mean deviates from the reference value, divided by the standard deviation.</>}
+          {testKey === "anova" && <><br/><br/>For <b>ANOVA</b>, the effect size (Cohen's f) captures how spread out the group means are relative to within-group variability. An f of 0.10 is small, 0.25 is medium, and 0.40 is large.</>}
+          {testKey === "correlation" && <><br/><br/>For <b>correlation</b>, the effect size is simply the expected Pearson r. An r of 0.1 is small, 0.3 is medium, and 0.5 is large.</>}
+          {testKey === "chi2" && <><br/><br/>For a <b>chi-square test</b>, the effect size (Cohen's w) measures how far the observed category proportions deviate from expected. A w of 0.1 is small, 0.3 is medium, and 0.5 is large.<br/><br/>Degrees of freedom:<br/>&bull; Goodness-of-fit: <b>df = categories − 1</b><br/>&bull; Independence: <b>df = (rows − 1) × (cols − 1)</b></>}
         </div>
       </div>
     </div>
