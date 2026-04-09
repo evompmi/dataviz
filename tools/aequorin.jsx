@@ -998,7 +998,7 @@ function App() {
   const [conditions, setConditions] = useState([]);
   const [poolReplicates, setPoolReplicates] = useState(true);
   const [columnEnabled, setColumnEnabled] = useState({});
-  const visInit={xStart:10,xEnd:800,yMin:0.1,yMax:1.4,faceted:false,plotTitle:"",plotSubtitle:"",smoothWidth:3,plotBg:"#ffffff",showGrid:true,lineWidth:2,ribbonOpacity:0.3,gridColor:"#e0e0e0",timeStep:1,baseUnit:"s",displayUnit:"s",showInset:true,insetFillOpacity:0.7,insetStrokeOpacity:1,insetYMinCustom:"",insetYMaxCustom:"",insetW:200,insetH:150,insetErrorType:"none",insetBarStrokeWidth:1,insetShowGrid:true,insetGridColor:"#e0e0e0",insetErrorStrokeWidth:0.8,insetXFontSize:7,insetYFontSize:7,insetXLabelAngle:-45,showColumnOverlay:false};
+  const visInit={xStart:10,xEnd:800,yMin:0.1,yMax:1.4,faceted:false,plotTitle:"",plotSubtitle:"",smoothWidth:3,plotBg:"#ffffff",showGrid:false,lineWidth:2,ribbonOpacity:0.3,gridColor:"#e0e0e0",timeStep:1,baseUnit:"s",displayUnit:"s",showInset:true,insetFillOpacity:0.7,insetStrokeOpacity:1,insetYMinCustom:"",insetYMaxCustom:"",insetW:200,insetH:150,insetErrorType:"none",insetBarStrokeWidth:1,insetShowGrid:false,insetGridColor:"#e0e0e0",insetErrorStrokeWidth:0.8,insetXFontSize:7,insetYFontSize:7,insetXLabelAngle:-45,showColumnOverlay:false};
   const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
   const [step, setStep] = useState("upload");
   const [insetColors, setInsetColors] = useState({});

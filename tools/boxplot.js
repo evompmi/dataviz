@@ -552,7 +552,7 @@ function App() {
     plotTitle: "",
     yLabel: "Value",
     plotBg: "#ffffff",
-    showGrid: true,
+    showGrid: false,
     gridColor: "#e0e0e0",
     boxFillOpacity: 0.15,
     boxWidth: 70,

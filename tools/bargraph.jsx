@@ -707,7 +707,7 @@ function App() {
   const [groupOrder, setGroupOrder] = useState([]);
   const [dragIdx, setDragIdx] = useState(null);
   // Plot visual state (grouped)
-  const visInit={plotTitle:"",yLabel:"Value",plotBg:"#ffffff",showGrid:true,gridColor:"#e0e0e0",barWidth:70,barOpacity:0.25,pointSize:2.5,showPoints:true,jitterWidth:0.6,pointOpacity:0.6,xLabelAngle:0,errorType:"sem",errStrokeWidth:1.2,showBarOutline:false,barOutlineWidth:1.5,yMinCustom:"",yMaxCustom:""};
+  const visInit={plotTitle:"",yLabel:"Value",plotBg:"#ffffff",showGrid:false,gridColor:"#e0e0e0",barWidth:70,barOpacity:0.25,pointSize:2.5,showPoints:true,jitterWidth:0.6,pointOpacity:0.6,xLabelAngle:0,errorType:"sem",errStrokeWidth:1.2,showBarOutline:false,barOutlineWidth:1.5,yMinCustom:"",yMaxCustom:""};
   const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
