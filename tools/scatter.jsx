@@ -97,6 +97,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   xMin, xMax, yMin, yMax, xLabel, yLabel, title,
   plotBg, showGrid, gridColor,
   refLines,
+  regression, regressionStats,
   pointColor, pointSize, pointOpacity, strokeColor, strokeWidth,
   colorMapCol, colorMapType, colorMapPalette, colorMapDiscrete, colorMapRange,
   sizeMapCol, sizeMapType, sizeMapMin, sizeMapMax, sizeMapDiscrete, sizeMapRange,
@@ -241,6 +242,38 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
         })}
       </g>
 
+      {/* Regression line (clipped) */}
+      {regression && regression.on && regressionStats && regressionStats.valid && (
+        <g clipPath="url(#sc-clip)">
+          <line
+            x1={sx(xMin)} y1={sy(regressionStats.slope * xMin + regressionStats.intercept)}
+            x2={sx(xMax)} y2={sy(regressionStats.slope * xMax + regressionStats.intercept)}
+            stroke={regression.color || "#dc2626"} strokeWidth={regression.strokeWidth || 1.5}
+            strokeDasharray={regression.dashed ? "7,4" : "none"} />
+        </g>
+      )}
+
+      {/* Regression stats label */}
+      {regression && regression.on && regression.showStats && regressionStats && regressionStats.valid && (() => {
+        const pad = 8;
+        const pos = regression.position || "tl";
+        const tx = pos.endsWith("r") ? MARGIN.left + w - pad : MARGIN.left + pad;
+        const ty = pos.startsWith("b") ? MARGIN.top + h - pad - 38 : MARGIN.top + pad;
+        const anchor = pos.endsWith("r") ? "end" : "start";
+        const s = regressionStats.slope;
+        const b = regressionStats.intercept;
+        const eq = `y = ${fmtTick(s)}·x ${b >= 0 ? "+" : "−"} ${fmtTick(Math.abs(b))}`;
+        const r2 = `R² = ${regressionStats.r2.toFixed(4)}`;
+        const nTxt = `n = ${regressionStats.n}`;
+        return (
+          <g fontFamily="sans-serif" fontSize="11" fill={regression.color || "#dc2626"}>
+            <text x={tx} y={ty + 10} textAnchor={anchor}>{eq}</text>
+            <text x={tx} y={ty + 24} textAnchor={anchor}>{r2}</text>
+            <text x={tx} y={ty + 38} textAnchor={anchor} fill="#888">{nTxt}</text>
+          </g>
+        );
+      })()}
+
       <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
 
       {xTicks.map(t => (
@@ -353,6 +386,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     shapeMapCol, setShapeMapCol, shapeMapCategories, shapeMapDiscrete, setShapeMapDiscrete, shapeWarning,
     vis, updVis, autoAxis, effAxis,
     refLines, addRefLine, updateRefLine, removeRefLine,
+    regression, updRegression, regressionStats,
     filterState, setFilterState, filterableCols, uniqueVals,
     mappableCols,
     resetAll, svgRef, svgLegend,
@@ -443,6 +477,65 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
               <ColorInput value={strokeColor} onChange={setStrokeColor} size={20} />
             </div>
             <SliderControl label="Stroke width" value={strokeWidth} min={0} max={3} step={0.25} onChange={setStrokeWidth} />
+          </div>
+
+          {/* Regression / trend line */}
+          <div style={sec}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:regression.on?10:0}}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>Regression line</p>
+              <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#777",cursor:"pointer"}}>
+                <input type="checkbox" checked={regression.on}
+                  onChange={e => updRegression({on: e.target.checked})}
+                  style={{accentColor:"#648FFF"}} />
+                show
+              </label>
+            </div>
+            {regression.on && (
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {!regressionStats.valid && (
+                  <div style={{fontSize:11,color:"#dc2626"}}>Need ≥ 2 points with variation in X.</div>
+                )}
+                {regressionStats.valid && (
+                  <div style={{fontSize:11,color:"#666",lineHeight:1.5,padding:"6px 8px",background:"#fafafa",borderRadius:4,border:"1px solid #eee"}}>
+                    <div>slope: <strong>{fmtTick(regressionStats.slope)}</strong></div>
+                    <div>intercept: <strong>{fmtTick(regressionStats.intercept)}</strong></div>
+                    <div>R²: <strong>{regressionStats.r2.toFixed(4)}</strong> &nbsp; n = {regressionStats.n}</div>
+                  </div>
+                )}
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,color:"#777"}}>Color</span>
+                  <ColorInput value={regression.color} onChange={v => updRegression({color:v})} size={22} />
+                </div>
+                <SliderControl label="Width" value={regression.strokeWidth}
+                  min={0.5} max={6} step={0.25}
+                  onChange={v => updRegression({strokeWidth:v})} />
+                <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#777",cursor:"pointer"}}>
+                  <input type="checkbox" checked={regression.dashed}
+                    onChange={e => updRegression({dashed:e.target.checked})}
+                    style={{accentColor:"#648FFF"}} />
+                  Dashed
+                </label>
+                <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:"#777",cursor:"pointer"}}>
+                  <input type="checkbox" checked={regression.showStats}
+                    onChange={e => updRegression({showStats:e.target.checked})}
+                    style={{accentColor:"#648FFF"}} />
+                  Show equation &amp; R² on plot
+                </label>
+                {regression.showStats && (
+                  <div>
+                    <div style={lbl}>Label position</div>
+                    <select value={regression.position}
+                      onChange={e => updRegression({position:e.target.value})}
+                      style={{...selSt, width:"100%", fontSize:11}}>
+                      <option value="tl">top-left</option>
+                      <option value="tr">top-right</option>
+                      <option value="bl">bottom-left</option>
+                      <option value="br">bottom-right</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Color aesthetic ── */}
@@ -711,6 +804,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
               xLabel={vis.xLabel} yLabel={vis.yLabel} title={vis.plotTitle}
               plotBg={vis.plotBg} showGrid={vis.showGrid} gridColor={vis.gridColor}
               refLines={refLines}
+              regression={regression} regressionStats={regressionStats}
               pointColor={pointColor} pointSize={pointSize} pointOpacity={pointOpacity}
               strokeColor={strokeColor} strokeWidth={strokeWidth}
               colorMapCol={colorMapCol} colorMapType={colorMapType}
@@ -774,6 +868,13 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
   const [vis, updVis] = useReducer((s,a)=>a._reset?{...visInit}:{...s,...a}, visInit);
 
   const [refLines, setRefLines] = useState([]);
+
+  // Regression line
+  const [regression, setRegression] = useState({
+    on: false, color: "#dc2626", strokeWidth: 1.5, dashed: false,
+    showStats: true, position: "tl",
+  });
+  const updRegression = patch => setRegression(prev => ({ ...prev, ...patch }));
   const svgRef = useRef();
   const sepRef = useRef("");
 
@@ -924,6 +1025,25 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     };
   }, [parsed, xCol, yCol]);
 
+  // Linear regression over filtered data (simple y ~ x)
+  const regressionStats = useMemo(() => {
+    if (!filteredData || filteredData.length < 2) return { valid: false };
+    let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+    for (const row of filteredData) {
+      const x = row[xCol], y = row[yCol];
+      if (x == null || y == null || isNaN(x) || isNaN(y)) continue;
+      n++; sx += x; sy += y; sxx += x*x; syy += y*y; sxy += x*y;
+    }
+    if (n < 2) return { valid: false };
+    const denomX = n * sxx - sx * sx;
+    if (denomX === 0) return { valid: false };
+    const slope = (n * sxy - sx * sy) / denomX;
+    const intercept = (sy - slope * sx) / n;
+    const denomY = n * syy - sy * sy;
+    const r2 = denomY === 0 ? 1 : Math.pow(n * sxy - sx * sy, 2) / (denomX * denomY);
+    return { valid: true, slope, intercept, r2, n };
+  }, [filteredData, xCol, yCol]);
+
   // Effective axis values: user override or auto
   const effAxis = {
     xMin: vis.xMin != null ? vis.xMin : autoAxis.xMin,
@@ -998,6 +1118,7 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
     setShapeMapCol(null); setShapeMapDiscrete({});
     setFilterState({});
     setRefLines([]);
+    setRegression({ on: false, color: "#dc2626", strokeWidth: 1.5, dashed: false, showStats: true, position: "tl" });
     setPointColor("#648FFF");
     setPointSize(5);
     setPointOpacity(0.8);
@@ -1080,6 +1201,8 @@ const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRe
           vis={vis} updVis={updVis} autoAxis={autoAxis} effAxis={effAxis}
           refLines={refLines} addRefLine={addRefLine}
           updateRefLine={updateRefLine} removeRefLine={removeRefLine}
+          regression={regression} updRegression={updRegression}
+          regressionStats={regressionStats}
           filterState={filterState} setFilterState={setFilterState}
           filterableCols={filterableCols} uniqueVals={uniqueVals}
           mappableCols={mappableCols}

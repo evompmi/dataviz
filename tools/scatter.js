@@ -117,6 +117,8 @@ const ScatterChart = forwardRef(function ScatterChart2({
   showGrid,
   gridColor,
   refLines,
+  regression,
+  regressionStats,
   pointColor,
   pointSize,
   pointOpacity,
@@ -306,6 +308,31 @@ const ScatterChart = forwardRef(function ScatterChart2({
         strokeWidth: strokeWidth || 0
       });
     })),
+    regression && regression.on && regressionStats && regressionStats.valid && /* @__PURE__ */ React.createElement("g", { clipPath: "url(#sc-clip)" }, /* @__PURE__ */ React.createElement(
+      "line",
+      {
+        x1: sx(xMin),
+        y1: sy(regressionStats.slope * xMin + regressionStats.intercept),
+        x2: sx(xMax),
+        y2: sy(regressionStats.slope * xMax + regressionStats.intercept),
+        stroke: regression.color || "#dc2626",
+        strokeWidth: regression.strokeWidth || 1.5,
+        strokeDasharray: regression.dashed ? "7,4" : "none"
+      }
+    )),
+    regression && regression.on && regression.showStats && regressionStats && regressionStats.valid && (() => {
+      const pad = 8;
+      const pos = regression.position || "tl";
+      const tx = pos.endsWith("r") ? MARGIN.left + w - pad : MARGIN.left + pad;
+      const ty = pos.startsWith("b") ? MARGIN.top + h - pad - 38 : MARGIN.top + pad;
+      const anchor = pos.endsWith("r") ? "end" : "start";
+      const s = regressionStats.slope;
+      const b = regressionStats.intercept;
+      const eq = `y = ${fmtTick(s)}\xB7x ${b >= 0 ? "+" : "\u2212"} ${fmtTick(Math.abs(b))}`;
+      const r2 = `R\xB2 = ${regressionStats.r2.toFixed(4)}`;
+      const nTxt = `n = ${regressionStats.n}`;
+      return /* @__PURE__ */ React.createElement("g", { fontFamily: "sans-serif", fontSize: "11", fill: regression.color || "#dc2626" }, /* @__PURE__ */ React.createElement("text", { x: tx, y: ty + 10, textAnchor: anchor }, eq), /* @__PURE__ */ React.createElement("text", { x: tx, y: ty + 24, textAnchor: anchor }, r2), /* @__PURE__ */ React.createElement("text", { x: tx, y: ty + 38, textAnchor: anchor, fill: "#888" }, nTxt));
+    })(),
     /* @__PURE__ */ React.createElement("rect", { x: MARGIN.left, y: MARGIN.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }),
     xTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: sx(t), x2: sx(t), y1: MARGIN.top + h, y2: MARGIN.top + h + 5, stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("text", { x: sx(t), y: MARGIN.top + h + 18, textAnchor: "middle", fontSize: "11", fill: "#555", fontFamily: "sans-serif" }, fmtTick(t)))),
     yTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: MARGIN.left - 5, x2: MARGIN.left, y1: sy(t), y2: sy(t), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("text", { x: MARGIN.left - 8, y: sy(t) + 4, textAnchor: "end", fontSize: "11", fill: "#555", fontFamily: "sans-serif" }, fmtTick(t)))),
@@ -396,6 +423,9 @@ function PlotStep({
   addRefLine,
   updateRefLine,
   removeRefLine,
+  regression,
+  updRegression,
+  regressionStats,
   filterState,
   setFilterState,
   filterableCols,
@@ -466,7 +496,52 @@ function PlotStep({
       step: 0.05,
       onChange: setPointOpacity
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Stroke"), /* @__PURE__ */ React.createElement(ColorInput, { value: strokeColor, onChange: setStrokeColor, size: 20 })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Stroke width", value: strokeWidth, min: 0, max: 3, step: 0.25, onChange: setStrokeWidth })), /* @__PURE__ */ React.createElement(AesBox, { theme: "color" }, /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Stroke"), /* @__PURE__ */ React.createElement(ColorInput, { value: strokeColor, onChange: setStrokeColor, size: 20 })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Stroke width", value: strokeWidth, min: 0, max: 3, step: 0.25, onChange: setStrokeWidth })), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: regression.on ? 10 : 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Regression line"), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#777", cursor: "pointer" } }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: regression.on,
+      onChange: (e) => updRegression({ on: e.target.checked }),
+      style: { accentColor: "#648FFF" }
+    }
+  ), "show")), regression.on && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, !regressionStats.valid && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#dc2626" } }, "Need \u2265 2 points with variation in X."), regressionStats.valid && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#666", lineHeight: 1.5, padding: "6px 8px", background: "#fafafa", borderRadius: 4, border: "1px solid #eee" } }, /* @__PURE__ */ React.createElement("div", null, "slope: ", /* @__PURE__ */ React.createElement("strong", null, fmtTick(regressionStats.slope))), /* @__PURE__ */ React.createElement("div", null, "intercept: ", /* @__PURE__ */ React.createElement("strong", null, fmtTick(regressionStats.intercept))), /* @__PURE__ */ React.createElement("div", null, "R\xB2: ", /* @__PURE__ */ React.createElement("strong", null, regressionStats.r2.toFixed(4)), " \xA0 n = ", regressionStats.n)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Color"), /* @__PURE__ */ React.createElement(ColorInput, { value: regression.color, onChange: (v) => updRegression({ color: v }), size: 22 })), /* @__PURE__ */ React.createElement(
+    SliderControl,
+    {
+      label: "Width",
+      value: regression.strokeWidth,
+      min: 0.5,
+      max: 6,
+      step: 0.25,
+      onChange: (v) => updRegression({ strokeWidth: v })
+    }
+  ), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#777", cursor: "pointer" } }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: regression.dashed,
+      onChange: (e) => updRegression({ dashed: e.target.checked }),
+      style: { accentColor: "#648FFF" }
+    }
+  ), "Dashed"), /* @__PURE__ */ React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#777", cursor: "pointer" } }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "checkbox",
+      checked: regression.showStats,
+      onChange: (e) => updRegression({ showStats: e.target.checked }),
+      style: { accentColor: "#648FFF" }
+    }
+  ), "Show equation & R\xB2 on plot"), regression.showStats && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Label position"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: regression.position,
+      onChange: (e) => updRegression({ position: e.target.value }),
+      style: { ...selSt, width: "100%", fontSize: 11 }
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "tl" }, "top-left"),
+    /* @__PURE__ */ React.createElement("option", { value: "tr" }, "top-right"),
+    /* @__PURE__ */ React.createElement("option", { value: "bl" }, "bottom-left"),
+    /* @__PURE__ */ React.createElement("option", { value: "br" }, "bottom-right")
+  )))), /* @__PURE__ */ React.createElement(AesBox, { theme: "color" }, /* @__PURE__ */ React.createElement(
     "select",
     {
       value: colorMapCol == null ? "" : colorMapCol,
@@ -667,6 +742,8 @@ function PlotStep({
       showGrid: vis.showGrid,
       gridColor: vis.gridColor,
       refLines,
+      regression,
+      regressionStats,
       pointColor,
       pointSize,
       pointOpacity,
@@ -718,6 +795,15 @@ function App() {
   const visInit = { xMin: null, xMax: null, yMin: null, yMax: null, xLabel: "", yLabel: "", plotTitle: "", plotBg: "#ffffff", showGrid: true, gridColor: "#e0e0e0" };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [refLines, setRefLines] = useState([]);
+  const [regression, setRegression] = useState({
+    on: false,
+    color: "#dc2626",
+    strokeWidth: 1.5,
+    dashed: false,
+    showStats: true,
+    position: "tl"
+  });
+  const updRegression = (patch) => setRegression((prev) => ({ ...prev, ...patch }));
   const svgRef = useRef();
   const sepRef = useRef("");
   const parsed = useMemo(() => rawText ? parseData(rawText, sepRef.current) : null, [rawText]);
@@ -850,6 +936,28 @@ function App() {
       yMax: yVals.length ? Math.max(...yVals) + yPad : 1
     };
   }, [parsed, xCol, yCol]);
+  const regressionStats = useMemo(() => {
+    if (!filteredData || filteredData.length < 2) return { valid: false };
+    let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+    for (const row of filteredData) {
+      const x = row[xCol], y = row[yCol];
+      if (x == null || y == null || isNaN(x) || isNaN(y)) continue;
+      n++;
+      sx += x;
+      sy += y;
+      sxx += x * x;
+      syy += y * y;
+      sxy += x * y;
+    }
+    if (n < 2) return { valid: false };
+    const denomX = n * sxx - sx * sx;
+    if (denomX === 0) return { valid: false };
+    const slope = (n * sxy - sx * sy) / denomX;
+    const intercept = (sy - slope * sx) / n;
+    const denomY = n * syy - sy * sy;
+    const r2 = denomY === 0 ? 1 : Math.pow(n * sxy - sx * sy, 2) / (denomX * denomY);
+    return { valid: true, slope, intercept, r2, n };
+  }, [filteredData, xCol, yCol]);
   const effAxis = {
     xMin: vis.xMin != null ? vis.xMin : autoAxis.xMin,
     xMax: vis.xMax != null ? vis.xMax : autoAxis.xMax,
@@ -936,6 +1044,7 @@ function App() {
     setShapeMapDiscrete({});
     setFilterState({});
     setRefLines([]);
+    setRegression({ on: false, color: "#dc2626", strokeWidth: 1.5, dashed: false, showStats: true, position: "tl" });
     setPointColor("#648FFF");
     setPointSize(5);
     setPointOpacity(0.8);
@@ -1051,6 +1160,9 @@ function App() {
       addRefLine,
       updateRefLine,
       removeRefLine,
+      regression,
+      updRegression,
+      regressionStats,
       filterState,
       setFilterState,
       filterableCols,
