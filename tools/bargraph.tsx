@@ -156,7 +156,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     <svg
       ref={ref}
       viewBox={`0 0 ${vbW} ${vbH}`}
-      style={{ width: "100%", height: "auto", display: "block" }}
+      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={plotTitle || "Bar chart"}
