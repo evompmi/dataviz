@@ -1520,3 +1520,121 @@ function DataPreview({ headers, rows, maxRows }) {
       : null
   );
 }
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error: error };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ info: info });
+    if (typeof console !== "undefined" && console.error) {
+      console.error("Tool crashed:", error, info);
+    }
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const err = this.state.error;
+    const info = this.state.info;
+    const msg = err && err.message ? err.message : String(err);
+    const stack = err && err.stack ? err.stack : msg;
+    const compStack = info && info.componentStack ? info.componentStack : "";
+    const details = stack + (compStack ? "\n\nComponent stack:" + compStack : "");
+    const reload = () => {
+      if (typeof window !== "undefined" && window.location) window.location.reload();
+    };
+    const copy = () => {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        navigator.clipboard.writeText(details).catch(() => {});
+      }
+    };
+    const toolName = this.props.toolName || "This tool";
+    return React.createElement(
+      "div",
+      {
+        role: "alert",
+        style: {
+          maxWidth: 720,
+          margin: "40px auto",
+          padding: 24,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          color: "#333",
+        },
+      },
+      React.createElement(
+        "h2",
+        { style: { marginTop: 0, color: "#b00020", fontSize: 20 } },
+        "Something went wrong"
+      ),
+      React.createElement(
+        "p",
+        { style: { fontSize: 14, lineHeight: 1.5 } },
+        toolName +
+          " hit an unexpected error and can't continue. Your data is still on your machine — nothing was sent anywhere. Try reloading; if it keeps crashing, use \u201cCopy error details\u201d and open an issue."
+      ),
+      React.createElement(
+        "pre",
+        {
+          style: {
+            background: "#fff4f4",
+            border: "1px solid #f3c7c7",
+            borderRadius: 6,
+            padding: 12,
+            fontSize: 12,
+            color: "#7a0016",
+            overflow: "auto",
+            maxHeight: 200,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+          },
+        },
+        msg
+      ),
+      React.createElement(
+        "details",
+        { style: { marginBottom: 16 } },
+        React.createElement(
+          "summary",
+          { style: { cursor: "pointer", fontSize: 13, color: "#666" } },
+          "Technical details"
+        ),
+        React.createElement(
+          "pre",
+          {
+            style: {
+              background: "#f7f7f7",
+              border: "1px solid #eee",
+              borderRadius: 6,
+              padding: 12,
+              fontSize: 11,
+              color: "#555",
+              overflow: "auto",
+              maxHeight: 300,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              marginTop: 8,
+            },
+          },
+          details
+        )
+      ),
+      React.createElement(
+        "div",
+        { style: { display: "flex", gap: 10, flexWrap: "wrap" } },
+        React.createElement(
+          "button",
+          { type: "button", onClick: reload, style: btnPrimary },
+          "Reload tool"
+        ),
+        React.createElement(
+          "button",
+          { type: "button", onClick: copy, style: btnSecondary },
+          "Copy error details"
+        )
+      )
+    );
+  }
+}

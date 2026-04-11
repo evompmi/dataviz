@@ -46,6 +46,7 @@ const ctx = {
   downloadSvg: () => {},
   PageHeader: () => null,
   computeLegendHeight: () => 0,
+  ErrorBoundary: ({ children }) => children,
 };
 vm.createContext(ctx);
 vm.runInContext(

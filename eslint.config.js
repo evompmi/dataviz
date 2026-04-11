@@ -77,6 +77,7 @@ const sharedGlobals = {
   StatsTable: "readonly",
   GroupColorEditor: "readonly",
   BaseStyleControls: "readonly",
+  ErrorBoundary: "readonly",
 };
 
 const browserPlus = {

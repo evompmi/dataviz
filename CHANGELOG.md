@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Source maps emitted alongside compiled `tools/*.js` for debuggable stack traces in browser devtools.
 - `CHANGELOG.md` following the Keep a Changelog convention.
+- Error boundary around every tool's root `<App />`. If rendering crashes, the iframe now shows a readable fallback with the error message, a collapsible technical-details panel, a "Reload tool" button, and a "Copy error details" button — replacing the previous blank-screen failure mode.
 
 ### Changed
 
