@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Source maps emitted alongside compiled `tools/*.js` for debuggable stack traces in browser devtools.
 - `CHANGELOG.md` following the Keep a Changelog convention.
 
+### Changed
+
+- CI and deploy workflows run on Node.js 22 (current LTS) and opt into the Node 24 action runtime via `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` ahead of GitHub's June 2026 deprecation of Node 20 actions.
+
 ## [1.0.0] - 2026-04-11
 
 First tracked release. Baseline of features shipped to GitHub Pages prior to
