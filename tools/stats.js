@@ -290,7 +290,32 @@ function ncf_sf(f, d1, d2, lambda) {
   if (f <= 0) return 1;
   if (lambda <= 0) return 1 - fcdf(f, d1, d2);
   const halfLam = lambda / 2;
+
+  // Large-λ short circuit: the Poisson mass around the mode has width
+  // σ = √(λ/2), so a fixed 500-step window leaves most of the mass
+  // unaccounted for when λ is huge. In that regime, P(F'>f) is either
+  // ≈ 1 or ≈ 0 for f outside a few σ of the NCF mean — use closed-form
+  // mean / variance of the NCF (valid for d2 > 4) and short-circuit via
+  // normal approximation when f is clearly in the far tail. Without this,
+  // power-analysis sample-size solvers probe huge n values (e.g. via
+  // bisect up to hi=100000) and get misleading truncated-sum answers,
+  // breaking the monotonic-in-n assumption the solver depends on.
+  if (halfLam > 500 && d2 > 4) {
+    const mean = (d2 / (d2 - 2)) * ((d1 + lambda) / d1);
+    const v =
+      (2 *
+        Math.pow(d2 / (d2 - 2), 2) *
+        ((d1 + lambda) * (d1 + lambda) + (d1 + 2 * lambda) * (d2 - 2))) /
+      (d1 * d1 * (d2 - 4));
+    const sd = Math.sqrt(v);
+    const z = (f - mean) / sd;
+    if (z < -6) return 1;
+    if (z > 6) return 0;
+  }
+
   const jMode = Math.max(0, Math.floor(halfLam));
+  // Widen the Poisson window for larger λ so we cover ±8σ of the mass.
+  const maxSteps = Math.max(500, Math.ceil(8 * Math.sqrt(halfLam + 1)));
 
   function sfTerm(j) {
     const d1j = d1 + 2 * j;
@@ -302,19 +327,19 @@ function ncf_sf(f, d1, d2, lambda) {
   let sum = pTerm * sfTerm(jMode);
 
   let pUp = pTerm;
-  for (let j = jMode + 1; j < jMode + 500; j++) {
+  for (let j = jMode + 1; j < jMode + maxSteps; j++) {
     pUp *= halfLam / j;
     const contrib = pUp * sfTerm(j);
     sum += contrib;
-    if (j > jMode + 5 && contrib < 1e-14) break;
+    if (j - jMode > 10 && pUp < 1e-14) break;
   }
 
   let pDown = pTerm;
-  for (let j = jMode - 1; j >= 0; j--) {
+  for (let j = jMode - 1; j >= 0 && jMode - j < maxSteps; j--) {
     pDown *= (j + 1) / halfLam;
     const contrib = pDown * sfTerm(j);
     sum += contrib;
-    if (jMode - j > 5 && contrib < 1e-14) break;
+    if (jMode - j > 10 && pDown < 1e-14) break;
   }
 
   return Math.min(1, Math.max(0, sum));

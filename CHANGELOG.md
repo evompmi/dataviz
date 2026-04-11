@@ -25,11 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `StatsTile` gains a **Power analysis** section: computes the observed effect size (Cohen's `d` for k=2, Cohen's `f` for k≥3) from the actual data, reports achieved power at α = 0.05 (green ≥ 80%, amber below), and the per-group sample size that would be needed to reach 80% power against the same effect size. Rank-based tests (Mann-Whitney, Kruskal-Wallis) are estimated from their parametric analogs and flagged as approximations. The numbers are also appended to the downloadable text report. Backed by the existing `powerTwoSample` / `powerAnova` / `fFromGroupMeans` primitives — moved out of `tools/power.tsx` into `tools/stats.js` so the StatsTile can share them (217 existing power tests still pass unchanged).
 - `StatsTile` gains a "Download report (.txt)" button that exports a plain-text report of the full analysis — group descriptives (n, mean, SD), Shapiro-Wilk per group, Levene, recommended/chosen test + result, and the post-hoc pairs table when k≥3. Fixed-width columns so it reads cleanly in any editor. Backed by a new `downloadText()` helper in `tools/shared.js`.
+
 - StatsTile assumptions section now has clearer captions ("Shapiro-Wilk test for normality" and "Levene (Brown-Forsythe) test for equal variance") above each check, and the normality table's data cells no longer repeat the column headers — cells show bare values (`12`, `0.945`, `0.512`) instead of `n = 12`, `W = 0.945`, `p = 0.512`, matching the post-hoc table's cleaner style.
 - Bargraph output panel's "Long CSV" download button now matches the "Wide CSV" button's compact green style instead of the oversized `btnDownload` shared style — the two sibling download buttons are visually consistent.
 - Bargraph chart SVG no longer stretches to fill the plot tile. It now uses its natural width (`vbW`, ~100 px per bar + margins) capped at `maxWidth: 100%` and centered via `margin: 0 auto`, matching the boxplot behavior — small datasets render at a sensible size instead of being stretched edge-to-edge.
 - Tool pages (`tools/*.html`, all 7) now have `min-width: 1100px` on `body` so narrow viewports get a horizontal scrollbar instead of wrapping/overflowing content — keeps the stats tile, PlotControls sidebar, and chart legible on small windows.
 - Power tool's distribution primitives (`normcdf`, `tcdf`, `nctcdf`, `bisect`, …) moved out of `tools/power.tsx` into `tools/stats.js` — single home for all numeric code, no duplication. Power tool consumes them as script-tag globals. All 217 existing power tests still pass unchanged.
+
+### Fixed
+
+- Power tool: one-way ANOVA sample-size solver no longer jumps to 100000 for large effect sizes at k ≥ 6. Root cause was `ncf_sf` in `tools/stats.js` truncating the Poisson mixture at a fixed ±500-step window, which is narrower than σ = √(λ/2) once λ gets large (tens of thousands). Truncated sums returned bogus values around 0.7–0.8 at huge n, violating the monotone-in-n assumption `bisect` depends on and driving it toward `hi = 100000`. Fix widens the Poisson window to ±8σ with a `pUp < 1e-14` early-exit, and adds a normal-approximation short-circuit for the far tails (|z| > 6) when λ > 1000 and d₂ > 4, using the closed-form NCF mean / variance. All 217 existing power tests still pass unchanged.
 
 ## [1.1.1] - 2026-04-11
 
