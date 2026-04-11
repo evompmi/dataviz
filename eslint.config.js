@@ -61,6 +61,13 @@ const sharedGlobals = {
   downloadPng: "readonly",
   downloadCsv: "readonly",
   downloadText: "readonly",
+  powerTwoSample: "readonly",
+  powerPaired: "readonly",
+  powerOneSample: "readonly",
+  powerAnova: "readonly",
+  powerCorrelation: "readonly",
+  powerChi2: "readonly",
+  fFromGroupMeans: "readonly",
   // shared-components.js
   ColorInput: "readonly",
   FileDropZone: "readonly",

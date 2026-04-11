@@ -3,69 +3,17 @@
 
 const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
-// Distribution functions, noncentral distributions, `bisect`, and
-// Shapiro-Wilk live in tools/stats.js and are available as script-tag
-// globals here.
+// Distribution functions, noncentral distributions, `bisect`,
+// Shapiro-Wilk, power functions (powerTwoSample / powerPaired /
+// powerOneSample / powerAnova / powerCorrelation / powerChi2) and the
+// ANOVA effect-size helper `fFromGroupMeans` all live in tools/stats.js
+// and are available as script-tag globals here.
 
-// ── Power functions (keyed by test type) ────────────────────────────────────
-
-function powerTwoSample(d, n, alpha, tails) {
-  const df = 2 * n - 2;
-  const delta = d * Math.sqrt(n / 2);
-  const tCrit = tinv(1 - alpha / tails, df);
-  if (tails === 2) return 1 - nctcdf(tCrit, df, delta) + nctcdf(-tCrit, df, delta);
-  return 1 - nctcdf(tCrit, df, delta);
-}
-
-function powerPaired(d, n, alpha, tails) {
-  const df = n - 1;
-  const delta = d * Math.sqrt(n);
-  const tCrit = tinv(1 - alpha / tails, df);
-  if (tails === 2) return 1 - nctcdf(tCrit, df, delta) + nctcdf(-tCrit, df, delta);
-  return 1 - nctcdf(tCrit, df, delta);
-}
-
-function powerOneSample(d, n, alpha, tails) {
-  return powerPaired(d, n, alpha, tails); // same math
-}
-
-function powerAnova(f, n, alpha, k) {
-  const df1 = k - 1,
-    df2 = k * (n - 1);
-  const lambda = n * k * f * f;
-  const fCrit = bisect((x) => fcdf(x, df1, df2), 1 - alpha, 0, 200);
-  return ncf_sf(fCrit, df1, df2, lambda);
-}
-
-function powerCorrelation(r, n, alpha, tails) {
-  const zr = Math.atanh(r);
-  const se = 1 / Math.sqrt(Math.max(1, n - 3));
-  const zCrit = norminv(1 - alpha / tails);
-  if (tails === 2) return normcdf(Math.abs(zr) / se - zCrit) + normcdf(-Math.abs(zr) / se - zCrit);
-  return normcdf(zr / se - zCrit);
-}
-
-function powerChi2(w, n, alpha, df) {
-  const lambda = n * w * w;
-  const chiCrit = chi2inv(1 - alpha, df);
-  return 1 - ncchi2cdf(chiCrit, df, lambda);
-}
-
-// ── Effect size helpers ─────────────────────────────────────────────────────
+// ── Effect size helpers (power-tool-specific) ──────────────────────────────
 
 // Two-sample t: d from means + SD
 function dFromMeans(m1, m2, sd) {
   return sd > 0 ? Math.abs(m1 - m2) / sd : 0;
-}
-
-// ANOVA f from group means + within-SD
-function fFromGroupMeans(meansArr, sd) {
-  if (!meansArr.length || sd <= 0) return 0;
-  const grandMean = meansArr.reduce((a, b) => a + b, 0) / meansArr.length;
-  const sigmaMeans = Math.sqrt(
-    meansArr.reduce((s, m) => s + (m - grandMean) ** 2, 0) / meansArr.length
-  );
-  return sigmaMeans / sd;
 }
 
 // Chi-square w from expected proportions vs hypothesized

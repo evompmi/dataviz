@@ -367,6 +367,64 @@ function bisect(fn, target, lo, hi, tol = 1e-6, maxIter = 200) {
   return (lo + hi) / 2;
 }
 
+// ── 2b. Power functions ─────────────────────────────────────────────────────
+// Keyed by test shape, same formulas used by tools/power.tsx. Kept here so
+// the StatsTile (bargraph + boxplot) can report achieved power and the
+// n-per-group needed for 80 % power directly from the observed data.
+
+function powerTwoSample(d, n, alpha, tails) {
+  const df = 2 * n - 2;
+  const delta = d * Math.sqrt(n / 2);
+  const tCrit = tinv(1 - alpha / tails, df);
+  if (tails === 2) return 1 - nctcdf(tCrit, df, delta) + nctcdf(-tCrit, df, delta);
+  return 1 - nctcdf(tCrit, df, delta);
+}
+
+function powerPaired(d, n, alpha, tails) {
+  const df = n - 1;
+  const delta = d * Math.sqrt(n);
+  const tCrit = tinv(1 - alpha / tails, df);
+  if (tails === 2) return 1 - nctcdf(tCrit, df, delta) + nctcdf(-tCrit, df, delta);
+  return 1 - nctcdf(tCrit, df, delta);
+}
+
+function powerOneSample(d, n, alpha, tails) {
+  return powerPaired(d, n, alpha, tails);
+}
+
+function powerAnova(f, n, alpha, k) {
+  const df1 = k - 1,
+    df2 = k * (n - 1);
+  if (df2 < 1) return 0;
+  const lambda = n * k * f * f;
+  const fCrit = bisect((x) => fcdf(x, df1, df2), 1 - alpha, 0, 200);
+  return ncf_sf(fCrit, df1, df2, lambda);
+}
+
+function powerCorrelation(r, n, alpha, tails) {
+  const zr = Math.atanh(r);
+  const se = 1 / Math.sqrt(Math.max(1, n - 3));
+  const zCrit = norminv(1 - alpha / tails);
+  if (tails === 2) return normcdf(Math.abs(zr) / se - zCrit) + normcdf(-Math.abs(zr) / se - zCrit);
+  return normcdf(zr / se - zCrit);
+}
+
+function powerChi2(w, n, alpha, df) {
+  const lambda = n * w * w;
+  const chiCrit = chi2inv(1 - alpha, df);
+  return 1 - ncchi2cdf(chiCrit, df, lambda);
+}
+
+// Cohen's f for ANOVA from group means + pooled within-SD.
+function fFromGroupMeans(meansArr, sd) {
+  if (!meansArr.length || sd <= 0) return 0;
+  const grandMean = meansArr.reduce((a, b) => a + b, 0) / meansArr.length;
+  const sigmaMeans = Math.sqrt(
+    meansArr.reduce((s, m) => s + (m - grandMean) * (m - grandMean), 0) / meansArr.length
+  );
+  return sigmaMeans / sd;
+}
+
 // ── 3. Sample helpers ───────────────────────────────────────────────────────
 
 function sampleMean(x) {

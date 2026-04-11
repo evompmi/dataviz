@@ -56,6 +56,13 @@ declare global {
   function seededRandom(seed: number): () => number;
   function makeExamplePlantCSV(): string;
   function downloadText(text: string, filename: string): void;
+  function powerTwoSample(d: number, n: number, alpha: number, tails: number): number;
+  function powerPaired(d: number, n: number, alpha: number, tails: number): number;
+  function powerOneSample(d: number, n: number, alpha: number, tails: number): number;
+  function powerAnova(f: number, n: number, alpha: number, k: number): number;
+  function powerCorrelation(r: number, n: number, alpha: number, tails: number): number;
+  function powerChi2(w: number, n: number, alpha: number, df: number): number;
+  function fFromGroupMeans(means: number[], sd: number): number;
   function makeTicks(min: number, max: number, approxN: number): number[];
 
   // ── Separator detection & decimal comma fix ────────────────────────────────

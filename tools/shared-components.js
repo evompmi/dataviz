@@ -1772,7 +1772,16 @@ function _padR(s, n) {
   return s.length >= n ? s : s + " ".repeat(n - s.length);
 }
 function _buildStatsReport(ctx) {
-  const { names, values, recommendation, chosenTest, testResult, postHocName, postHocResult } = ctx;
+  const {
+    names,
+    values,
+    recommendation,
+    chosenTest,
+    testResult,
+    postHocName,
+    postHocResult,
+    powerResult,
+  } = ctx;
   const lines = [];
   const sep = "=".repeat(64);
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -1876,6 +1885,28 @@ function _buildStatsReport(ctx) {
   lines.push("Result: " + _formatTestLine(chosenTest, testResult));
   lines.push("");
 
+  if (powerResult) {
+    lines.push(sep);
+    lines.push("POWER ANALYSIS (alpha = 0.05, target = 80%)");
+    lines.push(sep);
+    lines.push("");
+    lines.push(
+      "Effect size:       " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
+    );
+    lines.push("Achieved power:    " + (powerResult.achieved * 100).toFixed(1) + "%");
+    lines.push(
+      "n for 80% power:   " +
+        (powerResult.nForTarget != null
+          ? powerResult.nForTarget + " " + powerResult.nLabel
+          : "> 5000")
+    );
+    if (powerResult.approximate) {
+      lines.push("");
+      lines.push("  Note: rank-based test — power estimated from its parametric analog.");
+    }
+    lines.push("");
+  }
+
   if (postHocResult && !postHocResult.error && postHocName) {
     lines.push(sep);
     lines.push("POST-HOC — " + POSTHOC_LABELS[postHocName]);
@@ -1908,6 +1939,96 @@ function _buildStatsReport(ctx) {
   }
 
   return lines.join("\n");
+}
+
+// Compute achieved power + n-needed-for-80%-power from the observed data,
+// dispatched by the test family chosen in the StatsTile. For non-parametric
+// tests (Mann-Whitney / Kruskal-Wallis) we report the parametric analog as
+// an approximation — noted in the returned `approximate` flag and in the
+// on-screen label. α = 0.05, two-tailed, target power = 0.80.
+function _computePower(chosenTest, values) {
+  if (!chosenTest || !values || values.length < 2) return null;
+  const alpha = 0.05;
+  const target = 0.8;
+
+  if (chosenTest === "studentT" || chosenTest === "welchT" || chosenTest === "mannWhitney") {
+    const x = values[0],
+      y = values[1];
+    const n1 = x.length,
+      n2 = y.length;
+    if (n1 < 2 || n2 < 2) return null;
+    const m1 = sampleMean(x),
+      m2 = sampleMean(y);
+    const s1 = sampleSD(x),
+      s2 = sampleSD(y);
+    const sp = Math.sqrt(((n1 - 1) * s1 * s1 + (n2 - 1) * s2 * s2) / (n1 + n2 - 2));
+    const d = sp > 0 ? Math.abs(m1 - m2) / sp : 0;
+    const nh = 2 / (1 / n1 + 1 / n2);
+    const nEff = Math.max(2, Math.round(nh));
+    const achieved = powerTwoSample(d, nEff, alpha, 2);
+    let needed = null;
+    if (d > 0) {
+      for (let n = 2; n <= 5000; n++) {
+        if (powerTwoSample(d, n, alpha, 2) >= target) {
+          needed = n;
+          break;
+        }
+      }
+    }
+    return {
+      effectLabel: "Cohen's d",
+      effect: d,
+      achieved,
+      targetPower: target,
+      nForTarget: needed,
+      nLabel: "per group",
+      approximate: chosenTest === "mannWhitney",
+    };
+  }
+
+  if (
+    chosenTest === "oneWayANOVA" ||
+    chosenTest === "welchANOVA" ||
+    chosenTest === "kruskalWallis"
+  ) {
+    const kk = values.length;
+    if (kk < 2) return null;
+    const means = values.map(sampleMean);
+    const ns = values.map((v) => v.length);
+    if (ns.some((n) => n < 2)) return null;
+    let ssW = 0,
+      dfW = 0;
+    for (let i = 0; i < kk; i++) {
+      const m = means[i];
+      for (const vv of values[i]) ssW += (vv - m) * (vv - m);
+      dfW += values[i].length - 1;
+    }
+    const sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
+    const f = fFromGroupMeans(means, sp);
+    const nh = kk / ns.reduce((a, b) => a + 1 / b, 0);
+    const nEff = Math.max(2, Math.round(nh));
+    const achieved = powerAnova(f, nEff, alpha, kk);
+    let needed = null;
+    if (f > 0) {
+      for (let n = 2; n <= 5000; n++) {
+        if (powerAnova(f, n, alpha, kk) >= target) {
+          needed = n;
+          break;
+        }
+      }
+    }
+    return {
+      effectLabel: "Cohen's f",
+      effect: f,
+      achieved,
+      targetPower: target,
+      nForTarget: needed,
+      nLabel: "per group",
+      approximate: chosenTest === "kruskalWallis",
+    };
+  }
+
+  return null;
 }
 
 function assignBracketLevels(pairs) {
@@ -1968,6 +2089,7 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
     () => (k > 2 && postHocName ? _runPostHoc(postHocName, values) : null),
     [postHocName, values, k]
   );
+  const powerResult = React.useMemo(() => _computePower(chosenTest, values), [chosenTest, values]);
 
   // Build annotation spec for the chart.
   const annotationSpec = React.useMemo(() => {
@@ -2287,6 +2409,66 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
     );
   }
 
+  // ── Power analysis ────────────────────────────────────────────────────────
+  let powerBlock = null;
+  if (powerResult) {
+    const fmtPct = (p) => (p * 100).toFixed(1) + "%";
+    const nNeededText =
+      powerResult.nForTarget != null ? powerResult.nForTarget + " " + powerResult.nLabel : "> 5000";
+    powerBlock = React.createElement(
+      "div",
+      null,
+      React.createElement("div", { style: subhead }, "Power analysis (\u03B1 = 0.05, target 80%)"),
+      React.createElement(
+        "table",
+        { style: table },
+        React.createElement(
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement("th", { style: th }, "Effect size"),
+            React.createElement("th", { style: th }, "Achieved power"),
+            React.createElement("th", { style: th }, "n for 80% power")
+          )
+        ),
+        React.createElement(
+          "tbody",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement(
+              "td",
+              { style: td },
+              powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
+            ),
+            React.createElement(
+              "td",
+              {
+                style: {
+                  ...td,
+                  fontWeight: 700,
+                  color: powerResult.achieved >= 0.8 ? "#166534" : "#b45309",
+                },
+              },
+              fmtPct(powerResult.achieved)
+            ),
+            React.createElement("td", { style: td }, nNeededText)
+          )
+        )
+      ),
+      powerResult.approximate
+        ? React.createElement(
+            "div",
+            { style: { fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 4 } },
+            "Approximation — rank-based test power estimated from its parametric analog."
+          )
+        : null
+    );
+  }
+
   // ── Download report ───────────────────────────────────────────────────────
   const downloadReportBtn = React.createElement(
     "div",
@@ -2303,6 +2485,7 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
             testResult,
             postHocName,
             postHocResult,
+            powerResult,
           });
           downloadText(txt, "stats_report.txt");
           flashSaved(e.currentTarget);
@@ -2404,6 +2587,7 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
       reasonLine,
       resultLine,
       postHocBlock,
+      powerBlock,
       downloadReportBtn,
       displayControls
     )
