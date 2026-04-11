@@ -20,7 +20,13 @@ function groupsFromLong(rows, groupColIdx, valueColIdx, categoryColIdx = -1) {
     const stats = computeStats(g.values);
     const src = { colIndex: 0, values: g.values };
     if (categoryColIdx >= 0) src.categories = g.categories;
-    return { name, sources: [src], allValues: g.values, stats, color: PALETTE[gi % PALETTE.length] };
+    return {
+      name,
+      sources: [src],
+      allValues: g.values,
+      stats,
+      color: PALETTE[gi % PALETTE.length]
+    };
   });
 }
 function groupColumns(headers, columns) {
@@ -126,7 +132,28 @@ const BarChart = forwardRef(function BarChart2({
         strokeWidth: "0.5"
       }
     )),
-    yTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement("line", { x1: MChart.left - 5, x2: MChart.left, y1: sy(t), y2: sy(t), stroke: "#333", strokeWidth: "1" }), /* @__PURE__ */ React.createElement("text", { x: MChart.left - 8, y: sy(t) + 4, textAnchor: "end", fontSize: "11", fill: "#555", fontFamily: "sans-serif" }, Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)))),
+    yTicks.map((t) => /* @__PURE__ */ React.createElement("g", { key: t }, /* @__PURE__ */ React.createElement(
+      "line",
+      {
+        x1: MChart.left - 5,
+        x2: MChart.left,
+        y1: sy(t),
+        y2: sy(t),
+        stroke: "#333",
+        strokeWidth: "1"
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "text",
+      {
+        x: MChart.left - 8,
+        y: sy(t) + 4,
+        textAnchor: "end",
+        fontSize: "11",
+        fill: "#555",
+        fontFamily: "sans-serif"
+      },
+      Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)
+    ))),
     groups.map((g, gi) => {
       if (!g.stats) return null;
       const cx = bx(gi);
@@ -137,74 +164,97 @@ const BarChart = forwardRef(function BarChart2({
       const barTop = sy(mean);
       const yBar = mean >= 0 ? barTop : baseline;
       const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
-      return /* @__PURE__ */ React.createElement("g", { key: g.name, role: "group", "aria-label": `${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}` }, /* @__PURE__ */ React.createElement(
-        "rect",
+      return /* @__PURE__ */ React.createElement(
+        "g",
         {
-          x: cx - halfBar,
-          y: yBar,
-          width: halfBar * 2,
-          height: Math.max(0, barH),
-          fill: g.color,
-          fillOpacity: barOpacity,
-          stroke: showBarOutline ? g.color : "none",
-          strokeWidth: showBarOutline ? barOutlineWidth || 1.5 : 0,
-          rx: "1"
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "line",
-        {
-          x1: cx,
-          x2: cx,
-          y1: sy(mean + errVal),
-          y2: sy(mean - errVal),
-          stroke: "#333",
-          strokeWidth: errStrokeWidth || 1.2
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "line",
-        {
-          x1: cx - halfBar * 0.4,
-          x2: cx + halfBar * 0.4,
-          y1: sy(mean + errVal),
-          y2: sy(mean + errVal),
-          stroke: "#333",
-          strokeWidth: errStrokeWidth || 1.2
-        }
-      ), /* @__PURE__ */ React.createElement(
-        "line",
-        {
-          x1: cx - halfBar * 0.4,
-          x2: cx + halfBar * 0.4,
-          y1: sy(mean - errVal),
-          y2: sy(mean - errVal),
-          stroke: "#333",
-          strokeWidth: errStrokeWidth || 1.2
-        }
-      ), showPoints && g.sources.map((src, si) => {
-        const rng = seededRandom(gi * 1e3 + si * 100 + 42);
-        const ptColors = getPointColors(g.color, g.sources.length);
-        return src.values.map((v, vi) => {
-          const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
-          const cat = src.categories?.[vi];
-          const ptColor = catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
-          return /* @__PURE__ */ React.createElement(
-            "circle",
-            {
-              key: `${g.name}-${si}-${vi}`,
-              cx: cx + jitter,
-              cy: sy(v),
-              r: pointSize,
-              fill: ptColor,
-              fillOpacity: pointOpacity || 0.6,
-              stroke: ptColor,
-              strokeOpacity: Math.min(1, (pointOpacity || 0.6) + 0.15),
-              strokeWidth: "0.3"
-            }
-          );
-        });
-      }));
+          key: g.name,
+          role: "group",
+          "aria-label": `${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`
+        },
+        /* @__PURE__ */ React.createElement(
+          "rect",
+          {
+            x: cx - halfBar,
+            y: yBar,
+            width: halfBar * 2,
+            height: Math.max(0, barH),
+            fill: g.color,
+            fillOpacity: barOpacity,
+            stroke: showBarOutline ? g.color : "none",
+            strokeWidth: showBarOutline ? barOutlineWidth || 1.5 : 0,
+            rx: "1"
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          "line",
+          {
+            x1: cx,
+            x2: cx,
+            y1: sy(mean + errVal),
+            y2: sy(mean - errVal),
+            stroke: "#333",
+            strokeWidth: errStrokeWidth || 1.2
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          "line",
+          {
+            x1: cx - halfBar * 0.4,
+            x2: cx + halfBar * 0.4,
+            y1: sy(mean + errVal),
+            y2: sy(mean + errVal),
+            stroke: "#333",
+            strokeWidth: errStrokeWidth || 1.2
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          "line",
+          {
+            x1: cx - halfBar * 0.4,
+            x2: cx + halfBar * 0.4,
+            y1: sy(mean - errVal),
+            y2: sy(mean - errVal),
+            stroke: "#333",
+            strokeWidth: errStrokeWidth || 1.2
+          }
+        ),
+        showPoints && g.sources.map((src, si) => {
+          const rng = seededRandom(gi * 1e3 + si * 100 + 42);
+          const ptColors = getPointColors(g.color, g.sources.length);
+          return src.values.map((v, vi) => {
+            const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
+            const cat = src.categories?.[vi];
+            const ptColor = catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
+            return /* @__PURE__ */ React.createElement(
+              "circle",
+              {
+                key: `${g.name}-${si}-${vi}`,
+                cx: cx + jitter,
+                cy: sy(v),
+                r: pointSize,
+                fill: ptColor,
+                fillOpacity: pointOpacity || 0.6,
+                stroke: ptColor,
+                strokeOpacity: Math.min(1, (pointOpacity || 0.6) + 0.15),
+                strokeWidth: "0.3"
+              }
+            );
+          });
+        })
+      );
     }),
-    /* @__PURE__ */ React.createElement("rect", { x: MChart.left, y: MChart.top, width: w, height: h, fill: "none", stroke: "#333", strokeWidth: "1" }),
+    /* @__PURE__ */ React.createElement(
+      "rect",
+      {
+        x: MChart.left,
+        y: MChart.top,
+        width: w,
+        height: h,
+        fill: "none",
+        stroke: "#333",
+        strokeWidth: "1"
+      }
+    ),
     groups.map((g, gi) => {
       const lx = bx(gi);
       const ly = MChart.top + h + 8;
@@ -261,11 +311,204 @@ const BarChart = forwardRef(function BarChart2({
       },
       plotTitle
     ),
-    renderSvgLegend(svgLegend, vbH_chart + 10, MChart.left, vbW - MChart.left - MChart.right, 88, 14)
+    renderSvgLegend(
+      svgLegend,
+      vbH_chart + 10,
+      MChart.left,
+      vbW - MChart.left - MChart.right,
+      88,
+      14
+    )
   );
 });
 function HowToSection() {
-  return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, borderRadius: 14, overflow: "hidden", border: "2px solid #648FFF", boxShadow: "0 4px 20px rgba(100,143,255,0.12)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#4a6cf7,#648FFF)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 } }, toolIcon("bargraph", 24, { circle: true }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Bar Graph Viewer \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Long or wide data \u2192 auto-detect \u2192 mean \xB1 SEM/SD bar charts"))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef2ff", padding: "20px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff", gridColumn: "1/-1" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Purpose"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 } }, "Bar chart visualization with mean \xB1 SEM/SD error bars and optional jittered data points. Accepts ", /* @__PURE__ */ React.createElement("strong", null, "both long and wide formats"), ". Wide data goes straight to plot; long data gets the full configure \u2192 filter \u2192 output \u2192 plot pipeline.")), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Long format"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " = one observation. Mix of categorical and numeric columns."), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("tbody", null, [["WT", "0.45"], ["WT", "0.52"], ["mutA", "0.12"], ["mutB", "0.31"]].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: { padding: "3px 8px", border: "1px solid #d0dbff", color: "#333" } }, v))))))), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#2EC4B6", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Wide format \u2192 auto-detected!"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 } }, "One ", /* @__PURE__ */ React.createElement("strong", null, "column"), " per condition. All numeric. ", /* @__PURE__ */ React.createElement("strong", null, "Goes straight to plot.")), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#d1fae5" } }, ["WT", "mutA", "mutB"].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "3px 8px", border: "1px solid #a7f3d0", color: "#065f46", fontWeight: 700 } }, h)))), /* @__PURE__ */ React.createElement("tbody", null, [[0.45, 0.12, 0.31], [0.52, 0.08, 0.28], [0.48, 0.15, 0.35]].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0fdf4" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: { padding: "3px 8px", border: "1px solid #bbf7d0", color: "#333" } }, v))))))), /* @__PURE__ */ React.createElement("div", { style: { borderLeft: "4px solid #648FFF", background: "#dbeafe", padding: "10px 14px", borderRadius: "0 8px 8px 0", gridColumn: "1/-1" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: "#3b6cf7" } }, "\u{1F4A1} Tip \u2014 "), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#444" } }, "Duplicate column names in wide format are pooled as replicates. Points are colored by source column shade.")), /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, ["Separator explicitly selected (comma, semicolon, tab, space)", "Quoted values stripped automatically", "100% browser-side \u2014 nothing uploaded"].map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: { fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "#fff", border: "1px solid #b0c4ff", color: "#555" } }, t)))));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        marginTop: 24,
+        borderRadius: 14,
+        overflow: "hidden",
+        border: "2px solid #648FFF",
+        boxShadow: "0 4px 20px rgba(100,143,255,0.12)"
+      }
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          background: "linear-gradient(135deg,#4a6cf7,#648FFF)",
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12
+        }
+      },
+      toolIcon("bargraph", 24, { circle: true }),
+      /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Bar Graph Viewer \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Long or wide data \u2192 auto-detect \u2192 mean \xB1 SEM/SD bar charts"))
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          background: "#eef2ff",
+          padding: "20px 24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 14
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff",
+            gridColumn: "1/-1"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#648FFF",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Purpose"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 } }, "Bar chart visualization with mean \xB1 SEM/SD error bars and optional jittered data points. Accepts ", /* @__PURE__ */ React.createElement("strong", null, "both long and wide formats"), ". Wide data goes straight to plot; long data gets the full configure \u2192 filter \u2192 output \u2192 plot pipeline.")
+      ),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#648FFF",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Long format"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " = one observation. Mix of categorical and numeric columns."),
+        /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("tbody", null, [
+          ["WT", "0.45"],
+          ["WT", "0.52"],
+          ["mutA", "0.12"],
+          ["mutB", "0.31"]
+        ].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement(
+          "td",
+          {
+            key: j,
+            style: { padding: "3px 8px", border: "1px solid #d0dbff", color: "#333" }
+          },
+          v
+        ))))))
+      ),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#2EC4B6",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Wide format \u2192 auto-detected!"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 } }, "One ", /* @__PURE__ */ React.createElement("strong", null, "column"), " per condition. All numeric.", " ", /* @__PURE__ */ React.createElement("strong", null, "Goes straight to plot.")),
+        /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#d1fae5" } }, ["WT", "mutA", "mutB"].map((h) => /* @__PURE__ */ React.createElement(
+          "th",
+          {
+            key: h,
+            style: {
+              padding: "3px 8px",
+              border: "1px solid #a7f3d0",
+              color: "#065f46",
+              fontWeight: 700
+            }
+          },
+          h
+        )))), /* @__PURE__ */ React.createElement("tbody", null, [
+          [0.45, 0.12, 0.31],
+          [0.52, 0.08, 0.28],
+          [0.48, 0.15, 0.35]
+        ].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0fdf4" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement(
+          "td",
+          {
+            key: j,
+            style: { padding: "3px 8px", border: "1px solid #bbf7d0", color: "#333" }
+          },
+          v
+        ))))))
+      ),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            borderLeft: "4px solid #648FFF",
+            background: "#dbeafe",
+            padding: "10px 14px",
+            borderRadius: "0 8px 8px 0",
+            gridColumn: "1/-1"
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: "#3b6cf7" } }, "\u{1F4A1} Tip \u2014 "),
+        /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#444" } }, "Duplicate column names in wide format are pooled as replicates. Points are colored by source column shade.")
+      ),
+      /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, [
+        "Separator explicitly selected (comma, semicolon, tab, space)",
+        "Quoted values stripped automatically",
+        "100% browser-side \u2014 nothing uploaded"
+      ].map((t) => /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          key: t,
+          style: {
+            fontSize: 10,
+            padding: "3px 10px",
+            borderRadius: 20,
+            background: "#fff",
+            border: "1px solid #b0c4ff",
+            color: "#555"
+          }
+        },
+        t
+      )))
+    )
+  );
 }
 function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
@@ -296,7 +539,7 @@ function ConfigureStep({
   valueColIsNumeric,
   setStep
 }) {
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), " \u2014 ", parsedHeaders.length, " cols \xD7 ", parsedRows.length, " rows", hasHeader ? "" : " (no header)"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#999", marginBottom: 10 } }, "Preview (first 8 rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: parsedHeaders, rows: parsedRows, maxRows: 8 })), /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), " \u2014 ", parsedHeaders.length, " cols \xD7", " ", parsedRows.length, " rows", hasHeader ? "" : " (no header)"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#999", marginBottom: 10 } }, "Preview (first 8 rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: parsedHeaders, rows: parsedRows, maxRows: 8 })), /* @__PURE__ */ React.createElement(
     ColumnRoleEditor,
     {
       headers: parsedHeaders,
@@ -306,7 +549,7 @@ function ConfigureStep({
       onRoleChange: updateRole,
       onNameChange: updateColName
     }
-  ), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Please assign a numeric column as value.")), /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnPrimary }, "Filter & Rename \u2192"));
+  ), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as", " ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Please assign a numeric column as value.")), /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnPrimary }, "Filter & Rename \u2192"));
 }
 function FilterStep({
   parsedHeaders,
@@ -359,7 +602,27 @@ function FilterStep({
       onDragStart: setDragIdx,
       onDragEnd: () => setDragIdx(null)
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { borderRadius: 10, padding: 16, marginBottom: 16, border: "1px solid #99f6e4", background: "#f0fdfa" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#0f766e" } }, "Preview (", renamedRows.length, " rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: activeColIdxs.map((i) => colNames[i]), rows: renamedRows.map((r) => activeColIdxs.map((i) => r[i])), maxRows: 10 })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("output"), style: btnPrimary }, "Output \u2192"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
+  )), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 16,
+        border: "1px solid #99f6e4",
+        background: "#f0fdfa"
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#0f766e" } }, "Preview (", renamedRows.length, " rows):"),
+    /* @__PURE__ */ React.createElement(
+      DataPreview,
+      {
+        headers: activeColIdxs.map((i) => colNames[i]),
+        rows: renamedRows.map((r) => activeColIdxs.map((i) => r[i])),
+        maxRows: 10
+      }
+    )
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("output"), style: btnPrimary }, "Output \u2192"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
 }
 function OutputStep({
   groupColIdx,
@@ -374,21 +637,76 @@ function OutputStep({
   canPlot,
   setStep
 }) {
-  return /* @__PURE__ */ React.createElement("div", null, groupColIdx >= 0 && valueColIdx >= 0 && longStats.length > 0 && /* @__PURE__ */ React.createElement(StatsTable, { stats: longStats, groupLabel: colNames[groupColIdx] }), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Filtered data (long)"), /* @__PURE__ */ React.createElement("button", { onClick: (e) => {
-    downloadCsv(
-      activeColIdxs.map((i) => colNames[i]),
-      renamedRows.map((r) => activeColIdxs.map((i) => r[i])),
-      `sanitized_long_${fileName.replace(/\.[^.]+$/, "")}.csv`
-    );
-    flashSaved(e.currentTarget);
-  }, style: btnDownload }, "\u2B07 Long CSV")), /* @__PURE__ */ React.createElement(DataPreview, { headers: activeColIdxs.map((i) => colNames[i]), rows: renamedRows.map((r) => activeColIdxs.map((i) => r[i])), maxRows: 6 })), wideData && /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Reshaped (wide)"), /* @__PURE__ */ React.createElement("button", { onClick: (e) => {
-    downloadCsv(
-      wideData.headers,
-      wideData.rows,
-      `sanitized_wide_${fileName.replace(/\.[^.]+$/, "")}.csv`
-    );
-    flashSaved(e.currentTarget);
-  }, style: { padding: "8px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontFamily: "inherit", fontWeight: 600 } }, "\u2B07 Wide CSV")), /* @__PURE__ */ React.createElement(DataPreview, { headers: wideData.headers, rows: wideData.rows, maxRows: 8 })), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Go back to Configure and assign a numeric column as value.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnSecondary }, "\u2190 Filter"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
+  return /* @__PURE__ */ React.createElement("div", null, groupColIdx >= 0 && valueColIdx >= 0 && longStats.length > 0 && /* @__PURE__ */ React.createElement(StatsTable, { stats: longStats, groupLabel: colNames[groupColIdx] }), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 8
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Filtered data (long)"),
+    /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: (e) => {
+          downloadCsv(
+            activeColIdxs.map((i) => colNames[i]),
+            renamedRows.map((r) => activeColIdxs.map((i) => r[i])),
+            `sanitized_long_${fileName.replace(/\.[^.]+$/, "")}.csv`
+          );
+          flashSaved(e.currentTarget);
+        },
+        style: btnDownload
+      },
+      "\u2B07 Long CSV"
+    )
+  ), /* @__PURE__ */ React.createElement(
+    DataPreview,
+    {
+      headers: activeColIdxs.map((i) => colNames[i]),
+      rows: renamedRows.map((r) => activeColIdxs.map((i) => r[i])),
+      maxRows: 6
+    }
+  )), wideData && /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 8
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Reshaped (wide)"),
+    /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: (e) => {
+          downloadCsv(
+            wideData.headers,
+            wideData.rows,
+            `sanitized_wide_${fileName.replace(/\.[^.]+$/, "")}.csv`
+          );
+          flashSaved(e.currentTarget);
+        },
+        style: {
+          padding: "8px 14px",
+          borderRadius: 6,
+          fontSize: 12,
+          cursor: "pointer",
+          background: "#dcfce7",
+          border: "1px solid #86efac",
+          color: "#166534",
+          fontFamily: "inherit",
+          fontWeight: 600
+        }
+      },
+      "\u2B07 Wide CSV"
+    )
+  ), /* @__PURE__ */ React.createElement(DataPreview, { headers: wideData.headers, rows: wideData.rows, maxRows: 8 })), valueColIdx >= 0 && !valueColIsNumeric && /* @__PURE__ */ React.createElement("div", { style: { ...sec, background: "#fef2f2", borderColor: "#fca5a5" } }, /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#dc2626" } }, "\u26A0 Column ", /* @__PURE__ */ React.createElement("strong", null, '"', colNames[valueColIdx], '"'), " is assigned as", " ", /* @__PURE__ */ React.createElement("strong", null, "value"), " but appears to be non-numeric \u2014 the plot will be empty. Go back to Configure and assign a numeric column as value.")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("filter"), style: btnSecondary }, "\u2190 Filter"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
 }
 function PlotControls({
   dataFormat,
@@ -436,207 +754,286 @@ function PlotControls({
   };
   const handleDownloadSvg = () => {
     if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
-      facetedData.forEach((fd) => downloadSvg(facetRefs.current[fd.category], `bargraph_${fd.category}.svg`));
+      facetedData.forEach(
+        (fd) => downloadSvg(facetRefs.current[fd.category], `bargraph_${fd.category}.svg`)
+      );
     } else {
       downloadSvg(chartRef.current, "bargraph.svg");
     }
   };
   const handleDownloadPng = () => {
     if (facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0) {
-      facetedData.forEach((fd) => downloadPng(facetRefs.current[fd.category], `bargraph_${fd.category}.png`));
+      facetedData.forEach(
+        (fd) => downloadPng(facetRefs.current[fd.category], `bargraph_${fd.category}.png`)
+      );
     } else {
       downloadPng(chartRef.current, "bargraph.png");
     }
   };
-  return /* @__PURE__ */ React.createElement("div", { style: { width: 328, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, dataFormat === "wide" && /* @__PURE__ */ React.createElement("div", { style: { background: "#ecfdf5", borderRadius: 8, border: "1px solid #6ee7b7", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u26A1"), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#047857" } }, "Duplicate headers pooled as replicates."))), /* @__PURE__ */ React.createElement(
-    ActionsPanel,
+  return /* @__PURE__ */ React.createElement(
+    "div",
     {
-      onDownloadSvg: handleDownloadSvg,
-      onDownloadPng: handleDownloadPng,
-      onReset: resetAll
-    }
-  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 11, color: "#888" } }, allDisplayGroups.filter((g) => g.enabled).length, " of ", allDisplayGroups.length, " selected \xB7 ", renamedRows.length, " obs"), /* @__PURE__ */ React.createElement(
-    GroupColorEditor,
-    {
-      groups: allDisplayGroups,
-      onColorChange: handleColorChange,
-      onNameChange: handleGroupNameChange,
-      onToggle: onToggleGroup
-    }
-  ), effectiveGroups.some((g) => g.sources.length > 1) && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, padding: "8px 10px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 6, display: "flex", alignItems: "flex-start", gap: 7 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, flexShrink: 0 } }, "\u26A0\uFE0F"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, fontWeight: 600, color: "#92400e" } }, "Duplicate column headers detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#b45309" } }, "Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column.")))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
-    BaseStyleControls,
-    {
-      plotBg: vis.plotBg,
-      onPlotBgChange: sv("plotBg"),
-      showGrid: vis.showGrid,
-      onShowGridChange: sv("showGrid"),
-      gridColor: vis.gridColor,
-      onGridColorChange: sv("gridColor")
-    }
-  ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Error bars"), /* @__PURE__ */ React.createElement(
-    "select",
-    {
-      value: vis.errorType,
-      onChange: (e) => updVis({ errorType: e.target.value }),
       style: {
-        width: "100%",
-        background: "#fff",
-        border: "1px solid #ccc",
-        borderRadius: 4,
-        padding: "4px 8px",
-        fontSize: 12,
-        fontFamily: "inherit",
-        color: "#333",
-        cursor: "pointer",
-        marginTop: 2
+        width: 328,
+        flexShrink: 0,
+        position: "sticky",
+        top: 24,
+        maxHeight: "calc(100vh - 90px)",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
       }
     },
-    /* @__PURE__ */ React.createElement("option", { value: "sem" }, "SEM"),
-    /* @__PURE__ */ React.createElement("option", { value: "sd" }, "SD")
-  )), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Error bar stroke",
-      value: vis.errStrokeWidth,
-      displayValue: vis.errStrokeWidth.toFixed(1),
-      min: 0.5,
-      max: 4,
-      step: 0.1,
-      onChange: sv("errStrokeWidth")
-    }
-  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Bar outline"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: vis.showBarOutline,
-      onChange: (e) => updVis({ showBarOutline: e.target.checked }),
-      style: { accentColor: "#648FFF" }
-    }
-  )), vis.showBarOutline && /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Outline stroke",
-      value: vis.barOutlineWidth,
-      displayValue: vis.barOutlineWidth.toFixed(1),
-      min: 0.5,
-      max: 5,
-      step: 0.5,
-      onChange: sv("barOutlineWidth")
-    }
-  ), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Bar width",
-      value: vis.barWidth,
-      displayValue: `${vis.barWidth}%`,
-      min: 20,
-      max: 100,
-      step: 5,
-      onChange: sv("barWidth")
-    }
-  ), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Bar opacity",
-      value: vis.barOpacity,
-      displayValue: vis.barOpacity.toFixed(2),
-      min: 0.05,
-      max: 1,
-      step: 0.05,
-      onChange: sv("barOpacity")
-    }
-  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: vis.showPoints,
-      onChange: (e) => updVis({ showPoints: e.target.checked }),
-      style: { accentColor: "#648FFF" }
-    }
-  )), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Point size",
-      value: vis.pointSize,
-      displayValue: vis.pointSize,
-      min: 1,
-      max: 6,
-      step: 0.5,
-      onChange: sv("pointSize")
-    }
-  ), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Jitter",
-      value: vis.jitterWidth,
-      displayValue: vis.jitterWidth.toFixed(2),
-      min: 0,
-      max: 1,
-      step: 0.05,
-      onChange: sv("jitterWidth")
-    }
-  ), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "Point opacity",
-      value: vis.pointOpacity,
-      displayValue: vis.pointOpacity.toFixed(2),
-      min: 0.1,
-      max: 1,
-      step: 0.05,
-      onChange: sv("pointOpacity")
-    }
-  ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement("select", { value: colorByCol, onChange: handleColorByChange, style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 } }, /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"), facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci])))), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 } }, /* @__PURE__ */ React.createElement(ColorInput, { value: categoryColors[cat] || "#999999", onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })), size: 16 }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat))))), /* @__PURE__ */ React.createElement(
-    SliderControl,
-    {
-      label: "X label angle",
-      value: vis.xLabelAngle,
-      displayValue: `${vis.xLabelAngle}\xB0`,
-      min: -90,
-      max: 0,
-      step: 5,
-      onChange: sv("xLabelAngle")
-    }
-  ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement(
-    "select",
-    {
-      value: facetByCol,
-      onChange: (e) => setFacetByCol(Number(e.target.value)),
-      style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 }
-    },
-    /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"),
-    facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))
-  ))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: vis.plotTitle,
-      onChange: (e) => updVis({ plotTitle: e.target.value }),
-      style: { ...inp, width: "100%", marginTop: 2 }
-    }
-  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: vis.yLabel,
-      onChange: (e) => updVis({ yLabel: e.target.value }),
-      style: { ...inp, width: "100%", marginTop: 2 }
-    }
-  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min (auto if empty)"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: vis.yMinCustom,
-      onChange: (e) => updVis({ yMinCustom: e.target.value }),
-      style: { ...inp, width: "100%", marginTop: 2 },
-      placeholder: "auto"
-    }
-  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max (auto if empty)"), /* @__PURE__ */ React.createElement(
-    "input",
-    {
-      value: vis.yMaxCustom,
-      onChange: (e) => updVis({ yMaxCustom: e.target.value }),
-      style: { ...inp, width: "100%", marginTop: 2 },
-      placeholder: "auto"
-    }
-  ))));
+    dataFormat === "wide" && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          background: "#ecfdf5",
+          borderRadius: 8,
+          border: "1px solid #6ee7b7",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 12px"
+        }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u26A1"),
+      /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 } }, "Wide format auto-detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#047857" } }, "Duplicate headers pooled as replicates."))
+    ),
+    /* @__PURE__ */ React.createElement(
+      ActionsPanel,
+      {
+        onDownloadSvg: handleDownloadSvg,
+        onDownloadPng: handleDownloadPng,
+        onReset: resetAll
+      }
+    ),
+    /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Conditions"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 11, color: "#888" } }, allDisplayGroups.filter((g) => g.enabled).length, " of ", allDisplayGroups.length, " selected \xB7", " ", renamedRows.length, " obs"), /* @__PURE__ */ React.createElement(
+      GroupColorEditor,
+      {
+        groups: allDisplayGroups,
+        onColorChange: handleColorChange,
+        onNameChange: handleGroupNameChange,
+        onToggle: onToggleGroup
+      }
+    ), effectiveGroups.some((g) => g.sources.length > 1) && /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          marginTop: 8,
+          padding: "8px 10px",
+          background: "#fff7ed",
+          border: "1px solid #fdba74",
+          borderRadius: 6,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 7
+        }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, flexShrink: 0 } }, "\u26A0\uFE0F"),
+      /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 11, fontWeight: 600, color: "#92400e" } }, "Duplicate column headers detected"), /* @__PURE__ */ React.createElement("p", { style: { margin: "2px 0 0", fontSize: 10, color: "#b45309" } }, "Values from duplicate columns have been pooled as replicates. Jitter points are shaded by source column."))
+    )),
+    /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
+      BaseStyleControls,
+      {
+        plotBg: vis.plotBg,
+        onPlotBgChange: sv("plotBg"),
+        showGrid: vis.showGrid,
+        onShowGridChange: sv("showGrid"),
+        gridColor: vis.gridColor,
+        onGridColorChange: sv("gridColor")
+      }
+    ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Error bars"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: vis.errorType,
+        onChange: (e) => updVis({ errorType: e.target.value }),
+        style: {
+          width: "100%",
+          background: "#fff",
+          border: "1px solid #ccc",
+          borderRadius: 4,
+          padding: "4px 8px",
+          fontSize: 12,
+          fontFamily: "inherit",
+          color: "#333",
+          cursor: "pointer",
+          marginTop: 2
+        }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "sem" }, "SEM"),
+      /* @__PURE__ */ React.createElement("option", { value: "sd" }, "SD")
+    )), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Error bar stroke",
+        value: vis.errStrokeWidth,
+        displayValue: vis.errStrokeWidth.toFixed(1),
+        min: 0.5,
+        max: 4,
+        step: 0.1,
+        onChange: sv("errStrokeWidth")
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Bar outline"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: vis.showBarOutline,
+        onChange: (e) => updVis({ showBarOutline: e.target.checked }),
+        style: { accentColor: "#648FFF" }
+      }
+    )), vis.showBarOutline && /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Outline stroke",
+        value: vis.barOutlineWidth,
+        displayValue: vis.barOutlineWidth.toFixed(1),
+        min: 0.5,
+        max: 5,
+        step: 0.5,
+        onChange: sv("barOutlineWidth")
+      }
+    ), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Bar width",
+        value: vis.barWidth,
+        displayValue: `${vis.barWidth}%`,
+        min: 20,
+        max: 100,
+        step: 5,
+        onChange: sv("barWidth")
+      }
+    ), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Bar opacity",
+        value: vis.barOpacity,
+        displayValue: vis.barOpacity.toFixed(2),
+        min: 0.05,
+        max: 1,
+        step: 0.05,
+        onChange: sv("barOpacity")
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Points"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: vis.showPoints,
+        onChange: (e) => updVis({ showPoints: e.target.checked }),
+        style: { accentColor: "#648FFF" }
+      }
+    )), vis.showPoints && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Point size",
+        value: vis.pointSize,
+        displayValue: vis.pointSize,
+        min: 1,
+        max: 6,
+        step: 0.5,
+        onChange: sv("pointSize")
+      }
+    ), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Jitter",
+        value: vis.jitterWidth,
+        displayValue: vis.jitterWidth.toFixed(2),
+        min: 0,
+        max: 1,
+        step: 0.05,
+        onChange: sv("jitterWidth")
+      }
+    ), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Point opacity",
+        value: vis.pointOpacity,
+        displayValue: vis.pointOpacity.toFixed(2),
+        min: 0.1,
+        max: 1,
+        step: 0.05,
+        onChange: sv("pointOpacity")
+      }
+    ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Color by"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: colorByCol,
+        onChange: handleColorByChange,
+        style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"),
+      facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))
+    )), colorByCol >= 0 && colorByCategories.map((cat) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: cat,
+        style: { display: "flex", alignItems: "center", gap: 4, paddingLeft: 8 }
+      },
+      /* @__PURE__ */ React.createElement(
+        ColorInput,
+        {
+          value: categoryColors[cat] || "#999999",
+          onChange: (c) => setCategoryColors((p) => ({ ...p, [cat]: c })),
+          size: 16
+        }
+      ),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: "#555" } }, cat)
+    )))), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "X label angle",
+        value: vis.xLabelAngle,
+        displayValue: `${vis.xLabelAngle}\xB0`,
+        min: -90,
+        max: 0,
+        step: 5,
+        onChange: sv("xLabelAngle")
+      }
+    ), dataFormat === "long" && facetByCandidates.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Facet by"), /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        value: facetByCol,
+        onChange: (e) => setFacetByCol(Number(e.target.value)),
+        style: { width: "100%", ...inp, cursor: "pointer", fontSize: 11, marginTop: 2 }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: -1 }, "\u2014 none \u2014"),
+      facetByCandidates.map((ci) => /* @__PURE__ */ React.createElement("option", { key: ci, value: ci }, colNames[ci]))
+    ))),
+    /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        value: vis.plotTitle,
+        onChange: (e) => updVis({ plotTitle: e.target.value }),
+        style: { ...inp, width: "100%", marginTop: 2 }
+      }
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y label"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        value: vis.yLabel,
+        onChange: (e) => updVis({ yLabel: e.target.value }),
+        style: { ...inp, width: "100%", marginTop: 2 }
+      }
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y min (auto if empty)"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        value: vis.yMinCustom,
+        onChange: (e) => updVis({ yMinCustom: e.target.value }),
+        style: { ...inp, width: "100%", marginTop: 2 },
+        placeholder: "auto"
+      }
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Y max (auto if empty)"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        value: vis.yMaxCustom,
+        onChange: (e) => updVis({ yMaxCustom: e.target.value }),
+        style: { ...inp, width: "100%", marginTop: 2 },
+        placeholder: "auto"
+      }
+    )))
+  );
 }
 const FacetBarItem = memo(function FacetBarItem2({ fd, facetRefs, chartProps }) {
   const localRef = useRef();
@@ -665,15 +1062,54 @@ function ChartArea({
   chartRef,
   facetRefs
 }) {
-  const svgLegend = colorByCol >= 0 && colorByCategories.length > 0 ? [{
-    title: `Points colored by: ${colNames[colorByCol]}`,
-    items: colorByCategories.map((c) => ({ label: c, color: categoryColors[c] || "#999", shape: "dot" }))
-  }] : null;
-  const vp = { ...vis, yMin: yMinVal, yMax: yMaxVal, catColors: colorByCol >= 0 ? categoryColors : null, svgLegend };
+  const svgLegend = colorByCol >= 0 && colorByCategories.length > 0 ? [
+    {
+      title: `Points colored by: ${colNames[colorByCol]}`,
+      items: colorByCategories.map((c) => ({
+        label: c,
+        color: categoryColors[c] || "#999",
+        shape: "dot"
+      }))
+    }
+  ] : null;
+  const vp = {
+    ...vis,
+    yMin: yMinVal,
+    yMax: yMaxVal,
+    catColors: colorByCol >= 0 ? categoryColors : null,
+    svgLegend
+  };
   if (displayGroups.length === 0 && (facetByCol < 0 || dataFormat !== "long" || facetedData.length === 0)) {
     return /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 } }, "No conditions selected. Enable at least one to display the plot.")));
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, colorByCol >= 0 && colorByCategories.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12, background: "#f8f8fa", borderRadius: 8, padding: "8px 14px", border: "1px solid #ddd", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Points colored by: ", colNames[colorByCol]), colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: categoryColors[cat] || "#999" } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#444" } }, cat)))), (facetByCol < 0 || dataFormat !== "long") && /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { flex: 1, minWidth: 0 } }, colorByCol >= 0 && colorByCategories.length > 0 && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        marginBottom: 12,
+        background: "#f8f8fa",
+        borderRadius: 8,
+        padding: "8px 14px",
+        border: "1px solid #ddd",
+        display: "flex",
+        gap: 16,
+        alignItems: "center",
+        flexWrap: "wrap"
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#777" } }, "Points colored by: ", colNames[colorByCol]),
+    colorByCategories.map((cat) => /* @__PURE__ */ React.createElement("div", { key: cat, style: { display: "flex", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          background: categoryColors[cat] || "#999"
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#444" } }, cat)))
+  ), (facetByCol < 0 || dataFormat !== "long") && /* @__PURE__ */ React.createElement("div", { style: { ...sec, padding: 20, background: "#fff" } }, /* @__PURE__ */ React.createElement(
     BarChart,
     {
       ref: chartRef,
@@ -700,7 +1136,11 @@ function ChartArea({
       svgLegend
     }
   )), facetByCol >= 0 && dataFormat === "long" && facetedData.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 } }, facetedData.map((fd) => {
-    const displayFdGroups = fd.groups.map((g) => ({ ...g, name: plotGroupRenames[g.name] ?? g.name, color: plotGroupColors[g.name] ?? g.color }));
+    const displayFdGroups = fd.groups.map((g) => ({
+      ...g,
+      name: plotGroupRenames[g.name] ?? g.name,
+      color: plotGroupColors[g.name] ?? g.color
+    }));
     return /* @__PURE__ */ React.createElement(
       FacetBarItem,
       {
@@ -755,7 +1195,26 @@ function App() {
   const [valueRenames, setValueRenames] = useState({});
   const [groupOrder, setGroupOrder] = useState([]);
   const [dragIdx, setDragIdx] = useState(null);
-  const visInit = { plotTitle: "", yLabel: "Value", plotBg: "#ffffff", showGrid: false, gridColor: "#e0e0e0", barWidth: 70, barOpacity: 0.25, pointSize: 2.5, showPoints: true, jitterWidth: 0.6, pointOpacity: 0.6, xLabelAngle: 0, errorType: "sem", errStrokeWidth: 1.2, showBarOutline: false, barOutlineWidth: 1.5, yMinCustom: "", yMaxCustom: "" };
+  const visInit = {
+    plotTitle: "",
+    yLabel: "Value",
+    plotBg: "#ffffff",
+    showGrid: false,
+    gridColor: "#e0e0e0",
+    barWidth: 70,
+    barOpacity: 0.25,
+    pointSize: 2.5,
+    showPoints: true,
+    jitterWidth: 0.6,
+    pointOpacity: 0.6,
+    xLabelAngle: 0,
+    errorType: "sem",
+    errStrokeWidth: 1.2,
+    showBarOutline: false,
+    barOutlineWidth: 1.5,
+    yMinCustom: "",
+    yMaxCustom: ""
+  };
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
@@ -764,12 +1223,21 @@ function App() {
   const chartRef = useRef();
   const facetRefs = useRef({});
   const applyRename = (ci, v) => valueRenames[ci] && valueRenames[ci][v] != null ? valueRenames[ci][v] : v;
-  const filteredRows = useMemo(() => parsedRows.filter((r) => r.every((v, ci) => !filters[ci] || filters[ci].included.has(v))), [parsedRows, filters]);
-  const renamedRows = useMemo(() => filteredRows.map((r) => r.map((v, ci) => applyRename(ci, v))), [filteredRows, valueRenames]);
-  const activeColIdxs = useMemo(() => colRoles.reduce((acc, r, i) => {
-    if (r !== "ignore") acc.push(i);
-    return acc;
-  }, []), [colRoles]);
+  const filteredRows = useMemo(
+    () => parsedRows.filter((r) => r.every((v, ci) => !filters[ci] || filters[ci].included.has(v))),
+    [parsedRows, filters]
+  );
+  const renamedRows = useMemo(
+    () => filteredRows.map((r) => r.map((v, ci) => applyRename(ci, v))),
+    [filteredRows, valueRenames]
+  );
+  const activeColIdxs = useMemo(
+    () => colRoles.reduce((acc, r, i) => {
+      if (r !== "ignore") acc.push(i);
+      return acc;
+    }, []),
+    [colRoles]
+  );
   const groupColIdx = colRoles.indexOf("group"), valueColIdx = colRoles.indexOf("value");
   const naturalGroupOrder = useMemo(() => {
     if (groupColIdx < 0 || valueColIdx < 0) return [];
@@ -821,13 +1289,17 @@ function App() {
     return Object.entries(gd).map(([name, vals]) => {
       const nums = vals.filter((v) => isNumericValue(v)).map(Number);
       const stats = computeStats(nums);
-      if (!stats) return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
+      if (!stats)
+        return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
       return { name, ...stats };
     });
   }, [dataFormat, renamedRows, groupColIdx, valueColIdx]);
-  const facetByCandidates = useMemo(() => parsedHeaders.map((_, i) => i).filter(
-    (i) => i !== groupColIdx && i !== valueColIdx && (colRoles[i] === "filter" || colRoles[i] === "group" || colRoles[i] === "text")
-  ), [parsedHeaders, groupColIdx, valueColIdx, colRoles]);
+  const facetByCandidates = useMemo(
+    () => parsedHeaders.map((_, i) => i).filter(
+      (i) => i !== groupColIdx && i !== valueColIdx && (colRoles[i] === "filter" || colRoles[i] === "group" || colRoles[i] === "text")
+    ),
+    [parsedHeaders, groupColIdx, valueColIdx, colRoles]
+  );
   const facetByCategories = useMemo(() => {
     if (facetByCol < 0) return [];
     return [...new Set(renamedRows.map((r) => r[facetByCol]))].sort();
@@ -851,7 +1323,17 @@ function App() {
       const groups2 = effectiveOrder.filter((n) => rawMap[n] && !disabledGroups[n]).map((n) => rawMap[n]);
       return { category: cat, groups: groups2 };
     });
-  }, [facetByCol, facetByCategories, renamedRows, groupColIdx, valueColIdx, effectiveOrder, colorByCol, longGroups, disabledGroups]);
+  }, [
+    facetByCol,
+    facetByCategories,
+    renamedRows,
+    groupColIdx,
+    valueColIdx,
+    effectiveOrder,
+    colorByCol,
+    longGroups,
+    disabledGroups
+  ]);
   const wideData = useMemo(() => {
     if (groupColIdx < 0 || valueColIdx < 0) return null;
     const g = {};
@@ -874,7 +1356,9 @@ function App() {
     setRawText(fixedText);
     const { headers, rows, hasHeader: hh } = parseRaw(fixedText, sep);
     if (!headers.length || !rows.length) {
-      setParseError("The file appears to be empty or has no data rows. Please check your file and try again.");
+      setParseError(
+        "The file appears to be empty or has no data rows. Please check your file and try again."
+      );
       return;
     }
     setParseError(null);
@@ -918,10 +1402,13 @@ function App() {
       setStep("configure");
     }
   }, []);
-  const handleFileLoad = useCallback((text, name) => {
-    setFileName(name);
-    doParse(text, sepOverride);
-  }, [sepOverride, doParse]);
+  const handleFileLoad = useCallback(
+    (text, name) => {
+      setFileName(name);
+      doParse(text, sepOverride);
+    },
+    [sepOverride, doParse]
+  );
   const resetAll = () => {
     setRawText(null);
     setGroups([]);
@@ -971,137 +1458,146 @@ function App() {
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
   const allSteps = dataFormat === "long" ? ["upload", "configure", "filter", "output", "plot"] : ["upload", "plot"];
-  return /* @__PURE__ */ React.createElement("div", { style: {
-    minHeight: "100vh",
-    color: "#333",
-    fontFamily: "monospace",
-    padding: "24px 32px"
-  } }, /* @__PURE__ */ React.createElement(
-    PageHeader,
+  return /* @__PURE__ */ React.createElement(
+    "div",
     {
-      toolName: "bargraph",
-      title: "Bar Graph Viewer",
-      subtitle: "Load a data file \u2014 bars show mean \xB1 SEM/SD, with optional individual data points overlay"
-    }
-  ), /* @__PURE__ */ React.createElement(
-    StepNavBar,
-    {
-      steps: allSteps,
-      currentStep: step,
-      onStepChange: setStep,
-      canNavigate: (s) => s === "upload" || parsedRows.length > 0 || groups.length > 0
-    }
-  ), /* @__PURE__ */ React.createElement(CommaFixBanner, { commaFixed, commaFixCount }), /* @__PURE__ */ React.createElement(ParseErrorBanner, { error: parseError }), step === "upload" && /* @__PURE__ */ React.createElement(
-    UploadStep,
-    {
-      sepOverride,
-      setSepOverride,
-      rawText,
-      doParse,
-      handleFileLoad
-    }
-  ), step === "configure" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
-    ConfigureStep,
-    {
-      fileName,
-      parsedHeaders,
-      parsedRows,
-      hasHeader,
-      colRoles,
-      colNames,
-      updateRole,
-      updateColName,
-      valueColIdx,
-      valueColIsNumeric,
-      setStep
-    }
-  ), step === "filter" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
-    FilterStep,
-    {
-      parsedHeaders,
-      parsedRows,
-      colRoles,
-      colNames,
-      filters,
-      filteredRows,
-      renamedRows,
-      activeColIdxs,
-      valueRenames,
-      groupColIdx,
-      effectiveOrder,
-      applyRename,
-      toggleFilter,
-      toggleAllFilter,
-      setRenameVal,
-      setGroupOrder,
-      dragIdx,
-      setDragIdx,
-      canPlot,
-      setStep
-    }
-  ), step === "output" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
-    OutputStep,
-    {
-      groupColIdx,
-      valueColIdx,
-      colNames,
-      longStats,
-      activeColIdxs,
-      renamedRows,
-      fileName,
-      wideData,
-      valueColIsNumeric,
-      canPlot,
-      setStep
-    }
-  ), step === "plot" && canPlot && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement(
-    PlotControls,
-    {
-      dataFormat,
-      fileName,
-      effectiveGroups,
-      allDisplayGroups,
-      displayGroups,
-      handleColorChange,
-      plotGroupRenames,
-      setPlotGroupRenames,
-      onToggleGroup: handleToggleGroup,
-      vis,
-      updVis,
-      colorByCol,
-      setColorByCol,
-      categoryColors,
-      setCategoryColors,
-      colorByCategories,
-      renamedRows,
-      colNames,
-      facetByCandidates,
-      facetByCol,
-      setFacetByCol,
-      resetAll,
-      chartRef,
-      facetRefs,
-      facetedData
-    }
-  ), /* @__PURE__ */ React.createElement(
-    ChartArea,
-    {
-      dataFormat,
-      facetByCol,
-      facetedData,
-      displayGroups,
-      plotGroupRenames,
-      plotGroupColors,
-      colorByCol,
-      colorByCategories,
-      categoryColors,
-      colNames,
-      vis,
-      yMinVal,
-      yMaxVal,
-      chartRef,
-      facetRefs
-    }
-  )));
+      style: { minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }
+    },
+    /* @__PURE__ */ React.createElement(
+      PageHeader,
+      {
+        toolName: "bargraph",
+        title: "Bar Graph Viewer",
+        subtitle: "Load a data file \u2014 bars show mean \xB1 SEM/SD, with optional individual data points overlay"
+      }
+    ),
+    /* @__PURE__ */ React.createElement(
+      StepNavBar,
+      {
+        steps: allSteps,
+        currentStep: step,
+        onStepChange: setStep,
+        canNavigate: (s) => s === "upload" || parsedRows.length > 0 || groups.length > 0
+      }
+    ),
+    /* @__PURE__ */ React.createElement(CommaFixBanner, { commaFixed, commaFixCount }),
+    /* @__PURE__ */ React.createElement(ParseErrorBanner, { error: parseError }),
+    step === "upload" && /* @__PURE__ */ React.createElement(
+      UploadStep,
+      {
+        sepOverride,
+        setSepOverride,
+        rawText,
+        doParse,
+        handleFileLoad
+      }
+    ),
+    step === "configure" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
+      ConfigureStep,
+      {
+        fileName,
+        parsedHeaders,
+        parsedRows,
+        hasHeader,
+        colRoles,
+        colNames,
+        updateRole,
+        updateColName,
+        valueColIdx,
+        valueColIsNumeric,
+        setStep
+      }
+    ),
+    step === "filter" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
+      FilterStep,
+      {
+        parsedHeaders,
+        parsedRows,
+        colRoles,
+        colNames,
+        filters,
+        filteredRows,
+        renamedRows,
+        activeColIdxs,
+        valueRenames,
+        groupColIdx,
+        effectiveOrder,
+        applyRename,
+        toggleFilter,
+        toggleAllFilter,
+        setRenameVal,
+        setGroupOrder,
+        dragIdx,
+        setDragIdx,
+        canPlot,
+        setStep
+      }
+    ),
+    step === "output" && dataFormat === "long" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
+      OutputStep,
+      {
+        groupColIdx,
+        valueColIdx,
+        colNames,
+        longStats,
+        activeColIdxs,
+        renamedRows,
+        fileName,
+        wideData,
+        valueColIsNumeric,
+        canPlot,
+        setStep
+      }
+    ),
+    step === "plot" && canPlot && /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 20, alignItems: "flex-start" } }, /* @__PURE__ */ React.createElement(
+      PlotControls,
+      {
+        dataFormat,
+        fileName,
+        effectiveGroups,
+        allDisplayGroups,
+        displayGroups,
+        handleColorChange,
+        plotGroupRenames,
+        setPlotGroupRenames,
+        onToggleGroup: handleToggleGroup,
+        vis,
+        updVis,
+        colorByCol,
+        setColorByCol,
+        categoryColors,
+        setCategoryColors,
+        colorByCategories,
+        renamedRows,
+        colNames,
+        facetByCandidates,
+        facetByCol,
+        setFacetByCol,
+        resetAll,
+        chartRef,
+        facetRefs,
+        facetedData
+      }
+    ), /* @__PURE__ */ React.createElement(
+      ChartArea,
+      {
+        dataFormat,
+        facetByCol,
+        facetedData,
+        displayGroups,
+        plotGroupRenames,
+        plotGroupColors,
+        colorByCol,
+        colorByCategories,
+        categoryColors,
+        colNames,
+        vis,
+        yMinVal,
+        yMaxVal,
+        chartRef,
+        facetRefs
+      }
+    ))
+  );
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));

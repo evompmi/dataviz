@@ -32,7 +32,17 @@ function formatResult(val) {
   if (abs >= 1) return val.toFixed(4);
   return val.toPrecision(4);
 }
-function UnitInput({ label, value, onValueChange, unit, onUnitChange, units, disabled, highlight, placeholder }) {
+function UnitInput({
+  label,
+  value,
+  onValueChange,
+  unit,
+  onUnitChange,
+  units,
+  disabled,
+  highlight,
+  placeholder
+}) {
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, label), /* @__PURE__ */ React.createElement(
     "input",
     {
@@ -77,7 +87,8 @@ function MolarityMode() {
     const volVal = parseFloat(vol);
     const concVal = parseFloat(conc);
     if (solveFor === "conc") {
-      if (!isFinite(mwVal) || !isFinite(massVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0) return null;
+      if (!isFinite(mwVal) || !isFinite(massVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0)
+        return null;
       const massG = toBase(massVal, massUnit, MASS_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const moles = massG / mwVal;
@@ -85,7 +96,8 @@ function MolarityMode() {
       return { value: fromBase(concM, concUnit, CONC_UNITS), label: concUnit };
     }
     if (solveFor === "mass") {
-      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0) return null;
+      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0)
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const moles = concM * volL;
@@ -93,7 +105,8 @@ function MolarityMode() {
       return { value: fromBase(massG, massUnit, MASS_UNITS), label: massUnit };
     }
     if (solveFor === "volume") {
-      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(massVal) || mwVal <= 0 || concVal <= 0) return null;
+      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(massVal) || mwVal <= 0 || concVal <= 0)
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const massG = toBase(massVal, massUnit, MASS_UNITS);
       const moles = massG / mwVal;
@@ -101,7 +114,8 @@ function MolarityMode() {
       return { value: fromBase(volL, volUnit, VOL_UNITS), label: volUnit };
     }
     if (solveFor === "mw") {
-      if (!isFinite(massVal) || !isFinite(concVal) || !isFinite(volVal) || concVal <= 0 || volVal <= 0) return null;
+      if (!isFinite(massVal) || !isFinite(concVal) || !isFinite(volVal) || concVal <= 0 || volVal <= 0)
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const massG = toBase(massVal, massUnit, MASS_UNITS);
@@ -117,26 +131,39 @@ function MolarityMode() {
     { key: "volume", label: "Volume" },
     { key: "conc", label: "Concentration" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
-    "button",
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement(
+    "div",
     {
-      key: f.key,
-      onClick: () => setSolveFor(f.key),
       style: {
-        padding: "6px 16px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        background: solveFor === f.key ? "#648FFF" : "#fff",
-        color: solveFor === f.key ? "#fff" : "#888",
-        border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
-        cursor: "pointer",
-        fontFamily: "inherit",
-        textAlign: "left"
+        ...sec,
+        flex: "0 0 calc((100% - 20px) / 3)",
+        marginBottom: 0,
+        display: "flex",
+        flexDirection: "column"
       }
     },
-    f.label
-  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, "MW (g/mol)"), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Solve for:"),
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: f.key,
+        onClick: () => setSolveFor(f.key),
+        style: {
+          padding: "6px 16px",
+          borderRadius: 6,
+          fontSize: 12,
+          fontWeight: 600,
+          background: solveFor === f.key ? "#648FFF" : "#fff",
+          color: solveFor === f.key ? "#fff" : "#888",
+          border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
+          cursor: "pointer",
+          fontFamily: "inherit",
+          textAlign: "left"
+        }
+      },
+      f.label
+    )))
+  ), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, "MW (g/mol)"), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "number",
@@ -192,16 +219,23 @@ function MolarityMode() {
       highlight: false,
       placeholder: solveFor === "conc" ? "calculated" : ""
     }
-  ), result && /* @__PURE__ */ React.createElement("div", { style: {
-    background: "#f0fdf4",
-    borderRadius: 8,
-    border: "1px solid #86efac",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px 16px",
-    marginTop: 10
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)))));
+  ), result && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        background: "#f0fdf4",
+        borderRadius: 8,
+        border: "1px solid #86efac",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 16px",
+        marginTop: 10
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)
+  ))));
 }
 function DilutionMode() {
   const [c1, setC1] = useState("");
@@ -246,26 +280,40 @@ function DilutionMode() {
     { key: "c2", label: "C2 (final conc.)" },
     { key: "v2", label: "V2 (final vol.)" }
   ];
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
-    "button",
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" } }, /* @__PURE__ */ React.createElement(
+    "div",
     {
-      key: f.key,
-      onClick: () => setSolveFor(f.key),
       style: {
-        padding: "6px 16px",
-        borderRadius: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        background: solveFor === f.key ? "#648FFF" : "#fff",
-        color: solveFor === f.key ? "#fff" : "#888",
-        border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
-        cursor: "pointer",
-        fontFamily: "inherit",
-        textAlign: "left"
+        ...sec,
+        flex: "0 0 calc((100% - 20px) / 3)",
+        marginBottom: 0,
+        display: "flex",
+        flexDirection: "column"
       }
     },
-    f.label
-  )))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" } }, "Stock solution"), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" } }, "C1 \xD7 V1 = C2 \xD7 V2"),
+    /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 11, color: "#999" } }, "Solve for:"),
+    /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } }, fields.map((f) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: f.key,
+        onClick: () => setSolveFor(f.key),
+        style: {
+          padding: "6px 16px",
+          borderRadius: 6,
+          fontSize: 12,
+          fontWeight: 600,
+          background: solveFor === f.key ? "#648FFF" : "#fff",
+          color: solveFor === f.key ? "#fff" : "#888",
+          border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
+          cursor: "pointer",
+          fontFamily: "inherit",
+          textAlign: "left"
+        }
+      },
+      f.label
+    )))
+  ), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Inputs:"), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" } }, "Stock solution"), /* @__PURE__ */ React.createElement(
     UnitInput,
     {
       label: "C1 (concentration)",
@@ -313,16 +361,23 @@ function DilutionMode() {
       disabled: solveFor === "v2",
       placeholder: solveFor === "v2" ? "calculated" : ""
     }
-  ), result && /* @__PURE__ */ React.createElement("div", { style: {
-    background: "#f0fdf4",
-    borderRadius: 8,
-    border: "1px solid #86efac",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px 16px",
-    marginTop: 10
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)))));
+  ), result && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        background: "#f0fdf4",
+        borderRadius: 8,
+        border: "1px solid #86efac",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 16px",
+        marginTop: 10
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result.value)),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600 } }, result.label)
+  ))));
 }
 const BATCH_EXAMPLE = `Name	MW	Concentration	Volume
 NaCl	58.44	150 mM	500 mL
@@ -465,25 +520,53 @@ function BatchMode() {
         color: "#333"
       }
     }
-  ), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement("button", { onClick: compute, style: btnPrimary }, "Calculate"), /* @__PURE__ */ React.createElement(
-    "button",
+  ), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement("button", { onClick: compute, style: btnPrimary }, "Calculate"), /* @__PURE__ */ React.createElement("button", { onClick: () => setRaw(BATCH_EXAMPLE), style: btnSecondary }, "Load example"))), error && /* @__PURE__ */ React.createElement(
+    "div",
     {
-      onClick: () => setRaw(BATCH_EXAMPLE),
-      style: btnSecondary
+      style: {
+        marginBottom: 16,
+        padding: "10px 14px",
+        borderRadius: 8,
+        background: "#fef2f2",
+        border: "1px solid #fca5a5",
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
     },
-    "Load example"
-  ))), error && /* @__PURE__ */ React.createElement("div", { style: {
-    marginBottom: 16,
-    padding: "10px 14px",
-    borderRadius: 8,
-    background: "#fef2f2",
-    border: "1px solid #fca5a5",
-    display: "flex",
-    alignItems: "center",
-    gap: 8
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#dc2626", fontWeight: 600 } }, error)), results && results.length > 0 && /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Prep Sheet"), /* @__PURE__ */ React.createElement("button", { onClick: csvExport, style: btnDownload }, "Download CSV")), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { borderBottom: "2px solid #ccc" } }, ["Name", "MW", "Concentration", "Volume", "Mass to weigh"].map(
-    (h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "6px 10px", textAlign: "left", color: "#666", fontWeight: 600 } }, h)
-  ))), /* @__PURE__ */ React.createElement("tbody", null, results.map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { borderBottom: "1px solid #eee" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", fontWeight: 600, color: "#333" } }, r.name), r.error ? /* @__PURE__ */ React.createElement("td", { colSpan: 4, style: { padding: "6px 10px", color: "#dc2626", fontStyle: "italic" } }, r.error) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.mw, " g/mol"), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.conc), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.vol), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", fontWeight: 700, color: "#16a34a" } }, r.massDisplay)))))))));
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#dc2626", fontWeight: 600 } }, error)
+  ), results && results.length > 0 && /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#555" } }, "Prep Sheet"),
+    /* @__PURE__ */ React.createElement("button", { onClick: csvExport, style: btnDownload }, "Download CSV")
+  ), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { borderBottom: "2px solid #ccc" } }, ["Name", "MW", "Concentration", "Volume", "Mass to weigh"].map((h) => /* @__PURE__ */ React.createElement(
+    "th",
+    {
+      key: h,
+      style: {
+        padding: "6px 10px",
+        textAlign: "left",
+        color: "#666",
+        fontWeight: 600
+      }
+    },
+    h
+  )))), /* @__PURE__ */ React.createElement("tbody", null, results.map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { borderBottom: "1px solid #eee" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", fontWeight: 600, color: "#333" } }, r.name), r.error ? /* @__PURE__ */ React.createElement(
+    "td",
+    {
+      colSpan: 4,
+      style: { padding: "6px 10px", color: "#dc2626", fontStyle: "italic" }
+    },
+    r.error
+  ) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.mw, " g/mol"), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.conc), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px" } }, r.vol), /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", fontWeight: 700, color: "#16a34a" } }, r.massDisplay)))))))));
 }
 function formatMass(grams) {
   if (grams >= 1) return grams.toFixed(4) + " g";
@@ -502,7 +585,8 @@ function LigationMode() {
     const iBp = parseFloat(insertBp);
     const rV = parseFloat(ratioVector);
     const rI = parseFloat(ratioInsert);
-    if (!isFinite(vBp) || !isFinite(vNg) || !isFinite(iBp) || !isFinite(rV) || !isFinite(rI)) return null;
+    if (!isFinite(vBp) || !isFinite(vNg) || !isFinite(iBp) || !isFinite(rV) || !isFinite(rI))
+      return null;
     if (vBp <= 0 || vNg <= 0 || iBp <= 0 || rV <= 0 || rI <= 0) return null;
     const insertNg = iBp / vBp * vNg * (rI / rV);
     return insertNg;
@@ -537,7 +621,13 @@ function LigationMode() {
       onChange: (e) => setInsertBp(e.target.value),
       style: { ...fieldStyle, width: 90, fontSize: 12 }
     }
-  ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#999" } }, "bp"))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0, padding: 12 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" } }, "Molar ratio"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" } }, "Vector"), /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: "#999" } }, "bp"))), /* @__PURE__ */ React.createElement("div", { style: { ...sec, flex: 1, marginBottom: 0, padding: 12 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" } }, "Molar ratio"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6 } }, /* @__PURE__ */ React.createElement(
+    "label",
+    {
+      style: { ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }
+    },
+    "Vector"
+  ), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "number",
@@ -546,7 +636,13 @@ function LigationMode() {
       min: "1",
       style: { ...fieldStyle, width: 60, fontSize: 12 }
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" } }, "Insert"), /* @__PURE__ */ React.createElement(
+  )), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement(
+    "label",
+    {
+      style: { ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }
+    },
+    "Insert"
+  ), /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "number",
@@ -555,14 +651,31 @@ function LigationMode() {
       min: "1",
       style: { ...fieldStyle, width: 60, fontSize: 12 }
     }
-  )))), result !== null && /* @__PURE__ */ React.createElement("div", { style: {
-    ...sec,
-    background: "#f0fdf4",
-    borderColor: "#86efac",
-    padding: "16px 20px"
-  } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 11, color: "#16a34a", fontWeight: 600 } }, "Insert amount needed:"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600, marginLeft: 8 } }, "ng")));
+  )))), result !== null && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        ...sec,
+        background: "#f0fdf4",
+        borderColor: "#86efac",
+        padding: "16px 20px"
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 11, color: "#16a34a", fontWeight: 600 } }, "Insert amount needed:"),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 22, fontWeight: 700, color: "#16a34a" } }, formatResult(result)),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600, marginLeft: 8 } }, "ng")
+  ));
 }
-function ModeButton({ modeKey, label, desc, active, accentColor, activeBg, onClick, style: extraStyle }) {
+function ModeButton({
+  modeKey,
+  label,
+  desc,
+  active,
+  accentColor,
+  activeBg,
+  onClick,
+  style: extraStyle
+}) {
   const [hovered, setHovered] = useState(false);
   const isActive = active;
   const showAccent = isActive || hovered;
@@ -586,7 +699,18 @@ function ModeButton({ modeKey, label, desc, active, accentColor, activeBg, onCli
         ...extraStyle
       }
     },
-    /* @__PURE__ */ React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: showAccent ? accentColor : "#555", transition: "color 0.2s ease" } }, label),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          fontSize: 14,
+          fontWeight: 700,
+          color: showAccent ? accentColor : "#555",
+          transition: "color 0.2s ease"
+        }
+      },
+      label
+    ),
     /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#999", marginTop: 2 } }, desc)
   );
 }
@@ -602,7 +726,26 @@ function App() {
   ];
   const chemColor = "#648FFF";
   const dnaColor = "#785EF0";
-  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", padding: "32px 20px" } }, /* @__PURE__ */ React.createElement(PageHeader, { toolName: "molarity", title: "Calculator", subtitle: "Molarity, dilution, batch preparation, and ligation" }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: chemColor, textTransform: "uppercase", letterSpacing: "1px" } }, "Solutions"), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 1, background: chemColor, opacity: 0.3 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16 } }, chemModes.map((m) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 720, margin: "0 auto", padding: "32px 20px" } }, /* @__PURE__ */ React.createElement(
+    PageHeader,
+    {
+      toolName: "molarity",
+      title: "Calculator",
+      subtitle: "Molarity, dilution, batch preparation, and ligation"
+    }
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" } }, /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: chemColor,
+        textTransform: "uppercase",
+        letterSpacing: "1px"
+      }
+    },
+    "Solutions"
+  ), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 1, background: chemColor, opacity: 0.3 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 16 } }, chemModes.map((m) => /* @__PURE__ */ React.createElement(
     ModeButton,
     {
       key: m.key,
@@ -615,7 +758,19 @@ function App() {
       onClick: () => setMode(m.key),
       style: { flex: 1 }
     }
-  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: dnaColor, textTransform: "uppercase", letterSpacing: "1px" } }, "DNA"), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 1, background: dnaColor, opacity: 0.3 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 24 } }, dnaModes.map((m) => /* @__PURE__ */ React.createElement(
+  ))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" } }, /* @__PURE__ */ React.createElement(
+    "span",
+    {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: dnaColor,
+        textTransform: "uppercase",
+        letterSpacing: "1px"
+      }
+    },
+    "DNA"
+  ), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, height: 1, background: dnaColor, opacity: 0.3 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 24 } }, dnaModes.map((m) => /* @__PURE__ */ React.createElement(
     ModeButton,
     {
       key: m.key,
@@ -626,7 +781,10 @@ function App() {
       accentColor: dnaColor,
       activeBg: "#f5f3ff",
       onClick: () => setMode(m.key),
-      style: { flex: "0 1 auto", width: `calc(${100 / chemModes.length}% - ${10 * (chemModes.length - 1) / chemModes.length}px)` }
+      style: {
+        flex: "0 1 auto",
+        width: `calc(${100 / chemModes.length}% - ${10 * (chemModes.length - 1) / chemModes.length}px)`
+      }
     }
   ))), mode === "molarity" && /* @__PURE__ */ React.createElement(MolarityMode, null), mode === "dilution" && /* @__PURE__ */ React.createElement(DilutionMode, null), mode === "batch" && /* @__PURE__ */ React.createElement(BatchMode, null), mode === "ligation" && /* @__PURE__ */ React.createElement(LigationMode, null));
 }

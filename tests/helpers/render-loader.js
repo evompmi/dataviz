@@ -2,8 +2,8 @@
 // with a functional React mock that returns element trees (not null).
 // This enables render-smoke tests: call a component, assert it returns elements.
 
-const fs   = require("fs");
-const vm   = require("vm");
+const fs = require("fs");
+const vm = require("vm");
 const path = require("path");
 
 const toolsDir = path.join(__dirname, "../../tools");
@@ -16,34 +16,58 @@ function createReactMock() {
   let stateIdx = 0;
   const states = [];
 
-  function resetHooks() { stateIdx = 0; }
+  function resetHooks() {
+    stateIdx = 0;
+  }
 
   const React = {
     createElement(type, props) {
-      const children = Array.prototype.slice.call(arguments, 2)
+      const children = Array.prototype.slice
+        .call(arguments, 2)
         .flat(Infinity)
-        .filter(function(c) { return c != null && c !== false; });
+        .filter(function (c) {
+          return c != null && c !== false;
+        });
       return { type: type, props: props || {}, children: children };
     },
     useState(init) {
       const idx = stateIdx++;
       if (states[idx] === undefined) states[idx] = typeof init === "function" ? init() : init;
       const i = idx;
-      return [states[i], function(v) { states[i] = typeof v === "function" ? v(states[i]) : v; }];
+      return [
+        states[i],
+        function (v) {
+          states[i] = typeof v === "function" ? v(states[i]) : v;
+        },
+      ];
     },
     useReducer(reducer, init) {
       const idx = stateIdx++;
       if (states[idx] === undefined) states[idx] = init;
       const i = idx;
-      return [states[i], function(action) { states[i] = reducer(states[i], action); }];
+      return [
+        states[i],
+        function (action) {
+          states[i] = reducer(states[i], action);
+        },
+      ];
     },
-    useMemo(fn) { return fn(); },
-    useCallback(fn) { return fn; },
-    useRef(init) { return { current: init !== undefined ? init : null }; },
+    useMemo(fn) {
+      return fn();
+    },
+    useCallback(fn) {
+      return fn;
+    },
+    useRef(init) {
+      return { current: init !== undefined ? init : null };
+    },
     useEffect() {},
+    memo(fn) {
+      return fn;
+    },
     forwardRef(fn) {
-      var comp = function(props) {
-        return fn(props, props && props.ref || { current: null });
+      var comp = function (props) {
+        return fn(props, (props && props.ref) || { current: null });
       };
       comp._isForwardRef = true;
       comp._render = fn;
@@ -61,31 +85,70 @@ function buildContext() {
   const { React, resetHooks } = createReactMock();
 
   const ctx = {
-    Math, parseInt, parseFloat, isNaN, isFinite, Number, String, Array, Object,
-    JSON, RegExp, Date, Map, Set, Error, console, Infinity, NaN, undefined,
-    Boolean, Symbol, Promise,
+    Math,
+    parseInt,
+    parseFloat,
+    isNaN,
+    isFinite,
+    Number,
+    String,
+    Array,
+    Object,
+    JSON,
+    RegExp,
+    Date,
+    Map,
+    Set,
+    Error,
+    console,
+    Infinity,
+    NaN,
+    undefined,
+    Boolean,
+    Symbol,
+    Promise,
     // DOM stubs
-    setTimeout: function(fn) { if (typeof fn === "function") fn(); },
-    clearTimeout: function() {},
-    document: {
-      createElement: function() {
-        return { style: {}, setAttribute: function() {}, click: function() {},
-                 appendChild: function() {}, removeChild: function() {} };
-      },
-      getElementById: function() { return { style: {} }; },
-      body: { appendChild: function() {}, removeChild: function() {} },
+    setTimeout: function (fn) {
+      if (typeof fn === "function") fn();
     },
-    URL: { createObjectURL: function() { return ""; }, revokeObjectURL: function() {} },
-    Blob: function() {},
-    XMLSerializer: function() { this.serializeToString = function() { return ""; }; },
-    FileReader: function() {
-      this.readAsText = function() {};
+    clearTimeout: function () {},
+    document: {
+      createElement: function () {
+        return {
+          style: {},
+          setAttribute: function () {},
+          click: function () {},
+          appendChild: function () {},
+          removeChild: function () {},
+        };
+      },
+      getElementById: function () {
+        return { style: {} };
+      },
+      body: { appendChild: function () {}, removeChild: function () {} },
+    },
+    URL: {
+      createObjectURL: function () {
+        return "";
+      },
+      revokeObjectURL: function () {},
+    },
+    Blob: function () {},
+    XMLSerializer: function () {
+      this.serializeToString = function () {
+        return "";
+      };
+    },
+    FileReader: function () {
+      this.readAsText = function () {};
       this.onload = null;
     },
     window: {},
     React: React,
     ReactDOM: {
-      createRoot: function() { return { render: function() {} }; },
+      createRoot: function () {
+        return { render: function () {} };
+      },
     },
   };
 
@@ -111,7 +174,10 @@ function loadTool(toolName) {
   // Wrap in a function so const/let declarations are captured via _exports.
   // The tool source ends with ReactDOM.createRoot(...).render(...) which we
   // replace with an export of all const-declared names we care about.
-  const wrapped = "(function() {\n" + toolSrc + "\nreturn {" +
+  const wrapped =
+    "(function() {\n" +
+    toolSrc +
+    "\nreturn {" +
     "BoxplotChart: typeof BoxplotChart !== 'undefined' ? BoxplotChart : undefined," +
     "BarChart: typeof BarChart !== 'undefined' ? BarChart : undefined," +
     "ScatterChart: typeof ScatterChart !== 'undefined' ? ScatterChart : undefined," +
@@ -121,7 +187,9 @@ function loadTool(toolName) {
     "};\n})()";
   const exports = vm.runInContext(wrapped, ctx);
   // Merge exported names into context for easy access
-  Object.keys(exports).forEach(function(k) { if (exports[k] !== undefined) ctx[k] = exports[k]; });
+  Object.keys(exports).forEach(function (k) {
+    if (exports[k] !== undefined) ctx[k] = exports[k];
+  });
   return { ctx: ctx, resetHooks: resetHooks };
 }
 
@@ -137,11 +205,15 @@ function render(component, props, resetHooks) {
 function countElements(tree) {
   if (!tree || typeof tree !== "object") return 0;
   if (Array.isArray(tree)) {
-    return tree.reduce(function(sum, el) { return sum + countElements(el); }, 0);
+    return tree.reduce(function (sum, el) {
+      return sum + countElements(el);
+    }, 0);
   }
   var count = 1; // this node
   if (tree.children) {
-    count += tree.children.reduce(function(sum, el) { return sum + countElements(el); }, 0);
+    count += tree.children.reduce(function (sum, el) {
+      return sum + countElements(el);
+    }, 0);
   }
   return count;
 }

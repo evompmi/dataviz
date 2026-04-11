@@ -1,4 +1,5 @@
 # Data Visualization Tool for the EVO Team Members (Toulouse Plant Science)
+
 An entirely vibe-coded application with claude
 
 ## Accessible online at [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz)
@@ -22,6 +23,7 @@ open index.html
 ## Tools collection
 
 ### Aequorin Ca²⁺ Calibration (simple linegraph when no calibration is used)
+
 Luminescence time-course plots with optional Ca²⁺ concentration calibration.
 
 - Calibration formulas:
@@ -38,6 +40,7 @@ Luminescence time-course plots with optional Ca²⁺ concentration calibration.
 ---
 
 ### Boxplot
+
 Distribution plots with median, IQR, and whiskers.
 
 - Accepts wide and long CSV/TSV
@@ -52,6 +55,7 @@ Distribution plots with median, IQR, and whiskers.
 ---
 
 ### Bar Graph
+
 Mean ± error bar plots with optional jittered point overlays.
 
 - Accepts **wide** (columns = groups) and **long** (group + value columns) CSV/TSV
@@ -65,6 +69,7 @@ Mean ± error bar plots with optional jittered point overlays.
 ---
 
 ### Scatter Plot
+
 XY scatter plots with continuous and categorical aesthetic mappings.
 
 - **Streamlined interface**: X and Y column dropdowns directly on the plot page (no separate configure step)
@@ -79,6 +84,7 @@ XY scatter plots with continuous and categorical aesthetic mappings.
 ---
 
 ### Venn Diagram
+
 Venn diagrams with data extraction (2–3 sets).
 
 - Equal-size circles by default, with optional area-proportional mode
@@ -91,6 +97,7 @@ Venn diagrams with data extraction (2–3 sets).
 ---
 
 ### Calculator
+
 Solution preparation calculator for common lab calculations.
 
 - **Molarity**: mass ↔ concentration from molecular weight and volume
@@ -105,26 +112,25 @@ Solution preparation calculator for common lab calculations.
 
 All tools share:
 
-| Feature | Details |
-|---|---|
-| **How to** | Built-in help panel to get you started |
-| **Input** | CSV, TSV, TXT, DAT — comma or tab, auto-detected |
-| **Data preview** | First 15 rows with column type hints before plotting |
-| **Decimal handling** | Auto-detects and fixes comma decimal separators |
-| **Export** | SVG (publication-ready vector) + PNG (2x resolution) + CSV (processed data) |
-| **Column control** | Rename columns, assign roles, filter by value |
-| **Styling** | Background color, grid toggle, axis labels, plot title |
+| Feature              | Details                                                                     |
+| -------------------- | --------------------------------------------------------------------------- |
+| **How to**           | Built-in help panel to get you started                                      |
+| **Input**            | CSV, TSV, TXT, DAT — comma or tab, auto-detected                            |
+| **Data preview**     | First 15 rows with column type hints before plotting                        |
+| **Decimal handling** | Auto-detects and fixes comma decimal separators                             |
+| **Export**           | SVG (publication-ready vector) + PNG (2x resolution) + CSV (processed data) |
+| **Column control**   | Rename columns, assign roles, filter by value                               |
+| **Styling**          | Background color, grid toggle, axis labels, plot title                      |
 
 ---
 
 ## Stack
 
-| | |
-|---|---|
-| **UI** | React 18 (vendored) |
-| **Build** | esbuild (JSX compilation, ~5 ms rebuilds) |
-| **Charts** | Custom SVG rendering |
-| **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo |
-| **Hosting** | GitHub Pages (static files) |
-| **Tests** | 157 tests across 4 suites (utilities, parsing, integration, component smoke tests) |
-
+|                  |                                                                                    |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| **UI**           | React 18 (vendored)                                                                |
+| **Build**        | esbuild (JSX compilation, ~5 ms rebuilds)                                          |
+| **Charts**       | Custom SVG rendering                                                               |
+| **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo         |
+| **Hosting**      | GitHub Pages (static files)                                                        |
+| **Tests**        | 157 tests across 4 suites (utilities, parsing, integration, component smoke tests) |

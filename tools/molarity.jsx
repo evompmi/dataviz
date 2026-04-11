@@ -6,31 +6,31 @@ const { useState, useMemo, useCallback, useRef } = React;
 // ── Unit definitions & conversions ──────────────────────────────────────────
 
 const CONC_UNITS = [
-  { label: "M",  factor: 1 },
+  { label: "M", factor: 1 },
   { label: "mM", factor: 1e-3 },
   { label: "µM", factor: 1e-6 },
   { label: "nM", factor: 1e-9 },
 ];
 
 const VOL_UNITS = [
-  { label: "L",  factor: 1 },
+  { label: "L", factor: 1 },
   { label: "mL", factor: 1e-3 },
   { label: "µL", factor: 1e-6 },
 ];
 
 const MASS_UNITS = [
-  { label: "g",  factor: 1 },
+  { label: "g", factor: 1 },
   { label: "mg", factor: 1e-3 },
   { label: "µg", factor: 1e-6 },
 ];
 
 function toBase(value, unit, units) {
-  const u = units.find(u => u.label === unit);
+  const u = units.find((u) => u.label === unit);
   return value * (u ? u.factor : 1);
 }
 
 function fromBase(value, unit, units) {
-  const u = units.find(u => u.label === unit);
+  const u = units.find((u) => u.label === unit);
   return value / (u ? u.factor : 1);
 }
 
@@ -46,14 +46,26 @@ function formatResult(val) {
 
 // ── Numeric input with unit selector ────────────────────────────────────────
 
-function UnitInput({ label, value, onValueChange, unit, onUnitChange, units, disabled, highlight, placeholder }) {
+function UnitInput({
+  label,
+  value,
+  onValueChange,
+  unit,
+  onUnitChange,
+  units,
+  disabled,
+  highlight,
+  placeholder,
+}) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>{label}</label>
+      <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>
+        {label}
+      </label>
       <input
         type="number"
         value={value}
-        onChange={e => onValueChange(e.target.value)}
+        onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder || ""}
         style={{
@@ -69,10 +81,14 @@ function UnitInput({ label, value, onValueChange, unit, onUnitChange, units, dis
       />
       <select
         value={unit}
-        onChange={e => onUnitChange(e.target.value)}
+        onChange={(e) => onUnitChange(e.target.value)}
         style={{ ...selStyle, minWidth: 60 }}
       >
-        {units.map(u => <option key={u.label} value={u.label}>{u.label}</option>)}
+        {units.map((u) => (
+          <option key={u.label} value={u.label}>
+            {u.label}
+          </option>
+        ))}
       </select>
     </div>
   );
@@ -97,7 +113,8 @@ function MolarityMode() {
     const concVal = parseFloat(conc);
 
     if (solveFor === "conc") {
-      if (!isFinite(mwVal) || !isFinite(massVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0) return null;
+      if (!isFinite(mwVal) || !isFinite(massVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0)
+        return null;
       const massG = toBase(massVal, massUnit, MASS_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const moles = massG / mwVal;
@@ -105,7 +122,8 @@ function MolarityMode() {
       return { value: fromBase(concM, concUnit, CONC_UNITS), label: concUnit };
     }
     if (solveFor === "mass") {
-      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0) return null;
+      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(volVal) || mwVal <= 0 || volVal <= 0)
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const moles = concM * volL;
@@ -113,7 +131,14 @@ function MolarityMode() {
       return { value: fromBase(massG, massUnit, MASS_UNITS), label: massUnit };
     }
     if (solveFor === "volume") {
-      if (!isFinite(mwVal) || !isFinite(concVal) || !isFinite(massVal) || mwVal <= 0 || concVal <= 0) return null;
+      if (
+        !isFinite(mwVal) ||
+        !isFinite(concVal) ||
+        !isFinite(massVal) ||
+        mwVal <= 0 ||
+        concVal <= 0
+      )
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const massG = toBase(massVal, massUnit, MASS_UNITS);
       const moles = massG / mwVal;
@@ -121,7 +146,14 @@ function MolarityMode() {
       return { value: fromBase(volL, volUnit, VOL_UNITS), label: volUnit };
     }
     if (solveFor === "mw") {
-      if (!isFinite(massVal) || !isFinite(concVal) || !isFinite(volVal) || concVal <= 0 || volVal <= 0) return null;
+      if (
+        !isFinite(massVal) ||
+        !isFinite(concVal) ||
+        !isFinite(volVal) ||
+        concVal <= 0 ||
+        volVal <= 0
+      )
+        return null;
       const concM = toBase(concVal, concUnit, CONC_UNITS);
       const volL = toBase(volVal, volUnit, VOL_UNITS);
       const massG = toBase(massVal, massUnit, MASS_UNITS);
@@ -142,19 +174,34 @@ function MolarityMode() {
   return (
     <div>
       <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
-        <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Solve for:</p>
+        <div
+          style={{
+            ...sec,
+            flex: "0 0 calc((100% - 20px) / 3)",
+            marginBottom: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+            Solve for:
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {fields.map(f => (
+            {fields.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setSolveFor(f.key)}
                 style={{
-                  padding: "6px 16px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  padding: "6px 16px",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
                   background: solveFor === f.key ? "#648FFF" : "#fff",
                   color: solveFor === f.key ? "#fff" : "#888",
                   border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
-                  cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  textAlign: "left",
                 }}
               >
                 {f.label}
@@ -164,17 +211,24 @@ function MolarityMode() {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Inputs:</p>
+          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+            Inputs:
+          </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>MW (g/mol)</label>
+            <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>
+              MW (g/mol)
+            </label>
             <input
               type="number"
               value={solveFor === "mw" ? "" : mw}
-              onChange={e => setMw(e.target.value)}
+              onChange={(e) => setMw(e.target.value)}
               disabled={solveFor === "mw"}
               placeholder={solveFor === "mw" ? "calculated" : ""}
               style={{
-                ...inp, width: 130, fontSize: 13, textAlign: "left",
+                ...inp,
+                width: 130,
+                fontSize: 13,
+                textAlign: "left",
                 background: solveFor === "mw" ? "#f0fdf4" : "#fff",
                 fontWeight: 400,
               }}
@@ -217,14 +271,24 @@ function MolarityMode() {
           />
 
           {result && (
-            <div style={{
-              background: "#f0fdf4", borderRadius: 8, border: "1px solid #86efac",
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 10,
-            }}>
+            <div
+              style={{
+                background: "#f0fdf4",
+                borderRadius: 8,
+                border: "1px solid #86efac",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 16px",
+                marginTop: 10,
+              }}
+            >
               <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
                 {formatResult(result.value)}
               </span>
-              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
+              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>
+                {result.label}
+              </span>
             </div>
           )}
         </div>
@@ -255,22 +319,30 @@ function DilutionMode() {
     // C1*V1 = C2*V2, all converted to base units (M, L)
     if (solveFor === "c1") {
       if (!isFinite(v1Val) || !isFinite(c2Val) || !isFinite(v2Val) || v1Val <= 0) return null;
-      const base = toBase(c2Val, c2Unit, CONC_UNITS) * toBase(v2Val, v2Unit, VOL_UNITS) / toBase(v1Val, v1Unit, VOL_UNITS);
+      const base =
+        (toBase(c2Val, c2Unit, CONC_UNITS) * toBase(v2Val, v2Unit, VOL_UNITS)) /
+        toBase(v1Val, v1Unit, VOL_UNITS);
       return { value: fromBase(base, c1Unit, CONC_UNITS), label: c1Unit };
     }
     if (solveFor === "v1") {
       if (!isFinite(c1Val) || !isFinite(c2Val) || !isFinite(v2Val) || c1Val <= 0) return null;
-      const base = toBase(c2Val, c2Unit, CONC_UNITS) * toBase(v2Val, v2Unit, VOL_UNITS) / toBase(c1Val, c1Unit, CONC_UNITS);
+      const base =
+        (toBase(c2Val, c2Unit, CONC_UNITS) * toBase(v2Val, v2Unit, VOL_UNITS)) /
+        toBase(c1Val, c1Unit, CONC_UNITS);
       return { value: fromBase(base, v1Unit, VOL_UNITS), label: v1Unit };
     }
     if (solveFor === "c2") {
       if (!isFinite(c1Val) || !isFinite(v1Val) || !isFinite(v2Val) || v2Val <= 0) return null;
-      const base = toBase(c1Val, c1Unit, CONC_UNITS) * toBase(v1Val, v1Unit, VOL_UNITS) / toBase(v2Val, v2Unit, VOL_UNITS);
+      const base =
+        (toBase(c1Val, c1Unit, CONC_UNITS) * toBase(v1Val, v1Unit, VOL_UNITS)) /
+        toBase(v2Val, v2Unit, VOL_UNITS);
       return { value: fromBase(base, c2Unit, CONC_UNITS), label: c2Unit };
     }
     if (solveFor === "v2") {
       if (!isFinite(c1Val) || !isFinite(v1Val) || !isFinite(c2Val) || c2Val <= 0) return null;
-      const base = toBase(c1Val, c1Unit, CONC_UNITS) * toBase(v1Val, v1Unit, VOL_UNITS) / toBase(c2Val, c2Unit, CONC_UNITS);
+      const base =
+        (toBase(c1Val, c1Unit, CONC_UNITS) * toBase(v1Val, v1Unit, VOL_UNITS)) /
+        toBase(c2Val, c2Unit, CONC_UNITS);
       return { value: fromBase(base, v2Unit, VOL_UNITS), label: v2Unit };
     }
     return null;
@@ -286,22 +358,35 @@ function DilutionMode() {
   return (
     <div>
       <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
-        <div style={{ ...sec, flex: "0 0 calc((100% - 20px) / 3)", marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            ...sec,
+            flex: "0 0 calc((100% - 20px) / 3)",
+            marginBottom: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" }}>
             C1 × V1 = C2 × V2
           </p>
           <p style={{ margin: "0 0 10px", fontSize: 11, color: "#999" }}>Solve for:</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {fields.map(f => (
+            {fields.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setSolveFor(f.key)}
                 style={{
-                  padding: "6px 16px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                  padding: "6px 16px",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
                   background: solveFor === f.key ? "#648FFF" : "#fff",
                   color: solveFor === f.key ? "#fff" : "#888",
                   border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
-                  cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  textAlign: "left",
                 }}
               >
                 {f.label}
@@ -311,8 +396,12 @@ function DilutionMode() {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Inputs:</p>
-          <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>Stock solution</p>
+          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+            Inputs:
+          </p>
+          <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>
+            Stock solution
+          </p>
           <UnitInput
             label="C1 (concentration)"
             value={solveFor === "c1" ? "" : c1}
@@ -333,7 +422,9 @@ function DilutionMode() {
             disabled={solveFor === "v1"}
             placeholder={solveFor === "v1" ? "calculated" : ""}
           />
-          <p style={{ margin: "12px 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>Final solution</p>
+          <p style={{ margin: "12px 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>
+            Final solution
+          </p>
           <UnitInput
             label="C2 (concentration)"
             value={solveFor === "c2" ? "" : c2}
@@ -356,14 +447,24 @@ function DilutionMode() {
           />
 
           {result && (
-            <div style={{
-              background: "#f0fdf4", borderRadius: 8, border: "1px solid #86efac",
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 10,
-            }}>
+            <div
+              style={{
+                background: "#f0fdf4",
+                borderRadius: 8,
+                border: "1px solid #86efac",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 16px",
+                marginTop: 10,
+              }}
+            >
               <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
                 {formatResult(result.value)}
               </span>
-              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>{result.label}</span>
+              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>
+                {result.label}
+              </span>
             </div>
           )}
         </div>
@@ -388,7 +489,7 @@ function parseValueUnit(str, defaultUnit, unitList) {
   const val = parseFloat(m[1]);
   if (!isFinite(val)) return null;
   const unitStr = (m[2] || defaultUnit).trim();
-  const found = unitList.find(u => u.label === unitStr);
+  const found = unitList.find((u) => u.label === unitStr);
   if (found) return { value: val, unit: unitStr };
   return null;
 }
@@ -403,8 +504,12 @@ function parseMassVolConc(str) {
   // Convert mass/vol to g/L
   const unit = m[2].toLowerCase();
   const conversions = {
-    "g/l": 1, "mg/ml": 1, "µg/µl": 1,
-    "µg/ml": 1e-3, "mg/l": 1e-3, "g/ml": 1e3,
+    "g/l": 1,
+    "mg/ml": 1,
+    "µg/µl": 1,
+    "µg/ml": 1e-3,
+    "mg/l": 1e-3,
+    "g/ml": 1e3,
   };
   const gPerL = val * (conversions[unit] || 1);
   return { gPerL, originalUnit: m[2], originalValue: val };
@@ -419,16 +524,25 @@ function BatchMode() {
   const compute = useCallback(() => {
     setError(null);
     setResults(null);
-    if (!raw.trim()) { setError("Paste your data above."); return; }
+    if (!raw.trim()) {
+      setError("Paste your data above.");
+      return;
+    }
 
     const { headers, rows, hasHeader } = parseRaw(raw, sepOverride);
-    if (rows.length === 0) { setError("No data rows found."); return; }
-    if (headers.length < 4) { setError("Need at least 4 columns: Name, MW, Concentration, Volume."); return; }
+    if (rows.length === 0) {
+      setError("No data rows found.");
+      return;
+    }
+    if (headers.length < 4) {
+      setError("Need at least 4 columns: Name, MW, Concentration, Volume.");
+      return;
+    }
 
     const output = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      const name = r[0] || ("Row " + (i + 1));
+      const name = r[0] || "Row " + (i + 1);
       const mwVal = parseFloat(r[1]);
       if (!isFinite(mwVal) || mwVal <= 0) {
         output.push({ name, error: "Invalid MW: " + r[1] });
@@ -453,10 +567,12 @@ function BatchMode() {
         const moles = concM * volL;
         const massG = moles * mwVal;
         output.push({
-          name, mw: mwVal,
+          name,
+          mw: mwVal,
           conc: concParsed.value + " " + concParsed.unit,
           vol: volParsed.value + " " + volParsed.unit,
-          massG, massDisplay: formatMass(massG),
+          massG,
+          massDisplay: formatMass(massG),
         });
         continue;
       }
@@ -466,10 +582,12 @@ function BatchMode() {
       if (massVolParsed) {
         const massG = massVolParsed.gPerL * volL;
         output.push({
-          name, mw: mwVal,
+          name,
+          mw: mwVal,
           conc: massVolParsed.originalValue + " " + massVolParsed.originalUnit,
           vol: volParsed.value + " " + volParsed.unit,
-          massG, massDisplay: formatMass(massG),
+          massG,
+          massDisplay: formatMass(massG),
         });
         continue;
       }
@@ -483,7 +601,7 @@ function BatchMode() {
   const csvExport = useCallback(() => {
     if (!results) return;
     const hdrs = ["Name", "MW (g/mol)", "Target concentration", "Target volume", "Mass to weigh"];
-    const csvRows = results.map(r =>
+    const csvRows = results.map((r) =>
       r.error
         ? [r.name, "", "", "", "ERROR: " + r.error]
         : [r.name, r.mw, r.conc, r.vol, r.massDisplay]
@@ -498,13 +616,14 @@ function BatchMode() {
           Paste a table: Name, MW (g/mol), Concentration (with unit), Volume (with unit)
         </p>
         <p style={{ margin: "0 0 8px", fontSize: 11, color: "#999" }}>
-          Units can be inline (e.g. "150 mM", "500 mL", "50 mg/mL"). Supported: M, mM, µM, nM, g/L, mg/mL, µg/µL, L, mL, µL.
+          Units can be inline (e.g. "150 mM", "500 mL", "50 mg/mL"). Supported: M, mM, µM, nM, g/L,
+          mg/mL, µg/µL, L, mL, µL.
         </p>
         <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "#648FFF" }}>Separator:</span>
           <select
             value={sepOverride}
-            onChange={e => setSepOverride(e.target.value)}
+            onChange={(e) => setSepOverride(e.target.value)}
             style={sepSelect}
           >
             <option value="">Auto-detect</option>
@@ -515,63 +634,103 @@ function BatchMode() {
         </div>
         <textarea
           value={raw}
-          onChange={e => setRaw(e.target.value)}
+          onChange={(e) => setRaw(e.target.value)}
           placeholder={BATCH_EXAMPLE}
           rows={8}
           style={{
-            width: "100%", fontFamily: "monospace", fontSize: 12, padding: 10,
-            border: "1px solid #ccc", borderRadius: 6, resize: "vertical",
-            background: "#fff", color: "#333",
+            width: "100%",
+            fontFamily: "monospace",
+            fontSize: 12,
+            padding: 10,
+            border: "1px solid #ccc",
+            borderRadius: 6,
+            resize: "vertical",
+            background: "#fff",
+            color: "#333",
           }}
         />
         <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-          <button onClick={compute} style={btnPrimary}>Calculate</button>
-          <button
-            onClick={() => setRaw(BATCH_EXAMPLE)}
-            style={btnSecondary}
-          >
+          <button onClick={compute} style={btnPrimary}>
+            Calculate
+          </button>
+          <button onClick={() => setRaw(BATCH_EXAMPLE)} style={btnSecondary}>
             Load example
           </button>
         </div>
       </div>
 
       {error && (
-        <div style={{
-          marginBottom: 16, padding: "10px 14px", borderRadius: 8,
-          background: "#fef2f2", border: "1px solid #fca5a5",
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "10px 14px",
+            borderRadius: 8,
+            background: "#fef2f2",
+            border: "1px solid #fca5a5",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>{error}</span>
         </div>
       )}
 
       {results && results.length > 0 && (
         <div style={sec}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>Prep Sheet</p>
-            <button onClick={csvExport} style={btnDownload}>Download CSV</button>
+            <button onClick={csvExport} style={btnDownload}>
+              Download CSV
+            </button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #ccc" }}>
-                  {["Name", "MW", "Concentration", "Volume", "Mass to weigh"].map(h =>
-                    <th key={h} style={{ padding: "6px 10px", textAlign: "left", color: "#666", fontWeight: 600 }}>{h}</th>
-                  )}
+                  {["Name", "MW", "Concentration", "Volume", "Mass to weigh"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: "6px 10px",
+                        textAlign: "left",
+                        color: "#666",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {results.map((r, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "6px 10px", fontWeight: 600, color: "#333" }}>{r.name}</td>
+                    <td style={{ padding: "6px 10px", fontWeight: 600, color: "#333" }}>
+                      {r.name}
+                    </td>
                     {r.error ? (
-                      <td colSpan={4} style={{ padding: "6px 10px", color: "#dc2626", fontStyle: "italic" }}>{r.error}</td>
+                      <td
+                        colSpan={4}
+                        style={{ padding: "6px 10px", color: "#dc2626", fontStyle: "italic" }}
+                      >
+                        {r.error}
+                      </td>
                     ) : (
                       <>
                         <td style={{ padding: "6px 10px" }}>{r.mw} g/mol</td>
                         <td style={{ padding: "6px 10px" }}>{r.conc}</td>
                         <td style={{ padding: "6px 10px" }}>{r.vol}</td>
-                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "#16a34a" }}>{r.massDisplay}</td>
+                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "#16a34a" }}>
+                          {r.massDisplay}
+                        </td>
                       </>
                     )}
                   </tr>
@@ -606,7 +765,8 @@ function LigationMode() {
     const iBp = parseFloat(insertBp);
     const rV = parseFloat(ratioVector);
     const rI = parseFloat(ratioInsert);
-    if (!isFinite(vBp) || !isFinite(vNg) || !isFinite(iBp) || !isFinite(rV) || !isFinite(rI)) return null;
+    if (!isFinite(vBp) || !isFinite(vNg) || !isFinite(iBp) || !isFinite(rV) || !isFinite(rI))
+      return null;
     if (vBp <= 0 || vNg <= 0 || iBp <= 0 || rV <= 0 || rI <= 0) return null;
     // insert ng = (insert bp / vector bp) × vector ng × (insert ratio / vector ratio)
     const insertNg = (iBp / vBp) * vNg * (rI / rV);
@@ -614,7 +774,10 @@ function LigationMode() {
   }, [vectorBp, vectorNg, insertBp, ratioVector, ratioInsert]);
 
   const fieldStyle = {
-    ...inp, width: 130, fontSize: 13, textAlign: "right",
+    ...inp,
+    width: 130,
+    fontSize: 13,
+    textAlign: "right",
   };
 
   return (
@@ -630,52 +793,94 @@ function LigationMode() {
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>Vector</p>
+          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+            Vector
+          </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Length</label>
-            <input type="number" value={vectorBp} onChange={e => setVectorBp(e.target.value)}
-              style={{ ...fieldStyle, width: 90, fontSize: 12 }} />
+            <input
+              type="number"
+              value={vectorBp}
+              onChange={(e) => setVectorBp(e.target.value)}
+              style={{ ...fieldStyle, width: 90, fontSize: 12 }}
+            />
             <span style={{ fontSize: 11, color: "#999" }}>bp</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Amount</label>
-            <input type="number" value={vectorNg} onChange={e => setVectorNg(e.target.value)}
-              style={{ ...fieldStyle, width: 90, fontSize: 12 }} />
+            <input
+              type="number"
+              value={vectorNg}
+              onChange={(e) => setVectorNg(e.target.value)}
+              style={{ ...fieldStyle, width: 90, fontSize: 12 }}
+            />
             <span style={{ fontSize: 11, color: "#999" }}>ng</span>
           </div>
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>Insert</p>
+          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+            Insert
+          </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Length</label>
-            <input type="number" value={insertBp} onChange={e => setInsertBp(e.target.value)}
-              style={{ ...fieldStyle, width: 90, fontSize: 12 }} />
+            <input
+              type="number"
+              value={insertBp}
+              onChange={(e) => setInsertBp(e.target.value)}
+              style={{ ...fieldStyle, width: 90, fontSize: 12 }}
+            />
             <span style={{ fontSize: 11, color: "#999" }}>bp</span>
           </div>
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>Molar ratio</p>
+          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+            Molar ratio
+          </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}>Vector</label>
-            <input type="number" value={ratioVector} onChange={e => setRatioVector(e.target.value)}
-              min="1" style={{ ...fieldStyle, width: 60, fontSize: 12 }} />
+            <label
+              style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}
+            >
+              Vector
+            </label>
+            <input
+              type="number"
+              value={ratioVector}
+              onChange={(e) => setRatioVector(e.target.value)}
+              min="1"
+              style={{ ...fieldStyle, width: 60, fontSize: 12 }}
+            />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}>Insert</label>
-            <input type="number" value={ratioInsert} onChange={e => setRatioInsert(e.target.value)}
-              min="1" style={{ ...fieldStyle, width: 60, fontSize: 12 }} />
+            <label
+              style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}
+            >
+              Insert
+            </label>
+            <input
+              type="number"
+              value={ratioInsert}
+              onChange={(e) => setRatioInsert(e.target.value)}
+              min="1"
+              style={{ ...fieldStyle, width: 60, fontSize: 12 }}
+            />
           </div>
         </div>
       </div>
 
       {result !== null && (
-        <div style={{
-          ...sec, background: "#f0fdf4", borderColor: "#86efac",
-          padding: "16px 20px",
-        }}>
-          <p style={{ margin: "0 0 4px", fontSize: 11, color: "#16a34a", fontWeight: 600 }}>Insert amount needed:</p>
+        <div
+          style={{
+            ...sec,
+            background: "#f0fdf4",
+            borderColor: "#86efac",
+            padding: "16px 20px",
+          }}
+        >
+          <p style={{ margin: "0 0 4px", fontSize: 11, color: "#16a34a", fontWeight: 600 }}>
+            Insert amount needed:
+          </p>
           <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
             {formatResult(result)}
           </span>
@@ -688,7 +893,16 @@ function LigationMode() {
 
 // ── App ─────────────────────────────────────────────────────────────────────
 
-function ModeButton({ modeKey, label, desc, active, accentColor, activeBg, onClick, style: extraStyle }) {
+function ModeButton({
+  modeKey,
+  label,
+  desc,
+  active,
+  accentColor,
+  activeBg,
+  onClick,
+  style: extraStyle,
+}) {
   const [hovered, setHovered] = useState(false);
   const isActive = active;
   const showAccent = isActive || hovered;
@@ -698,17 +912,29 @@ function ModeButton({ modeKey, label, desc, active, accentColor, activeBg, onCli
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: "12px 8px", borderRadius: 10,
+        padding: "12px 8px",
+        borderRadius: 10,
         border: showAccent ? `2px solid ${accentColor}` : "1px solid #ddd",
         background: isActive ? activeBg : "#fff",
-        cursor: "pointer", fontFamily: "inherit", textAlign: "center",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        textAlign: "center",
         transition: "all 0.2s ease",
         transform: hovered && !isActive ? "translateY(-4px)" : "none",
         boxShadow: hovered && !isActive ? `0 6px 16px ${accentColor}26` : "none",
         ...extraStyle,
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 700, color: showAccent ? accentColor : "#555", transition: "color 0.2s ease" }}>{label}</div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: showAccent ? accentColor : "#555",
+          transition: "color 0.2s ease",
+        }}
+      >
+        {label}
+      </div>
       <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{desc}</div>
     </button>
   );
@@ -732,14 +958,28 @@ function App() {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px" }}>
-      <PageHeader toolName="molarity" title="Calculator" subtitle="Molarity, dilution, batch preparation, and ligation" />
+      <PageHeader
+        toolName="molarity"
+        title="Calculator"
+        subtitle="Molarity, dilution, batch preparation, and ligation"
+      />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: chemColor, textTransform: "uppercase", letterSpacing: "1px" }}>Solutions</span>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: chemColor,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Solutions
+        </span>
         <span style={{ flex: 1, height: 1, background: chemColor, opacity: 0.3 }} />
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-        {chemModes.map(m => (
+        {chemModes.map((m) => (
           <ModeButton
             key={m.key}
             modeKey={m.key}
@@ -755,11 +995,21 @@ function App() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: dnaColor, textTransform: "uppercase", letterSpacing: "1px" }}>DNA</span>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: dnaColor,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          DNA
+        </span>
         <span style={{ flex: 1, height: 1, background: dnaColor, opacity: 0.3 }} />
       </div>
       <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-        {dnaModes.map(m => (
+        {dnaModes.map((m) => (
           <ModeButton
             key={m.key}
             modeKey={m.key}
@@ -769,7 +1019,10 @@ function App() {
             accentColor={dnaColor}
             activeBg="#f5f3ff"
             onClick={() => setMode(m.key)}
-            style={{ flex: "0 1 auto", width: `calc(${100/chemModes.length}% - ${10*(chemModes.length-1)/chemModes.length}px)` }}
+            style={{
+              flex: "0 1 auto",
+              width: `calc(${100 / chemModes.length}% - ${(10 * (chemModes.length - 1)) / chemModes.length}px)`,
+            }}
           />
         ))}
       </div>

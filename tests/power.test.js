@@ -30,8 +30,14 @@ const ctx = {
   },
   ReactDOM: { render: () => {}, createRoot: () => ({ render: () => {} }) },
   document: { getElementById: () => ({}) },
-  sec: {}, lbl: {}, inpN: {}, selStyle: {}, btnDownload: {}, btnPrimary: {},
-  toolIcon: () => null, makeTicks: (min, max, n) => {
+  sec: {},
+  lbl: {},
+  inpN: {},
+  selStyle: {},
+  btnDownload: {},
+  btnPrimary: {},
+  toolIcon: () => null,
+  makeTicks: (min, max, n) => {
     const step = (max - min) / n;
     const ticks = [];
     for (let i = 0; i <= n; i++) ticks.push(min + step * i);
@@ -42,11 +48,32 @@ const ctx = {
   computeLegendHeight: () => 0,
 };
 vm.createContext(ctx);
-vm.runInContext(code + "\nthis.TESTS = TESTS; this.dFromMeans = dFromMeans; this.fFromGroupMeans = fFromGroupMeans; this.wFromProportions = wFromProportions;", ctx);
+vm.runInContext(
+  code +
+    "\nthis.TESTS = TESTS; this.dFromMeans = dFromMeans; this.fFromGroupMeans = fFromGroupMeans; this.wFromProportions = wFromProportions;",
+  ctx
+);
 
-const { normcdf, norminv, gammaln, betai, tcdf, tinv, fcdf, chi2cdf, chi2inv,
-        nctcdf, ncf_sf, ncchi2cdf, gammainc, bisect, TESTS,
-        dFromMeans, fFromGroupMeans, wFromProportions } = ctx;
+const {
+  normcdf,
+  norminv,
+  gammaln,
+  betai,
+  tcdf,
+  tinv,
+  fcdf,
+  chi2cdf,
+  chi2inv,
+  nctcdf,
+  ncf_sf,
+  ncchi2cdf,
+  gammainc,
+  bisect,
+  TESTS,
+  dFromMeans,
+  fFromGroupMeans,
+  wFromProportions,
+} = ctx;
 
 // ════════════════════════════════════════════════════════════════════════════
 // SECTION 1: BASE DISTRIBUTION FUNCTIONS
@@ -58,11 +85,11 @@ suite("normcdf — standard normal CDF");
 test("normcdf(0) = 0.5", () => approx(normcdf(0), 0.5, 1e-10));
 test("normcdf(1) = 0.84134", () => approx(normcdf(1), 0.84134, 0.0001));
 test("normcdf(-1) = 0.15866", () => approx(normcdf(-1), 0.15866, 0.0001));
-test("normcdf(1.96) = 0.97500", () => approx(normcdf(1.96), 0.97500, 0.0001));
-test("normcdf(-1.96) = 0.02500", () => approx(normcdf(-1.96), 0.02500, 0.0001));
-test("normcdf(2.576) = 0.99500", () => approx(normcdf(2.576), 0.99500, 0.0001));
-test("normcdf(3.291) = 0.99950", () => approx(normcdf(3.291), 0.99950, 0.0001));
-test("normcdf(-3) = 0.001350", () => approx(normcdf(-3), 0.001350, 0.00005));
+test("normcdf(1.96) = 0.97500", () => approx(normcdf(1.96), 0.975, 0.0001));
+test("normcdf(-1.96) = 0.02500", () => approx(normcdf(-1.96), 0.025, 0.0001));
+test("normcdf(2.576) = 0.99500", () => approx(normcdf(2.576), 0.995, 0.0001));
+test("normcdf(3.291) = 0.99950", () => approx(normcdf(3.291), 0.9995, 0.0001));
+test("normcdf(-3) = 0.001350", () => approx(normcdf(-3), 0.00135, 0.00005));
 test("normcdf(4) = 0.99997", () => approx(normcdf(4), 0.99997, 0.00001));
 test("normcdf(-4) ≈ 3.167e-5", () => approx(normcdf(-4), 0.00003167, 0.000005));
 
@@ -77,7 +104,7 @@ test("norminv(0.025) ≈ -1.960", () => approx(norminv(0.025), -1.95996, 0.001))
 test("norminv(0.001) ≈ -3.090", () => approx(norminv(0.001), -3.09023, 0.001));
 
 test("norminv round-trips with normcdf across quantiles", () => {
-  [0.001, 0.01, 0.025, 0.05, 0.1, 0.5, 0.9, 0.95, 0.975, 0.99, 0.999].forEach(p => {
+  [0.001, 0.01, 0.025, 0.05, 0.1, 0.5, 0.9, 0.95, 0.975, 0.99, 0.999].forEach((p) => {
     approx(normcdf(norminv(p)), p, 0.0001);
   });
 });
@@ -97,7 +124,7 @@ suite("gammainc — regularized lower incomplete gamma P(a, x)");
 // R: pgamma(x, shape=a, rate=1) — the regularized lower incomplete gamma
 test("P(1,1) = 1-e^{-1} = 0.63212", () => approx(gammainc(1, 1), 0.63212, 0.0001));
 test("P(1,2) = 1-e^{-2} = 0.86466", () => approx(gammainc(1, 2), 0.86466, 0.0001));
-test("P(0.5,1) = erf(1) = 0.84270", () => approx(gammainc(0.5, 1), 0.84270, 0.001));
+test("P(0.5,1) = erf(1) = 0.84270", () => approx(gammainc(0.5, 1), 0.8427, 0.001));
 test("P(2,1) = 0.26424", () => approx(gammainc(2, 1), 0.26424, 0.001));
 test("P(2,3) = 0.80085", () => approx(gammainc(2, 3), 0.80085, 0.001));
 test("P(5,5) = 0.55951", () => approx(gammainc(5, 5), 0.55951, 0.001));
@@ -127,13 +154,13 @@ suite("tcdf — Student's t CDF");
 
 // R: pt(t, df)
 test("tcdf(0, df) = 0.5 for various df", () => {
-  [5, 10, 30, 100, 1000].forEach(df => approx(tcdf(0, df), 0.5, 1e-10));
+  [5, 10, 30, 100, 1000].forEach((df) => approx(tcdf(0, df), 0.5, 1e-10));
 });
-test("tcdf(1.96, 10000) converges to normcdf(1.96)", () => approx(tcdf(1.96, 10000), 0.97500, 0.001));
+test("tcdf(1.96, 10000) converges to normcdf(1.96)", () => approx(tcdf(1.96, 10000), 0.975, 0.001));
 test("tcdf(2.228, 10) = 0.975", () => approx(tcdf(2.228, 10), 0.975, 0.001));
 test("tcdf(2.042, 30) = 0.975", () => approx(tcdf(2.042, 30), 0.975, 0.001));
 test("tcdf(2.571, 5) = 0.975", () => approx(tcdf(2.571, 5), 0.975, 0.001));
-test("tcdf(1.980, 120) = 0.975", () => approx(tcdf(1.980, 120), 0.975, 0.001));
+test("tcdf(1.980, 120) = 0.975", () => approx(tcdf(1.98, 120), 0.975, 0.001));
 test("tcdf(-2.228, 10) = 0.025", () => approx(tcdf(-2.228, 10), 0.025, 0.001));
 test("tcdf(3.169, 10) = 0.995", () => approx(tcdf(3.169, 10), 0.995, 0.001));
 test("tcdf(1.0, 5) ≈ 0.818", () => approx(tcdf(1.0, 5), 0.81839, 0.001));
@@ -142,8 +169,8 @@ test("tcdf(2.0, 20) ≈ 0.970", () => approx(tcdf(2.0, 20), 0.97034, 0.001));
 suite("tinv — inverse t CDF");
 
 test("tinv round-trips with tcdf across df and quantiles", () => {
-  [5, 10, 20, 50, 100].forEach(df => {
-    [0.025, 0.05, 0.5, 0.95, 0.975].forEach(p => {
+  [5, 10, 20, 50, 100].forEach((df) => {
+    [0.025, 0.05, 0.5, 0.95, 0.975].forEach((p) => {
       approx(tcdf(tinv(p, df), df), p, 0.0001);
     });
   });
@@ -172,14 +199,14 @@ suite("chi2cdf — chi-square CDF");
 test("χ²(1) at 3.841 = 0.95", () => approx(chi2cdf(3.841, 1), 0.95, 0.001));
 test("χ²(2) at 5.991 = 0.95", () => approx(chi2cdf(5.991, 2), 0.95, 0.001));
 test("χ²(4) at 9.488 = 0.95", () => approx(chi2cdf(9.488, 4), 0.95, 0.001));
-test("χ²(5) at 11.070 = 0.95", () => approx(chi2cdf(11.070, 5), 0.95, 0.001));
+test("χ²(5) at 11.070 = 0.95", () => approx(chi2cdf(11.07, 5), 0.95, 0.001));
 test("χ²(10) at 18.307 = 0.95", () => approx(chi2cdf(18.307, 10), 0.95, 0.001));
 test("χ²(1) at 6.635 = 0.99", () => approx(chi2cdf(6.635, 1), 0.99, 0.001));
 test("χ²(8) at 15.507 = 0.95", () => approx(chi2cdf(15.507, 8), 0.95, 0.001));
 
 test("chi2inv round-trips for various df and p", () => {
-  [1, 2, 4, 5, 10, 20, 50].forEach(k => {
-    [0.90, 0.95, 0.99, 0.999].forEach(p => {
+  [1, 2, 4, 5, 10, 20, 50].forEach((k) => {
+    [0.9, 0.95, 0.99, 0.999].forEach((p) => {
       approx(chi2cdf(chi2inv(p, k), k), p, 0.001);
     });
   });
@@ -195,8 +222,8 @@ suite("nctcdf — non-central t CDF properties");
 
 test("nctcdf with δ=0 equals central tcdf for all df", () => {
   // Gauss-Legendre quadrature matches tcdf to high precision even for small df
-  [5, 10, 20, 30, 100].forEach(df => {
-    [0.5, 1.0, 2.0].forEach(t => {
+  [5, 10, 20, 30, 100].forEach((df) => {
+    [0.5, 1.0, 2.0].forEach((t) => {
       approx(nctcdf(t, df, 0), tcdf(t, df), 0.0001, `t=${t}, df=${df}`);
     });
   });
@@ -205,7 +232,7 @@ test("nctcdf with δ=0 equals central tcdf for all df", () => {
 test("nctcdf is monotonically increasing in t (fixed df, δ)", () => {
   [-2, -1, 0, 1, 2, 3, 4].reduce((prev, t) => {
     const curr = nctcdf(t, 30, 2);
-    if (prev !== null) assert(curr > prev, `nctcdf(${t},30,2) should exceed nctcdf(${t-1},30,2)`);
+    if (prev !== null) assert(curr > prev, `nctcdf(${t},30,2) should exceed nctcdf(${t - 1},30,2)`);
     return curr;
   }, null);
 });
@@ -233,7 +260,12 @@ test("nctcdf boundaries: P(T≤-∞) → 0, P(T≤+∞) → 1", () => {
 });
 
 test("nctcdf output is always in [0, 1]", () => {
-  [[0, 10, 2], [3, 5, 5], [-2, 50, 1], [10, 100, 8]].forEach(([t, df, d]) => {
+  [
+    [0, 10, 2],
+    [3, 5, 5],
+    [-2, 50, 1],
+    [10, 100, 8],
+  ].forEach(([t, df, d]) => {
     const p = nctcdf(t, df, d);
     assert(p >= 0 && p <= 1 && !isNaN(p), `nctcdf(${t},${df},${d})=${p} out of bounds`);
   });
@@ -269,7 +301,12 @@ test("ncf_sf is monotonically increasing in λ (more noncentrality = more power)
 });
 
 test("ncf_sf output is always in [0, 1]", () => {
-  [[3, 3, 20, 10], [1, 1, 50, 5], [5, 4, 60, 20], [10, 2, 100, 30]].forEach(([f, d1, d2, lam]) => {
+  [
+    [3, 3, 20, 10],
+    [1, 1, 50, 5],
+    [5, 4, 60, 20],
+    [10, 2, 100, 30],
+  ].forEach(([f, d1, d2, lam]) => {
     const s = ncf_sf(f, d1, d2, lam);
     assert(s >= 0 && s <= 1 && !isNaN(s), `ncf_sf(${f},${d1},${d2},${lam})=${s} out of bounds`);
   });
@@ -319,7 +356,13 @@ test("ncchi2cdf at x >> mean → 1", () => {
 });
 
 test("ncchi2cdf output is always in [0, 1]", () => {
-  [[10, 1, 5], [5, 2, 3], [15, 4, 10], [50, 2, 40], [100, 4, 80]].forEach(([x, k, lam]) => {
+  [
+    [10, 1, 5],
+    [5, 2, 3],
+    [15, 4, 10],
+    [50, 2, 40],
+    [100, 4, 80],
+  ].forEach(([x, k, lam]) => {
     const c = ncchi2cdf(x, k, lam);
     assert(c >= 0 && c <= 1 && !isNaN(c), `ncchi2cdf(${x},${k},${lam})=${c} out of bounds`);
   });
@@ -341,37 +384,54 @@ test("ncchi2cdf consistency: 1 - ncchi2cdf gives valid survival", () => {
 suite("Power — two-sample t-test, two-tailed (pwr.t.test)");
 
 // R: pwr.t.test(d=0.2, n=394, sig.level=0.05, type="two.sample")$power
-test("d=0.2, n=394, α=0.05 → ~0.80", () => approx(TESTS["t-ind"].power(0.2, 394, 0.05, 2), 0.80, 0.005));
+test("d=0.2, n=394, α=0.05 → ~0.80", () =>
+  approx(TESTS["t-ind"].power(0.2, 394, 0.05, 2), 0.8, 0.005));
 // R: pwr.t.test(d=0.5, n=64, sig.level=0.05)$power
-test("d=0.5, n=64, α=0.05 → ~0.80", () => approx(TESTS["t-ind"].power(0.5, 64, 0.05, 2), 0.80, 0.005));
+test("d=0.5, n=64, α=0.05 → ~0.80", () =>
+  approx(TESTS["t-ind"].power(0.5, 64, 0.05, 2), 0.8, 0.005));
 // R: pwr.t.test(d=0.8, n=26, sig.level=0.05)$power
-test("d=0.8, n=26, α=0.05 → ~0.807", () => approx(TESTS["t-ind"].power(0.8, 26, 0.05, 2), 0.8075, 0.005));
+test("d=0.8, n=26, α=0.05 → ~0.807", () =>
+  approx(TESTS["t-ind"].power(0.8, 26, 0.05, 2), 0.8075, 0.005));
 // R: pwr.t.test(d=1.0, n=17, sig.level=0.05)$power
-test("d=1.0, n=17, α=0.05 → ~0.807", () => approx(TESTS["t-ind"].power(1.0, 17, 0.05, 2), 0.8070, 0.005));
+test("d=1.0, n=17, α=0.05 → ~0.807", () =>
+  approx(TESTS["t-ind"].power(1.0, 17, 0.05, 2), 0.807, 0.005));
 // R: pwr.t.test(d=1.2, n=12, sig.level=0.05)$power
-test("d=1.2, n=12, α=0.05 → ~0.802", () => approx(TESTS["t-ind"].power(1.2, 12, 0.05, 2), 0.8021, 0.005));
+test("d=1.2, n=12, α=0.05 → ~0.802", () =>
+  approx(TESTS["t-ind"].power(1.2, 12, 0.05, 2), 0.8021, 0.005));
 
 // Vary alpha at d=0.5, n=64
-test("d=0.5, n=64, α=0.01 → ~0.585", () => approx(TESTS["t-ind"].power(0.5, 64, 0.01, 2), 0.5853, 0.005));
-test("d=0.5, n=64, α=0.10 → ~0.88", () => approx(TESTS["t-ind"].power(0.5, 64, 0.10, 2), 0.88, 0.005));
-test("d=0.5, n=64, α=0.001 → ~0.301", () => approx(TESTS["t-ind"].power(0.5, 64, 0.001, 2), 0.3006, 0.005));
+test("d=0.5, n=64, α=0.01 → ~0.585", () =>
+  approx(TESTS["t-ind"].power(0.5, 64, 0.01, 2), 0.5853, 0.005));
+test("d=0.5, n=64, α=0.10 → ~0.88", () =>
+  approx(TESTS["t-ind"].power(0.5, 64, 0.1, 2), 0.88, 0.005));
+test("d=0.5, n=64, α=0.001 → ~0.301", () =>
+  approx(TESTS["t-ind"].power(0.5, 64, 0.001, 2), 0.3006, 0.005));
 
 // Vary n
-test("d=0.5, n=100, α=0.05 → ~0.940", () => approx(TESTS["t-ind"].power(0.5, 100, 0.05, 2), 0.9404, 0.005));
-test("d=0.5, n=20, α=0.05 → ~0.338", () => approx(TESTS["t-ind"].power(0.5, 20, 0.05, 2), 0.3379, 0.005));
-test("d=0.3, n=100, α=0.05 → ~0.560", () => approx(TESTS["t-ind"].power(0.3, 100, 0.05, 2), 0.5601, 0.005));
+test("d=0.5, n=100, α=0.05 → ~0.940", () =>
+  approx(TESTS["t-ind"].power(0.5, 100, 0.05, 2), 0.9404, 0.005));
+test("d=0.5, n=20, α=0.05 → ~0.338", () =>
+  approx(TESTS["t-ind"].power(0.5, 20, 0.05, 2), 0.3379, 0.005));
+test("d=0.3, n=100, α=0.05 → ~0.560", () =>
+  approx(TESTS["t-ind"].power(0.3, 100, 0.05, 2), 0.5601, 0.005));
 test("d=0.5, n=200, α=0.05 → ~0.999", () => {
   assert(TESTS["t-ind"].power(0.5, 200, 0.05, 2) > 0.995, "should be near 1");
 });
-test("d=0.2, n=50, α=0.05 → ~0.168", () => approx(TESTS["t-ind"].power(0.2, 50, 0.05, 2), 0.1677, 0.005));
+test("d=0.2, n=50, α=0.05 → ~0.168", () =>
+  approx(TESTS["t-ind"].power(0.2, 50, 0.05, 2), 0.1677, 0.005));
 
 suite("Power — two-sample t-test, one-tailed");
 
-test("d=0.5, n=51, α=0.05 → ~0.806", () => approx(TESTS["t-ind"].power(0.5, 51, 0.05, 1), 0.8059, 0.005));
-test("d=0.2, n=310, α=0.05 → ~0.80", () => approx(TESTS["t-ind"].power(0.2, 310, 0.05, 1), 0.80, 0.005));
-test("d=0.8, n=20, α=0.05 → ~0.799", () => approx(TESTS["t-ind"].power(0.8, 20, 0.05, 1), 0.7994, 0.005));
-test("d=0.5, n=51, α=0.01 → ~0.565", () => approx(TESTS["t-ind"].power(0.5, 51, 0.01, 1), 0.5653, 0.005));
-test("d=0.5, n=51, α=0.001 → ~0.266", () => approx(TESTS["t-ind"].power(0.5, 51, 0.001, 1), 0.2659, 0.005));
+test("d=0.5, n=51, α=0.05 → ~0.806", () =>
+  approx(TESTS["t-ind"].power(0.5, 51, 0.05, 1), 0.8059, 0.005));
+test("d=0.2, n=310, α=0.05 → ~0.80", () =>
+  approx(TESTS["t-ind"].power(0.2, 310, 0.05, 1), 0.8, 0.005));
+test("d=0.8, n=20, α=0.05 → ~0.799", () =>
+  approx(TESTS["t-ind"].power(0.8, 20, 0.05, 1), 0.7994, 0.005));
+test("d=0.5, n=51, α=0.01 → ~0.565", () =>
+  approx(TESTS["t-ind"].power(0.5, 51, 0.01, 1), 0.5653, 0.005));
+test("d=0.5, n=51, α=0.001 → ~0.266", () =>
+  approx(TESTS["t-ind"].power(0.5, 51, 0.001, 1), 0.2659, 0.005));
 
 test("power monotonically increases with n (two-sample)", () => {
   const p1 = TESTS["t-ind"].power(0.5, 20, 0.05, 2);
@@ -393,7 +453,7 @@ test("power monotonically increases with alpha (two-sample)", () => {
   const p1 = TESTS["t-ind"].power(0.5, 50, 0.001, 2);
   const p2 = TESTS["t-ind"].power(0.5, 50, 0.01, 2);
   const p3 = TESTS["t-ind"].power(0.5, 50, 0.05, 2);
-  const p4 = TESTS["t-ind"].power(0.5, 50, 0.10, 2);
+  const p4 = TESTS["t-ind"].power(0.5, 50, 0.1, 2);
   assert(p1 < p2 && p2 < p3 && p3 < p4, "power must increase with alpha");
 });
 
@@ -410,24 +470,35 @@ test("one-tailed > two-tailed for same params", () => {
 
 suite("Power — paired t-test, two-tailed (pwr.t.test paired)");
 
-test("d=0.2, n=199, α=0.05 → ~0.802", () => approx(TESTS["t-paired"].power(0.2, 199, 0.05, 2), 0.8017, 0.005));
-test("d=0.5, n=34, α=0.05 → ~0.808", () => approx(TESTS["t-paired"].power(0.5, 34, 0.05, 2), 0.8078, 0.005));
-test("d=0.8, n=15, α=0.05 → ~0.821", () => approx(TESTS["t-paired"].power(0.8, 15, 0.05, 2), 0.8213, 0.005));
-test("d=1.0, n=10, α=0.05 → ~0.803", () => approx(TESTS["t-paired"].power(1.0, 10, 0.05, 2), 0.8031, 0.005));
+test("d=0.2, n=199, α=0.05 → ~0.802", () =>
+  approx(TESTS["t-paired"].power(0.2, 199, 0.05, 2), 0.8017, 0.005));
+test("d=0.5, n=34, α=0.05 → ~0.808", () =>
+  approx(TESTS["t-paired"].power(0.5, 34, 0.05, 2), 0.8078, 0.005));
+test("d=0.8, n=15, α=0.05 → ~0.821", () =>
+  approx(TESTS["t-paired"].power(0.8, 15, 0.05, 2), 0.8213, 0.005));
+test("d=1.0, n=10, α=0.05 → ~0.803", () =>
+  approx(TESTS["t-paired"].power(1.0, 10, 0.05, 2), 0.8031, 0.005));
 
 // Vary alpha
-test("d=0.5, n=34, α=0.01 → ~0.577", () => approx(TESTS["t-paired"].power(0.5, 34, 0.01, 2), 0.5765, 0.005));
-test("d=0.5, n=34, α=0.10 → ~0.89", () => approx(TESTS["t-paired"].power(0.5, 34, 0.10, 2), 0.89, 0.005));
-test("d=0.5, n=34, α=0.001 → ~0.271", () => approx(TESTS["t-paired"].power(0.5, 34, 0.001, 2), 0.2709, 0.005));
+test("d=0.5, n=34, α=0.01 → ~0.577", () =>
+  approx(TESTS["t-paired"].power(0.5, 34, 0.01, 2), 0.5765, 0.005));
+test("d=0.5, n=34, α=0.10 → ~0.89", () =>
+  approx(TESTS["t-paired"].power(0.5, 34, 0.1, 2), 0.89, 0.005));
+test("d=0.5, n=34, α=0.001 → ~0.271", () =>
+  approx(TESTS["t-paired"].power(0.5, 34, 0.001, 2), 0.2709, 0.005));
 
 // Large n
-test("d=0.3, n=200, α=0.05 → ~0.988", () => approx(TESTS["t-paired"].power(0.3, 200, 0.05, 2), 0.9882, 0.003));
+test("d=0.3, n=200, α=0.05 → ~0.988", () =>
+  approx(TESTS["t-paired"].power(0.3, 200, 0.05, 2), 0.9882, 0.003));
 
 suite("Power — paired t-test, one-tailed");
 
-test("d=0.5, n=27, α=0.05 → ~0.812", () => approx(TESTS["t-paired"].power(0.5, 27, 0.05, 1), 0.8118, 0.005));
-test("d=0.8, n=12, α=0.05 → ~0.829", () => approx(TESTS["t-paired"].power(0.8, 12, 0.05, 1), 0.8290, 0.005));
-test("d=0.5, n=27, α=0.001 → ~0.234", () => approx(TESTS["t-paired"].power(0.5, 27, 0.001, 1), 0.2340, 0.005));
+test("d=0.5, n=27, α=0.05 → ~0.812", () =>
+  approx(TESTS["t-paired"].power(0.5, 27, 0.05, 1), 0.8118, 0.005));
+test("d=0.8, n=12, α=0.05 → ~0.829", () =>
+  approx(TESTS["t-paired"].power(0.8, 12, 0.05, 1), 0.829, 0.005));
+test("d=0.5, n=27, α=0.001 → ~0.234", () =>
+  approx(TESTS["t-paired"].power(0.5, 27, 0.001, 1), 0.234, 0.005));
 
 test("power increases with n (paired)", () => {
   const p1 = TESTS["t-paired"].power(0.5, 10, 0.05, 2);
@@ -443,14 +514,18 @@ test("power increases with n (paired)", () => {
 
 suite("Power — one-sample t-test");
 
-test("d=0.5, n=34, α=0.05, two-tailed → ~0.808", () => approx(TESTS["t-one"].power(0.5, 34, 0.05, 2), 0.8078, 0.005));
-test("d=0.2, n=199, α=0.05, two-tailed → ~0.802", () => approx(TESTS["t-one"].power(0.2, 199, 0.05, 2), 0.8017, 0.005));
-test("d=0.8, n=15, α=0.05, two-tailed → ~0.821", () => approx(TESTS["t-one"].power(0.8, 15, 0.05, 2), 0.8213, 0.005));
-test("d=0.5, n=27, α=0.05, one-tailed → ~0.812", () => approx(TESTS["t-one"].power(0.5, 27, 0.05, 1), 0.8118, 0.005));
+test("d=0.5, n=34, α=0.05, two-tailed → ~0.808", () =>
+  approx(TESTS["t-one"].power(0.5, 34, 0.05, 2), 0.8078, 0.005));
+test("d=0.2, n=199, α=0.05, two-tailed → ~0.802", () =>
+  approx(TESTS["t-one"].power(0.2, 199, 0.05, 2), 0.8017, 0.005));
+test("d=0.8, n=15, α=0.05, two-tailed → ~0.821", () =>
+  approx(TESTS["t-one"].power(0.8, 15, 0.05, 2), 0.8213, 0.005));
+test("d=0.5, n=27, α=0.05, one-tailed → ~0.812", () =>
+  approx(TESTS["t-one"].power(0.5, 27, 0.05, 1), 0.8118, 0.005));
 
 test("one-sample matches paired exactly (identical math)", () => {
-  [0.2, 0.5, 0.8].forEach(d => {
-    [20, 50, 100].forEach(n => {
+  [0.2, 0.5, 0.8].forEach((d) => {
+    [20, 50, 100].forEach((n) => {
       const pOne = TESTS["t-one"].power(d, n, 0.05, 2);
       const pPaired = TESTS["t-paired"].power(d, n, 0.05, 2);
       approx(pOne, pPaired, 1e-10, `d=${d}, n=${n}: one-sample should equal paired`);
@@ -466,35 +541,50 @@ test("one-sample matches paired exactly (identical math)", () => {
 suite("Power — ANOVA k=2 (pwr.anova.test)");
 
 // k=2 ANOVA: f=d/2, so f=0.25 ↔ d=0.5
-test("f=0.25, k=2, n=64, α=0.05 → ~0.80", () => approx(TESTS["anova"].power(0.25, 64, 0.05, 2, 2), 0.80, 0.005));
-test("f=0.40, k=2, n=26, α=0.05 → ~0.807", () => approx(TESTS["anova"].power(0.40, 26, 0.05, 2, 2), 0.8075, 0.005));
+test("f=0.25, k=2, n=64, α=0.05 → ~0.80", () =>
+  approx(TESTS["anova"].power(0.25, 64, 0.05, 2, 2), 0.8, 0.005));
+test("f=0.40, k=2, n=26, α=0.05 → ~0.807", () =>
+  approx(TESTS["anova"].power(0.4, 26, 0.05, 2, 2), 0.8075, 0.005));
 
 suite("Power — ANOVA k=3");
 
-test("f=0.25, k=3, n=53, α=0.05 → ~0.80", () => approx(TESTS["anova"].power(0.25, 53, 0.05, 2, 3), 0.80, 0.005));
-test("f=0.40, k=3, n=22, α=0.05 → ~0.818", () => approx(TESTS["anova"].power(0.40, 22, 0.05, 2, 3), 0.8181, 0.005));
-test("f=0.10, k=3, n=323, α=0.05 → ~0.80", () => approx(TESTS["anova"].power(0.10, 323, 0.05, 2, 3), 0.80, 0.005));
+test("f=0.25, k=3, n=53, α=0.05 → ~0.80", () =>
+  approx(TESTS["anova"].power(0.25, 53, 0.05, 2, 3), 0.8, 0.005));
+test("f=0.40, k=3, n=22, α=0.05 → ~0.818", () =>
+  approx(TESTS["anova"].power(0.4, 22, 0.05, 2, 3), 0.8181, 0.005));
+test("f=0.10, k=3, n=323, α=0.05 → ~0.80", () =>
+  approx(TESTS["anova"].power(0.1, 323, 0.05, 2, 3), 0.8, 0.005));
 
 // Vary alpha
-test("f=0.25, k=3, n=53, α=0.01 → ~0.594", () => approx(TESTS["anova"].power(0.25, 53, 0.01, 2, 3), 0.5937, 0.005));
-test("f=0.25, k=3, n=53, α=0.10 → ~0.88", () => approx(TESTS["anova"].power(0.25, 53, 0.10, 2, 3), 0.88, 0.005));
-test("f=0.25, k=3, n=53, α=0.001 → ~0.314", () => approx(TESTS["anova"].power(0.25, 53, 0.001, 2, 3), 0.3142, 0.005));
+test("f=0.25, k=3, n=53, α=0.01 → ~0.594", () =>
+  approx(TESTS["anova"].power(0.25, 53, 0.01, 2, 3), 0.5937, 0.005));
+test("f=0.25, k=3, n=53, α=0.10 → ~0.88", () =>
+  approx(TESTS["anova"].power(0.25, 53, 0.1, 2, 3), 0.88, 0.005));
+test("f=0.25, k=3, n=53, α=0.001 → ~0.314", () =>
+  approx(TESTS["anova"].power(0.25, 53, 0.001, 2, 3), 0.3142, 0.005));
 
 suite("Power — ANOVA k=4");
 
-test("f=0.25, k=4, n=45, α=0.05 → ~0.80", () => approx(TESTS["anova"].power(0.25, 45, 0.05, 2, 4), 0.80, 0.005));
-test("f=0.40, k=4, n=18, α=0.05 → ~0.799", () => approx(TESTS["anova"].power(0.40, 18, 0.05, 2, 4), 0.7989, 0.005));
+test("f=0.25, k=4, n=45, α=0.05 → ~0.80", () =>
+  approx(TESTS["anova"].power(0.25, 45, 0.05, 2, 4), 0.8, 0.005));
+test("f=0.40, k=4, n=18, α=0.05 → ~0.799", () =>
+  approx(TESTS["anova"].power(0.4, 18, 0.05, 2, 4), 0.7989, 0.005));
 
 suite("Power — ANOVA k=5");
 
-test("f=0.25, k=5, n=39, α=0.05 → ~0.798", () => approx(TESTS["anova"].power(0.25, 39, 0.05, 2, 5), 0.7982, 0.005));
-test("f=0.40, k=5, n=16, α=0.05 → ~0.803", () => approx(TESTS["anova"].power(0.40, 16, 0.05, 2, 5), 0.8031, 0.005));
+test("f=0.25, k=5, n=39, α=0.05 → ~0.798", () =>
+  approx(TESTS["anova"].power(0.25, 39, 0.05, 2, 5), 0.7982, 0.005));
+test("f=0.40, k=5, n=16, α=0.05 → ~0.803", () =>
+  approx(TESTS["anova"].power(0.4, 16, 0.05, 2, 5), 0.8031, 0.005));
 
 suite("Power — ANOVA large k");
 
-test("f=0.25, k=8, n=25, α=0.05 → ~0.713", () => approx(TESTS["anova"].power(0.25, 25, 0.05, 2, 8), 0.7125, 0.005));
-test("f=0.25, k=8, n=35, α=0.05 → ~0.87", () => approx(TESTS["anova"].power(0.25, 35, 0.05, 2, 8), 0.87, 0.005));
-test("f=0.25, k=10, n=30, α=0.05 → ~0.868", () => approx(TESTS["anova"].power(0.25, 30, 0.05, 2, 10), 0.8679, 0.005));
+test("f=0.25, k=8, n=25, α=0.05 → ~0.713", () =>
+  approx(TESTS["anova"].power(0.25, 25, 0.05, 2, 8), 0.7125, 0.005));
+test("f=0.25, k=8, n=35, α=0.05 → ~0.87", () =>
+  approx(TESTS["anova"].power(0.25, 35, 0.05, 2, 8), 0.87, 0.005));
+test("f=0.25, k=10, n=30, α=0.05 → ~0.868", () =>
+  approx(TESTS["anova"].power(0.25, 30, 0.05, 2, 10), 0.8679, 0.005));
 
 test("power increases with n (ANOVA)", () => {
   const p1 = TESTS["anova"].power(0.25, 20, 0.05, 2, 3);
@@ -504,9 +594,9 @@ test("power increases with n (ANOVA)", () => {
 });
 
 test("power increases with f (ANOVA)", () => {
-  const p1 = TESTS["anova"].power(0.10, 50, 0.05, 2, 3);
+  const p1 = TESTS["anova"].power(0.1, 50, 0.05, 2, 3);
   const p2 = TESTS["anova"].power(0.25, 50, 0.05, 2, 3);
-  const p3 = TESTS["anova"].power(0.40, 50, 0.05, 2, 3);
+  const p3 = TESTS["anova"].power(0.4, 50, 0.05, 2, 3);
   assert(p1 < p2 && p2 < p3, "ANOVA power must increase with f");
 });
 
@@ -533,27 +623,38 @@ test("power increases with total N for fixed k and f (ANOVA)", () => {
 
 suite("Power — correlation, two-tailed (pwr.r.test)");
 
-test("r=0.1, n=782, α=0.05 → ~0.800", () => approx(TESTS["correlation"].power(0.1, 782, 0.05, 2), 0.7997, 0.005));
-test("r=0.3, n=85, α=0.05 → ~0.800", () => approx(TESTS["correlation"].power(0.3, 85, 0.05, 2), 0.8003, 0.005));
-test("r=0.5, n=29, α=0.05 → ~0.800", () => approx(TESTS["correlation"].power(0.5, 29, 0.05, 2), 0.7998, 0.005));
+test("r=0.1, n=782, α=0.05 → ~0.800", () =>
+  approx(TESTS["correlation"].power(0.1, 782, 0.05, 2), 0.7997, 0.005));
+test("r=0.3, n=85, α=0.05 → ~0.800", () =>
+  approx(TESTS["correlation"].power(0.3, 85, 0.05, 2), 0.8003, 0.005));
+test("r=0.5, n=29, α=0.05 → ~0.800", () =>
+  approx(TESTS["correlation"].power(0.5, 29, 0.05, 2), 0.7998, 0.005));
 
 // Vary alpha
-test("r=0.3, n=85, α=0.01 → ~0.590", () => approx(TESTS["correlation"].power(0.3, 85, 0.01, 2), 0.5898, 0.005));
-test("r=0.3, n=85, α=0.10 → ~0.88", () => approx(TESTS["correlation"].power(0.3, 85, 0.10, 2), 0.88, 0.005));
-test("r=0.3, n=85, α=0.001 → ~0.313", () => approx(TESTS["correlation"].power(0.3, 85, 0.001, 2), 0.3129, 0.005));
+test("r=0.3, n=85, α=0.01 → ~0.590", () =>
+  approx(TESTS["correlation"].power(0.3, 85, 0.01, 2), 0.5898, 0.005));
+test("r=0.3, n=85, α=0.10 → ~0.88", () =>
+  approx(TESTS["correlation"].power(0.3, 85, 0.1, 2), 0.88, 0.005));
+test("r=0.3, n=85, α=0.001 → ~0.313", () =>
+  approx(TESTS["correlation"].power(0.3, 85, 0.001, 2), 0.3129, 0.005));
 
 // Vary n
 test("r=0.3, n=200, α=0.05 → >0.99", () => {
   assert(TESTS["correlation"].power(0.3, 200, 0.05, 2) > 0.99, "should be near 1");
 });
-test("r=0.3, n=20, α=0.05 → ~0.248", () => approx(TESTS["correlation"].power(0.3, 20, 0.05, 2), 0.2477, 0.005));
-test("r=0.1, n=200, α=0.05 → ~0.291", () => approx(TESTS["correlation"].power(0.1, 200, 0.05, 2), 0.2910, 0.005));
+test("r=0.3, n=20, α=0.05 → ~0.248", () =>
+  approx(TESTS["correlation"].power(0.3, 20, 0.05, 2), 0.2477, 0.005));
+test("r=0.1, n=200, α=0.05 → ~0.291", () =>
+  approx(TESTS["correlation"].power(0.1, 200, 0.05, 2), 0.291, 0.005));
 
 suite("Power — correlation, one-tailed");
 
-test("r=0.3, n=68, α=0.05 → ~0.80", () => approx(TESTS["correlation"].power(0.3, 68, 0.05, 1), 0.80, 0.005));
-test("r=0.5, n=22, α=0.05 → ~0.773", () => approx(TESTS["correlation"].power(0.5, 22, 0.05, 1), 0.7732, 0.005));
-test("r=0.3, n=68, α=0.001 → ~0.276", () => approx(TESTS["correlation"].power(0.3, 68, 0.001, 1), 0.2760, 0.005));
+test("r=0.3, n=68, α=0.05 → ~0.80", () =>
+  approx(TESTS["correlation"].power(0.3, 68, 0.05, 1), 0.8, 0.005));
+test("r=0.5, n=22, α=0.05 → ~0.773", () =>
+  approx(TESTS["correlation"].power(0.5, 22, 0.05, 1), 0.7732, 0.005));
+test("r=0.3, n=68, α=0.001 → ~0.276", () =>
+  approx(TESTS["correlation"].power(0.3, 68, 0.001, 1), 0.276, 0.005));
 
 test("power increases with n (correlation)", () => {
   const p1 = TESTS["correlation"].power(0.3, 20, 0.05, 2);
@@ -582,29 +683,41 @@ test("one-tailed > two-tailed (correlation)", () => {
 
 suite("Power — chi-square df=1 (pwr.chisq.test)");
 
-test("w=0.1, df=1, N=785, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.1, 785, 0.05, 2, 0, 1), 0.80, 0.005));
-test("w=0.3, df=1, N=88, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.3, 88, 0.05, 2, 0, 1), 0.80, 0.005));
-test("w=0.5, df=1, N=32, α=0.05 → ~0.81", () => approx(TESTS["chi2"].power(0.5, 32, 0.05, 2, 0, 1), 0.81, 0.005));
+test("w=0.1, df=1, N=785, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.1, 785, 0.05, 2, 0, 1), 0.8, 0.005));
+test("w=0.3, df=1, N=88, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.3, 88, 0.05, 2, 0, 1), 0.8, 0.005));
+test("w=0.5, df=1, N=32, α=0.05 → ~0.81", () =>
+  approx(TESTS["chi2"].power(0.5, 32, 0.05, 2, 0, 1), 0.81, 0.005));
 
 // Vary alpha
-test("w=0.3, df=1, N=88, α=0.01 → ~0.594", () => approx(TESTS["chi2"].power(0.3, 88, 0.01, 2, 0, 1), 0.5942, 0.005));
-test("w=0.3, df=1, N=88, α=0.10 → ~0.88", () => approx(TESTS["chi2"].power(0.3, 88, 0.10, 2, 0, 1), 0.88, 0.005));
-test("w=0.3, df=1, N=88, α=0.001 → ~0.317", () => approx(TESTS["chi2"].power(0.3, 88, 0.001, 2, 0, 1), 0.3169, 0.005));
+test("w=0.3, df=1, N=88, α=0.01 → ~0.594", () =>
+  approx(TESTS["chi2"].power(0.3, 88, 0.01, 2, 0, 1), 0.5942, 0.005));
+test("w=0.3, df=1, N=88, α=0.10 → ~0.88", () =>
+  approx(TESTS["chi2"].power(0.3, 88, 0.1, 2, 0, 1), 0.88, 0.005));
+test("w=0.3, df=1, N=88, α=0.001 → ~0.317", () =>
+  approx(TESTS["chi2"].power(0.3, 88, 0.001, 2, 0, 1), 0.3169, 0.005));
 
 suite("Power — chi-square df=2");
 
-test("w=0.3, df=2, N=108, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.3, 108, 0.05, 2, 0, 2), 0.80, 0.005));
-test("w=0.5, df=2, N=39, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.5, 39, 0.05, 2, 0, 2), 0.80, 0.005));
+test("w=0.3, df=2, N=108, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.3, 108, 0.05, 2, 0, 2), 0.8, 0.005));
+test("w=0.5, df=2, N=39, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.5, 39, 0.05, 2, 0, 2), 0.8, 0.005));
 
 suite("Power — chi-square df=4");
 
-test("w=0.3, df=4, N=133, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.3, 133, 0.05, 2, 0, 4), 0.80, 0.005));
-test("w=0.5, df=4, N=48, α=0.05 → ~0.80", () => approx(TESTS["chi2"].power(0.5, 48, 0.05, 2, 0, 4), 0.80, 0.005));
+test("w=0.3, df=4, N=133, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.3, 133, 0.05, 2, 0, 4), 0.8, 0.005));
+test("w=0.5, df=4, N=48, α=0.05 → ~0.80", () =>
+  approx(TESTS["chi2"].power(0.5, 48, 0.05, 2, 0, 4), 0.8, 0.005));
 
 suite("Power — chi-square larger df");
 
-test("w=0.3, df=8, N=176, α=0.05 → ~0.825", () => approx(TESTS["chi2"].power(0.3, 176, 0.05, 2, 0, 8), 0.8248, 0.005));
-test("w=0.3, df=12, N=220, α=0.05 → ~0.862", () => approx(TESTS["chi2"].power(0.3, 220, 0.05, 2, 0, 12), 0.8616, 0.005));
+test("w=0.3, df=8, N=176, α=0.05 → ~0.825", () =>
+  approx(TESTS["chi2"].power(0.3, 176, 0.05, 2, 0, 8), 0.8248, 0.005));
+test("w=0.3, df=12, N=220, α=0.05 → ~0.862", () =>
+  approx(TESTS["chi2"].power(0.3, 220, 0.05, 2, 0, 12), 0.8616, 0.005));
 
 test("power increases with N (chi-square)", () => {
   const p1 = TESTS["chi2"].power(0.3, 30, 0.05, 2, 0, 1);
@@ -679,7 +792,8 @@ suite("wFromProportions — Cohen's w from observed vs expected proportions");
 test("w for 2-cell equal vs unequal = 0.2", () => {
   approx(wFromProportions([0.6, 0.4], [0.5, 0.5]), 0.2, 0.0001);
 });
-test("w = 0 when proportions match", () => approx(wFromProportions([0.25, 0.75], [0.25, 0.75]), 0, 1e-10));
+test("w = 0 when proportions match", () =>
+  approx(wFromProportions([0.25, 0.75], [0.25, 0.75]), 0, 1e-10));
 test("w for 3:1 ratio vs equal = 0.5", () => {
   approx(wFromProportions([0.75, 0.25], [0.5, 0.5]), 0.5, 0.0001);
 });
@@ -690,7 +804,8 @@ test("w for 4-cell table", () => {
   for (let i = 0; i < 4; i++) sum += (obs[i] - exp[i]) ** 2 / exp[i];
   approx(wFromProportions(obs, exp), Math.sqrt(sum), 0.0001);
 });
-test("mismatched lengths return 0", () => approx(wFromProportions([0.5, 0.5], [0.3, 0.3, 0.4]), 0, 1e-10));
+test("mismatched lengths return 0", () =>
+  approx(wFromProportions([0.5, 0.5], [0.3, 0.3, 0.4]), 0, 1e-10));
 test("zero expected returns 0", () => approx(wFromProportions([0.5, 0.5], [0, 1]), 0, 1e-10));
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -701,60 +816,60 @@ suite("bisect — sample size for two-sample t-test");
 
 // R: pwr.t.test(d=0.5, power=0.80, sig.level=0.05)$n = 63.77
 test("finds n≈64 for d=0.5, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["t-ind"].power(0.5, Math.round(n), 0.05, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 500, 0.5));
+  const fn = (n) => TESTS["t-ind"].power(0.5, Math.round(n), 0.05, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 500, 0.5));
   assert(n >= 62 && n <= 66, `expected ~64, got ${n}`);
 });
 test("finds n≈26 for d=0.8, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["t-ind"].power(0.8, Math.round(n), 0.05, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 200, 0.5));
+  const fn = (n) => TESTS["t-ind"].power(0.8, Math.round(n), 0.05, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 200, 0.5));
   assert(n >= 24 && n <= 28, `expected ~26, got ${n}`);
 });
 test("finds n≈394 for d=0.2, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["t-ind"].power(0.2, Math.round(n), 0.05, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 1000, 0.5));
+  const fn = (n) => TESTS["t-ind"].power(0.2, Math.round(n), 0.05, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 1000, 0.5));
   assert(n >= 390 && n <= 398, `expected ~394, got ${n}`);
 });
 
 suite("bisect — sample size for paired t-test");
 
 test("finds n≈34 for d=0.5, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["t-paired"].power(0.5, Math.round(n), 0.05, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 200, 0.5));
+  const fn = (n) => TESTS["t-paired"].power(0.5, Math.round(n), 0.05, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 200, 0.5));
   assert(n >= 32 && n <= 36, `expected ~34, got ${n}`);
 });
 
 suite("bisect — sample size for ANOVA");
 
 test("finds n≈53 for f=0.25, k=3, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["anova"].power(0.25, Math.round(n), 0.05, 2, 3);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 200, 0.5));
+  const fn = (n) => TESTS["anova"].power(0.25, Math.round(n), 0.05, 2, 3);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 200, 0.5));
   assert(n >= 51 && n <= 55, `expected ~53, got ${n}`);
 });
 test("finds n≈45 for f=0.25, k=4, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["anova"].power(0.25, Math.round(n), 0.05, 2, 4);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 200, 0.5));
+  const fn = (n) => TESTS["anova"].power(0.25, Math.round(n), 0.05, 2, 4);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 200, 0.5));
   assert(n >= 43 && n <= 47, `expected ~45, got ${n}`);
 });
 
 suite("bisect — sample size for correlation");
 
 test("finds n≈85 for r=0.3, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["correlation"].power(0.3, Math.round(n), 0.05, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 4, 500, 0.5));
+  const fn = (n) => TESTS["correlation"].power(0.3, Math.round(n), 0.05, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 4, 500, 0.5));
   assert(n >= 83 && n <= 87, `expected ~85, got ${n}`);
 });
 
 suite("bisect — sample size for chi-square");
 
 test("finds N≈88 for w=0.3, df=1, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["chi2"].power(0.3, Math.round(n), 0.05, 2, 0, 1);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 500, 0.5));
+  const fn = (n) => TESTS["chi2"].power(0.3, Math.round(n), 0.05, 2, 0, 1);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 500, 0.5));
   assert(n >= 86 && n <= 90, `expected ~88, got ${n}`);
 });
 test("finds N≈108 for w=0.3, df=2, power=0.80, α=0.05", () => {
-  const fn = n => TESTS["chi2"].power(0.3, Math.round(n), 0.05, 2, 0, 2);
-  const n = Math.ceil(bisect(fn, 0.80, 2, 500, 0.5));
+  const fn = (n) => TESTS["chi2"].power(0.3, Math.round(n), 0.05, 2, 0, 2);
+  const n = Math.ceil(bisect(fn, 0.8, 2, 500, 0.5));
   assert(n >= 105 && n <= 111, `expected ~108, got ${n}`);
 });
 
@@ -767,16 +882,17 @@ suite("Cross-test consistency");
 
 test("k=2 ANOVA with f=d/2 ≈ two-sample t-test power", () => {
   // ANOVA k=2 with f should give similar power to t-test with d=2f
-  const d = 0.5, f = d / 2;
+  const d = 0.5,
+    f = d / 2;
   const pT = TESTS["t-ind"].power(d, 64, 0.05, 2);
   const pA = TESTS["anova"].power(f, 64, 0.05, 2, 2);
   approx(pT, pA, 0.005, "k=2 ANOVA should approximate two-sample t");
 });
 
 test("paired and one-sample are identical across many parameters", () => {
-  [0.1, 0.3, 0.5, 0.8, 1.5].forEach(d => {
-    [5, 10, 30, 100, 500].forEach(n => {
-      [1, 2].forEach(tails => {
+  [0.1, 0.3, 0.5, 0.8, 1.5].forEach((d) => {
+    [5, 10, 30, 100, 500].forEach((n) => {
+      [1, 2].forEach((tails) => {
         const pp = TESTS["t-paired"].power(d, n, 0.05, tails);
         const po = TESTS["t-one"].power(d, n, 0.05, tails);
         approx(pp, po, 1e-10, `d=${d},n=${n},tails=${tails}`);
@@ -794,8 +910,10 @@ test("all test types return higher power for α=0.10 than α=0.01", () => {
     ["chi2", [0.3, 100, 0.05, 2, 0, 1]],
   ];
   tests.forEach(([key, args]) => {
-    const argsLow = [...args]; argsLow[2] = 0.01;
-    const argsHigh = [...args]; argsHigh[2] = 0.10;
+    const argsLow = [...args];
+    argsLow[2] = 0.01;
+    const argsHigh = [...args];
+    argsHigh[2] = 0.1;
     const pLow = TESTS[key].power(...argsLow);
     const pHigh = TESTS[key].power(...argsHigh);
     assert(pHigh > pLow, `${key}: α=0.10 should give more power than α=0.01`);
@@ -854,8 +972,8 @@ test("very small n still returns valid power", () => {
 });
 
 test("very large effect size returns high power", () => {
-  assert(TESTS["t-ind"].power(2.0, 10, 0.05, 2) > 0.90, "large d should give high power");
-  assert(TESTS["chi2"].power(0.8, 30, 0.05, 2, 0, 1) > 0.90, "large w should give high power");
+  assert(TESTS["t-ind"].power(2.0, 10, 0.05, 2) > 0.9, "large d should give high power");
+  assert(TESTS["chi2"].power(0.8, 30, 0.05, 2, 0, 1) > 0.9, "large w should give high power");
 });
 
 test("very large n + tiny effect (numerical stability)", () => {
@@ -867,7 +985,7 @@ test("very large n + tiny effect (numerical stability)", () => {
 test("extreme alpha values still produce valid output", () => {
   const p1 = TESTS["t-ind"].power(0.5, 100, 0.0001, 2);
   assert(p1 >= 0 && p1 <= 1 && !isNaN(p1), "α=0.0001 should return valid power");
-  const p2 = TESTS["t-ind"].power(0.5, 100, 0.20, 2);
+  const p2 = TESTS["t-ind"].power(0.5, 100, 0.2, 2);
   assert(p2 >= 0 && p2 <= 1 && !isNaN(p2), "α=0.20 should return valid power");
   assert(p2 > p1, "liberal alpha should give more power");
 });

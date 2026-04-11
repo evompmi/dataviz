@@ -112,7 +112,15 @@ function buildRegionPaths(circles) {
         }
         return m;
       })();
-      arcs.push({ circleIdx: i, angleFrom: 0, angleTo: 2 * Math.PI, insideMask: mask, full: true, fromPt: null, toPt: null });
+      arcs.push({
+        circleIdx: i,
+        angleFrom: 0,
+        angleTo: 2 * Math.PI,
+        insideMask: mask,
+        full: true,
+        fromPt: null,
+        toPt: null
+      });
       continue;
     }
     for (let k = 0; k < pts.length; k++) {
@@ -127,7 +135,14 @@ function buildRegionPaths(circles) {
         if (j === i) continue;
         if (isInsideCircle(midX, midY, circles[j])) mask |= 1 << j;
       }
-      arcs.push({ circleIdx: i, angleFrom: a1, angleTo: a2, insideMask: mask, fromPt: p1, toPt: p2 });
+      arcs.push({
+        circleIdx: i,
+        angleFrom: a1,
+        angleTo: a2,
+        insideMask: mask,
+        fromPt: p1,
+        toPt: p2
+      });
     }
   }
   const allMasks = /* @__PURE__ */ new Set();
@@ -147,10 +162,14 @@ function buildRegionPaths(circles) {
       if (ba.reversed) {
         const revSpan = 2 * Math.PI - span;
         const largeArc = revSpan > Math.PI ? 1 : 0;
-        pathParts.push(`A${r.toFixed(2)},${r.toFixed(2)} 0 ${largeArc},0 ${endX.toFixed(2)},${endY.toFixed(2)}`);
+        pathParts.push(
+          `A${r.toFixed(2)},${r.toFixed(2)} 0 ${largeArc},0 ${endX.toFixed(2)},${endY.toFixed(2)}`
+        );
       } else {
         const largeArc = span > Math.PI ? 1 : 0;
-        pathParts.push(`A${r.toFixed(2)},${r.toFixed(2)} 0 ${largeArc},1 ${endX.toFixed(2)},${endY.toFixed(2)}`);
+        pathParts.push(
+          `A${r.toFixed(2)},${r.toFixed(2)} 0 ${largeArc},1 ${endX.toFixed(2)},${endY.toFixed(2)}`
+        );
       }
     };
     var emitArc = emitArc2;
@@ -164,15 +183,16 @@ function buildRegionPaths(circles) {
         else partialArcs.push({ ...arc, reversed: false });
       } else if (outsideMask === R) {
         if (arc.full) fullCircleArcs.push({ circleIdx: arc.circleIdx, reversed: true });
-        else partialArcs.push({
-          circleIdx: arc.circleIdx,
-          angleFrom: arc.angleTo,
-          angleTo: arc.angleFrom,
-          fromPt: arc.toPt,
-          toPt: arc.fromPt,
-          full: false,
-          reversed: true
-        });
+        else
+          partialArcs.push({
+            circleIdx: arc.circleIdx,
+            angleFrom: arc.angleTo,
+            angleTo: arc.angleFrom,
+            fromPt: arc.toPt,
+            toPt: arc.fromPt,
+            full: false,
+            reversed: true
+          });
       }
     }
     if (fullCircleArcs.length === 0 && partialArcs.length === 0) continue;
@@ -216,8 +236,12 @@ function buildRegionPaths(circles) {
       const x1 = c.cx - r, y1 = c.cy, x2 = c.cx + r, y2 = c.cy;
       const sw = fc.reversed ? 0 : 1;
       pathParts.push(`M${x1.toFixed(2)},${y1.toFixed(2)}`);
-      pathParts.push(`A${r.toFixed(2)},${r.toFixed(2)} 0 1,${sw} ${x2.toFixed(2)},${y2.toFixed(2)}`);
-      pathParts.push(`A${r.toFixed(2)},${r.toFixed(2)} 0 1,${sw} ${x1.toFixed(2)},${y1.toFixed(2)}`);
+      pathParts.push(
+        `A${r.toFixed(2)},${r.toFixed(2)} 0 1,${sw} ${x2.toFixed(2)},${y2.toFixed(2)}`
+      );
+      pathParts.push(
+        `A${r.toFixed(2)},${r.toFixed(2)} 0 1,${sw} ${x1.toFixed(2)},${y1.toFixed(2)}`
+      );
       pathParts.push("Z");
     }
     if (pathParts.length > 0) regions[R] = pathParts.join(" ");
@@ -282,7 +306,11 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint, radii)
     return false;
   }
   if (enforceSubsets()) {
-    warnings.push(...subsets.map(({ sub, sup }) => `"${setNames[sub]}" is a subset of "${setNames[sup]}" \u2014 positions adjusted for containment`));
+    warnings.push(
+      ...subsets.map(
+        ({ sub, sup }) => `"${setNames[sub]}" is a subset of "${setNames[sup]}" \u2014 positions adjusted for containment`
+      )
+    );
   }
   for (const [i, j] of disjoint) {
     const dx = fixed[j].cx - fixed[i].cx;
@@ -303,7 +331,8 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint, radii)
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
       if (disjoint.some((d) => d[0] === i && d[1] === j || d[0] === j && d[1] === i)) continue;
-      if (subsets.some((s) => s.sub === i && s.sup === j || s.sub === j && s.sup === i)) continue;
+      if (subsets.some((s) => s.sub === i && s.sup === j || s.sub === j && s.sup === i))
+        continue;
       const si = sets.get(setNames[i]), sj = sets.get(setNames[j]);
       let hasOverlap = false;
       for (const item of si) {
@@ -397,9 +426,20 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   if (b > 0) warnings.push("Layout adjusted for readability \u2014 areas are approximate");
   const subsets = detectSubsets(setNames, sets);
   const disjoint = detectDisjoint(setNames, sets);
-  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(blended, setNames, sets, subsets, disjoint, radii);
+  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(
+    blended,
+    setNames,
+    sets,
+    subsets,
+    disjoint,
+    radii
+  );
   warnings.push(...fixWarnings);
-  return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
+  return {
+    circles: fitCirclesToViewport(fixed, viewW, viewH),
+    warnings,
+    proportional: warnings.length === 0
+  };
 }
 function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const sizes = setNames.map((n) => sets.get(n).size);
@@ -410,7 +450,11 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const rc = clampRadii(radii);
   if (rc.adjusted) warnings.push("Circle sizes adjusted for readability (small set enlarged)");
   radii = rc.radii;
-  const pairMasks = [[0, 1, 3], [0, 2, 5], [1, 2, 6]];
+  const pairMasks = [
+    [0, 1, 3],
+    [0, 2, 5],
+    [1, 2, 6]
+  ];
   const pairDists = [];
   for (const [i, j, mask] of pairMasks) {
     let totalPairwise = 0;
@@ -430,7 +474,11 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   let tcx = d01 > 1e-9 ? (d02 * d02 - d12 * d12 + d01 * d01) / (2 * d01) : 0;
   let tcySq = d02 * d02 - tcx * tcx;
   let tcy = tcySq > 0 ? -Math.sqrt(tcySq) : 0;
-  const triPts = [{ x: ax, y: ay }, { x: bx, y: by }, { x: tcx, y: tcy }];
+  const triPts = [
+    { x: ax, y: ay },
+    { x: bx, y: by },
+    { x: tcx, y: tcy }
+  ];
   const triCentX = (ax + bx + tcx) / 3, triCentY = (ay + by + tcy) / 3;
   const triCentered = triPts.map((p) => ({ x: p.x - triCentX, y: p.y - triCentY }));
   let pts;
@@ -439,7 +487,10 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   } else {
     const avgDist = (d01 + d02 + d12) / 3;
     const eqAngles = [-Math.PI / 6, -5 * Math.PI / 6, Math.PI / 2];
-    const eqPts = eqAngles.map((a) => ({ x: avgDist * 0.6 * Math.cos(a), y: avgDist * 0.6 * Math.sin(a) }));
+    const eqPts = eqAngles.map((a) => ({
+      x: avgDist * 0.6 * Math.cos(a),
+      y: avgDist * 0.6 * Math.sin(a)
+    }));
     const blend = Math.abs(tcy) < avgDist * 0.15 ? 0.4 : 0.7;
     pts = triCentered.map((p, i) => ({
       x: p.x * blend + eqPts[i].x * (1 - blend),
@@ -468,9 +519,20 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
     r: pc.r * (1 - b) + classicCircles[i].r * b
   }));
   if (b > 0) warnings.push("Layout adjusted for readability \u2014 areas are approximate");
-  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(blended, setNames, sets, subsets, disjoint, radii);
+  const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(
+    blended,
+    setNames,
+    sets,
+    subsets,
+    disjoint,
+    radii
+  );
   warnings.push(...fixWarnings);
-  return { circles: fitCirclesToViewport(fixed, viewW, viewH), warnings, proportional: warnings.length === 0 };
+  return {
+    circles: fitCirclesToViewport(fixed, viewW, viewH),
+    warnings,
+    proportional: warnings.length === 0
+  };
 }
 function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
   const R = Math.min(viewW, viewH) * 0.272;
@@ -480,7 +542,11 @@ function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
     { cx: cx - d / 2, cy, r: R },
     { cx: cx + d / 2, cy, r: R }
   ];
-  return { circles: fitCirclesToViewport(circles, viewW, viewH), warnings: [], proportional: false };
+  return {
+    circles: fitCirclesToViewport(circles, viewW, viewH),
+    warnings: [],
+    proportional: false
+  };
 }
 function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
   const R = Math.min(viewW, viewH) * 0.24;
@@ -492,7 +558,11 @@ function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
     cy: cy + d * Math.sin(a),
     r: R
   }));
-  return { circles: fitCirclesToViewport(circles, viewW, viewH), warnings: [], proportional: false };
+  return {
+    circles: fitCirclesToViewport(circles, viewW, viewH),
+    warnings: [],
+    proportional: false
+  };
 }
 function computeRegionCentroids(circles, regionPaths, intersections) {
   const centroids = {};
@@ -557,10 +627,14 @@ const VennChart = forwardRef(function VennChart2({
   }, [setNames, sets, intersections, n, proportional]);
   const circles = layout.circles;
   useEffect(() => {
-    if (onLayoutInfo) onLayoutInfo({ warnings: layout.warnings, proportional: layout.proportional });
+    if (onLayoutInfo)
+      onLayoutInfo({ warnings: layout.warnings, proportional: layout.proportional });
   }, [layout.warnings, layout.proportional]);
   const regionPaths = useMemo(() => buildRegionPaths(circles), [circles]);
-  const centroids = useMemo(() => computeRegionCentroids(circles, regionPaths, intersections), [circles, regionPaths, intersections]);
+  const centroids = useMemo(
+    () => computeRegionCentroids(circles, regionPaths, intersections),
+    [circles, regionPaths, intersections]
+  );
   const interMap = useMemo(() => {
     const m = {};
     for (const g of intersections) m[g.mask] = g;
@@ -581,7 +655,19 @@ const VennChart = forwardRef(function VennChart2({
     /* @__PURE__ */ React.createElement("title", null, plotTitle || "Venn diagram"),
     /* @__PURE__ */ React.createElement("desc", null, `Venn diagram with ${n} set${n !== 1 ? "s" : ""}: ${setNames.join(", ")}`),
     /* @__PURE__ */ React.createElement("rect", { width: VW, height: VH, fill: plotBg || "#fff", rx: "8" }),
-    plotTitle && /* @__PURE__ */ React.createElement("text", { x: VW / 2, y: 24, textAnchor: "middle", fontSize: "16", fontWeight: "700", fill: "#222", fontFamily: "sans-serif" }, plotTitle),
+    plotTitle && /* @__PURE__ */ React.createElement(
+      "text",
+      {
+        x: VW / 2,
+        y: 24,
+        textAnchor: "middle",
+        fontSize: "16",
+        fontWeight: "700",
+        fill: "#222",
+        fontFamily: "sans-serif"
+      },
+      plotTitle
+    ),
     circles.map((c, i) => /* @__PURE__ */ React.createElement(
       "circle",
       {
@@ -676,13 +762,187 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad }) {
       onFileLoad: handleFileLoad,
       hint: "CSV \xB7 TSV \xB7 TXT \u2014 one column per set (2\u20133), items listed in rows"
     }
-  ), /* @__PURE__ */ React.createElement("p", { style: { margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" } }, "\u26A0 Max file size: 2 MB"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 24, borderRadius: 14, overflow: "hidden", border: "2px solid #648FFF", boxShadow: "0 4px 20px rgba(100,143,255,0.12)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#4a6cf7,#648FFF)", padding: "14px 24px", display: "flex", alignItems: "center", gap: 12 } }, toolIcon("venn", 24, { circle: true }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Venn Diagram \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Upload wide-format data \u2192 review sets \u2192 plot"))), /* @__PURE__ */ React.createElement("div", { style: { background: "#eef2ff", padding: "20px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff", gridColumn: "1/-1" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" } }, "Data layout (wide format)"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: "0 0 10px" } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "column"), " = one set (2 to 3 columns). Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " lists one item per set. Columns can have different lengths \u2014 empty cells are ignored."), /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#e8eeff" } }, ["Set A", "Set B", "Set C"].map((h) => /* @__PURE__ */ React.createElement("th", { key: h, style: { padding: "4px 10px", textAlign: "left", color: "#648FFF", fontWeight: 700, borderBottom: "1.5px solid #b0c4ff" } }, h)))), /* @__PURE__ */ React.createElement("tbody", null, [["gene1", "gene2", "gene1"], ["gene3", "gene3", "gene4"], ["gene5", "gene1", "gene6"], ["gene7", "", ""]].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement("td", { key: j, style: { padding: "3px 10px", color: v ? "#333" : "#ccc", fontFamily: "monospace" } }, v || "\u2014"))))))), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Features"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Equal-size circles by default, with optional area-proportional mode. Click any region count to highlight it and view its items. Rename sets, adjust colors and opacity from the plot controls.")), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1.5px solid #b0c4ff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "#648FFF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "1px" } }, "Export"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Download the diagram as ", /* @__PURE__ */ React.createElement("strong", null, "SVG"), " or ", /* @__PURE__ */ React.createElement("strong", null, "PNG"), ". Export item lists per region or a full membership matrix as ", /* @__PURE__ */ React.createElement("strong", null, "CSV"), ".")), /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, ["2\u20133 sets", "Proportional toggle", "Subset detection", "Item extraction", "SVG / PNG / CSV export", "100% browser-side"].map((t) => /* @__PURE__ */ React.createElement("span", { key: t, style: { fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "#fff", border: "1px solid #b0c4ff", color: "#555" } }, t))))));
+  ), /* @__PURE__ */ React.createElement("p", { style: { margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" } }, "\u26A0 Max file size: 2 MB"), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        marginTop: 24,
+        borderRadius: 14,
+        overflow: "hidden",
+        border: "2px solid #648FFF",
+        boxShadow: "0 4px 20px rgba(100,143,255,0.12)"
+      }
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          background: "linear-gradient(135deg,#4a6cf7,#648FFF)",
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12
+        }
+      },
+      toolIcon("venn", 24, { circle: true }),
+      /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 } }, "Venn Diagram \u2014 How to use"), /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } }, "Upload wide-format data \u2192 review sets \u2192 plot"))
+    ),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          background: "#eef2ff",
+          padding: "20px 24px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 14
+        }
+      },
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff",
+            gridColumn: "1/-1"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#648FFF",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Data layout (wide format)"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, lineHeight: 1.75, color: "#444", margin: "0 0 10px" } }, "Each ", /* @__PURE__ */ React.createElement("strong", null, "column"), " = one set (2 to 3 columns). Each ", /* @__PURE__ */ React.createElement("strong", null, "row"), " ", "lists one item per set. Columns can have different lengths \u2014 empty cells are ignored."),
+        /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 11, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: "#e8eeff" } }, ["Set A", "Set B", "Set C"].map((h) => /* @__PURE__ */ React.createElement(
+          "th",
+          {
+            key: h,
+            style: {
+              padding: "4px 10px",
+              textAlign: "left",
+              color: "#648FFF",
+              fontWeight: 700,
+              borderBottom: "1.5px solid #b0c4ff"
+            }
+          },
+          h
+        )))), /* @__PURE__ */ React.createElement("tbody", null, [
+          ["gene1", "gene2", "gene1"],
+          ["gene3", "gene3", "gene4"],
+          ["gene5", "gene1", "gene6"],
+          ["gene7", "", ""]
+        ].map((r, i) => /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: i % 2 === 0 ? "#f0f4ff" : "#fff" } }, r.map((v, j) => /* @__PURE__ */ React.createElement(
+          "td",
+          {
+            key: j,
+            style: {
+              padding: "3px 10px",
+              color: v ? "#333" : "#ccc",
+              fontFamily: "monospace"
+            }
+          },
+          v || "\u2014"
+        ))))))
+      ),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#648FFF",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Features"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Equal-size circles by default, with optional area-proportional mode. Click any region count to highlight it and view its items. Rename sets, adjust colors and opacity from the plot controls.")
+      ),
+      /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          style: {
+            background: "#fff",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid #b0c4ff"
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              fontSize: 10,
+              fontWeight: 700,
+              color: "#648FFF",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px"
+            }
+          },
+          "Export"
+        ),
+        /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 } }, "Download the diagram as ", /* @__PURE__ */ React.createElement("strong", null, "SVG"), " or ", /* @__PURE__ */ React.createElement("strong", null, "PNG"), ". Export item lists per region or a full membership matrix as ", /* @__PURE__ */ React.createElement("strong", null, "CSV"), ".")
+      ),
+      /* @__PURE__ */ React.createElement("div", { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } }, [
+        "2\u20133 sets",
+        "Proportional toggle",
+        "Subset detection",
+        "Item extraction",
+        "SVG / PNG / CSV export",
+        "100% browser-side"
+      ].map((t) => /* @__PURE__ */ React.createElement(
+        "span",
+        {
+          key: t,
+          style: {
+            fontSize: 10,
+            padding: "3px 10px",
+            borderRadius: 20,
+            background: "#fff",
+            border: "1px solid #b0c4ff",
+            color: "#555"
+          }
+        },
+        t
+      )))
+    )
+  ));
 }
 function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), " \u2014 ", parsedHeaders.length, " cols \xD7 ", parsedRows.length, " rows"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#999", marginBottom: 10 } }, "Preview (first 8 rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: parsedHeaders, rows: parsedRows, maxRows: 8 })), /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPrimary }, "Plot \u2192"));
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 4px", fontSize: 13, color: "#666" } }, /* @__PURE__ */ React.createElement("strong", { style: { color: "#333" } }, fileName), " \u2014 ", parsedHeaders.length, " cols \xD7", " ", parsedRows.length, " rows"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 11, color: "#999", marginBottom: 10 } }, "Preview (first 8 rows):"), /* @__PURE__ */ React.createElement(DataPreview, { headers: parsedHeaders, rows: parsedRows, maxRows: 8 })), /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPrimary }, "Plot \u2192"));
 }
 function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect }) {
-  return /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { borderBottom: "2px solid #ddd" } }, /* @__PURE__ */ React.createElement("th", { style: { padding: "6px 10px", textAlign: "left", color: "#555", fontWeight: 700 } }, "Region"), /* @__PURE__ */ React.createElement("th", { style: { padding: "6px 10px", textAlign: "center", color: "#555", fontWeight: 700 } }, "Degree"), /* @__PURE__ */ React.createElement("th", { style: { padding: "6px 10px", textAlign: "right", color: "#555", fontWeight: 700 } }, "Count"))), /* @__PURE__ */ React.createElement("tbody", null, intersections.map((inter) => /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: { borderCollapse: "collapse", fontSize: 12, width: "100%" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { borderBottom: "2px solid #ddd" } }, /* @__PURE__ */ React.createElement("th", { style: { padding: "6px 10px", textAlign: "left", color: "#555", fontWeight: 700 } }, "Region"), /* @__PURE__ */ React.createElement(
+    "th",
+    {
+      style: { padding: "6px 10px", textAlign: "center", color: "#555", fontWeight: 700 }
+    },
+    "Degree"
+  ), /* @__PURE__ */ React.createElement("th", { style: { padding: "6px 10px", textAlign: "right", color: "#555", fontWeight: 700 } }, "Count"))), /* @__PURE__ */ React.createElement("tbody", null, intersections.map((inter) => /* @__PURE__ */ React.createElement(
     "tr",
     {
       key: inter.mask,
@@ -695,106 +955,264 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
     },
     /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", color: "#333", fontWeight: 500 } }, regionLabel(inter.setNames, inter.mask, allSetNames)),
     /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", textAlign: "center", color: "#888" } }, inter.degree),
-    /* @__PURE__ */ React.createElement("td", { style: { padding: "6px 10px", textAlign: "right", color: "#648FFF", fontWeight: 700, fontFamily: "monospace" } }, inter.size)
+    /* @__PURE__ */ React.createElement(
+      "td",
+      {
+        style: {
+          padding: "6px 10px",
+          textAlign: "right",
+          color: "#648FFF",
+          fontWeight: 700,
+          fontFamily: "monospace"
+        }
+      },
+      inter.size
+    )
   )))));
 }
 function ItemListPanel({ intersection, allSetNames, setColors }) {
-  if (!intersection) return /* @__PURE__ */ React.createElement("div", { style: { padding: "30px 20px", textAlign: "center", color: "#aaa", fontSize: 13 } }, "Click a region in the Venn diagram or a row in the table to view items.");
+  if (!intersection)
+    return /* @__PURE__ */ React.createElement("div", { style: { padding: "30px 20px", textAlign: "center", color: "#aaa", fontSize: 13 } }, "Click a region in the Venn diagram or a row in the table to view items.");
   const label = regionLabel(intersection.setNames, intersection.mask, allSetNames);
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#333" } }, label, " ", /* @__PURE__ */ React.createElement("span", { style: { color: "#888", fontWeight: 400 } }, "(", intersection.size, " items)")), /* @__PURE__ */ React.createElement("button", { onClick: () => {
-    downloadCsv(["Item"], intersection.items.map((i) => [i]), `venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`);
-  }, style: { ...btnSecondary, background: "#dcfce7", border: "1px solid #86efac", color: "#166534", fontWeight: 600, fontSize: 11 } }, "\u2B07 CSV")), /* @__PURE__ */ React.createElement("div", { style: { maxHeight: 240, overflowY: "auto", border: "1px solid #e0e0e0", borderRadius: 6, background: "#fafafa" } }, intersection.items.map((item, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: {
-    padding: "3px 10px",
-    fontSize: 12,
-    color: "#333",
-    borderBottom: "1px solid #f0f0f0",
-    fontFamily: "monospace"
-  } }, item))));
-}
-function PlotControls({ allSetNames, allSets, activeSetNames, activeSets, onToggleSet, setColors, onColorChange, onRename, vis, updVis, chartRef, resetAll, intersections, proportional, onProportionalChange }) {
-  const sv = (k) => (v) => updVis({ [k]: v });
-  return /* @__PURE__ */ React.createElement("div", { style: { width: 300, flexShrink: 0, position: "sticky", top: 24, maxHeight: "calc(100vh - 90px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 } }, /* @__PURE__ */ React.createElement(
-    ActionsPanel,
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement(
+    "div",
     {
-      onDownloadSvg: () => downloadSvg(chartRef.current, "venn.svg"),
-      onDownloadPng: () => downloadPng(chartRef.current, "venn.png", 2),
-      onReset: resetAll,
-      extraButtons: [
-        { label: "\u2B07 All items CSV", onClick: (e) => {
-          const allItems = /* @__PURE__ */ new Set();
-          for (const n of activeSetNames) for (const item of allSets.get(n)) allItems.add(item);
-          const headers = ["Item", ...activeSetNames];
-          const rows = [...allItems].sort().map((item) => [item, ...activeSetNames.map((n) => allSets.get(n).has(item) ? "1" : "0")]);
-          downloadCsv(headers, rows, "venn_membership.csv");
-          flashSaved(e.currentTarget);
-        }, style: { ...btnSecondary, background: "#dcfce7", border: "1px solid #86efac", color: "#166534", width: "100%", fontWeight: 600 } }
-      ]
-    }
-  ), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Sets"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 5 } }, allSetNames.map((name, i) => {
-    const active = activeSets.has(name);
-    const canUncheck = activeSets.size > 2;
-    return /* @__PURE__ */ React.createElement("div", { key: name, style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      padding: "5px 8px",
-      borderRadius: 6,
-      fontSize: 12,
-      background: active ? "#f0f0f5" : "#fafafa",
-      border: active ? "1px solid #ccc" : "1px solid #e8e8e8",
-      opacity: active ? 1 : 0.5
-    } }, /* @__PURE__ */ React.createElement(
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 8
+      }
+    },
+    /* @__PURE__ */ React.createElement("p", { style: { margin: 0, fontSize: 13, fontWeight: 600, color: "#333" } }, label, " ", /* @__PURE__ */ React.createElement("span", { style: { color: "#888", fontWeight: 400 } }, "(", intersection.size, " items)")),
+    /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => {
+          downloadCsv(
+            ["Item"],
+            intersection.items.map((i) => [i]),
+            `venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
+          );
+        },
+        style: {
+          ...btnSecondary,
+          background: "#dcfce7",
+          border: "1px solid #86efac",
+          color: "#166534",
+          fontWeight: 600,
+          fontSize: 11
+        }
+      },
+      "\u2B07 CSV"
+    )
+  ), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        maxHeight: 240,
+        overflowY: "auto",
+        border: "1px solid #e0e0e0",
+        borderRadius: 6,
+        background: "#fafafa"
+      }
+    },
+    intersection.items.map((item, i) => /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: i,
+        style: {
+          padding: "3px 10px",
+          fontSize: 12,
+          color: "#333",
+          borderBottom: "1px solid #f0f0f0",
+          fontFamily: "monospace"
+        }
+      },
+      item
+    ))
+  ));
+}
+function PlotControls({
+  allSetNames,
+  allSets,
+  activeSetNames,
+  activeSets,
+  onToggleSet,
+  setColors,
+  onColorChange,
+  onRename,
+  vis,
+  updVis,
+  chartRef,
+  resetAll,
+  intersections,
+  proportional,
+  onProportionalChange
+}) {
+  const sv = (k) => (v) => updVis({ [k]: v });
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        width: 300,
+        flexShrink: 0,
+        position: "sticky",
+        top: 24,
+        maxHeight: "calc(100vh - 90px)",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10
+      }
+    },
+    /* @__PURE__ */ React.createElement(
+      ActionsPanel,
+      {
+        onDownloadSvg: () => downloadSvg(chartRef.current, "venn.svg"),
+        onDownloadPng: () => downloadPng(chartRef.current, "venn.png", 2),
+        onReset: resetAll,
+        extraButtons: [
+          {
+            label: "\u2B07 All items CSV",
+            onClick: (e) => {
+              const allItems = /* @__PURE__ */ new Set();
+              for (const n of activeSetNames) for (const item of allSets.get(n)) allItems.add(item);
+              const headers = ["Item", ...activeSetNames];
+              const rows = [...allItems].sort().map((item) => [
+                item,
+                ...activeSetNames.map((n) => allSets.get(n).has(item) ? "1" : "0")
+              ]);
+              downloadCsv(headers, rows, "venn_membership.csv");
+              flashSaved(e.currentTarget);
+            },
+            style: {
+              ...btnSecondary,
+              background: "#dcfce7",
+              border: "1px solid #86efac",
+              color: "#166534",
+              width: "100%",
+              fontWeight: 600
+            }
+          }
+        ]
+      }
+    ),
+    /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Sets"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 5 } }, allSetNames.map((name, i) => {
+      const active = activeSets.has(name);
+      const canUncheck = activeSets.size > 2;
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: name,
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "5px 8px",
+            borderRadius: 6,
+            fontSize: 12,
+            background: active ? "#f0f0f5" : "#fafafa",
+            border: active ? "1px solid #ccc" : "1px solid #e8e8e8",
+            opacity: active ? 1 : 0.5
+          }
+        },
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            type: "checkbox",
+            checked: active,
+            disabled: active && !canUncheck,
+            onChange: () => onToggleSet(name),
+            style: {
+              accentColor: setColors[name] || PALETTE[i % PALETTE.length],
+              flexShrink: 0
+            }
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          ColorInput,
+          {
+            value: setColors[name] || PALETTE[i % PALETTE.length],
+            onChange: (v) => onColorChange(name, v),
+            size: 20
+          }
+        ),
+        /* @__PURE__ */ React.createElement(
+          "input",
+          {
+            key: name,
+            defaultValue: name,
+            style: {
+              flex: 1,
+              minWidth: 0,
+              fontWeight: 600,
+              color: active ? "#333" : "#999",
+              border: "1px solid #ccc",
+              background: "#fff",
+              fontFamily: "monospace",
+              fontSize: 12,
+              padding: "2px 6px",
+              borderRadius: 3,
+              outline: "none"
+            },
+            onFocus: (e) => {
+              e.target.style.borderColor = "#648FFF";
+              e.target.style.boxShadow = "0 0 0 2px rgba(100,143,255,0.2)";
+            },
+            onBlur: (e) => {
+              e.target.style.borderColor = "#ccc";
+              e.target.style.boxShadow = "none";
+              const nv = e.target.value.trim();
+              if (nv && nv !== name) {
+                if (!onRename(name, nv)) e.target.value = name;
+              } else if (!nv) e.target.value = name;
+            },
+            onKeyDown: (e) => {
+              if (e.key === "Enter") e.target.blur();
+            }
+          }
+        ),
+        /* @__PURE__ */ React.createElement("span", { style: { color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 } }, "(", allSets.get(name).size, ")")
+      );
+    }))),
+    /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Display"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Proportional areas"), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "checkbox",
-        checked: active,
-        disabled: active && !canUncheck,
-        onChange: () => onToggleSet(name),
-        style: { accentColor: setColors[name] || PALETTE[i % PALETTE.length], flexShrink: 0 }
+        checked: proportional,
+        onChange: (e) => onProportionalChange(e.target.checked),
+        style: { accentColor: "#648FFF" }
       }
-    ), /* @__PURE__ */ React.createElement(
-      ColorInput,
-      {
-        value: setColors[name] || PALETTE[i % PALETTE.length],
-        onChange: (v) => onColorChange(name, v),
-        size: 20
-      }
-    ), /* @__PURE__ */ React.createElement(
+    )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement(
       "input",
       {
-        key: name,
-        defaultValue: name,
-        style: {
-          flex: 1,
-          minWidth: 0,
-          fontWeight: 600,
-          color: active ? "#333" : "#999",
-          border: "1px solid #ccc",
-          background: "#fff",
-          fontFamily: "monospace",
-          fontSize: 12,
-          padding: "2px 6px",
-          borderRadius: 3,
-          outline: "none"
-        },
-        onFocus: (e) => {
-          e.target.style.borderColor = "#648FFF";
-          e.target.style.boxShadow = "0 0 0 2px rgba(100,143,255,0.2)";
-        },
-        onBlur: (e) => {
-          e.target.style.borderColor = "#ccc";
-          e.target.style.boxShadow = "none";
-          const nv = e.target.value.trim();
-          if (nv && nv !== name) {
-            if (!onRename(name, nv)) e.target.value = name;
-          } else if (!nv) e.target.value = name;
-        },
-        onKeyDown: (e) => {
-          if (e.key === "Enter") e.target.blur();
-        }
+        value: vis.plotTitle,
+        onChange: (e) => updVis({ plotTitle: e.target.value }),
+        style: { ...inp, width: "100%" }
       }
-    ), /* @__PURE__ */ React.createElement("span", { style: { color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 } }, "(", allSets.get(name).size, ")"));
-  }))), /* @__PURE__ */ React.createElement("div", { style: sec }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Display"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Proportional areas"), /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: proportional, onChange: (e) => onProportionalChange(e.target.checked), style: { accentColor: "#648FFF" } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: lbl }, "Title"), /* @__PURE__ */ React.createElement("input", { value: vis.plotTitle, onChange: (e) => updVis({ plotTitle: e.target.value }), style: { ...inp, width: "100%" } })), /* @__PURE__ */ React.createElement(SliderControl, { label: "Fill opacity", value: vis.fillOpacity, min: 0.05, max: 0.8, step: 0.05, onChange: sv("fillOpacity") }), /* @__PURE__ */ React.createElement(SliderControl, { label: "Font size", value: vis.fontSize, min: 8, max: 24, step: 1, onChange: sv("fontSize") }), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Background"), /* @__PURE__ */ React.createElement(ColorInput, { value: vis.plotBg, onChange: sv("plotBg"), size: 24 })))));
+    )), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Fill opacity",
+        value: vis.fillOpacity,
+        min: 0.05,
+        max: 0.8,
+        step: 0.05,
+        onChange: sv("fillOpacity")
+      }
+    ), /* @__PURE__ */ React.createElement(
+      SliderControl,
+      {
+        label: "Font size",
+        value: vis.fontSize,
+        min: 8,
+        max: 24,
+        step: 1,
+        onChange: sv("fontSize")
+      }
+    ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } }, /* @__PURE__ */ React.createElement("span", { style: lbl }, "Background"), /* @__PURE__ */ React.createElement(ColorInput, { value: vis.plotBg, onChange: sv("plotBg"), size: 24 }))))
+  );
 }
 function App() {
   const [rawText, setRawText] = useState(null);
@@ -816,7 +1234,10 @@ function App() {
   const [vis, updVis] = useReducer((s, a) => a._reset ? { ...visInit } : { ...s, ...a }, visInit);
   const chartRef = useRef();
   const [layoutInfo, setLayoutInfo] = useState({ warnings: [], proportional: true });
-  const activeSetNames = useMemo(() => setNames.filter((n) => activeSets.has(n)), [setNames, activeSets]);
+  const activeSetNames = useMemo(
+    () => setNames.filter((n) => activeSets.has(n)),
+    [setNames, activeSets]
+  );
   const activeSetsMap = useMemo(() => {
     const m = /* @__PURE__ */ new Map();
     for (const n of activeSetNames) m.set(n, sets.get(n));
@@ -826,12 +1247,15 @@ function App() {
     if (activeSetNames.length < 2) return [];
     return computeIntersections(activeSetNames, activeSetsMap);
   }, [activeSetNames, activeSetsMap]);
-  const canNavigate = useCallback((target) => {
-    if (target === "upload") return true;
-    if (target === "configure") return setNames.length >= 2;
-    if (target === "plot") return setNames.length >= 2;
-    return false;
-  }, [setNames]);
+  const canNavigate = useCallback(
+    (target) => {
+      if (target === "upload") return true;
+      if (target === "configure") return setNames.length >= 2;
+      if (target === "plot") return setNames.length >= 2;
+      return false;
+    },
+    [setNames]
+  );
   const doParse = useCallback((text, sep) => {
     const dc = fixDecimalCommas(text, sep);
     setCommaFixed(dc.commaFixed);
@@ -865,10 +1289,13 @@ function App() {
     setSelectedMask(null);
     setStep("configure");
   }, []);
-  const handleFileLoad = useCallback((text, name) => {
-    setFileName(name);
-    doParse(text, sepOverride);
-  }, [sepOverride, doParse]);
+  const handleFileLoad = useCallback(
+    (text, name) => {
+      setFileName(name);
+      doParse(text, sepOverride);
+    },
+    [sepOverride, doParse]
+  );
   const handleColorChange = (name, color) => {
     setSetColors((prev) => ({ ...prev, [name]: color }));
   };
@@ -933,16 +1360,23 @@ function App() {
       onStepChange: setStep,
       canNavigate
     }
-  ), /* @__PURE__ */ React.createElement(CommaFixBanner, { commaFixed, commaFixCount }), parseError && /* @__PURE__ */ React.createElement("div", { style: {
-    marginBottom: 16,
-    padding: "10px 14px",
-    borderRadius: 8,
-    background: "#fef2f2",
-    border: "1px solid #fca5a5",
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 8
-  } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F6AB}"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#dc2626", fontWeight: 600, whiteSpace: "pre-line" } }, parseError)), step === "upload" && /* @__PURE__ */ React.createElement(
+  ), /* @__PURE__ */ React.createElement(CommaFixBanner, { commaFixed, commaFixCount }), parseError && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        marginBottom: 16,
+        padding: "10px 14px",
+        borderRadius: 8,
+        background: "#fef2f2",
+        border: "1px solid #fca5a5",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 8
+      }
+    },
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 16 } }, "\u{1F6AB}"),
+    /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: "#dc2626", fontWeight: 600, whiteSpace: "pre-line" } }, parseError)
+  ), step === "upload" && /* @__PURE__ */ React.createElement(
     UploadStep,
     {
       sepOverride,
@@ -993,23 +1427,36 @@ function App() {
       onLayoutInfo: setLayoutInfo,
       proportional
     }
-  )), proportional && layoutInfo.proportional ? /* @__PURE__ */ React.createElement("div", { style: {
-    margin: "8px 0 0",
-    padding: "6px 12px",
-    borderRadius: 6,
-    background: "#f0fdf4",
-    border: "1px solid #86efac",
-    fontSize: 11,
-    color: "#166534"
-  } }, "Areas are proportional to set sizes") : proportional && layoutInfo.warnings.length > 0 ? /* @__PURE__ */ React.createElement("div", { style: {
-    margin: "8px 0 0",
-    padding: "6px 12px",
-    borderRadius: 6,
-    background: "#fffbeb",
-    border: "1px solid #fcd34d",
-    fontSize: 11,
-    color: "#92400e"
-  } }, layoutInfo.warnings.map((w, i) => /* @__PURE__ */ React.createElement("div", { key: i }, w)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 2, color: "#b45309", fontStyle: "italic" } }, "Area proportionality adjusted to preserve correctness")) : null, /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Intersections"), /* @__PURE__ */ React.createElement(
+  )), proportional && layoutInfo.proportional ? /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        margin: "8px 0 0",
+        padding: "6px 12px",
+        borderRadius: 6,
+        background: "#f0fdf4",
+        border: "1px solid #86efac",
+        fontSize: 11,
+        color: "#166534"
+      }
+    },
+    "Areas are proportional to set sizes"
+  ) : proportional && layoutInfo.warnings.length > 0 ? /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        margin: "8px 0 0",
+        padding: "6px 12px",
+        borderRadius: 6,
+        background: "#fffbeb",
+        border: "1px solid #fcd34d",
+        fontSize: 11,
+        color: "#92400e"
+      }
+    },
+    layoutInfo.warnings.map((w, i) => /* @__PURE__ */ React.createElement("div", { key: i }, w)),
+    /* @__PURE__ */ React.createElement("div", { style: { marginTop: 2, color: "#b45309", fontStyle: "italic" } }, "Area proportionality adjusted to preserve correctness")
+  ) : null, /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Intersections"), /* @__PURE__ */ React.createElement(
     IntersectionTable,
     {
       intersections,
@@ -1017,6 +1464,13 @@ function App() {
       selectedMask,
       onSelect: setSelectedMask
     }
-  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Items"), /* @__PURE__ */ React.createElement(ItemListPanel, { intersection: selectedIntersection, allSetNames: activeSetNames, setColors }))))));
+  )), /* @__PURE__ */ React.createElement("div", { style: { ...sec, marginTop: 16 } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } }, "Items"), /* @__PURE__ */ React.createElement(
+    ItemListPanel,
+    {
+      intersection: selectedIntersection,
+      allSetNames: activeSetNames,
+      setColors
+    }
+  ))))));
 }
 ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));

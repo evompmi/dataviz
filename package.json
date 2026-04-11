@@ -2,9 +2,20 @@
   "private": true,
   "scripts": {
     "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform",
-    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --watch"
+    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --watch",
+    "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "@eslint/js": "^9.39.4",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.2"
   }
 }
