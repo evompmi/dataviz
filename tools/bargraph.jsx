@@ -841,12 +841,9 @@ function OutputStep({
 
 function PlotControls({
   dataFormat,
-  fileName,
   effectiveGroups,
   allDisplayGroups,
-  displayGroups,
   handleColorChange,
-  plotGroupRenames,
   setPlotGroupRenames,
   onToggleGroup,
   vis,
@@ -1823,12 +1820,9 @@ function App() {
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
           <PlotControls
             dataFormat={dataFormat}
-            fileName={fileName}
             effectiveGroups={effectiveGroups}
             allDisplayGroups={allDisplayGroups}
-            displayGroups={displayGroups}
             handleColorChange={handleColorChange}
-            plotGroupRenames={plotGroupRenames}
             setPlotGroupRenames={setPlotGroupRenames}
             onToggleGroup={handleToggleGroup}
             vis={vis}

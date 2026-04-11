@@ -1075,7 +1075,6 @@ function App() {
   const [tails, setTails] = useState(2);
   const [kInput, setKInput] = useState("3");
   const [dfInput, setDfInput] = useState("1");
-  const resultRef = useRef();
   const prevResultRef = useRef();
   const [resultFlash, setResultFlash] = useState(false);
 
@@ -1102,7 +1101,7 @@ function App() {
         if (es <= 0 || n < minN || alpha <= 0 || alpha >= 1) return null;
         return pw(es, n);
       }
-    } catch (e) {
+    } catch {
       return null;
     }
     return null;

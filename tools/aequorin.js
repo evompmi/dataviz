@@ -1553,7 +1553,6 @@ function PlotControls({
   setConditions,
   vis,
   updVis,
-  setStep,
   plotPanelRef,
   downloadCalibrated,
   resetAll,
@@ -1581,10 +1580,10 @@ function PlotControls({
     /* @__PURE__ */ React.createElement(
       ActionsPanel,
       {
-        onDownloadSvg: (e) => {
+        onDownloadSvg: () => {
           plotPanelRef.current?.downloadMain();
         },
-        onDownloadPng: (e) => {
+        onDownloadPng: () => {
           plotPanelRef.current?.downloadMainPng();
         },
         onReset: resetAll,
@@ -2286,7 +2285,7 @@ function App() {
     setCommaFixed(dc.commaFixed);
     setCommaFixCount(dc.count);
     setRawText(dc.text);
-    const { headers, data, rawData } = parseData(dc.text, sep);
+    const { headers, data } = parseData(dc.text, sep);
     if (!headers.length || !data.length) {
       setParseError(
         "The file appears to be empty or has no data rows. Please check your file and try again."
@@ -2371,10 +2370,6 @@ function App() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1e3);
-  };
-  const copyCsv = () => {
-    navigator.clipboard.writeText(csvText).catch(() => {
-    });
   };
   const canNavigate = (s) => s === "upload" || parsed && s !== "upload";
   return /* @__PURE__ */ React.createElement(
@@ -2510,7 +2505,6 @@ function App() {
         setConditions: handleConditionsChange,
         vis,
         updVis,
-        setStep,
         plotPanelRef,
         downloadCalibrated,
         resetAll,

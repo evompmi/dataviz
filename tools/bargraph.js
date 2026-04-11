@@ -710,12 +710,9 @@ function OutputStep({
 }
 function PlotControls({
   dataFormat,
-  fileName,
   effectiveGroups,
   allDisplayGroups,
-  displayGroups,
   handleColorChange,
-  plotGroupRenames,
   setPlotGroupRenames,
   onToggleGroup,
   vis,
@@ -1553,12 +1550,9 @@ function App() {
       PlotControls,
       {
         dataFormat,
-        fileName,
         effectiveGroups,
         allDisplayGroups,
-        displayGroups,
         handleColorChange,
-        plotGroupRenames,
         setPlotGroupRenames,
         onToggleGroup: handleToggleGroup,
         vis,

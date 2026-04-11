@@ -1,7 +1,7 @@
 // molarity.jsx — editable source. Run `npm run build` to compile to molarity.js
 // Do NOT edit the .js file directly.
 
-const { useState, useMemo, useCallback, useRef } = React;
+const { useState, useMemo, useCallback } = React;
 
 // ── Unit definitions & conversions ──────────────────────────────────────────
 
@@ -54,7 +54,6 @@ function UnitInput({
   onUnitChange,
   units,
   disabled,
-  highlight,
   placeholder,
 }) {
   return (
@@ -244,7 +243,6 @@ function MolarityMode() {
             onUnitChange={setMassUnit}
             units={MASS_UNITS}
             disabled={solveFor === "mass"}
-            highlight={false}
             placeholder={solveFor === "mass" ? "calculated" : ""}
           />
           <UnitInput
@@ -255,7 +253,6 @@ function MolarityMode() {
             onUnitChange={setVolUnit}
             units={VOL_UNITS}
             disabled={solveFor === "volume"}
-            highlight={false}
             placeholder={solveFor === "volume" ? "calculated" : ""}
           />
           <UnitInput
@@ -266,7 +263,6 @@ function MolarityMode() {
             onUnitChange={setConcUnit}
             units={CONC_UNITS}
             disabled={solveFor === "conc"}
-            highlight={false}
             placeholder={solveFor === "conc" ? "calculated" : ""}
           />
 
@@ -529,7 +525,7 @@ function BatchMode() {
       return;
     }
 
-    const { headers, rows, hasHeader } = parseRaw(raw, sepOverride);
+    const { headers, rows } = parseRaw(raw, sepOverride);
     if (rows.length === 0) {
       setError("No data rows found.");
       return;
@@ -893,16 +889,7 @@ function LigationMode() {
 
 // ── App ─────────────────────────────────────────────────────────────────────
 
-function ModeButton({
-  modeKey,
-  label,
-  desc,
-  active,
-  accentColor,
-  activeBg,
-  onClick,
-  style: extraStyle,
-}) {
+function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style: extraStyle }) {
   const [hovered, setHovered] = useState(false);
   const isActive = active;
   const showAccent = isActive || hovered;
@@ -982,7 +969,6 @@ function App() {
         {chemModes.map((m) => (
           <ModeButton
             key={m.key}
-            modeKey={m.key}
             label={m.label}
             desc={m.desc}
             active={mode === m.key}
@@ -1012,7 +998,6 @@ function App() {
         {dnaModes.map((m) => (
           <ModeButton
             key={m.key}
-            modeKey={m.key}
             label={m.label}
             desc={m.desc}
             active={mode === m.key}

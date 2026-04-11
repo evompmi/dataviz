@@ -12,7 +12,6 @@ const {
   quartiles,
   computeGroupStats,
   getPointColors,
-  isNumericValue,
   parseRaw,
   detectWideFormat,
   wideToLong,

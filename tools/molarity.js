@@ -1,4 +1,4 @@
-const { useState, useMemo, useCallback, useRef } = React;
+const { useState, useMemo, useCallback } = React;
 const CONC_UNITS = [
   { label: "M", factor: 1 },
   { label: "mM", factor: 1e-3 },
@@ -40,7 +40,6 @@ function UnitInput({
   onUnitChange,
   units,
   disabled,
-  highlight,
   placeholder
 }) {
   return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("label", { style: { ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 } }, label), /* @__PURE__ */ React.createElement(
@@ -190,7 +189,6 @@ function MolarityMode() {
       onUnitChange: setMassUnit,
       units: MASS_UNITS,
       disabled: solveFor === "mass",
-      highlight: false,
       placeholder: solveFor === "mass" ? "calculated" : ""
     }
   ), /* @__PURE__ */ React.createElement(
@@ -203,7 +201,6 @@ function MolarityMode() {
       onUnitChange: setVolUnit,
       units: VOL_UNITS,
       disabled: solveFor === "volume",
-      highlight: false,
       placeholder: solveFor === "volume" ? "calculated" : ""
     }
   ), /* @__PURE__ */ React.createElement(
@@ -216,7 +213,6 @@ function MolarityMode() {
       onUnitChange: setConcUnit,
       units: CONC_UNITS,
       disabled: solveFor === "conc",
-      highlight: false,
       placeholder: solveFor === "conc" ? "calculated" : ""
     }
   ), result && /* @__PURE__ */ React.createElement(
@@ -424,7 +420,7 @@ function BatchMode() {
       setError("Paste your data above.");
       return;
     }
-    const { headers, rows, hasHeader } = parseRaw(raw, sepOverride);
+    const { headers, rows } = parseRaw(raw, sepOverride);
     if (rows.length === 0) {
       setError("No data rows found.");
       return;
@@ -666,16 +662,7 @@ function LigationMode() {
     /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, color: "#16a34a", fontWeight: 600, marginLeft: 8 } }, "ng")
   ));
 }
-function ModeButton({
-  modeKey,
-  label,
-  desc,
-  active,
-  accentColor,
-  activeBg,
-  onClick,
-  style: extraStyle
-}) {
+function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style: extraStyle }) {
   const [hovered, setHovered] = useState(false);
   const isActive = active;
   const showAccent = isActive || hovered;
@@ -749,7 +736,6 @@ function App() {
     ModeButton,
     {
       key: m.key,
-      modeKey: m.key,
       label: m.label,
       desc: m.desc,
       active: mode === m.key,
@@ -774,7 +760,6 @@ function App() {
     ModeButton,
     {
       key: m.key,
-      modeKey: m.key,
       label: m.label,
       desc: m.desc,
       active: mode === m.key,

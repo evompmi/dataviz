@@ -13,7 +13,7 @@
 //   0.001   — chi2cdf, fcdf at critical values
 //   0.005   — power values (GL quadrature nctcdf gives near-exact results)
 
-const { suite, test, assert, eq, approx, summary } = require("./harness");
+const { suite, test, assert, approx, summary } = require("./harness");
 const vm = require("vm");
 const fs = require("fs");
 

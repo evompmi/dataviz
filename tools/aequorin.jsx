@@ -1783,7 +1783,6 @@ function PlotControls({
   setConditions,
   vis,
   updVis,
-  setStep,
   plotPanelRef,
   downloadCalibrated,
   resetAll,
@@ -1809,10 +1808,10 @@ function PlotControls({
     >
       {/* Actions tile */}
       <ActionsPanel
-        onDownloadSvg={(e) => {
+        onDownloadSvg={() => {
           plotPanelRef.current?.downloadMain();
         }}
-        onDownloadPng={(e) => {
+        onDownloadPng={() => {
           plotPanelRef.current?.downloadMainPng();
         }}
         onReset={resetAll}
@@ -2603,7 +2602,7 @@ function App() {
     setCommaFixed(dc.commaFixed);
     setCommaFixCount(dc.count);
     setRawText(dc.text);
-    const { headers, data, rawData } = parseData(dc.text, sep);
+    const { headers, data } = parseData(dc.text, sep);
     if (!headers.length || !data.length) {
       setParseError(
         "The file appears to be empty or has no data rows. Please check your file and try again."
@@ -2693,10 +2692,6 @@ function App() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-
-  const copyCsv = () => {
-    navigator.clipboard.writeText(csvText).catch(() => {});
   };
 
   const canNavigate = (s) => s === "upload" || (parsed && s !== "upload");
@@ -2830,7 +2825,6 @@ function App() {
               setConditions={handleConditionsChange}
               vis={vis}
               updVis={updVis}
-              setStep={setStep}
               plotPanelRef={plotPanelRef}
               downloadCalibrated={downloadCalibrated}
               resetAll={resetAll}

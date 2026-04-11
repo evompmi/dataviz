@@ -372,7 +372,7 @@ function detectDisjoint(setNames, sets) {
 
 // Verify that final circle positions respect containment and separation constraints.
 // Returns { circles, warnings } with adjusted circles and any warnings.
-function validateAndFixLayout(circles, setNames, sets, subsets, disjoint, radii) {
+function validateAndFixLayout(circles, setNames, sets, subsets, disjoint) {
   const warnings = [];
   const fixed = circles.map((c) => ({ ...c }));
 
@@ -555,8 +555,7 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
     setNames,
     sets,
     subsets,
-    disjoint,
-    radii
+    disjoint
   );
   warnings.push(...fixWarnings);
   return {
@@ -580,12 +579,12 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
 
   // Compute pairwise distances from overlap areas
   const pairMasks = [
-    [0, 1, 3],
-    [0, 2, 5],
-    [1, 2, 6],
+    [0, 1],
+    [0, 2],
+    [1, 2],
   ];
   const pairDists = [];
-  for (const [i, j, mask] of pairMasks) {
+  for (const [i, j] of pairMasks) {
     let totalPairwise = 0;
     for (const g of intersections) {
       if (g.mask & (1 << i) && g.mask & (1 << j)) totalPairwise += g.size;
@@ -670,8 +669,7 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
     setNames,
     sets,
     subsets,
-    disjoint,
-    radii
+    disjoint
   );
   warnings.push(...fixWarnings);
   return {
@@ -815,12 +813,6 @@ const VennChart = forwardRef(function VennChart(
     () => computeRegionCentroids(circles, regionPaths, intersections),
     [circles, regionPaths, intersections]
   );
-
-  const interMap = useMemo(() => {
-    const m = {};
-    for (const g of intersections) m[g.mask] = g;
-    return m;
-  }, [intersections]);
 
   const fSize = fontSize || 14;
   const fOpacity = fillOpacity != null ? fillOpacity : 0.25;
@@ -1216,7 +1208,7 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
   );
 }
 
-function ItemListPanel({ intersection, allSetNames, setColors }) {
+function ItemListPanel({ intersection, allSetNames }) {
   if (!intersection)
     return (
       <div style={{ padding: "30px 20px", textAlign: "center", color: "#aaa", fontSize: 13 }}>
@@ -1299,7 +1291,6 @@ function PlotControls({
   updVis,
   chartRef,
   resetAll,
-  intersections,
   proportional,
   onProportionalChange,
 }) {
@@ -1476,7 +1467,6 @@ function PlotControls({
 // ── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [rawText, setRawText] = useState(null);
   const [fileName, setFileName] = useState("");
   const [step, setStep] = useState("upload");
   const [parseError, setParseError] = useState(null);
@@ -1528,7 +1518,6 @@ function App() {
     const dc = fixDecimalCommas(text, sep);
     setCommaFixed(dc.commaFixed);
     setCommaFixCount(dc.count);
-    setRawText(dc.text);
     const { headers, rows } = parseRaw(dc.text, sep);
     if (!headers.length || !rows.length) {
       setParseError("The file appears to be empty or has no data rows.");
@@ -1609,7 +1598,6 @@ function App() {
 
   const resetAll = () => {
     setStep("upload");
-    setRawText(null);
     setFileName("");
     setSetNames([]);
     setSets(new Map());
@@ -1697,7 +1685,6 @@ function App() {
               updVis={updVis}
               chartRef={chartRef}
               resetAll={resetAll}
-              intersections={intersections}
               proportional={proportional}
               onProportionalChange={setProportional}
             />
@@ -1772,11 +1759,7 @@ function App() {
                 <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
                   Items
                 </p>
-                <ItemListPanel
-                  intersection={selectedIntersection}
-                  allSetNames={activeSetNames}
-                  setColors={setColors}
-                />
+                <ItemListPanel intersection={selectedIntersection} allSetNames={activeSetNames} />
               </div>
             </div>
           </div>

@@ -950,9 +950,6 @@ function FilterStep({
 }
 
 function OutputStep({
-  parsedRows,
-  parsedHeaders,
-  colRoles,
   colNames,
   groupColIdx,
   valueColIdx,
@@ -1091,9 +1088,7 @@ function PlotControls({
   allDisplayGroups,
   boxplotGroups,
   renamedRows,
-  plotGroupRenames,
   setPlotGroupRenames,
-  boxplotColors,
   setBoxplotColors,
   onToggleGroup,
   vis,
@@ -1109,9 +1104,6 @@ function PlotControls({
   setFacetByCol,
   onDownloadSvg,
   onDownloadPng,
-  chartRef,
-  facetedData,
-  facetRefs,
 }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   const handleColorChange = (i, c) => {
@@ -2053,31 +2045,25 @@ function App() {
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
 
-  const handleDownloadSvg = useCallback(
-    (e) => {
-      if (facetByCol >= 0 && facetedData.length > 0) {
-        facetedData.forEach((fd) =>
-          downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`)
-        );
-      } else {
-        downloadSvg(chartRef.current, "boxplot.svg");
-      }
-    },
-    [facetByCol, facetedData]
-  );
+  const handleDownloadSvg = useCallback(() => {
+    if (facetByCol >= 0 && facetedData.length > 0) {
+      facetedData.forEach((fd) =>
+        downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`)
+      );
+    } else {
+      downloadSvg(chartRef.current, "boxplot.svg");
+    }
+  }, [facetByCol, facetedData]);
 
-  const handleDownloadPng = useCallback(
-    (e) => {
-      if (facetByCol >= 0 && facetedData.length > 0) {
-        facetedData.forEach((fd) =>
-          downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`)
-        );
-      } else {
-        downloadPng(chartRef.current, "boxplot.png");
-      }
-    },
-    [facetByCol, facetedData]
-  );
+  const handleDownloadPng = useCallback(() => {
+    if (facetByCol >= 0 && facetedData.length > 0) {
+      facetedData.forEach((fd) =>
+        downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`)
+      );
+    } else {
+      downloadPng(chartRef.current, "boxplot.png");
+    }
+  }, [facetByCol, facetedData]);
 
   return (
     <div
@@ -2152,9 +2138,6 @@ function App() {
 
       {step === "output" && parsedRows.length > 0 && (
         <OutputStep
-          parsedRows={parsedRows}
-          parsedHeaders={parsedHeaders}
-          colRoles={colRoles}
           colNames={colNames}
           groupColIdx={groupColIdx}
           valueColIdx={valueColIdx}
@@ -2179,9 +2162,7 @@ function App() {
             allDisplayGroups={allDisplayGroups}
             boxplotGroups={boxplotGroups}
             renamedRows={renamedRows}
-            plotGroupRenames={plotGroupRenames}
             setPlotGroupRenames={setPlotGroupRenames}
-            boxplotColors={boxplotColors}
             setBoxplotColors={setBoxplotColors}
             onToggleGroup={handleToggleGroup}
             vis={vis}
@@ -2197,9 +2178,6 @@ function App() {
             setFacetByCol={setFacetByCol}
             onDownloadSvg={handleDownloadSvg}
             onDownloadPng={handleDownloadPng}
-            chartRef={chartRef}
-            facetedData={facetedData}
-            facetRefs={facetRefs}
           />
           <PlotArea
             colorByCol={colorByCol}

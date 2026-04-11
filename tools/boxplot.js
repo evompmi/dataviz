@@ -828,9 +828,6 @@ function FilterStep({
   ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("output"), style: btnPrimary }, "Output \u2192"), canPlot && /* @__PURE__ */ React.createElement("button", { onClick: () => setStep("plot"), style: btnPlot }, "Plot \u2192")));
 }
 function OutputStep({
-  parsedRows,
-  parsedHeaders,
-  colRoles,
   colNames,
   groupColIdx,
   valueColIdx,
@@ -932,9 +929,7 @@ function PlotControls({
   allDisplayGroups,
   boxplotGroups,
   renamedRows,
-  plotGroupRenames,
   setPlotGroupRenames,
-  boxplotColors,
   setBoxplotColors,
   onToggleGroup,
   vis,
@@ -949,10 +944,7 @@ function PlotControls({
   facetByCol,
   setFacetByCol,
   onDownloadSvg,
-  onDownloadPng,
-  chartRef,
-  facetedData,
-  facetRefs
+  onDownloadPng
 }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   const handleColorChange = (i, c) => {
@@ -1784,30 +1776,24 @@ function App() {
     const name = boxplotGroups[i].name;
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
-  const handleDownloadSvg = useCallback(
-    (e) => {
-      if (facetByCol >= 0 && facetedData.length > 0) {
-        facetedData.forEach(
-          (fd) => downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`)
-        );
-      } else {
-        downloadSvg(chartRef.current, "boxplot.svg");
-      }
-    },
-    [facetByCol, facetedData]
-  );
-  const handleDownloadPng = useCallback(
-    (e) => {
-      if (facetByCol >= 0 && facetedData.length > 0) {
-        facetedData.forEach(
-          (fd) => downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`)
-        );
-      } else {
-        downloadPng(chartRef.current, "boxplot.png");
-      }
-    },
-    [facetByCol, facetedData]
-  );
+  const handleDownloadSvg = useCallback(() => {
+    if (facetByCol >= 0 && facetedData.length > 0) {
+      facetedData.forEach(
+        (fd) => downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`)
+      );
+    } else {
+      downloadSvg(chartRef.current, "boxplot.svg");
+    }
+  }, [facetByCol, facetedData]);
+  const handleDownloadPng = useCallback(() => {
+    if (facetByCol >= 0 && facetedData.length > 0) {
+      facetedData.forEach(
+        (fd) => downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`)
+      );
+    } else {
+      downloadPng(chartRef.current, "boxplot.png");
+    }
+  }, [facetByCol, facetedData]);
   return /* @__PURE__ */ React.createElement(
     "div",
     {
@@ -1887,9 +1873,6 @@ function App() {
     step === "output" && parsedRows.length > 0 && /* @__PURE__ */ React.createElement(
       OutputStep,
       {
-        parsedRows,
-        parsedHeaders,
-        colRoles,
         colNames,
         groupColIdx,
         valueColIdx,
@@ -1913,9 +1896,7 @@ function App() {
         allDisplayGroups,
         boxplotGroups,
         renamedRows,
-        plotGroupRenames,
         setPlotGroupRenames,
-        boxplotColors,
         setBoxplotColors,
         onToggleGroup: handleToggleGroup,
         vis,
@@ -1930,10 +1911,7 @@ function App() {
         facetByCol,
         setFacetByCol,
         onDownloadSvg: handleDownloadSvg,
-        onDownloadPng: handleDownloadPng,
-        chartRef,
-        facetedData,
-        facetRefs
+        onDownloadPng: handleDownloadPng
       }
     ), /* @__PURE__ */ React.createElement(
       PlotArea,
