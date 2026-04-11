@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Bargraph output panel's "Long CSV" download button now matches the "Wide CSV" button's compact green style instead of the oversized `btnDownload` shared style — the two sibling download buttons are visually consistent.
 - Bargraph chart SVG no longer stretches to fill the plot tile. It now uses its natural width (`vbW`, ~100 px per bar + margins) capped at `maxWidth: 100%` and centered via `margin: 0 auto`, matching the boxplot behavior — small datasets render at a sensible size instead of being stretched edge-to-edge.
 - Tool pages (`tools/*.html`, all 7) now have `min-width: 1100px` on `body` so narrow viewports get a horizontal scrollbar instead of wrapping/overflowing content — keeps the stats tile, PlotControls sidebar, and chart legible on small windows.
 - Power tool's distribution primitives (`normcdf`, `tcdf`, `nctcdf`, `bisect`, …) moved out of `tools/power.tsx` into `tools/stats.js` — single home for all numeric code, no duplication. Power tool consumes them as script-tag globals. All 217 existing power tests still pass unchanged.

@@ -845,7 +845,17 @@ function OutputStep({
               );
               flashSaved(e.currentTarget);
             }}
-            style={btnDownload}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: "pointer",
+              background: "#dcfce7",
+              border: "1px solid #86efac",
+              color: "#166534",
+              fontFamily: "inherit",
+              fontWeight: 600,
+            }}
           >
             ⬇ Long CSV
           </button>
