@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-04-12
+
 ### Added
 
 - "Load example dataset" link in the upload panel of **bargraph** and **boxplot**. Drops in a seeded Arabidopsis biomass dataset (72 rows: 3 genotypes × 3 treatments × 8 replicates, long format) so new users can see a populated tool in one click and exercise every downstream feature — column-role editor, filters, rename/reorder, group colors, faceting by Treatment, k=3 ANOVA + Tukey in the stats tile. The generator (`makeExamplePlantCSV` in `tools/shared.js`) uses the existing `seededRandom` so the dataset is reproducible across sessions. Wired via a new optional `onLoadExample` prop on the shared `UploadPanel` component.
@@ -81,7 +83,8 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with 217 tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/evompmi/dataviz/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/evompmi/dataviz/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/evompmi/dataviz/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/evompmi/dataviz/releases/tag/v1.0.0
