@@ -714,5 +714,108 @@ suite("AequorinChart");
 })();
 
 // ════════════════════════════════════════════════════════════════════════════
+//  StatsTile
+// ════════════════════════════════════════════════════════════════════════════
+
+suite("StatsTile");
+
+test("renders null when fewer than 2 valid groups", function () {
+  resetSC();
+  var el = sc.StatsTile({
+    groups: [{ name: "only", values: [1, 2, 3, 4, 5] }],
+    onAnnotationsChange: noop,
+  });
+  assert(el === null, "k<2 should return null");
+});
+
+test("collapsed header-only render when defaultOpen is false", function () {
+  resetSC();
+  var el = sc.StatsTile({
+    groups: [
+      { name: "A", values: [1, 2, 3, 4, 5, 6, 7, 8] },
+      { name: "B", values: [2, 3, 4, 5, 6, 7, 8, 9] },
+    ],
+    onAnnotationsChange: noop,
+  });
+  assert(el && el.type === "div", "should return root div");
+  // Header-only render has exactly one child (the header row).
+  assert(el.children.length === 1, "collapsed should have only the header");
+});
+
+test("open render on k=2 shows assumption + test sections", function () {
+  resetSC();
+  var el = sc.StatsTile({
+    groups: [
+      { name: "A", values: [4.9, 5.1, 5.0, 5.2, 4.8, 5.1, 4.9, 5.0, 5.2, 4.9] },
+      { name: "B", values: [5.9, 6.1, 6.0, 6.2, 5.8, 6.1, 5.9, 6.0, 6.2, 5.9] },
+    ],
+    onAnnotationsChange: noop,
+    defaultOpen: true,
+  });
+  assert(el && el.type === "div", "should return root div");
+  assert(countElements(el) > 30, "open tile should produce many elements");
+});
+
+test("open render on k=3 shows post-hoc table", function () {
+  resetSC();
+  var pgCtrl = [4.17, 5.58, 5.18, 6.11, 4.5, 4.61, 5.17, 4.53, 5.33, 5.14];
+  var pgTrt1 = [4.81, 4.17, 4.41, 3.59, 5.87, 3.83, 6.03, 4.89, 4.32, 4.69];
+  var pgTrt2 = [6.31, 5.12, 5.54, 5.5, 5.37, 5.29, 4.92, 6.15, 5.8, 5.26];
+  var el = sc.StatsTile({
+    groups: [
+      { name: "ctrl", values: pgCtrl },
+      { name: "trt1", values: pgTrt1 },
+      { name: "trt2", values: pgTrt2 },
+    ],
+    onAnnotationsChange: noop,
+    defaultOpen: true,
+  });
+  assert(el && el.type === "div", "should return root div");
+  // PlantGrowth → k=3, so rendered tree should contain 3 post-hoc rows.
+  var str = JSON.stringify(el);
+  assert(str.indexOf("Post-hoc") >= 0, "should include Post-hoc heading");
+  assert(str.indexOf("ctrl vs trt1") >= 0, "should list ctrl vs trt1 pair");
+  assert(str.indexOf("ctrl vs trt2") >= 0, "should list ctrl vs trt2 pair");
+  assert(str.indexOf("trt1 vs trt2") >= 0, "should list trt1 vs trt2 pair");
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  assignBracketLevels — stacking layout for overlapping significance pairs
+// ════════════════════════════════════════════════════════════════════════════
+
+suite("assignBracketLevels");
+
+test("non-overlapping pairs share level 0", function () {
+  var out = sc.assignBracketLevels([
+    { i: 0, j: 1 },
+    { i: 2, j: 3 },
+  ]);
+  eq(out[0]._level, 0);
+  eq(out[1]._level, 0);
+});
+
+test("overlapping pairs stack to higher levels", function () {
+  var out = sc.assignBracketLevels([
+    { i: 0, j: 2 },
+    { i: 1, j: 3 },
+  ]);
+  // Both span across the middle so one must sit above the other.
+  var levels = [out[0]._level, out[1]._level].sort();
+  eq(levels[0], 0);
+  eq(levels[1], 1);
+});
+
+test("preserves original pair order", function () {
+  var out = sc.assignBracketLevels([
+    { i: 0, j: 1, label: "a" },
+    { i: 2, j: 3, label: "b" },
+    { i: 0, j: 3, label: "c" },
+  ]);
+  eq(out[0].label, "a");
+  eq(out[1].label, "b");
+  eq(out[2].label, "c");
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 
 summary();

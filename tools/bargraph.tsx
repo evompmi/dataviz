@@ -86,11 +86,28 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     showBarOutline,
     barOutlineWidth,
     svgLegend,
+    annotations,
   },
   ref
 ) {
   const angle = xLabelAngle || 0;
   const bottomMargin = 60 + Math.abs(angle) * 0.9;
+
+  // Precompute annotation layout. We reserve headroom *inside* the plot
+  // frame — the frame position is fixed; instead we extend yMax so that data
+  // doesn't reach the top of the inner area, and draw annotations in that
+  // headroom.
+  const annotPairs =
+    annotations && annotations.kind === "brackets"
+      ? assignBracketLevels(annotations.pairs || [])
+      : [];
+  const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
+  const annotTopPad =
+    annotations && annotations.kind === "cld"
+      ? 22
+      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
+        ? (annotMaxLevel + 1) * 20 + 6
+        : 0;
   const MChart = { top: 24, right: 24, bottom: bottomMargin, left: 62 };
 
   const allVals = groups.flatMap((g) => g.allValues);
@@ -113,7 +130,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
   const pad = (dataMax - dataMin) * 0.08 || 1;
   // Default: start at 0 if all values >= 0, else extend below
   const yMin = yMinProp != null ? yMinProp : dataMin >= 0 ? 0 : dataMin - pad;
-  const yMax = yMaxProp != null ? yMaxProp : dataMax + pad;
+  let yMax = yMaxProp != null ? yMaxProp : dataMax + pad;
 
   const n = groups.length;
   const vbW = Math.max(400, n * 100 + MChart.left + MChart.right);
@@ -122,6 +139,11 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
   const vbH = vbH_chart + legendH;
   const w = vbW - MChart.left - MChart.right;
   const h = vbH_chart - MChart.top - MChart.bottom;
+
+  // Extend yMax upward so annotations fit inside the frame without overlapping data.
+  if (annotTopPad > 0 && h > annotTopPad + 10) {
+    yMax = yMin + ((yMax - yMin) * h) / (h - annotTopPad);
+  }
 
   const bandW = w / n;
   const bx = (i) => MChart.left + i * bandW + bandW / 2;
@@ -134,7 +156,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     <svg
       ref={ref}
       viewBox={`0 0 ${vbW} ${vbH}`}
-      style={{ width: "100%", height: "auto", display: "block" }}
+      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={plotTitle || "Bar chart"}
@@ -277,6 +299,56 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         stroke="#333"
         strokeWidth="1"
       />
+
+      {/* Stats annotations — compact letter display */}
+      {annotations &&
+        annotations.kind === "cld" &&
+        (annotations.labels || []).map((lbl, gi) => (
+          <text
+            key={`cld-${gi}`}
+            x={bx(gi)}
+            y={MChart.top + 15}
+            textAnchor="middle"
+            fontSize="13"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {lbl}
+          </text>
+        ))}
+
+      {/* Stats annotations — significance brackets */}
+      {annotations &&
+        annotations.kind === "brackets" &&
+        annotPairs.map((pr, idx) => {
+          const x1 = bx(pr.i);
+          const x2 = bx(pr.j);
+          const lvl = pr._level || 0;
+          const yLine = MChart.top + annotTopPad - 6 - lvl * 20;
+          const tick = 4;
+          return (
+            <g key={`br-${idx}`}>
+              <path
+                d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                stroke="#333"
+                strokeWidth="1"
+                fill="none"
+              />
+              <text
+                x={(x1 + x2) / 2}
+                y={yLine - 2}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight="700"
+                fill="#222"
+                fontFamily="sans-serif"
+              >
+                {pr.label}
+              </text>
+            </g>
+          );
+        })}
 
       {/* X labels (name + n= as a single rotatable block) */}
       {groups.map((g, gi) => {
@@ -568,7 +640,14 @@ function HowToSection() {
   );
 }
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+function UploadStep({
+  sepOverride,
+  setSepOverride,
+  rawText,
+  doParse,
+  handleFileLoad,
+  onLoadExample,
+}) {
   return (
     <div>
       <UploadPanel
@@ -580,6 +659,7 @@ function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileL
           }
         }}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT — one column per condition, values in rows"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -765,7 +845,17 @@ function OutputStep({
               );
               flashSaved(e.currentTarget);
             }}
-            style={btnDownload}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: "pointer",
+              background: "#dcfce7",
+              border: "1px solid #86efac",
+              color: "#166534",
+              fontFamily: "inherit",
+              fontWeight: 600,
+            }}
           >
             ⬇ Long CSV
           </button>
@@ -1249,6 +1339,7 @@ function ChartArea({
   yMaxVal,
   chartRef,
   facetRefs,
+  statsAnnotations,
 }) {
   const svgLegend =
     colorByCol >= 0 && colorByCategories.length > 0
@@ -1347,6 +1438,7 @@ function ChartArea({
             showBarOutline={vis.showBarOutline}
             barOutlineWidth={vis.barOutlineWidth}
             svgLegend={svgLegend}
+            annotations={statsAnnotations}
           />
         </div>
       )}
@@ -1445,6 +1537,7 @@ function App() {
   const [categoryColors, setCategoryColors] = useState({});
   const [step, setStep] = useState("upload");
   const [facetByCol, setFacetByCol] = useState(-1);
+  const [statsAnnotations, setStatsAnnotations] = useState(null);
   const chartRef = useRef();
   const facetRefs = useRef({});
 
@@ -1667,6 +1760,12 @@ function App() {
     },
     [sepOverride, doParse]
   );
+  const loadExample = useCallback(() => {
+    const csv = makeExamplePlantCSV();
+    setSepOverride(",");
+    setFileName("example_plant_growth.csv");
+    doParse(csv, ",");
+  }, [doParse]);
   const resetAll = () => {
     setRawText(null);
     setGroups([]);
@@ -1755,6 +1854,7 @@ function App() {
           rawText={rawText}
           doParse={doParse}
           handleFileLoad={handleFileLoad}
+          onLoadExample={loadExample}
         />
       )}
 
@@ -1845,23 +1945,32 @@ function App() {
             facetRefs={facetRefs}
             facetedData={facetedData}
           />
-          <ChartArea
-            dataFormat={dataFormat}
-            facetByCol={facetByCol}
-            facetedData={facetedData}
-            displayGroups={displayGroups}
-            plotGroupRenames={plotGroupRenames}
-            plotGroupColors={plotGroupColors}
-            colorByCol={colorByCol}
-            colorByCategories={colorByCategories}
-            categoryColors={categoryColors}
-            colNames={colNames}
-            vis={vis}
-            yMinVal={yMinVal}
-            yMaxVal={yMaxVal}
-            chartRef={chartRef}
-            facetRefs={facetRefs}
-          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <ChartArea
+              dataFormat={dataFormat}
+              facetByCol={facetByCol}
+              facetedData={facetedData}
+              displayGroups={displayGroups}
+              plotGroupRenames={plotGroupRenames}
+              plotGroupColors={plotGroupColors}
+              colorByCol={colorByCol}
+              colorByCategories={colorByCategories}
+              categoryColors={categoryColors}
+              colNames={colNames}
+              vis={vis}
+              yMinVal={yMinVal}
+              yMaxVal={yMaxVal}
+              chartRef={chartRef}
+              facetRefs={facetRefs}
+              statsAnnotations={facetByCol < 0 || dataFormat !== "long" ? statsAnnotations : null}
+            />
+            {(facetByCol < 0 || dataFormat !== "long") && displayGroups.length >= 2 && (
+              <StatsTile
+                groups={displayGroups.map((g) => ({ name: g.name, values: g.allValues }))}
+                onAnnotationsChange={setStatsAnnotations}
+              />
+            )}
+          </div>
         </div>
       )}
     </div>

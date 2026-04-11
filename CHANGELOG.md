@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-04-12
+
+### Added
+
+- "Load example dataset" link in the upload panel of **bargraph** and **boxplot**. Drops in a seeded Arabidopsis biomass dataset (72 rows: 3 genotypes × 3 treatments × 8 replicates, long format) so new users can see a populated tool in one click and exercise every downstream feature — column-role editor, filters, rename/reorder, group colors, faceting by Treatment, k=3 ANOVA + Tukey in the stats tile. The generator (`makeExamplePlantCSV` in `tools/shared.js`) uses the existing `seededRandom` so the dataset is reproducible across sessions. Wired via a new optional `onLoadExample` prop on the shared `UploadPanel` component.
+- `tools/stats.js` — new plain-JS module loaded via `<script>` tag alongside `shared.js`. Houses the statistical distribution functions (normal / gamma / beta / t / F / chi-square, plus noncentral t/F/chi-square), the generic `bisect` solver, sample helpers (`sampleMean`, `sampleVariance`, `sampleSD`, `rankWithTies`), and the statistical tests needed for the forthcoming analysis tile on bargraph / boxplot, all benchmarked against real R output at ±5×10⁻³ tolerance:
+  - **Normality & equal-variance**: Shapiro-Wilk (Royston 1995 AS R94), Brown-Forsythe Levene test
+  - **Two-sample**: Student t, Welch t, Mann-Whitney U (normal approx with continuity correction), Cohen's d, Hedges' g, rank-biserial
+  - **k-sample**: one-way ANOVA, Welch ANOVA, Kruskal-Wallis, η², ε²
+  - **Post-hocs**: Tukey HSD (Tukey-Kramer for unbalanced), Games-Howell, Dunn (BH-corrected), plus `ptukey` / `qtukey` via double Gauss-Legendre quadrature in log-s space, and a generic `bhAdjust`
+  - **Compact letter display**: Piepho 2004 insert-and-absorb algorithm for rendering group groupings (e.g. `["a", "ab", "b"]`) following any pairwise post-hoc
+  - **`selectTest`**: walks the assumption-check decision tree (Shapiro-Wilk per group, Brown-Forsythe Levene, default α=0.05 on both) and returns the recommended primary test + post-hoc that the UI will offer as the default pick — `{ studentT | welchT | mannWhitney }` for k=2, `{ oneWayANOVA+tukeyHSD | welchANOVA+gamesHowell | kruskalWallis+dunn }` for k≥3. Tiny groups (n<3) fall back to the rank-based option.
+  - `tests/stats.test.js` — 99 tests covering primitives, sample helpers, Shapiro-Wilk on 8 datasets (iris, PlantGrowth, sleep, women, mtcars, …), Levene, t-tests, Mann-Whitney, effect sizes, ANOVAs, Kruskal-Wallis, Tukey HSD on PlantGrowth + iris, `ptukey`/`qtukey` scan, Games-Howell, Dunn, BH adjustment, and CLD edge cases.
+- `StatsTile` in `tools/shared-components.js` — a collapsible analysis tile wired into the **bargraph** and **boxplot** tools. It runs Shapiro-Wilk + Brown-Forsythe Levene on the plot groups, recommends a primary test via `selectTest` (overrideable from a dropdown), shows the result and a post-hoc table for k≥3, and can push significance annotations back to the chart — compact letter display (default for k≥3) or significance brackets with stacked levels for overlapping spans. Four levels: `* p<0.05`, `** p<0.01`, `*** p<0.001`, `**** p<0.0001`. Brackets use `assignBracketLevels` (greedy by span width) so they stack without colliding, and both charts reserve annotation headroom _inside_ the plot frame by extending `yMax` upward, so brackets / letters sit above the data but still within the black frame. Hidden when fewer than 2 groups or when faceting is active (out of scope for v1). Paired data also out of scope.
+  - `tests/components.test.js` — render-smoke tests for `StatsTile` (collapsed/open, k=2, k=3 with post-hoc) and `assignBracketLevels` (non-overlap, overlap stacking, order preservation).
+
+### Changed
+
+- `StatsTile` gains a **Power analysis** section: computes the observed effect size (Cohen's `d` for k=2, Cohen's `f` for k≥3) from the actual data, reports achieved power at α = 0.05 (green ≥ 80%, amber below), and the per-group sample size that would be needed to reach 80% power against the same effect size. Rank-based tests (Mann-Whitney, Kruskal-Wallis) are estimated from their parametric analogs and flagged as approximations. The numbers are also appended to the downloadable text report. Backed by the existing `powerTwoSample` / `powerAnova` / `fFromGroupMeans` primitives — moved out of `tools/power.tsx` into `tools/stats.js` so the StatsTile can share them (217 existing power tests still pass unchanged).
+- `StatsTile` gains a "Download report (.txt)" button that exports a plain-text report of the full analysis — group descriptives (n, mean, SD), Shapiro-Wilk per group, Levene, recommended/chosen test + result, and the post-hoc pairs table when k≥3. Fixed-width columns so it reads cleanly in any editor. Backed by a new `downloadText()` helper in `tools/shared.js`.
+
+- StatsTile assumptions section now has clearer captions ("Shapiro-Wilk test for normality" and "Levene (Brown-Forsythe) test for equal variance") above each check, and the normality table's data cells no longer repeat the column headers — cells show bare values (`12`, `0.945`, `0.512`) instead of `n = 12`, `W = 0.945`, `p = 0.512`, matching the post-hoc table's cleaner style.
+- Bargraph output panel's "Long CSV" download button now matches the "Wide CSV" button's compact green style instead of the oversized `btnDownload` shared style — the two sibling download buttons are visually consistent.
+- Bargraph chart SVG no longer stretches to fill the plot tile. It now uses its natural width (`vbW`, ~100 px per bar + margins) capped at `maxWidth: 100%` and centered via `margin: 0 auto`, matching the boxplot behavior — small datasets render at a sensible size instead of being stretched edge-to-edge.
+- Tool pages (`tools/*.html`, all 7) now have `min-width: 1100px` on `body` so narrow viewports get a horizontal scrollbar instead of wrapping/overflowing content — keeps the stats tile, PlotControls sidebar, and chart legible on small windows.
+- Power tool's distribution primitives (`normcdf`, `tcdf`, `nctcdf`, `bisect`, …) moved out of `tools/power.tsx` into `tools/stats.js` — single home for all numeric code, no duplication. Power tool consumes them as script-tag globals. All 217 existing power tests still pass unchanged.
+
+### Fixed
+
+- Power tool: one-way ANOVA sample-size solver no longer jumps to 100000 for large effect sizes at k ≥ 6. Root cause was `ncf_sf` in `tools/stats.js` truncating the Poisson mixture at a fixed ±500-step window, which is narrower than σ = √(λ/2) once λ gets large (tens of thousands). Truncated sums returned bogus values around 0.7–0.8 at huge n, violating the monotone-in-n assumption `bisect` depends on and driving it toward `hi = 100000`. Fix widens the Poisson window to ±8σ with a `pUp < 1e-14` early-exit, and adds a normal-approximation short-circuit for the far tails (|z| > 6) when λ > 1000 and d₂ > 4, using the closed-form NCF mean / variance. All 217 existing power tests still pass unchanged.
+- `gammainc` (regularized lower incomplete gamma P(a,x)) was silently returning wrong answers for large `a`. The series branch (taken when x ≤ a+1) has a fixed 200-iteration cap, but when x ≈ a the series terms form a Poisson-like bump of effective width √a — at a = 10000 it needs ~780 iterations to converge, so the loop was exiting mid-bump. Observable symptom: `gammainc(10000, 10000) = 0.478` (correct value ≈ 0.501), propagating to `chi2cdf(50000, 50000) = 0.397` (should be 0.5) and every large-df χ² / F tail computation that routes through it. Fix scales the iteration cap with √a on both the series and continued-fraction branches. Found by an audit sweep of stats primitives at extreme parameters after the `ncf_sf` bug.
+- `ncchi2cdf` (noncentral χ² CDF) had the same truncated-Poisson-mixture pathology as `ncf_sf`: a fixed ±500-step window around the mode of the Poisson mixture, which is narrower than √(λ/2) once λ gets large. At λ = 100000 the CDF at 3× the mean returned 0.987 instead of 1. Fix widens the Poisson window with √(halfLam), adds a `pUp < 1e-14` early exit, and short-circuits far tails (|z| > 6) via normal approximation using the closed-form noncentral χ² mean (k+λ) and variance (2(k+2λ)).
+
 ## [1.1.1] - 2026-04-11
 
 ### Added
@@ -50,7 +83,8 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with 217 tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/evompmi/dataviz/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/evompmi/dataviz/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/evompmi/dataviz/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/evompmi/dataviz/releases/tag/v1.0.0

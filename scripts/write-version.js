@@ -9,7 +9,7 @@ const path = require("path");
 
 function describe() {
   try {
-    return execSync("git describe --tags --always --dirty", {
+    return execSync("git describe --tags --abbrev=0", {
       stdio: ["ignore", "pipe", "ignore"],
     })
       .toString()

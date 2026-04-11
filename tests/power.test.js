@@ -17,8 +17,12 @@ const { suite, test, assert, approx, summary } = require("./harness");
 const vm = require("vm");
 const fs = require("fs");
 
-// Load power.js into a vm context with minimal React stubs
-const code = fs.readFileSync(require("path").join(__dirname, "../tools/power.js"), "utf-8");
+// Load stats.js + power.js into a vm context with minimal React stubs.
+// stats.js provides the distribution primitives (normcdf, tcdf, nctcdf,
+// bisect, ...) that power.js used to declare itself.
+const statsCode = fs.readFileSync(require("path").join(__dirname, "../tools/stats.js"), "utf-8");
+const powerCode = fs.readFileSync(require("path").join(__dirname, "../tools/power.js"), "utf-8");
+const code = statsCode + "\n" + powerCode;
 const ctx = {
   React: {
     createElement: () => null,
