@@ -1,0 +1,133 @@
+# HONEST CODE REVIEW REPORT: dataviz
+
+---
+
+## **THE GOOD**
+
+### Architecture & Design
+- **Zero dependencies** — React vendored locally, no CDN, works offline. Pure static deployment via GitHub Pages.
+- **Clean separation** — Tools are isolated (iframe-based), shared utilities in shared.js/shared-components.js.
+- **No backend** — Data never leaves user's machine. Privacy-first by design.
+- **Smart defaults** — Auto-detects CSV/TSV separators, decimal commas, wide vs long format.
+- **Colorblind-safe** — Uses Okabe-Ito palette by default.
+
+### Code Quality
+- **Comprehensive testing** — 157 tests across 4 suites. All passing.
+- **No `var`** — Modern const/let usage (only 1 var in compiled output).
+- **React best practices** — forwardRef, memo, proper hook usage (287 hook calls across tools).
+- **Performance aware** — Recent fixes for O(n^2) legend positioning, stale callback refs.
+- **Accessibility** — SVG charts have role="img", aria-label, <title>, <desc>.
+- **Statistical correctness** — Proper quartile interpolation, KDE bandwidth, bounds checking.
+
+### Developer Experience
+- **Vibe-coded but well-documented** — CLAUDE.md provides clear onboarding, architecture overview, dev workflow.
+- **Fast build** — esbuild compiles in ~5ms, watch mode available.
+- **Change tracking** — future_improvement.txt logs completed and pending work transparently.
+- **Consistent styling** — Shared style constants (sec, inp, lbl, btnPrimary, etc.) prevent CSS drift.
+
+### Feature Completeness
+- **6 tools** covering common plant science needs: Aequorin, Boxplot, Bargraph, Scatter, Venn, Calculator (Molarity/Power).
+- **Rich feature set per tool** — Color mapping, size mapping, shape mapping, faceting, regression lines, stats overlays.
+- **Export options** — SVG (publication-ready), PNG (2x resolution), CSV (processed data).
+- **Data preview** — First 15 rows with column type hints before plotting.
+
+---
+
+## **THE BAD**
+
+### Architecture Issues
+- **Duplicated margin constants** — Each tool (boxplot.jsx, scatter.jsx, bargraph.jsx) defines its own MARGIN object. Consolidation attempted but abandoned as "marginal benefit" — lazy.
+- **Plain JS constraint is fragile** — shared.js and shared-components.js must remain plain JS (no JSX) because they're loaded as <script> tags. This is a technical debt landmine waiting to explode.
+- **Compiled JS checked into git** — .jsx source + compiled .js both committed. Risk of desync if someone edits .js directly (and the warning is in comments, not enforced).
+
+### Code Quality Issues
+- **Inconsistent formatting** — Some files use 2-space indent, others use 4-space. Mixed within files.
+- **No linting** — No ESLint/Prettier. Relies on manual discipline and future_improvement.txt for tracking.
+- **No build minification** — esbuild doesn't use --minify, so production bundles are larger than necessary.
+- **Color input regex** — Only accepts 6-digit hex (#aabbcc), rejects valid 3-digit hex (#abc). Users typing manually will be frustrated.
+- **Hardcoded limits** — File size limits (2MB hard reject, 1MB warning) are arbitrary and not configurable.
+
+### Testing Issues
+- **Custom test harness** — No standard framework (Jest, Vitest). Reinvented wheel with harness.js.
+- **No component tests for JSX** — Tests only cover utility functions. No React component rendering tests.
+- **No CI** — No GitHub Actions workflow. Tests only run manually.
+- **Test files in root** — tests/ directory is fine, but test organization could be better (e.g., per-tool tests).
+
+### UI/UX Issues
+- **Prefetch bar is useless** — Shows progress for loading vendored React in iframes. Users don't care. Visual noise.
+- **Landing page is busy** — 5 tool tiles + help tile + prefetch bar + version + tagline. Too much competing for attention.
+- **No error boundaries** — If a tool crashes, the entire iframe dies. No graceful degradation.
+- **No loading states** — File parsing can take time for large files (1MB+), but no spinner/indicator during parse.
+- **Decimal comma fix is magic** — Auto-detection can silently change user's data. No explicit user confirmation.
+
+### Technical Debt
+- **Math.max.apply(null, arr)** — Was used in shared-components.js, fixed to Math.max(...arr). But who knows what else lurks?
+- **No TypeScript** — All type checking is manual. Risk of runtime errors for edge cases.
+- **No source maps** — Compiled .js files have no source maps. Debugging production issues is painful.
+- **Duplicated code** — computeStats in shared.js and similar logic in tools. Some DRY violations.
+- **Magic numbers** — Margin values, padding, font sizes scattered throughout. Some in shared constants, others inline.
+
+---
+
+## **THE UGLY**
+
+### Git History
+- **Commit messages are bad** — "Add regression line with stats overlay to scatter" — what does this *do*? No context on *why*, *how*, or *impact*.
+- **"Vibe-coded"adge of honor** — README brags about being "vibe-coded with claude". This is not a flex. It signals lack of ownership.
+- **No PR reviews** — Single-developer project (appears to be). No code review culture.
+
+### Documentation
+- **README is a feature dump** — Walls of text describing every feature. No hierarchy. No "getting started" guide.
+- **CLAUDE.md is better than README** — Irony: the AI onboarding doc is clearer than the user-facing README.
+- **No API documentation** — Shared functions (parseRaw, computeStats, quartiles) have no JSDoc. Users of these utilities must read source.
+
+### Deployment
+- **No version tags** — Git history shows v1.0 in a commit message, but no actual git tags. No semantic versioning.
+- **No changelog** — Users have no idea what changed between deployments.
+- **GitHub Pages only** — No alternative deployment options documented. What if GitHub goes down?
+
+---
+
+## **SCORECARD**
+
+| Category | Score | Notes |
+|----------|-------|-------|
+| **Architecture** | 8/10 | Clean but some tech debt |
+| **Code Quality** | 7/10 | Good practices, inconsistent execution |
+| **Testing** | 6/10 | Good coverage, custom harness is risky |
+| **UI/UX** | 6/10 | Functional but unpolished |
+| **Documentation** | 5/10 | CLAUDE.md > README |
+| **Maintainability** | 7/10 | Easy to extend, hard to refactor |
+| **Production Readiness** | 6/10 | Works, but lacks CI/CD, minification |
+| **Overall** | **6.6/10** | **Solid B-** — Good foundation, needs discipline |
+
+---
+
+## **RECOMMENDATIONS**
+
+### Critical (Do Now)
+1. **Add CI** — GitHub Actions to run tests on push. Non-negotiable.
+2. **Add linting** — ESLint + Prettier. Enforce consistent formatting.
+3. **Add --minify to build** — Reduce bundle size. One-line fix in package.json.
+
+### High Priority
+4. **Adopt TypeScript** — Catch errors at compile time, not runtime.
+5. **Add source maps** — Debuggable production builds.
+6. **Create CHANGELOG.md** — Track changes for users.
+7. **Add error boundaries** — Graceful tool failure handling.
+
+### Medium Priority
+8. **Consolidate margin constants** — Yes, it's "marginal benefit", but it's also low effort.
+9. **Fix color input regex** — Accept 3-digit hex. Takes 5 minutes.
+10. **Add file size config** — Make limits configurable, not hardcoded.
+11. **Improve commit messages** — Use conventional commits. feat(scatter): add regression line not Add regression line...
+
+### Nice to Have
+12. **Migrate to Vite** — Faster dev, better DX, built-in HMR.
+13. **Add Storybook** — Component-driven development, visual regression testing.
+14. **Improve landing page** — Simplify, prioritize, reduce cognitive load.
+15. **Add theme support** — Dark mode for late-night plant science.
+
+---
+
+Verdict: This is a well-built, functional tool that solves a real need. The code is better than most "vibe-coded" projects but suffers from lack of process discipline. With CI, linting, and TypeScript, it could be production-grade. Right now it's good enough for internal use, but I wouldn't bet my career on it.
