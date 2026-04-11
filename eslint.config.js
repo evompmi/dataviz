@@ -120,6 +120,10 @@ const sharedGlobals = {
   dunnTest: "readonly",
   compactLetterDisplay: "readonly",
   selectTest: "readonly",
+  pStars: "readonly",
+  formatP: "readonly",
+  StatsTile: "readonly",
+  assignBracketLevels: "readonly",
 };
 
 const browserPlus = {

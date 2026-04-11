@@ -18,6 +18,7 @@ function createReactMock() {
 
   function resetHooks() {
     stateIdx = 0;
+    states.length = 0;
   }
 
   const React = {
@@ -170,6 +171,11 @@ function buildContext() {
   // Load shared.js first (provides PALETTE, makeTicks, seededRandom, etc.)
   const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
   vm.runInContext(sharedSrc, ctx);
+
+  // Load stats.js — shared-components.js references its globals (tTest,
+  // selectTest, etc.) inside StatsTile and related helpers.
+  const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
+  vm.runInContext(statsSrc, ctx);
 
   // Load shared-components.js
   const compSrc = fs.readFileSync(path.join(toolsDir, "shared-components.js"), "utf8");

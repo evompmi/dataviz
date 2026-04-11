@@ -1200,3 +1200,24 @@ function selectTest(groups, opts = {}) {
     recommendation: { test, postHoc, reason },
   };
 }
+
+// Map a p-value to the 4-level significance stars used on plots.
+// Non-finite or missing p → empty string so callers can suppress the label.
+function pStars(p) {
+  if (!Number.isFinite(p)) return "";
+  if (p < 0.0001) return "****";
+  if (p < 0.001) return "***";
+  if (p < 0.01) return "**";
+  if (p < 0.05) return "*";
+  return "ns";
+}
+
+// Format a p-value for display next to a test statistic. Uses scientific
+// notation below 1e-3 (where fixed-point would round to 0) and keeps 3
+// significant digits otherwise.
+function formatP(p) {
+  if (p == null || !Number.isFinite(p)) return "—";
+  if (p < 1e-4) return p.toExponential(1);
+  if (p < 1e-3) return p.toExponential(2);
+  return p.toFixed(4);
+}

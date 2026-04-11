@@ -1652,3 +1652,509 @@ class ErrorBoundary extends React.Component {
     );
   }
 }
+
+// ── StatsTile ──────────────────────────────────────────────────────────────
+//
+// Collapsible tile that runs the assumption checks, picks a test from the
+// decision tree (user can override), runs post-hocs for k ≥ 3, and emits an
+// annotation spec to the parent via `onAnnotationsChange` so the chart can
+// draw brackets / compact-letter labels above the bars.
+//
+// Props:
+//   groups                [{ name, values: number[] }]
+//   onAnnotationsChange?  (spec | null) => void
+//                         spec is either
+//                           { kind: "brackets", pairs: [{i,j,label,p}], groupNames }
+//                           { kind: "cld",      labels: string[],       groupNames }
+//
+// Kept plain JS (React.createElement, no JSX) so it can live in
+// shared-components.js alongside the rest of the shared components.
+
+const STATS_LABELS = {
+  studentT: "Student's t-test",
+  welchT: "Welch's t-test",
+  mannWhitney: "Mann-Whitney U",
+  oneWayANOVA: "One-way ANOVA",
+  welchANOVA: "Welch's ANOVA",
+  kruskalWallis: "Kruskal-Wallis",
+};
+const POSTHOC_LABELS = {
+  tukeyHSD: "Tukey HSD",
+  gamesHowell: "Games-Howell",
+  dunn: "Dunn (BH-adjusted)",
+};
+
+function _runTest(name, values) {
+  if (name === "studentT") return tTest(values[0], values[1], { equalVar: true });
+  if (name === "welchT") return tTest(values[0], values[1], { equalVar: false });
+  if (name === "mannWhitney") return mannWhitneyU(values[0], values[1]);
+  if (name === "oneWayANOVA") return oneWayANOVA(values);
+  if (name === "welchANOVA") return welchANOVA(values);
+  if (name === "kruskalWallis") return kruskalWallis(values);
+  return null;
+}
+
+function _runPostHoc(name, values) {
+  if (name === "tukeyHSD") return tukeyHSD(values);
+  if (name === "gamesHowell") return gamesHowell(values);
+  if (name === "dunn") return dunnTest(values);
+  return null;
+}
+
+function _postHocFor(testName) {
+  if (testName === "oneWayANOVA") return "tukeyHSD";
+  if (testName === "welchANOVA") return "gamesHowell";
+  if (testName === "kruskalWallis") return "dunn";
+  return null;
+}
+
+// Format a test's primary result line. Each test returns slightly different
+// fields (t/df/p for t-tests, F/df1/df2/p for ANOVA, U/z/p for MWU, etc.).
+function _formatTestLine(name, res) {
+  if (!res || res.error) return res && res.error ? "⚠ " + res.error : "—";
+  if (name === "studentT" || name === "welchT")
+    return `t(${res.df.toFixed(2)}) = ${res.t.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (name === "mannWhitney")
+    return `U = ${res.U.toFixed(1)},  z = ${res.z.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (name === "oneWayANOVA" || name === "welchANOVA")
+    return `F(${res.df1}, ${typeof res.df2 === "number" ? res.df2.toFixed(2) : res.df2}) = ${res.F.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (name === "kruskalWallis") return `H(${res.df}) = ${res.H.toFixed(3)},  p = ${formatP(res.p)}`;
+  return "—";
+}
+
+// Given a list of {i, j} pairs, assign a vertical level (0 = lowest) to each
+// so brackets at overlapping spans stack instead of colliding. Greedy by
+// ascending span width. Exposed as a global so chart renderers can reuse
+// the layout.
+function assignBracketLevels(pairs) {
+  const enriched = pairs.map((pr, idx) => ({ ...pr, _span: Math.abs(pr.j - pr.i), _orig: idx }));
+  enriched.sort((a, b) => a._span - b._span);
+  const placed = [];
+  for (const pr of enriched) {
+    let lvl = 0;
+    while (
+      placed.some(
+        (q) =>
+          q._level === lvl &&
+          Math.max(Math.min(q.i, q.j), Math.min(pr.i, pr.j)) <=
+            Math.min(Math.max(q.i, q.j), Math.max(pr.i, pr.j))
+      )
+    ) {
+      lvl++;
+    }
+    pr._level = lvl;
+    placed.push(pr);
+  }
+  // Restore original input order so the parent can match up labels.
+  placed.sort((a, b) => a._orig - b._orig);
+  return placed.map(({ _orig: _o, _span: _s, ...rest }) => rest);
+}
+
+function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
+  const validGroups = (groups || []).filter(
+    (g) => g && Array.isArray(g.values) && g.values.length >= 2
+  );
+  const k = validGroups.length;
+
+  const [open, setOpen] = React.useState(!!defaultOpen);
+  const [overrideTest, setOverrideTest] = React.useState(null);
+  const [showOnPlot, setShowOnPlot] = React.useState(false);
+  const [annotKind, setAnnotKind] = React.useState("cld"); // only used when k>2
+
+  const values = React.useMemo(() => validGroups.map((g) => g.values.slice()), [validGroups]);
+  const names = React.useMemo(() => validGroups.map((g) => g.name), [validGroups]);
+
+  const recommendation = React.useMemo(() => {
+    if (k < 2) return null;
+    return selectTest(values);
+  }, [values, k]);
+
+  const chosenTest =
+    overrideTest ||
+    (recommendation && recommendation.recommendation && recommendation.recommendation.test) ||
+    null;
+
+  const testResult = React.useMemo(
+    () => (chosenTest ? _runTest(chosenTest, values) : null),
+    [chosenTest, values]
+  );
+
+  const postHocName = _postHocFor(chosenTest);
+  const postHocResult = React.useMemo(
+    () => (k > 2 && postHocName ? _runPostHoc(postHocName, values) : null),
+    [postHocName, values, k]
+  );
+
+  // Build annotation spec for the chart.
+  const annotationSpec = React.useMemo(() => {
+    if (!showOnPlot || k < 2) return null;
+    if (k === 2) {
+      const p = testResult && !testResult.error ? testResult.p : null;
+      if (p == null) return null;
+      return {
+        kind: "brackets",
+        pairs: [{ i: 0, j: 1, p, label: pStars(p) }],
+        groupNames: names,
+      };
+    }
+    if (!postHocResult || postHocResult.error) return null;
+    if (annotKind === "cld") {
+      const labels = compactLetterDisplay(postHocResult.pairs, k);
+      return { kind: "cld", labels, groupNames: names };
+    }
+    // Brackets: only draw significant pairs (α = 0.05), prefer pAdj if present.
+    const sig = postHocResult.pairs
+      .map((pr) => ({
+        i: pr.i,
+        j: pr.j,
+        p: pr.pAdj != null ? pr.pAdj : pr.p,
+      }))
+      .filter((pr) => pr.p < 0.05)
+      .map((pr) => ({ ...pr, label: pStars(pr.p) }));
+    return { kind: "brackets", pairs: sig, groupNames: names };
+  }, [showOnPlot, annotKind, k, testResult, postHocResult, names]);
+
+  // Emit annotations to the parent. We hold the latest spec in a ref and
+  // fire the effect only when its serialized form changes, so unrelated
+  // re-renders don't trigger a parent state update.
+  const specKey = annotationSpec ? JSON.stringify(annotationSpec) : "";
+  const latestSpec = React.useRef(annotationSpec);
+  latestSpec.current = annotationSpec;
+  const onChangeRef = React.useRef(onAnnotationsChange);
+  onChangeRef.current = onAnnotationsChange;
+  React.useEffect(() => {
+    if (typeof onChangeRef.current === "function") onChangeRef.current(latestSpec.current);
+  }, [specKey]);
+
+  // Nothing to show.
+  if (k < 2) return null;
+
+  // ── Styles ────────────────────────────────────────────────────────────────
+  const wrap = {
+    ...sec,
+    marginTop: 12,
+    background: "#f8f8fa",
+  };
+  const header = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    cursor: "pointer",
+    userSelect: "none",
+  };
+  const h3 = {
+    margin: 0,
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#333",
+    letterSpacing: "0.2px",
+  };
+  const subhead = {
+    margin: "12px 0 6px",
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    color: "#777",
+  };
+  const row = { display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#444" };
+  const pillOk = {
+    display: "inline-block",
+    padding: "2px 8px",
+    borderRadius: 10,
+    fontSize: 10,
+    fontWeight: 700,
+    background: "#dcfce7",
+    color: "#166534",
+  };
+  const pillBad = { ...pillOk, background: "#fee2e2", color: "#991b1b" };
+  const pillNeutral = { ...pillOk, background: "#e5e7eb", color: "#374151" };
+  const table = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: 12,
+    marginTop: 4,
+  };
+  const th = {
+    textAlign: "left",
+    padding: "4px 6px",
+    borderBottom: "1px solid #ddd",
+    color: "#555",
+    fontWeight: 600,
+  };
+  const td = { padding: "4px 6px", borderBottom: "1px solid #eee", color: "#333" };
+
+  // ── Header row ────────────────────────────────────────────────────────────
+  const headerEl = React.createElement(
+    "div",
+    { style: header, onClick: () => setOpen((o) => !o) },
+    React.createElement("h3", { style: h3 }, "Statistical analysis"),
+    React.createElement("span", { style: { fontSize: 12, color: "#888" } }, open ? "▾" : "▸")
+  );
+
+  if (!open) return React.createElement("div", { style: wrap }, headerEl);
+
+  // ── Assumptions section ───────────────────────────────────────────────────
+  const norm = (recommendation && recommendation.normality) || [];
+  const lev = (recommendation && recommendation.levene) || {};
+  const normalityRows = norm.map((r) =>
+    React.createElement(
+      "tr",
+      { key: r.group },
+      React.createElement("td", { style: td }, names[r.group]),
+      React.createElement("td", { style: td }, "n = " + r.n),
+      React.createElement("td", { style: td }, r.W != null ? "W = " + r.W.toFixed(3) : "—"),
+      React.createElement("td", { style: td }, r.p != null ? "p = " + formatP(r.p) : r.note || "—"),
+      React.createElement(
+        "td",
+        { style: td },
+        r.normal === true
+          ? React.createElement("span", { style: pillOk }, "normal")
+          : r.normal === false
+            ? React.createElement("span", { style: pillBad }, "not normal")
+            : React.createElement("span", { style: pillNeutral }, "unknown")
+      )
+    )
+  );
+  const normalityTable = React.createElement(
+    "table",
+    { style: table },
+    React.createElement(
+      "thead",
+      null,
+      React.createElement(
+        "tr",
+        null,
+        React.createElement("th", { style: th }, "Group"),
+        React.createElement("th", { style: th }, "n"),
+        React.createElement("th", { style: th }, "Shapiro W"),
+        React.createElement("th", { style: th }, "p"),
+        React.createElement("th", { style: th }, "Assessment")
+      )
+    ),
+    React.createElement("tbody", null, normalityRows)
+  );
+
+  const leveneLine = React.createElement(
+    "div",
+    { style: { ...row, marginTop: 8 } },
+    React.createElement("span", { style: { color: "#555" } }, "Levene (Brown-Forsythe):"),
+    lev.error
+      ? React.createElement("span", { style: { color: "#b91c1c" } }, lev.error)
+      : React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            "span",
+            null,
+            "F(" + lev.df1 + ", " + lev.df2 + ") = " + lev.F.toFixed(3) + ",  p = " + formatP(lev.p)
+          ),
+          React.createElement(
+            "span",
+            { style: lev.equalVar ? pillOk : pillBad },
+            lev.equalVar ? "equal variance" : "unequal variance"
+          )
+        )
+  );
+
+  // ── Test picker ───────────────────────────────────────────────────────────
+  const testOptions =
+    k === 2
+      ? ["studentT", "welchT", "mannWhitney"]
+      : ["oneWayANOVA", "welchANOVA", "kruskalWallis"];
+  const recTest =
+    recommendation && recommendation.recommendation && recommendation.recommendation.test;
+  const recReason =
+    recommendation && recommendation.recommendation && recommendation.recommendation.reason;
+  const testPicker = React.createElement(
+    "div",
+    { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } },
+    React.createElement(
+      "select",
+      {
+        value: chosenTest || "",
+        onChange: (e) => setOverrideTest(e.target.value === recTest ? null : e.target.value),
+        style: { ...selStyle, minWidth: 180 },
+      },
+      testOptions.map((t) =>
+        React.createElement(
+          "option",
+          { key: t, value: t },
+          STATS_LABELS[t] + (t === recTest ? "  (recommended)" : "")
+        )
+      )
+    ),
+    overrideTest
+      ? React.createElement(
+          "button",
+          {
+            onClick: () => setOverrideTest(null),
+            style: {
+              ...btnSecondary,
+              padding: "4px 10px",
+              fontSize: 11,
+            },
+          },
+          "Use recommendation"
+        )
+      : null
+  );
+
+  const reasonLine = recReason
+    ? React.createElement(
+        "div",
+        { style: { fontSize: 11, color: "#666", marginTop: 4, fontStyle: "italic" } },
+        recReason
+      )
+    : null;
+
+  const resultLine = React.createElement(
+    "div",
+    {
+      style: {
+        marginTop: 8,
+        padding: "8px 10px",
+        background: "#fff",
+        border: "1px solid #ddd",
+        borderRadius: 6,
+        fontFamily: "ui-monospace, Menlo, monospace",
+        fontSize: 12,
+        color: "#111",
+      },
+    },
+    _formatTestLine(chosenTest, testResult)
+  );
+
+  // ── Post-hoc table (k ≥ 3) ────────────────────────────────────────────────
+  let postHocBlock = null;
+  if (k > 2 && postHocResult && !postHocResult.error) {
+    const rows = postHocResult.pairs.map((pr, idx) => {
+      const pVal = pr.pAdj != null ? pr.pAdj : pr.p;
+      return React.createElement(
+        "tr",
+        { key: idx },
+        React.createElement("td", { style: td }, names[pr.i] + " vs " + names[pr.j]),
+        React.createElement(
+          "td",
+          { style: td },
+          pr.diff != null ? pr.diff.toFixed(3) : pr.z != null ? "z = " + pr.z.toFixed(3) : "—"
+        ),
+        React.createElement("td", { style: td }, formatP(pVal)),
+        React.createElement(
+          "td",
+          { style: { ...td, fontWeight: 700, color: pVal < 0.05 ? "#166534" : "#777" } },
+          pStars(pVal)
+        )
+      );
+    });
+    postHocBlock = React.createElement(
+      "div",
+      null,
+      React.createElement("div", { style: subhead }, "Post-hoc — " + POSTHOC_LABELS[postHocName]),
+      React.createElement(
+        "table",
+        { style: table },
+        React.createElement(
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            React.createElement("th", { style: th }, "Pair"),
+            React.createElement(
+              "th",
+              { style: th },
+              postHocName === "dunn" ? "Rank diff" : "Mean diff"
+            ),
+            React.createElement("th", { style: th }, "p"),
+            React.createElement("th", { style: th }, "Signif.")
+          )
+        ),
+        React.createElement("tbody", null, rows)
+      )
+    );
+  }
+
+  // ── Display-on-plot controls ──────────────────────────────────────────────
+  const displayControls = React.createElement(
+    "div",
+    {
+      style: {
+        marginTop: 12,
+        paddingTop: 10,
+        borderTop: "1px dashed #ddd",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        flexWrap: "wrap",
+      },
+    },
+    React.createElement(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12,
+          color: "#333",
+          cursor: "pointer",
+        },
+      },
+      React.createElement("input", {
+        type: "checkbox",
+        checked: showOnPlot,
+        onChange: (e) => setShowOnPlot(e.target.checked),
+      }),
+      "Display on plot"
+    ),
+    k > 2
+      ? React.createElement(
+          "div",
+          { style: { display: "flex", alignItems: "center", gap: 10, fontSize: 12 } },
+          React.createElement("span", { style: { color: "#666" } }, "Style:"),
+          React.createElement(
+            "label",
+            { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
+            React.createElement("input", {
+              type: "radio",
+              name: "stats-annot-kind",
+              checked: annotKind === "cld",
+              onChange: () => setAnnotKind("cld"),
+            }),
+            "letters (a/ab/b)"
+          ),
+          React.createElement(
+            "label",
+            { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
+            React.createElement("input", {
+              type: "radio",
+              name: "stats-annot-kind",
+              checked: annotKind === "brackets",
+              onChange: () => setAnnotKind("brackets"),
+            }),
+            "brackets"
+          )
+        )
+      : null
+  );
+
+  return React.createElement(
+    "div",
+    { style: wrap },
+    headerEl,
+    React.createElement(
+      "div",
+      { style: { marginTop: 10 } },
+      React.createElement("div", { style: subhead }, "Assumptions"),
+      normalityTable,
+      leveneLine,
+      React.createElement("div", { style: subhead }, "Test"),
+      testPicker,
+      reasonLine,
+      resultLine,
+      postHocBlock,
+      displayControls
+    )
+  );
+}

@@ -25,6 +25,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     svgLegend,
     showCompPie,
     plotStyle = "box",
+    annotations,
   },
   ref
 ) {
@@ -32,7 +33,20 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const absA = Math.abs(angle);
   const pieSpace = cbc >= 0 && showCompPie ? 60 : 0;
   const botM = 60 + (absA > 0 ? absA * 0.8 : 0) + pieSpace;
-  const M = { top: 24, right: 24, bottom: botM, left: 62 };
+
+  // Precompute annotation layout so we can reserve top margin for it.
+  const annotPairs =
+    annotations && annotations.kind === "brackets"
+      ? assignBracketLevels(annotations.pairs || [])
+      : [];
+  const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
+  const annotTopPad =
+    annotations && annotations.kind === "cld"
+      ? 22
+      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
+        ? (annotMaxLevel + 1) * 20 + 6
+        : 0;
+  const M = { top: 24 + annotTopPad, right: 24, bottom: botM, left: 62 };
 
   const allV = groups.flatMap((g) => g.allValues);
   if (allV.length === 0) return null;
@@ -57,7 +71,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
   const vbW = Math.max(200, n * 100 * compact + M.left + M.right);
-  const vbH_chart = 504 + (absA > 0 ? absA * 0.8 : 0);
+  const vbH_chart = 504 + (absA > 0 ? absA * 0.8 : 0) + annotTopPad;
   const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right, 88);
   const vbH = vbH_chart + _legH;
   const w = vbW - M.left - M.right;
@@ -398,6 +412,56 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           </React.Fragment>
         );
       })}
+
+      {/* Stats annotations — compact letter display */}
+      {annotations &&
+        annotations.kind === "cld" &&
+        (annotations.labels || []).map((lbl, gi) => (
+          <text
+            key={`cld-${gi}`}
+            x={bx(gi)}
+            y={M.top - 6}
+            textAnchor="middle"
+            fontSize="13"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {lbl}
+          </text>
+        ))}
+
+      {/* Stats annotations — significance brackets */}
+      {annotations &&
+        annotations.kind === "brackets" &&
+        annotPairs.map((pr, idx) => {
+          const x1 = bx(pr.i);
+          const x2 = bx(pr.j);
+          const lvl = pr._level || 0;
+          const yLine = M.top - 8 - lvl * 20;
+          const tick = 4;
+          return (
+            <g key={`br-${idx}`}>
+              <path
+                d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                stroke="#333"
+                strokeWidth="1"
+                fill="none"
+              />
+              <text
+                x={(x1 + x2) / 2}
+                y={yLine - 2}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight="700"
+                fill="#222"
+                fontFamily="sans-serif"
+              >
+                {pr.label}
+              </text>
+            </g>
+          );
+        })}
 
       {yLabel && (
         <text
@@ -1497,6 +1561,7 @@ function PlotArea({
   yMaxVal,
   plotGroupRenames,
   boxplotColors,
+  statsAnnotations,
 }) {
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
@@ -1569,6 +1634,7 @@ function PlotArea({
             boxGap={vis.boxGap}
             showCompPie={vis.showCompPie}
             plotStyle={vis.plotStyle}
+            annotations={statsAnnotations}
             svgLegend={
               colorByCol >= 0 && colorByCategories.length > 0
                 ? [
@@ -1700,6 +1766,7 @@ function App() {
   const [categoryColors, setCategoryColors] = useState({});
   const [dragIdx, setDragIdx] = useState(null);
   const [facetByCol, setFacetByCol] = useState(-1);
+  const [statsAnnotations, setStatsAnnotations] = useState(null);
 
   const facetRefs = useRef({});
   const chartRef = useRef();
@@ -2179,22 +2246,34 @@ function App() {
             onDownloadSvg={handleDownloadSvg}
             onDownloadPng={handleDownloadPng}
           />
-          <PlotArea
-            colorByCol={colorByCol}
-            colorByCategories={colorByCategories}
-            colNames={colNames}
-            categoryColors={categoryColors}
-            facetByCol={facetByCol}
-            facetedData={facetedData}
-            facetRefs={facetRefs}
-            chartRef={chartRef}
-            displayBoxplotGroups={displayBoxplotGroups}
-            vis={vis}
-            yMinVal={yMinVal}
-            yMaxVal={yMaxVal}
-            plotGroupRenames={plotGroupRenames}
-            boxplotColors={boxplotColors}
-          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <PlotArea
+              colorByCol={colorByCol}
+              colorByCategories={colorByCategories}
+              colNames={colNames}
+              categoryColors={categoryColors}
+              facetByCol={facetByCol}
+              facetedData={facetedData}
+              facetRefs={facetRefs}
+              chartRef={chartRef}
+              displayBoxplotGroups={displayBoxplotGroups}
+              vis={vis}
+              yMinVal={yMinVal}
+              yMaxVal={yMaxVal}
+              plotGroupRenames={plotGroupRenames}
+              boxplotColors={boxplotColors}
+              statsAnnotations={facetByCol < 0 ? statsAnnotations : null}
+            />
+            {facetByCol < 0 && displayBoxplotGroups.length >= 2 && (
+              <StatsTile
+                groups={displayBoxplotGroups.map((g) => ({
+                  name: g.name,
+                  values: g.allValues,
+                }))}
+                onAnnotationsChange={setStatsAnnotations}
+              />
+            )}
+          </div>
         </div>
       )}
 

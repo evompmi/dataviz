@@ -160,6 +160,15 @@ declare global {
   const GroupColorEditor: FC<any>;
   const BaseStyleControls: FC<any>;
   const ErrorBoundary: FC<{ toolName?: string; children?: ReactNode }>;
+  const StatsTile: FC<any>;
+  interface BracketPair {
+    i: number;
+    j: number;
+    p?: number;
+    label?: string;
+    _level?: number;
+  }
+  function assignBracketLevels(pairs: BracketPair[]): BracketPair[];
 
   // ── Legend SVG helpers from shared-components.js ───────────────────────────
   interface LegendBlock {
@@ -356,6 +365,8 @@ declare global {
     };
     error?: string;
   };
+  function pStars(p: number): string;
+  function formatP(p: number | null | undefined): string;
 }
 
 export {};
