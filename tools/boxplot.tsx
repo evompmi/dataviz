@@ -165,7 +165,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     <svg
       ref={ref}
       viewBox={`0 0 ${vbW} ${vbH}`}
-      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block" }}
+      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label={plotTitle || "Box plot"}
