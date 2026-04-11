@@ -72,19 +72,13 @@
 ## **THE UGLY**
 
 ### Git History
-- **Commit messages are bad** — "Add regression line with stats overlay to scatter" — what does this *do*? No context on *why*, *how*, or *impact*.
+
 - **"Vibe-coded"adge of honor** — README brags about being "vibe-coded with claude". This is not a flex. It signals lack of ownership.
-- **No PR reviews** — Single-developer project (appears to be). No code review culture.
 
 ### Documentation
 - **README is a feature dump** — Walls of text describing every feature. No hierarchy. No "getting started" guide.
 - **CLAUDE.md is better than README** — Irony: the AI onboarding doc is clearer than the user-facing README.
 - **No API documentation** — Shared functions (parseRaw, computeStats, quartiles) have no JSDoc. Users of these utilities must read source.
-
-### Deployment
-- **No version tags** — Git history shows v1.0 in a commit message, but no actual git tags. No semantic versioning.
-- **No changelog** — Users have no idea what changed between deployments.
-- **GitHub Pages only** — No alternative deployment options documented. What if GitHub goes down?
 
 ---
 
@@ -125,7 +119,7 @@ DONE 11. **Improve commit messages** — Adopted Conventional Commits (free-form
 ### Nice to Have
 12. **Migrate to Vite** — Faster dev, better DX, built-in HMR.
 13. **Add Storybook** — Component-driven development, visual regression testing.
-14. **Improve landing page** — Simplify, prioritize, reduce cognitive load.
+WONTFIX 14. **Improve landing page** — Page is already simple (7 tiles in 2 labeled groups, tagline, prefetch bar, quote); recommendation was generic filler that didn't match the actual markup.
 15. **Add theme support** — Dark mode for late-night plant science.
 
 ---

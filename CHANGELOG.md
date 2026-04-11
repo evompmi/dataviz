@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-11
+
 ### Added
 
 - Source maps emitted alongside compiled `tools/*.js` for debuggable stack traces in browser devtools.
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - CI and deploy workflows run on Node.js 22 (current LTS) and opt into the Node 24 action runtime via `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` ahead of GitHub's June 2026 deprecation of Node 20 actions.
 - `ColorInput` now accepts 3-digit hex (`#abc` → `#aabbcc`) and normalizes any valid hex to lowercase 6-digit form.
+- README trimmed: per-tool sections condensed to a single overview table (full feature walkthroughs live in each tool's built-in How-to panel).
 
 ## [1.0.0] - 2026-04-11
 
@@ -37,5 +40,6 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with 217 tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/evompmi/dataviz/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/evompmi/dataviz/releases/tag/v1.0.0
