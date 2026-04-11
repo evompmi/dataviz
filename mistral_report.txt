@@ -113,7 +113,7 @@ DONE 3. **Add --minify to build** — Reduce bundle size. One-line fix in packag
 ### High Priority
 DONE 4. **Adopt TypeScript** — Catch errors at compile time, not runtime.
 DONE 5. **Add source maps** — Debuggable production builds.
-6. **Create CHANGELOG.md** — Track changes for users.
+DONE 6. **Create CHANGELOG.md** — Track changes for users.
 7. **Add error boundaries** — Graceful tool failure handling.
 
 ### Medium Priority
