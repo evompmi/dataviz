@@ -1888,15 +1888,15 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
   };
   const subhead = {
     margin: "14px 0 8px",
-    padding: "4px 10px",
+    padding: "5px 12px",
     fontSize: 11,
     fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.8px",
     color: "#fff",
-    background: "linear-gradient(135deg, #4a6cf7, #648FFF)",
-    borderRadius: 6,
-    display: "inline-block",
+    background: "#475569",
+    borderRadius: 4,
+    display: "block",
   };
   const row = { display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#444" };
   const pillOk = {
