@@ -640,7 +640,14 @@ function HowToSection() {
   );
 }
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+function UploadStep({
+  sepOverride,
+  setSepOverride,
+  rawText,
+  doParse,
+  handleFileLoad,
+  onLoadExample,
+}) {
   return (
     <div>
       <UploadPanel
@@ -652,6 +659,7 @@ function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileL
           }
         }}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT — one column per condition, values in rows"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -1742,6 +1750,12 @@ function App() {
     },
     [sepOverride, doParse]
   );
+  const loadExample = useCallback(() => {
+    const csv = makeExamplePlantCSV();
+    setSepOverride(",");
+    setFileName("example_plant_growth.csv");
+    doParse(csv, ",");
+  }, [doParse]);
   const resetAll = () => {
     setRawText(null);
     setGroups([]);
@@ -1830,6 +1844,7 @@ function App() {
           rawText={rawText}
           doParse={doParse}
           handleFileLoad={handleFileLoad}
+          onLoadExample={loadExample}
         />
       )}
 

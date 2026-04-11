@@ -605,6 +605,8 @@ function UploadPanel(props) {
   const sepOverride = props.sepOverride,
     onSepChange = props.onSepChange,
     onFileLoad = props.onFileLoad,
+    onLoadExample = props.onLoadExample,
+    exampleLabel = props.exampleLabel,
     hint = props.hint;
   return React.createElement(
     "div",
@@ -675,7 +677,42 @@ function UploadPanel(props) {
           onFileLoad: onFileLoad,
           accept: ".csv,.tsv,.txt,.dat,.tab",
           hint: hint || "CSV \u00B7 TSV \u00B7 TXT \u00B7 DAT",
-        })
+        }),
+    onLoadExample
+      ? React.createElement(
+          "div",
+          {
+            style: {
+              marginTop: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontSize: 12,
+              color: "#666",
+            },
+          },
+          React.createElement("span", null, "No data handy?"),
+          React.createElement(
+            "button",
+            {
+              onClick: onLoadExample,
+              style: {
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: "#648FFF",
+                fontWeight: 700,
+                fontSize: 12,
+                fontFamily: "monospace",
+                textDecoration: "underline",
+                cursor: "pointer",
+              },
+            },
+            exampleLabel || "Load example dataset \u2192"
+          )
+        )
+      : null
   );
 }
 

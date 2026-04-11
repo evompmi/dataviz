@@ -235,6 +235,40 @@ function seededRandom(seed) {
   };
 }
 
+// ── Example dataset (long format, used by bargraph + boxplot "Load example") ──
+// Arabidopsis biomass × 3 genotypes × 3 treatments × 8 replicates = 72 rows.
+// Effects are tuned so k=3 ANOVA + Tukey is meaningful, facet-by-Treatment works,
+// and group colors / filters / renames all have something interesting to show.
+function makeExamplePlantCSV() {
+  const rng = seededRandom(42);
+  // Box–Muller standard normal from the seeded uniform RNG.
+  const norm = () => {
+    const u = Math.max(rng(), 1e-9);
+    const v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+  const genotypes = [
+    { name: "WT", base: 100 },
+    { name: "abi4", base: 72 },
+    { name: "oxSOS1", base: 128 },
+  ];
+  const treatments = [
+    { name: "control", delta: 0, sd: 7 },
+    { name: "drought", delta: -24, sd: 10 },
+    { name: "salt", delta: -12, sd: 9 },
+  ];
+  const lines = ["Genotype,Treatment,Replicate,Biomass_mg"];
+  for (const g of genotypes) {
+    for (const t of treatments) {
+      for (let r = 1; r <= 8; r++) {
+        const v = g.base + t.delta + norm() * t.sd;
+        lines.push(`${g.name},${t.name},${r},${v.toFixed(1)}`);
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
 // ── Axis ticks ───────────────────────────────────────────────────────────────
 
 function niceStep(range, approxN) {

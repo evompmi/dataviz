@@ -54,6 +54,7 @@ declare global {
   // ── Numeric detection & seeded RNG ─────────────────────────────────────────
   function isNumericValue(v: unknown): boolean;
   function seededRandom(seed: number): () => number;
+  function makeExamplePlantCSV(): string;
   function makeTicks(min: number, max: number, approxN: number): number[];
 
   // ── Separator detection & decimal comma fix ────────────────────────────────

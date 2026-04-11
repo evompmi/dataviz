@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- "Load example dataset" link in the upload panel of **bargraph** and **boxplot**. Drops in a seeded Arabidopsis biomass dataset (72 rows: 3 genotypes × 3 treatments × 8 replicates, long format) so new users can see a populated tool in one click and exercise every downstream feature — column-role editor, filters, rename/reorder, group colors, faceting by Treatment, k=3 ANOVA + Tukey in the stats tile. The generator (`makeExamplePlantCSV` in `tools/shared.js`) uses the existing `seededRandom` so the dataset is reproducible across sessions. Wired via a new optional `onLoadExample` prop on the shared `UploadPanel` component.
 - `tools/stats.js` — new plain-JS module loaded via `<script>` tag alongside `shared.js`. Houses the statistical distribution functions (normal / gamma / beta / t / F / chi-square, plus noncentral t/F/chi-square), the generic `bisect` solver, sample helpers (`sampleMean`, `sampleVariance`, `sampleSD`, `rankWithTies`), and the statistical tests needed for the forthcoming analysis tile on bargraph / boxplot, all benchmarked against real R output at ±5×10⁻³ tolerance:
   - **Normality & equal-variance**: Shapiro-Wilk (Royston 1995 AS R94), Brown-Forsythe Levene test
   - **Two-sample**: Student t, Welch t, Mann-Whitney U (normal approx with continuity correction), Cohen's d, Hedges' g, rank-biserial

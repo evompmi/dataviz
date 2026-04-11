@@ -504,7 +504,15 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
 /* ── Sub-components (JSX, inline) ──────────────────────────────────────────── */
 
-function UploadStep({ sepOverride, onSepChange, rawText, doParse, handleFileLoad, setStep }) {
+function UploadStep({
+  sepOverride,
+  onSepChange,
+  rawText,
+  doParse,
+  handleFileLoad,
+  setStep,
+  onLoadExample,
+}) {
   return (
     <div>
       <UploadPanel
@@ -517,6 +525,7 @@ function UploadStep({ sepOverride, onSepChange, rawText, doParse, handleFileLoad
           }
         }}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -1848,6 +1857,12 @@ function App() {
     },
     [sepOverride, doParse]
   );
+  const loadExample = useCallback(() => {
+    const csv = makeExamplePlantCSV();
+    setSepOverride(",");
+    setFileName("example_plant_growth.csv");
+    doParse(csv, ",");
+  }, [doParse]);
 
   const resetAll = () => {
     setRawText(null);
@@ -2167,6 +2182,7 @@ function App() {
           doParse={doParse}
           handleFileLoad={handleFileLoad}
           setStep={setStep}
+          onLoadExample={loadExample}
         />
       )}
 
