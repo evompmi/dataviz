@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-04-11
+
 ### Added
 
 - Landing page now displays the real git version (derived from `git describe --tags`) instead of a hardcoded string. A build-time script writes `tools/version.js`, which the page loads to set the header badge — so between-tag commits show up as `v1.1.0-3-gabcdef`.
+
+### Fixed
+
+- `kde()` in `tools/shared.js` precomputes the mean before the variance reduce. The previous implementation recomputed the mean inside the outer reduce callback, making bandwidth selection O(n²) — violin / raincloud plots on ~10k+ points would hang for seconds. Behavior-preserving, no change to output.
 
 ## [1.1.0] - 2026-04-11
 
@@ -44,6 +50,7 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with 217 tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/evompmi/dataviz/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/evompmi/dataviz/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/evompmi/dataviz/releases/tag/v1.0.0

@@ -459,15 +459,10 @@ function kde(values, nPoints = 50) {
   const min = sorted[0],
     max = sorted[n - 1];
   const iqr = n >= 4 ? sorted[Math.floor(n * 0.75)] - sorted[Math.floor(n * 0.25)] : max - min;
-  const bw =
-    1.06 *
-      Math.min(
-        Math.sqrt(
-          values.reduce((s, v) => s + (v - values.reduce((a, b) => a + b, 0) / n) ** 2, 0) / n
-        ),
-        (iqr || 1) / 1.34
-      ) *
-      n ** -0.2 || 1;
+  const mean = values.reduce((a, b) => a + b, 0) / n;
+  const variance = values.reduce((s, v) => s + (v - mean) ** 2, 0) / n;
+  const std = Math.sqrt(variance);
+  const bw = 1.06 * Math.min(std, (iqr || 1) / 1.34) * n ** -0.2 || 1;
   const pad = bw * 2;
   const lo = min - pad,
     hi = max + pad;
