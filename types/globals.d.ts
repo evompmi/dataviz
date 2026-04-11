@@ -159,6 +159,7 @@ declare global {
   const StatsTable: FC<any>;
   const GroupColorEditor: FC<any>;
   const BaseStyleControls: FC<any>;
+  const ErrorBoundary: FC<{ toolName?: string; children?: ReactNode }>;
 
   // ── Legend SVG helpers from shared-components.js ───────────────────────────
   interface LegendBlock {

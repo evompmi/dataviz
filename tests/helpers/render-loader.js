@@ -74,6 +74,19 @@ function createReactMock() {
       return comp;
     },
     Fragment: "Fragment",
+    Component: class {
+      constructor(props) {
+        this.props = props;
+        this.state = {};
+      }
+      setState(patch) {
+        this.state = Object.assign(
+          {},
+          this.state,
+          typeof patch === "function" ? patch(this.state) : patch
+        );
+      }
+    },
   };
 
   return { React: React, resetHooks: resetHooks };

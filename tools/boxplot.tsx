@@ -2212,4 +2212,8 @@ function App() {
     </div>
   );
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ErrorBoundary toolName="Boxplot">
+    <App />
+  </ErrorBoundary>
+);

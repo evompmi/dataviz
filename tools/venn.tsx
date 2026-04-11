@@ -1769,4 +1769,8 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ErrorBoundary toolName="Venn diagram">
+    <App />
+  </ErrorBoundary>
+);

@@ -1476,4 +1476,6 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+ReactDOM.createRoot(document.getElementById("root")).render(
+  React.createElement(ErrorBoundary, { toolName: "Power calculator" }, React.createElement(App))
+);

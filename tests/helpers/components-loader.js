@@ -33,6 +33,13 @@ const ctx = {
     useEffect: () => {},
     useRef: () => ({ current: null }),
     createElement: () => null,
+    Component: class {
+      constructor(props) {
+        this.props = props;
+        this.state = {};
+      }
+      setState() {}
+    },
   },
 };
 
