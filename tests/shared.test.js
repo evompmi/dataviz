@@ -2,12 +2,20 @@
 
 const { suite, test, assert, eq, approx, summary } = require("./harness");
 const {
-  autoDetectSep, fixDecimalCommas,
-  niceStep, makeTicks,
-  hexToRgb, rgbToHex, shadeColor, seededRandom,
+  autoDetectSep,
+  fixDecimalCommas,
+  niceStep,
+  makeTicks,
+  hexToRgb,
+  rgbToHex,
+  shadeColor,
+  seededRandom,
   isNumericValue,
-  wideToLong, reshapeWide,
-  computeStats, quartiles, computeGroupStats,
+  wideToLong,
+  reshapeWide,
+  computeStats,
+  quartiles,
+  computeGroupStats,
 } = require("./helpers/shared-loader");
 
 // ── autoDetectSep ─────────────────────────────────────────────────────────────
@@ -99,7 +107,8 @@ test("produces 10 for range 100, approx 10 ticks", () => {
 test("handles range 0 gracefully (callers always use 'range || 1' guard)", () => {
   // niceStep(0) returns 0 — but makeTicks calls niceStep(max-min || 1, n) so range=0 never reaches it raw.
   // The guarded form must always return a positive finite step:
-  const step = niceStep(0 || 1, 5);
+  const range = 0;
+  const step = niceStep(range || 1, 5);
   assert(isFinite(step) && step > 0, `expected positive finite step, got ${step}`);
 });
 
@@ -118,13 +127,19 @@ test("all ticks are evenly spaced", () => {
   const ticks = makeTicks(0, 100, 10);
   const gaps = ticks.slice(1).map((v, i) => parseFloat((v - ticks[i]).toPrecision(6)));
   const first = gaps[0];
-  gaps.forEach(g => approx(g, first, 1e-6, `uneven tick gap: ${g} vs ${first}`));
+  gaps.forEach((g) => approx(g, first, 1e-6, `uneven tick gap: ${g} vs ${first}`));
 });
 
 test("works with negative range", () => {
   const ticks = makeTicks(-50, 50, 10);
-  assert(ticks.some(t => t < 0), "expected some negative ticks");
-  assert(ticks.some(t => t > 0), "expected some positive ticks");
+  assert(
+    ticks.some((t) => t < 0),
+    "expected some negative ticks"
+  );
+  assert(
+    ticks.some((t) => t > 0),
+    "expected some positive ticks"
+  );
 });
 
 test("handles zero-range without crashing", () => {
@@ -135,9 +150,15 @@ test("handles zero-range without crashing", () => {
 test("does not produce ticks beyond max", () => {
   // Test ranges that are prone to floating-point accumulation errors
   const ticks = makeTicks(0, 1, 10);
-  assert(ticks.every(t => t <= 1 + 1e-9), `last tick ${ticks[ticks.length - 1]} exceeds max 1`);
+  assert(
+    ticks.every((t) => t <= 1 + 1e-9),
+    `last tick ${ticks[ticks.length - 1]} exceeds max 1`
+  );
   const ticks2 = makeTicks(0, 0.3, 3);
-  assert(ticks2.every(t => t <= 0.3 + 1e-9), `tick exceeds max 0.3`);
+  assert(
+    ticks2.every((t) => t <= 0.3 + 1e-9),
+    `tick exceeds max 0.3`
+  );
 });
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
@@ -200,7 +221,8 @@ test("same seed produces same sequence", () => {
 test("different seeds produce different sequences", () => {
   const r1 = seededRandom(1);
   const r2 = seededRandom(2);
-  const v1 = r1(), v2 = r2();
+  const v1 = r1(),
+    v2 = r2();
   assert(v1 !== v2, "different seeds should yield different first values");
 });
 
@@ -330,16 +352,16 @@ test("iqr equals q3 - q1", () => {
 suite("computeGroupStats");
 
 test("returns stats for each group", () => {
-  const groups = { A: ["1","2","3"], B: ["4","5","6"] };
+  const groups = { A: ["1", "2", "3"], B: ["4", "5", "6"] };
   const stats = computeGroupStats(groups);
   eq(stats.length, 2);
-  const a = stats.find(s => s.name === "A");
+  const a = stats.find((s) => s.name === "A");
   approx(a.mean, 2);
   eq(a.n, 3);
 });
 
 test("handles group with no valid numerics", () => {
-  const groups = { empty: ["","x","y"] };
+  const groups = { empty: ["", "x", "y"] };
   const stats = computeGroupStats(groups);
   eq(stats[0].n, 0);
   eq(stats[0].mean, null);
@@ -347,7 +369,7 @@ test("handles group with no valid numerics", () => {
 
 test("ignores empty strings and non-numeric values within a group", () => {
   // "6wpi" should NOT be counted as numeric
-  const groups = { mixed: ["1","6wpi","2",""] };
+  const groups = { mixed: ["1", "6wpi", "2", ""] };
   const stats = computeGroupStats(groups);
   eq(stats[0].n, 2);
   approx(stats[0].mean, 1.5);
@@ -359,17 +381,24 @@ suite("wideToLong");
 
 test("converts wide format to long format with Group/Value headers", () => {
   const headers = ["ctrl", "treat"];
-  const rows = [["1","4"],["2","5"],["3","6"]];
+  const rows = [
+    ["1", "4"],
+    ["2", "5"],
+    ["3", "6"],
+  ];
   const { headers: h, rows: r } = wideToLong(headers, rows);
-  eq(h, ["Group","Value"]);
+  eq(h, ["Group", "Value"]);
   eq(r.length, 6);
-  assert(r.some(row => row[0] === "ctrl" && row[1] === "1"));
-  assert(r.some(row => row[0] === "treat" && row[1] === "6"));
+  assert(r.some((row) => row[0] === "ctrl" && row[1] === "1"));
+  assert(r.some((row) => row[0] === "treat" && row[1] === "6"));
 });
 
 test("skips empty and non-numeric cells", () => {
-  const headers = ["A","B"];
-  const rows = [["1",""],["x","2"]];
+  const headers = ["A", "B"];
+  const rows = [
+    ["1", ""],
+    ["x", "2"],
+  ];
   const { rows: r } = wideToLong(headers, rows);
   eq(r.length, 2); // only "1" and "2" are valid
 });
@@ -380,11 +409,16 @@ suite("reshapeWide");
 
 test("groups rows by group column index and pivots to wide format", () => {
   // gi=0 (group), vi=1 (value)
-  const rows = [["ctrl","1"],["ctrl","2"],["treat","3"],["treat","4"]];
+  const rows = [
+    ["ctrl", "1"],
+    ["ctrl", "2"],
+    ["treat", "3"],
+    ["treat", "4"],
+  ];
   const { headers, rows: wide } = reshapeWide(rows, 0, 1);
   assert(headers.includes("ctrl") && headers.includes("treat"), "headers should be group names");
   const ctrlCol = headers.indexOf("ctrl");
-  const vals = wide.map(r => r[ctrlCol]).filter(v => v !== "");
+  const vals = wide.map((r) => r[ctrlCol]).filter((v) => v !== "");
   eq(vals.length, 2);
 });
 

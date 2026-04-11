@@ -4,9 +4,16 @@
 
 const { suite, test, assert, eq, approx, summary } = require("./harness");
 const {
-  fixDecimalCommas, autoDetectSep, parseData, dataToColumns,
-  computeStats, quartiles, computeGroupStats,
-  getPointColors, isNumericValue, parseRaw, detectWideFormat,
+  fixDecimalCommas,
+  autoDetectSep,
+  parseData,
+  dataToColumns,
+  computeStats,
+  quartiles,
+  computeGroupStats,
+  getPointColors,
+  parseRaw,
+  detectWideFormat,
   wideToLong,
 } = require("./helpers/shared-loader");
 const { computeLegendHeight } = require("./helpers/components-loader");
@@ -24,7 +31,7 @@ test("returns n distinct colours for multiple sources", () => {
   const c = getPointColors("#648FFF", 3);
   eq(c.length, 3);
   // All should be valid hex colours
-  c.forEach(hex => assert(/^#[0-9a-f]{6}$/.test(hex), `invalid hex: ${hex}`));
+  c.forEach((hex) => assert(/^#[0-9a-f]{6}$/.test(hex), `invalid hex: ${hex}`));
   // All should be different
   assert(new Set(c).size === 3, "expected 3 distinct colours");
 });
@@ -32,7 +39,7 @@ test("returns n distinct colours for multiple sources", () => {
 test("returns valid colours for large nSources without overflow", () => {
   const colors = getPointColors("#648FFF", 100);
   eq(colors.length, 100);
-  colors.forEach(c => assert(/^#[0-9a-f]{6}$/.test(c), `invalid hex: ${c}`));
+  colors.forEach((c) => assert(/^#[0-9a-f]{6}$/.test(c), `invalid hex: ${c}`));
 });
 
 test("first colour is darker and last is lighter than base", () => {
@@ -40,7 +47,11 @@ test("first colour is darker and last is lighter than base", () => {
   const base = "#808080";
   const [first, , last] = getPointColors(base, 3);
   // Darker means lower RGB sum
-  const sum = hex => hex.match(/[0-9a-f]{2}/g).map(h => parseInt(h, 16)).reduce((a, b) => a + b);
+  const sum = (hex) =>
+    hex
+      .match(/[0-9a-f]{2}/g)
+      .map((h) => parseInt(h, 16))
+      .reduce((a, b) => a + b);
   assert(sum(first) < sum(base), "first colour should be darker");
   assert(sum(last) > sum(base), "last colour should be lighter");
 });
@@ -55,7 +66,14 @@ test("returns 0 for empty or null blocks", () => {
 });
 
 test("computes height for a single block with items", () => {
-  const blocks = [{ items: [{ label: "A", color: "#f00" }, { label: "B", color: "#0f0" }] }];
+  const blocks = [
+    {
+      items: [
+        { label: "A", color: "#f00" },
+        { label: "B", color: "#0f0" },
+      ],
+    },
+  ];
   const h = computeLegendHeight(blocks, 400);
   assert(h > 0, "height should be positive");
   // 10 (initial padding) + 1 row * 18 (ITEM_H) + 6 (final padding) = 34
@@ -67,7 +85,7 @@ test("wraps items to multiple rows when needed", () => {
   const items = Array.from({ length: 10 }, (_, i) => ({ label: `Item ${i}`, color: "#f00" }));
   const blocks = [{ items }];
   const narrow = computeLegendHeight(blocks, 176); // floor(176/88) = 2 items/row → 5 rows
-  const wide = computeLegendHeight(blocks, 880);   // floor(880/88) = 10 items/row → 1 row
+  const wide = computeLegendHeight(blocks, 880); // floor(880/88) = 10 items/row → 1 row
   assert(narrow > wide, "narrow usableW should produce taller legend");
 });
 
@@ -86,7 +104,14 @@ test("accounts for gradient blocks", () => {
 });
 
 test("accounts for sizeItems blocks", () => {
-  const blocks = [{ sizeItems: [{ r: 8, label: "small" }, { r: 16, label: "large" }] }];
+  const blocks = [
+    {
+      sizeItems: [
+        { r: 8, label: "small" },
+        { r: 16, label: "large" },
+      ],
+    },
+  ];
   const h = computeLegendHeight(blocks, 400);
   // 10 + (maxR=16)*2+4 = 10 + 36 + 6 = 52
   eq(h, 10 + 36 + 6);
@@ -104,7 +129,9 @@ test("adds inter-block spacing for multiple blocks", () => {
 });
 
 test("supports dynamic itemWidth function", () => {
-  const blocks = [{ items: Array.from({ length: 4 }, (_, i) => ({ label: `Long label ${i}`, color: "#f00" })) }];
+  const blocks = [
+    { items: Array.from({ length: 4 }, (_, i) => ({ label: `Long label ${i}`, color: "#f00" })) },
+  ];
   // With fixed IW=88, at usableW=200: floor(200/88) = 2/row → 2 rows
   const fixed = computeLegendHeight(blocks, 200, 88);
   // With dynamic IW=150: floor(200/150) = 1/row → 4 rows
@@ -173,7 +200,7 @@ test("detects wide format and converts to long correctly", () => {
   eq(longH, ["Group", "Value"]);
   eq(longR.length, 9); // 3 cols * 3 rows
   // Check a specific value
-  assert(longR.some(r => r[0] === "Sample1" && r[1] === "1.2"));
+  assert(longR.some((r) => r[0] === "Sample1" && r[1] === "1.2"));
 });
 
 test("wide format with decimal commas works end to end", () => {
@@ -196,7 +223,7 @@ test("computes correct stats from parsed CSV data", () => {
   const { data } = parseData(raw);
   // Extract groups from column 0, values from column 1
   const groups = {};
-  data.forEach(row => {
+  data.forEach((row) => {
     // row[0] is null (text), use rawData for group names
     const key = row[0] === null ? "?" : String(row[0]);
     if (!groups[key]) groups[key] = [];
@@ -222,7 +249,7 @@ test("computes correct stats from parsed CSV data", () => {
 test("computes quartiles from parsed wide-format data", () => {
   const raw = "A,B\n1,10\n2,20\n3,30\n4,40\n5,50";
   const { data } = parseData(raw);
-  const colA = data.map(r => r[0]).filter(v => v != null);
+  const colA = data.map((r) => r[0]).filter((v) => v != null);
   const q = quartiles(colA);
   eq(q.min, 1);
   eq(q.max, 5);
@@ -259,7 +286,10 @@ suite("Edge cases");
 test("parseData handles Windows CRLF line endings", () => {
   const raw = "A,B\r\n1,2\r\n3,4";
   const { data } = parseData(raw);
-  eq(data, [[1, 2], [3, 4]]);
+  eq(data, [
+    [1, 2],
+    [3, 4],
+  ]);
 });
 
 test("parseData handles quoted values", () => {
@@ -303,14 +333,14 @@ test("fixDecimalCommas handles multiple decimal commas in one value", () => {
 test("computeGroupStats with string values passed from parseRaw", () => {
   // This simulates how boxplot uses computeGroupStats with raw string values
   const groups = {
-    "ctrl": ["1.5", "2.3", "3.1", ""],
-    "treat": ["4.0", "5.2", "abc", "6.1"],
+    ctrl: ["1.5", "2.3", "3.1", ""],
+    treat: ["4.0", "5.2", "abc", "6.1"],
   };
   const stats = computeGroupStats(groups);
-  const ctrl = stats.find(s => s.name === "ctrl");
+  const ctrl = stats.find((s) => s.name === "ctrl");
   eq(ctrl.n, 3);
   approx(ctrl.mean, (1.5 + 2.3 + 3.1) / 3);
-  const treat = stats.find(s => s.name === "treat");
+  const treat = stats.find((s) => s.name === "treat");
   eq(treat.n, 3); // "abc" excluded
 });
 
@@ -351,7 +381,7 @@ test("quartiles with single element", () => {
 });
 
 test("quartiles interpolation stays in bounds with large arrays", () => {
-  const arr = Array.from({length: 1000}, (_, i) => i);
+  const arr = Array.from({ length: 1000 }, (_, i) => i);
   const q = quartiles(arr);
   assert(q.q1 >= 0 && q.q1 <= 999, "q1 in bounds");
   assert(q.med >= 0 && q.med <= 999, "med in bounds");

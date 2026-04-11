@@ -9,22 +9,26 @@ const { buildContext, loadTool, render, countElements } = require("./helpers/ren
 // ════════════════════════════════════════════════════════════════════════════
 
 const { ctx: sc, resetHooks: resetSC } = buildContext();
-const noop = function() {};
+const noop = function () {};
 
 suite("DataPreview");
 
-test("renders table with headers and rows", function() {
+test("renders table with headers and rows", function () {
   resetSC();
   var el = sc.DataPreview({
     headers: ["Name", "Value"],
-    rows: [["A", "1"], ["B", "2"], ["C", "3"]],
+    rows: [
+      ["A", "1"],
+      ["B", "2"],
+      ["C", "3"],
+    ],
   });
   assert(el, "should return an element");
   assert(el.type === "div", "root should be a div");
   assert(countElements(el) > 5, "should produce multiple elements");
 });
 
-test("renders with maxRows limiting output", function() {
+test("renders with maxRows limiting output", function () {
   resetSC();
   var rows = [];
   for (var i = 0; i < 20; i++) rows.push(["r" + i, String(i)]);
@@ -34,10 +38,15 @@ test("renders with maxRows limiting output", function() {
 
 suite("SliderControl");
 
-test("renders slider with label and value", function() {
+test("renders slider with label and value", function () {
   resetSC();
   var el = sc.SliderControl({
-    label: "Opacity", value: 50, min: 0, max: 100, step: 1, onChange: noop,
+    label: "Opacity",
+    value: 50,
+    min: 0,
+    max: 100,
+    step: 1,
+    onChange: noop,
   });
   assert(el, "should return an element");
   assert(el.type === "div", "root should be a div");
@@ -45,7 +54,7 @@ test("renders slider with label and value", function() {
 
 suite("StepNavBar");
 
-test("renders step buttons", function() {
+test("renders step buttons", function () {
   resetSC();
   var el = sc.StepNavBar({
     steps: ["Upload", "Configure", "Plot"],
@@ -58,13 +67,13 @@ test("renders step buttons", function() {
 
 suite("CommaFixBanner");
 
-test("returns null when commaFixed is false", function() {
+test("returns null when commaFixed is false", function () {
   resetSC();
   var el = sc.CommaFixBanner({ commaFixed: false, commaFixCount: 0 });
   eq(el, null);
 });
 
-test("renders banner when commaFixed is true", function() {
+test("renders banner when commaFixed is true", function () {
   resetSC();
   var el = sc.CommaFixBanner({ commaFixed: true, commaFixCount: 5 });
   assert(el, "should return an element");
@@ -72,13 +81,13 @@ test("renders banner when commaFixed is true", function() {
 
 suite("ParseErrorBanner");
 
-test("returns null when no error", function() {
+test("returns null when no error", function () {
   resetSC();
   var el = sc.ParseErrorBanner({ error: null });
   eq(el, null);
 });
 
-test("renders banner with error message", function() {
+test("renders banner with error message", function () {
   resetSC();
   var el = sc.ParseErrorBanner({ error: "Bad CSV" });
   assert(el, "should return an element");
@@ -86,16 +95,18 @@ test("renders banner with error message", function() {
 
 suite("PageHeader");
 
-test("renders header with title", function() {
+test("renders header with title", function () {
   resetSC();
   var el = sc.PageHeader({ toolName: "boxplot", title: "Boxplot Tool" });
   assert(el, "should return an element");
 });
 
-test("renders header with subtitle", function() {
+test("renders header with subtitle", function () {
   resetSC();
   var el = sc.PageHeader({
-    toolName: "scatter", title: "Scatter", subtitle: "XY plots",
+    toolName: "scatter",
+    title: "Scatter",
+    subtitle: "XY plots",
   });
   assert(el, "should return an element");
   assert(countElements(el) > 3, "subtitle should add elements");
@@ -103,34 +114,39 @@ test("renders header with subtitle", function() {
 
 suite("UploadPanel");
 
-test("renders with no separator selected (disabled state)", function() {
+test("renders with no separator selected (disabled state)", function () {
   resetSC();
   var el = sc.UploadPanel({
-    sepOverride: "", onSepChange: noop, onFileLoad: noop,
+    sepOverride: "",
+    onSepChange: noop,
+    onFileLoad: noop,
   });
   assert(el, "should return an element");
 });
 
-test("renders with separator selected (enabled state)", function() {
+test("renders with separator selected (enabled state)", function () {
   resetSC();
   var el = sc.UploadPanel({
-    sepOverride: ",", onSepChange: noop, onFileLoad: noop,
+    sepOverride: ",",
+    onSepChange: noop,
+    onFileLoad: noop,
   });
   assert(el, "should return an element");
 });
 
 suite("ActionsPanel");
 
-test("renders with download and reset", function() {
+test("renders with download and reset", function () {
   resetSC();
   var el = sc.ActionsPanel({ onDownloadSvg: noop, onReset: noop });
   assert(el, "should return an element");
 });
 
-test("renders with extra buttons", function() {
+test("renders with extra buttons", function () {
   resetSC();
   var el = sc.ActionsPanel({
-    onDownloadSvg: noop, onReset: noop,
+    onDownloadSvg: noop,
+    onReset: noop,
     extraButtons: [{ label: "Download CSV", onClick: noop }],
   });
   assert(el, "should return an element");
@@ -138,11 +154,14 @@ test("renders with extra buttons", function() {
 
 suite("ColumnRoleEditor");
 
-test("renders column role dropdowns", function() {
+test("renders column role dropdowns", function () {
   resetSC();
   var el = sc.ColumnRoleEditor({
     headers: ["Group", "Value", "Filter"],
-    rows: [["A", "1", "x"], ["B", "2", "y"]],
+    rows: [
+      ["A", "1", "x"],
+      ["B", "2", "y"],
+    ],
     colRoles: ["group", "value", "filter"],
     colNames: ["Group", "Value", "Filter"],
     onRoleChange: noop,
@@ -153,7 +172,7 @@ test("renders column role dropdowns", function() {
 
 suite("FilterCheckboxPanel");
 
-test("renders filter checkboxes", function() {
+test("renders filter checkboxes", function () {
   resetSC();
   var el = sc.FilterCheckboxPanel({
     headers: ["Grp", "Val"],
@@ -163,15 +182,17 @@ test("renders filter checkboxes", function() {
       0: { unique: ["A", "B"], included: new Set(["A", "B"]) },
       1: { unique: ["1", "2"], included: new Set(["1", "2"]) },
     },
-    filteredCount: 2, totalCount: 2,
-    onToggle: noop, onToggleAll: noop,
+    filteredCount: 2,
+    totalCount: 2,
+    onToggle: noop,
+    onToggleAll: noop,
   });
   assert(el, "should return an element");
 });
 
 suite("RenameReorderPanel");
 
-test("renders rename inputs and drag handles", function() {
+test("renders rename inputs and drag handles", function () {
   resetSC();
   var el = sc.RenameReorderPanel({
     headers: ["Grp"],
@@ -181,7 +202,9 @@ test("renders rename inputs and drag handles", function() {
     valueRenames: {},
     groupColIdx: 0,
     effectiveOrder: ["A", "B"],
-    applyRename: function(i, v) { return v; },
+    applyRename: function (i, v) {
+      return v;
+    },
     onRenameVal: noop,
     onReorder: noop,
     dragIdx: null,
@@ -193,13 +216,13 @@ test("renders rename inputs and drag handles", function() {
 
 suite("StatsTable");
 
-test("returns null for empty stats", function() {
+test("returns null for empty stats", function () {
   resetSC();
   var el = sc.StatsTable({ stats: [], groupLabel: "Treatment" });
   eq(el, null);
 });
 
-test("renders table with stats rows", function() {
+test("renders table with stats rows", function () {
   resetSC();
   var el = sc.StatsTable({
     stats: [
@@ -214,7 +237,7 @@ test("renders table with stats rows", function() {
 
 suite("GroupColorEditor");
 
-test("renders color pickers per group", function() {
+test("renders color pickers per group", function () {
   resetSC();
   var el = sc.GroupColorEditor({
     groups: [
@@ -229,23 +252,29 @@ test("renders color pickers per group", function() {
 
 suite("BaseStyleControls");
 
-test("renders background and grid controls", function() {
+test("renders background and grid controls", function () {
   resetSC();
   var el = sc.BaseStyleControls({
-    plotBg: "#ffffff", onPlotBgChange: noop,
-    showGrid: true, onShowGridChange: noop,
-    gridColor: "#e0e0e0", onGridColorChange: noop,
+    plotBg: "#ffffff",
+    onPlotBgChange: noop,
+    showGrid: true,
+    onShowGridChange: noop,
+    gridColor: "#e0e0e0",
+    onGridColorChange: noop,
   });
   assert(Array.isArray(el), "returns array of children");
   assert(el.length === 3, "bg + grid toggle + grid color");
 });
 
-test("hides grid color when grid is off", function() {
+test("hides grid color when grid is off", function () {
   resetSC();
   var el = sc.BaseStyleControls({
-    plotBg: "#ffffff", onPlotBgChange: noop,
-    showGrid: false, onShowGridChange: noop,
-    gridColor: "#e0e0e0", onGridColorChange: noop,
+    plotBg: "#ffffff",
+    onPlotBgChange: noop,
+    showGrid: false,
+    onShowGridChange: noop,
+    gridColor: "#e0e0e0",
+    onGridColorChange: noop,
   });
   assert(Array.isArray(el), "returns array");
   assert(el.length === 2, "only bg + grid toggle");
@@ -253,7 +282,7 @@ test("hides grid color when grid is off", function() {
 
 suite("ColorInput");
 
-test("renders color picker and text input", function() {
+test("renders color picker and text input", function () {
   resetSC();
   var el = sc.ColorInput({ value: "#648FFF", onChange: noop });
   assert(el, "should return an element");
@@ -262,7 +291,7 @@ test("renders color picker and text input", function() {
 
 suite("FileDropZone");
 
-test("renders drop zone", function() {
+test("renders drop zone", function () {
   resetSC();
   var el = sc.FileDropZone({ onFileLoad: noop });
   assert(el, "should return an element");
@@ -276,7 +305,7 @@ test("renders drop zone", function() {
 
 suite("BoxplotChart");
 
-(function() {
+(function () {
   var tool = loadTool("boxplot");
   var BoxplotChart = tool.ctx.BoxplotChart;
 
@@ -297,43 +326,79 @@ suite("BoxplotChart");
     },
   ];
 
-  test("renders SVG with valid groups", function() {
+  test("renders SVG with valid groups", function () {
     tool.resetHooks();
     var el = render(BoxplotChart, {
-      groups: sampleGroups, yLabel: "Value", plotTitle: "Test",
-      plotBg: "#fff", showGrid: true, gridColor: "#eee",
-      boxWidth: 60, boxFillOpacity: 0.3, pointSize: 3,
-      showPoints: true, jitterWidth: 0.4, pointOpacity: 0.6,
-      xLabelAngle: 0, categoryColors: {}, colorByCol: -1,
-      boxGap: 0, svgLegend: [], showCompPie: false,
+      groups: sampleGroups,
+      yLabel: "Value",
+      plotTitle: "Test",
+      plotBg: "#fff",
+      showGrid: true,
+      gridColor: "#eee",
+      boxWidth: 60,
+      boxFillOpacity: 0.3,
+      pointSize: 3,
+      showPoints: true,
+      jitterWidth: 0.4,
+      pointOpacity: 0.6,
+      xLabelAngle: 0,
+      categoryColors: {},
+      colorByCol: -1,
+      boxGap: 0,
+      svgLegend: [],
+      showCompPie: false,
     });
     assert(el, "should return an element");
     assert(el.type === "svg", "root should be an SVG");
     assert(countElements(el) > 10, "should produce a complex element tree");
   });
 
-  test("returns null for empty groups", function() {
+  test("returns null for empty groups", function () {
     tool.resetHooks();
     var el = render(BoxplotChart, {
       groups: [{ name: "Empty", color: "#648FFF", allValues: [], stats: null, sources: [] }],
-      yLabel: "Y", plotTitle: "", plotBg: "#fff", showGrid: false, gridColor: "#eee",
-      boxWidth: 60, boxFillOpacity: 0.3, pointSize: 3,
-      showPoints: false, jitterWidth: 0, pointOpacity: 0.6,
-      xLabelAngle: 0, categoryColors: {}, colorByCol: -1,
-      boxGap: 0, svgLegend: [], showCompPie: false,
+      yLabel: "Y",
+      plotTitle: "",
+      plotBg: "#fff",
+      showGrid: false,
+      gridColor: "#eee",
+      boxWidth: 60,
+      boxFillOpacity: 0.3,
+      pointSize: 3,
+      showPoints: false,
+      jitterWidth: 0,
+      pointOpacity: 0.6,
+      xLabelAngle: 0,
+      categoryColors: {},
+      colorByCol: -1,
+      boxGap: 0,
+      svgLegend: [],
+      showCompPie: false,
     });
     eq(el, null, "empty data should return null");
   });
 
-  test("renders with points hidden", function() {
+  test("renders with points hidden", function () {
     tool.resetHooks();
     var el = render(BoxplotChart, {
-      groups: sampleGroups, yLabel: "Value", plotTitle: "",
-      plotBg: "#fff", showGrid: false, gridColor: "#eee",
-      boxWidth: 80, boxFillOpacity: 0.5, pointSize: 3,
-      showPoints: false, jitterWidth: 0, pointOpacity: 0.6,
-      xLabelAngle: 45, categoryColors: {}, colorByCol: -1,
-      boxGap: 10, svgLegend: [], showCompPie: false,
+      groups: sampleGroups,
+      yLabel: "Value",
+      plotTitle: "",
+      plotBg: "#fff",
+      showGrid: false,
+      gridColor: "#eee",
+      boxWidth: 80,
+      boxFillOpacity: 0.5,
+      pointSize: 3,
+      showPoints: false,
+      jitterWidth: 0,
+      pointOpacity: 0.6,
+      xLabelAngle: 45,
+      categoryColors: {},
+      colorByCol: -1,
+      boxGap: 10,
+      svgLegend: [],
+      showCompPie: false,
     });
     assert(el, "should return an element");
     assert(el.type === "svg", "root should be an SVG");
@@ -344,47 +409,77 @@ suite("BoxplotChart");
 
 suite("BarChart");
 
-(function() {
+(function () {
   var tool = loadTool("bargraph");
   var BarChart = tool.ctx.BarChart;
 
   var sampleGroups = [
     {
-      name: "Control", color: "#648FFF", displayName: "Control",
+      name: "Control",
+      color: "#648FFF",
+      displayName: "Control",
       stats: { n: 5, mean: 5.4, sd: 1.14, sem: 0.51 },
       sources: [{ colIndex: 0, values: [4, 5, 5, 6, 7] }],
     },
     {
-      name: "Treatment", color: "#DC267F", displayName: "Treatment",
-      stats: { n: 5, mean: 8.2, sd: 1.30, sem: 0.58 },
+      name: "Treatment",
+      color: "#DC267F",
+      displayName: "Treatment",
+      stats: { n: 5, mean: 8.2, sd: 1.3, sem: 0.58 },
       sources: [{ colIndex: 0, values: [7, 8, 8, 9, 9] }],
     },
   ];
 
-  test("renders SVG bar chart", function() {
+  test("renders SVG bar chart", function () {
     tool.resetHooks();
     var el = render(BarChart, {
-      groups: sampleGroups, yLabel: "Value", plotTitle: "Bar Test",
-      plotBg: "#fff", showGrid: true, gridColor: "#eee",
-      barWidth: 60, pointSize: 3, showPoints: true, jitterWidth: 0.3,
-      pointOpacity: 0.6, xLabelAngle: 0, errorType: "sem",
-      barOpacity: 0.8, catColors: {}, errStrokeWidth: 1.5,
-      showBarOutline: false, barOutlineWidth: 1, svgLegend: [],
+      groups: sampleGroups,
+      yLabel: "Value",
+      plotTitle: "Bar Test",
+      plotBg: "#fff",
+      showGrid: true,
+      gridColor: "#eee",
+      barWidth: 60,
+      pointSize: 3,
+      showPoints: true,
+      jitterWidth: 0.3,
+      pointOpacity: 0.6,
+      xLabelAngle: 0,
+      errorType: "sem",
+      barOpacity: 0.8,
+      catColors: {},
+      errStrokeWidth: 1.5,
+      showBarOutline: false,
+      barOutlineWidth: 1,
+      svgLegend: [],
     });
     assert(el, "should return an element");
     assert(el.type === "svg", "root should be an SVG");
     assert(countElements(el) > 10, "should produce many elements");
   });
 
-  test("renders with no points and SD error bars", function() {
+  test("renders with no points and SD error bars", function () {
     tool.resetHooks();
     var el = render(BarChart, {
-      groups: sampleGroups, yLabel: "Value", plotTitle: "",
-      plotBg: "#f8f8fa", showGrid: false, gridColor: "#ccc",
-      barWidth: 80, pointSize: 3, showPoints: false, jitterWidth: 0,
-      pointOpacity: 0.6, xLabelAngle: 30, errorType: "sd",
-      barOpacity: 1, catColors: {}, errStrokeWidth: 2,
-      showBarOutline: true, barOutlineWidth: 1.5, svgLegend: [],
+      groups: sampleGroups,
+      yLabel: "Value",
+      plotTitle: "",
+      plotBg: "#f8f8fa",
+      showGrid: false,
+      gridColor: "#ccc",
+      barWidth: 80,
+      pointSize: 3,
+      showPoints: false,
+      jitterWidth: 0,
+      pointOpacity: 0.6,
+      xLabelAngle: 30,
+      errorType: "sd",
+      barOpacity: 1,
+      catColors: {},
+      errStrokeWidth: 2,
+      showBarOutline: true,
+      barOutlineWidth: 1.5,
+      svgLegend: [],
     });
     assert(el, "should return an element");
   });
@@ -394,7 +489,7 @@ suite("BarChart");
 
 suite("ScatterChart");
 
-(function() {
+(function () {
   var tool = loadTool("scatter");
   var ScatterChart = tool.ctx.ScatterChart;
 
@@ -411,20 +506,42 @@ suite("ScatterChart");
     ["7", "8", "B"],
   ];
 
-  test("renders SVG scatter plot", function() {
+  test("renders SVG scatter plot", function () {
     tool.resetHooks();
     var el = render(ScatterChart, {
-      data: sampleData, rawData: rawData, xCol: 0, yCol: 1,
-      xMin: 0, xMax: 10, yMin: 0, yMax: 10,
-      xLabel: "X", yLabel: "Y", title: "Scatter Test",
-      plotBg: "#fff", showGrid: true, gridColor: "#eee", refLines: [],
-      pointColor: "#648FFF", pointSize: 4, pointOpacity: 0.7,
-      strokeColor: "#333", strokeWidth: 0.5,
-      colorMapCol: -1, colorMapType: "discrete", colorMapPalette: "viridis",
-      colorMapDiscrete: {}, colorMapRange: [0, 1],
-      sizeMapCol: -1, sizeMapType: "discrete", sizeMapMin: 3, sizeMapMax: 10,
-      sizeMapDiscrete: {}, sizeMapRange: [0, 1],
-      shapeMapCol: -1, shapeMapDiscrete: {},
+      data: sampleData,
+      rawData: rawData,
+      xCol: 0,
+      yCol: 1,
+      xMin: 0,
+      xMax: 10,
+      yMin: 0,
+      yMax: 10,
+      xLabel: "X",
+      yLabel: "Y",
+      title: "Scatter Test",
+      plotBg: "#fff",
+      showGrid: true,
+      gridColor: "#eee",
+      refLines: [],
+      pointColor: "#648FFF",
+      pointSize: 4,
+      pointOpacity: 0.7,
+      strokeColor: "#333",
+      strokeWidth: 0.5,
+      colorMapCol: -1,
+      colorMapType: "discrete",
+      colorMapPalette: "viridis",
+      colorMapDiscrete: {},
+      colorMapRange: [0, 1],
+      sizeMapCol: -1,
+      sizeMapType: "discrete",
+      sizeMapMin: 3,
+      sizeMapMax: 10,
+      sizeMapDiscrete: {},
+      sizeMapRange: [0, 1],
+      shapeMapCol: -1,
+      shapeMapDiscrete: {},
       svgLegend: [],
     });
     assert(el, "should return an element");
@@ -432,41 +549,83 @@ suite("ScatterChart");
     assert(countElements(el) > 5, "should have points and axes");
   });
 
-  test("renders with color mapping", function() {
+  test("renders with color mapping", function () {
     tool.resetHooks();
     var el = render(ScatterChart, {
-      data: sampleData, rawData: rawData, xCol: 0, yCol: 1,
-      xMin: 0, xMax: 10, yMin: 0, yMax: 10,
-      xLabel: "X", yLabel: "Y", title: "",
-      plotBg: "#fff", showGrid: false, gridColor: "#eee", refLines: [],
-      pointColor: "#648FFF", pointSize: 5, pointOpacity: 0.8,
-      strokeColor: "none", strokeWidth: 0,
-      colorMapCol: 2, colorMapType: "discrete",
+      data: sampleData,
+      rawData: rawData,
+      xCol: 0,
+      yCol: 1,
+      xMin: 0,
+      xMax: 10,
+      yMin: 0,
+      yMax: 10,
+      xLabel: "X",
+      yLabel: "Y",
+      title: "",
+      plotBg: "#fff",
+      showGrid: false,
+      gridColor: "#eee",
+      refLines: [],
+      pointColor: "#648FFF",
+      pointSize: 5,
+      pointOpacity: 0.8,
+      strokeColor: "none",
+      strokeWidth: 0,
+      colorMapCol: 2,
+      colorMapType: "discrete",
       colorMapPalette: "viridis",
       colorMapDiscrete: { A: "#648FFF", B: "#DC267F" },
       colorMapRange: [0, 1],
-      sizeMapCol: -1, sizeMapType: "discrete", sizeMapMin: 3, sizeMapMax: 10,
-      sizeMapDiscrete: {}, sizeMapRange: [0, 1],
-      shapeMapCol: -1, shapeMapDiscrete: {},
+      sizeMapCol: -1,
+      sizeMapType: "discrete",
+      sizeMapMin: 3,
+      sizeMapMax: 10,
+      sizeMapDiscrete: {},
+      sizeMapRange: [0, 1],
+      shapeMapCol: -1,
+      shapeMapDiscrete: {},
       svgLegend: [],
     });
     assert(el, "should return an element");
   });
 
-  test("renders empty data without crashing", function() {
+  test("renders empty data without crashing", function () {
     tool.resetHooks();
     var el = render(ScatterChart, {
-      data: [], rawData: [], xCol: 0, yCol: 1,
-      xMin: 0, xMax: 10, yMin: 0, yMax: 10,
-      xLabel: "X", yLabel: "Y", title: "",
-      plotBg: "#fff", showGrid: true, gridColor: "#eee", refLines: [],
-      pointColor: "#648FFF", pointSize: 4, pointOpacity: 0.7,
-      strokeColor: "#333", strokeWidth: 0.5,
-      colorMapCol: -1, colorMapType: "discrete", colorMapPalette: "viridis",
-      colorMapDiscrete: {}, colorMapRange: [0, 1],
-      sizeMapCol: -1, sizeMapType: "discrete", sizeMapMin: 3, sizeMapMax: 10,
-      sizeMapDiscrete: {}, sizeMapRange: [0, 1],
-      shapeMapCol: -1, shapeMapDiscrete: {},
+      data: [],
+      rawData: [],
+      xCol: 0,
+      yCol: 1,
+      xMin: 0,
+      xMax: 10,
+      yMin: 0,
+      yMax: 10,
+      xLabel: "X",
+      yLabel: "Y",
+      title: "",
+      plotBg: "#fff",
+      showGrid: true,
+      gridColor: "#eee",
+      refLines: [],
+      pointColor: "#648FFF",
+      pointSize: 4,
+      pointOpacity: 0.7,
+      strokeColor: "#333",
+      strokeWidth: 0.5,
+      colorMapCol: -1,
+      colorMapType: "discrete",
+      colorMapPalette: "viridis",
+      colorMapDiscrete: {},
+      colorMapRange: [0, 1],
+      sizeMapCol: -1,
+      sizeMapType: "discrete",
+      sizeMapMin: 3,
+      sizeMapMax: 10,
+      sizeMapDiscrete: {},
+      sizeMapRange: [0, 1],
+      shapeMapCol: -1,
+      shapeMapDiscrete: {},
       svgLegend: [],
     });
     assert(el, "should return an element even with no data");
@@ -477,13 +636,14 @@ suite("ScatterChart");
 
 suite("AequorinChart");
 
-(function() {
+(function () {
   var tool = loadTool("aequorin");
   var Chart = tool.ctx.Chart;
 
   var sampleSeries = [
     {
-      name: "WT", color: "#648FFF",
+      name: "WT",
+      color: "#648FFF",
       rows: [
         { t: 0, mean: 100, sd: 10 },
         { t: 1, mean: 200, sd: 20 },
@@ -491,7 +651,8 @@ suite("AequorinChart");
       ],
     },
     {
-      name: "Mutant", color: "#DC267F",
+      name: "Mutant",
+      color: "#DC267F",
       rows: [
         { t: 0, mean: 80, sd: 10 },
         { t: 1, mean: 120, sd: 20 },
@@ -500,32 +661,52 @@ suite("AequorinChart");
     },
   ];
 
-  test("renders SVG line chart", function() {
+  test("renders SVG line chart", function () {
     tool.resetHooks();
     var el = render(Chart, {
       series: sampleSeries,
-      xStart: 0, xEnd: 2, yMin: 0, yMax: 250,
-      vbW: 700, vbH: 450,
-      xLabel: "Time (s)", yLabel: "Luminescence (RLU)",
-      plotBg: "#fff", showGrid: true, lineWidth: 2,
-      ribbonOpacity: 0.2, gridColor: "#eee", svgLegend: [],
-      plotTitle: "Ca2+ Response", plotSubtitle: "",
+      xStart: 0,
+      xEnd: 2,
+      yMin: 0,
+      yMax: 250,
+      vbW: 700,
+      vbH: 450,
+      xLabel: "Time (s)",
+      yLabel: "Luminescence (RLU)",
+      plotBg: "#fff",
+      showGrid: true,
+      lineWidth: 2,
+      ribbonOpacity: 0.2,
+      gridColor: "#eee",
+      svgLegend: [],
+      plotTitle: "Ca2+ Response",
+      plotSubtitle: "",
     });
     assert(el, "should return an element");
     assert(el.type === "svg", "root should be an SVG");
     assert(countElements(el) > 10, "should produce a complex tree");
   });
 
-  test("renders with empty series", function() {
+  test("renders with empty series", function () {
     tool.resetHooks();
     var el = render(Chart, {
       series: [],
-      xStart: 0, xEnd: 10, yMin: 0, yMax: 100,
-      vbW: 700, vbH: 450,
-      xLabel: "X", yLabel: "Y",
-      plotBg: "#fff", showGrid: false, lineWidth: 2,
-      ribbonOpacity: 0.2, gridColor: "#eee", svgLegend: [],
-      plotTitle: "", plotSubtitle: "",
+      xStart: 0,
+      xEnd: 10,
+      yMin: 0,
+      yMax: 100,
+      vbW: 700,
+      vbH: 450,
+      xLabel: "X",
+      yLabel: "Y",
+      plotBg: "#fff",
+      showGrid: false,
+      lineWidth: 2,
+      ribbonOpacity: 0.2,
+      gridColor: "#eee",
+      svgLegend: [],
+      plotTitle: "",
+      plotSubtitle: "",
     });
     assert(el, "should return an element");
     assert(el.type === "svg", "root should be an SVG");

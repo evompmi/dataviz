@@ -1,10 +1,27 @@
 {
   "private": true,
   "scripts": {
-    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform",
-    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --watch"
+    "build": "esbuild tools/boxplot.tsx tools/bargraph.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify",
+    "watch": "esbuild tools/boxplot.tsx tools/bargraph.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --watch",
+    "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "@eslint/js": "^9.39.4",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@typescript-eslint/eslint-plugin": "^8.58.1",
+    "@typescript-eslint/parser": "^8.58.1",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.2",
+    "typescript": "^6.0.2"
   }
 }

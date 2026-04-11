@@ -1,7 +1,9 @@
 // Minimal test harness — no dependencies, Node 14+
 // Usage: require('./harness') then call test(), assert(), eq(), approx()
 
-let _passed = 0, _failed = 0, _currentSuite = "";
+let _passed = 0,
+  _failed = 0,
+  _currentSuite = "";
 
 function suite(name) {
   _currentSuite = name;
@@ -25,7 +27,8 @@ function assert(condition, msg) {
 }
 
 function eq(actual, expected, msg) {
-  const a = JSON.stringify(actual), b = JSON.stringify(expected);
+  const a = JSON.stringify(actual),
+    b = JSON.stringify(expected);
   if (a !== b) throw new Error(msg || `Expected ${b}\n       Got     ${a}`);
 }
 
@@ -36,7 +39,11 @@ function approx(actual, expected, tol = 1e-9, msg) {
 
 function throws(fn, msg) {
   let threw = false;
-  try { fn(); } catch { threw = true; }
+  try {
+    fn();
+  } catch {
+    threw = true;
+  }
   if (!threw) throw new Error(msg || "Expected function to throw");
 }
 

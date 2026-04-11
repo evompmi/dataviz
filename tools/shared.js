@@ -2,15 +2,25 @@
 
 function hexToRgb(hex) {
   const h = hex.replace("#", "");
-  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 function rgbToHex(r, g, b) {
-  return "#" + [r,g,b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2,"0")).join("");
+  return (
+    "#" +
+    [r, g, b]
+      .map((v) =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, "0")
+      )
+      .join("")
+  );
 }
 function shadeColor(hex, factor) {
   const [r, g, b] = hexToRgb(hex);
-  if (factor > 0) return rgbToHex(r+(255-r)*factor, g+(255-g)*factor, b+(255-b)*factor);
-  return rgbToHex(r*(1+factor), g*(1+factor), b*(1+factor));
+  if (factor > 0)
+    return rgbToHex(r + (255 - r) * factor, g + (255 - g) * factor, b + (255 - b) * factor);
+  return rgbToHex(r * (1 + factor), g * (1 + factor), b * (1 + factor));
 }
 function getPointColors(baseColor, nSources) {
   if (nSources <= 1) return [baseColor];
@@ -25,58 +35,186 @@ function getPointColors(baseColor, nSources) {
 // ── Color palette ─────────────────────────────────────────────────────────────
 
 // Okabe-Ito colorblind-safe palette (Wong 2011, Nature Methods)
-const PALETTE = ["#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7","#000000","#88CCEE","#AA4499"];
+const PALETTE = [
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#000000",
+  "#88CCEE",
+  "#AA4499",
+];
 
 // ── Tool icons (raw SVG strings) ─────────────────────────────────────────────
 
 const TOOL_ICONS = {
-  aequorin: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
-  boxplot: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>',
-  bargraph: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg>',
-  scatter: '<svg viewBox="0 0 44 44" fill="#648FFF" stroke="none"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>',
+  aequorin:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
+  boxplot:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>',
+  bargraph:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg>',
+  scatter:
+    '<svg viewBox="0 0 44 44" fill="#648FFF" stroke="none"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>',
   venn: '<svg viewBox="0 0 44 44" fill="none" stroke-width="1.5"><circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)"/><circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)"/></svg>',
-  molarity: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2.5" stroke-linecap="round"><line x1="8" y1="10" x2="18" y2="10"/><line x1="13" y1="5" x2="13" y2="15"/><line x1="26" y1="10" x2="36" y2="10"/><line x1="8" y1="30" x2="18" y2="30"/><circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none"/><circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none"/><line x1="28" y1="27" x2="34" y2="33"/><line x1="34" y1="27" x2="28" y2="33"/></svg>',
-  power: '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke="#648FFF" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.5"/></svg>'
+  molarity:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2.5" stroke-linecap="round"><line x1="8" y1="10" x2="18" y2="10"/><line x1="13" y1="5" x2="13" y2="15"/><line x1="26" y1="10" x2="36" y2="10"/><line x1="8" y1="30" x2="18" y2="30"/><circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none"/><circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none"/><line x1="28" y1="27" x2="34" y2="33"/><line x1="34" y1="27" x2="28" y2="33"/></svg>',
+  power:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke="#648FFF" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.5"/></svg>',
 };
 
 function toolIcon(name, size, opts) {
   size = size || 22;
   opts = opts || {};
   if (!TOOL_ICONS[name]) return null;
-  const svg = TOOL_ICONS[name].replace('<svg ', '<svg width="' + size + '" height="' + size + '" ');
+  const svg = TOOL_ICONS[name].replace("<svg ", '<svg width="' + size + '" height="' + size + '" ');
   const pad = Math.round(size * 0.3);
   const outerSize = size + pad * 2;
   if (opts.circle) {
-    return React.createElement('span', {
-      style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: outerSize, height: outerSize, borderRadius: '50%', background: '#fff',
-        flexShrink: 0, verticalAlign: 'middle', marginRight: 6, lineHeight: 0 }
-    }, React.createElement('span', {
-      dangerouslySetInnerHTML: { __html: svg },
-      style: { display: 'inline-block', lineHeight: 0 }
-    }));
+    return React.createElement(
+      "span",
+      {
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: outerSize,
+          height: outerSize,
+          borderRadius: "50%",
+          background: "#fff",
+          flexShrink: 0,
+          verticalAlign: "middle",
+          marginRight: 6,
+          lineHeight: 0,
+        },
+      },
+      React.createElement("span", {
+        dangerouslySetInnerHTML: { __html: svg },
+        style: { display: "inline-block", lineHeight: 0 },
+      })
+    );
   }
-  return React.createElement('span', {
+  return React.createElement("span", {
     dangerouslySetInnerHTML: { __html: svg },
-    style: { display: 'inline-block', verticalAlign: 'middle', marginRight: 6, lineHeight: 0 }
+    style: { display: "inline-block", verticalAlign: "middle", marginRight: 6, lineHeight: 0 },
   });
 }
 
 // ── UI style constants ────────────────────────────────────────────────────────
 
-const inp       = {background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:12};
-const inpN      = {width:72,background:"#fff",border:"1px solid #ccc",borderRadius:4,color:"#333",padding:"4px 8px",fontSize:13,textAlign:"center"};
-const sec       = {background:"#f8f8fa",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #ddd"};
-const lbl       = {fontSize:12,color:"#777",marginBottom:2};
-const roleColors = {group:"#0072B2",value:"#009E73",filter:"#E69F00",text:"#CC79A7",ignore:"#ccc"};
+const inp = {
+  background: "#fff",
+  border: "1px solid #ccc",
+  borderRadius: 4,
+  color: "#333",
+  padding: "4px 8px",
+  fontSize: 12,
+};
+const inpN = {
+  width: 72,
+  background: "#fff",
+  border: "1px solid #ccc",
+  borderRadius: 4,
+  color: "#333",
+  padding: "4px 8px",
+  fontSize: 13,
+  textAlign: "center",
+};
+const sec = {
+  background: "#f8f8fa",
+  borderRadius: 10,
+  padding: 16,
+  marginBottom: 16,
+  border: "1px solid #ddd",
+};
+const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
+const roleColors = {
+  group: "#0072B2",
+  value: "#009E73",
+  filter: "#E69F00",
+  text: "#CC79A7",
+  ignore: "#ccc",
+};
 
-const btnPrimary  = {padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#648FFF",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"};
-const btnSecondary = {padding:"6px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fff",border:"1px solid #ccc",color:"#555",fontFamily:"inherit"};
-const btnDanger   = {padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#fef2f2",border:"1px solid #fca5a5",color:"#dc2626",fontFamily:"inherit",width:"100%"};
-const btnDownload = {padding:"8px 14px",borderRadius:6,fontSize:12,cursor:"pointer",background:"#16a34a",border:"none",color:"#fff",fontFamily:"inherit",width:"100%",fontWeight:600};
-const btnPlot     = {padding:"10px 28px",borderRadius:8,fontSize:14,fontWeight:700,background:"#2EC4B6",color:"#fff",border:"none",cursor:"pointer",fontFamily:"inherit"};
-const selStyle    = {background:"#fff",border:"1px solid #ccc",borderRadius:4,padding:"4px 8px",fontSize:12,fontFamily:"inherit",color:"#333",cursor:"pointer"};
-const sepSelect   = {background:"#fff",border:"2px solid #648FFF",borderRadius:6,padding:"6px 12px",fontSize:13,fontFamily:"inherit",color:"#333",cursor:"pointer",fontWeight:600};
+const btnPrimary = {
+  padding: "10px 28px",
+  borderRadius: 8,
+  fontSize: 14,
+  fontWeight: 700,
+  background: "#648FFF",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "inherit",
+};
+const btnSecondary = {
+  padding: "6px 14px",
+  borderRadius: 6,
+  fontSize: 12,
+  cursor: "pointer",
+  background: "#fff",
+  border: "1px solid #ccc",
+  color: "#555",
+  fontFamily: "inherit",
+};
+const btnDanger = {
+  padding: "8px 14px",
+  borderRadius: 6,
+  fontSize: 12,
+  cursor: "pointer",
+  background: "#fef2f2",
+  border: "1px solid #fca5a5",
+  color: "#dc2626",
+  fontFamily: "inherit",
+  width: "100%",
+};
+const btnDownload = {
+  padding: "8px 14px",
+  borderRadius: 6,
+  fontSize: 12,
+  cursor: "pointer",
+  background: "#16a34a",
+  border: "none",
+  color: "#fff",
+  fontFamily: "inherit",
+  width: "100%",
+  fontWeight: 600,
+};
+const btnPlot = {
+  padding: "10px 28px",
+  borderRadius: 8,
+  fontSize: 14,
+  fontWeight: 700,
+  background: "#2EC4B6",
+  color: "#fff",
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "inherit",
+};
+const selStyle = {
+  background: "#fff",
+  border: "1px solid #ccc",
+  borderRadius: 4,
+  padding: "4px 8px",
+  fontSize: 12,
+  fontFamily: "inherit",
+  color: "#333",
+  cursor: "pointer",
+};
+const sepSelect = {
+  background: "#fff",
+  border: "2px solid #648FFF",
+  borderRadius: 6,
+  padding: "6px 12px",
+  fontSize: 13,
+  fontFamily: "inherit",
+  color: "#333",
+  cursor: "pointer",
+  fontWeight: 600,
+};
 
 // ── Numeric detection ────────────────────────────────────────────────────────
 
@@ -91,7 +229,10 @@ function isNumericValue(v) {
 
 function seededRandom(seed) {
   let s = seed;
-  return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
 }
 
 // ── Axis ticks ───────────────────────────────────────────────────────────────
@@ -122,8 +263,8 @@ function autoDetectSep(text, override = "") {
   if (override !== "") return override;
   const h = text.slice(0, 2000);
   const t = (h.match(/\t/g) || []).length,
-        s = (h.match(/;/g)  || []).length,
-        c = (h.match(/,/g)  || []).length;
+    s = (h.match(/;/g) || []).length,
+    c = (h.match(/,/g) || []).length;
   const b = Math.max(t, s, c);
   if (b === 0) return /\s+/;
   if (t === b) return "\t";
@@ -141,12 +282,15 @@ function fixDecimalCommas(text, sep) {
   if (knownSep === "") {
     const h = text.slice(0, 2000);
     const t = (h.match(/\t/g) || []).length,
-          s = (h.match(/;/g)  || []).length,
-          c = (h.match(/,/g)  || []).length;
+      s = (h.match(/;/g) || []).length,
+      c = (h.match(/,/g) || []).length;
     if (c >= s && c >= t) return { text, commaFixed: false, count: 0 };
   }
   let count = 0;
-  const fixed = text.replace(/(\d),(\d)/g, (_, a, b) => { count++; return `${a}.${b}`; });
+  const fixed = text.replace(/(\d),(\d)/g, (_, a, b) => {
+    count++;
+    return `${a}.${b}`;
+  });
   return { text: fixed, commaFixed: count > 0, count };
 }
 
@@ -154,8 +298,8 @@ function fixDecimalCommas(text, sep) {
 
 function detectHeader(rows) {
   if (rows.length < 2) return true;
-  const a = rows[0].filter(v => !isNumericValue(v) && v.trim() !== "").length;
-  const b = rows[1].filter(v => !isNumericValue(v) && v.trim() !== "").length;
+  const a = rows[0].filter((v) => !isNumericValue(v) && v.trim() !== "").length;
+  const b = rows[1].filter((v) => !isNumericValue(v) && v.trim() !== "").length;
   if (a > b) return true;
   if (a === b && a > 0) {
     let reps = 0;
@@ -169,21 +313,27 @@ function detectHeader(rows) {
 
 function parseRaw(text, sepOv = "") {
   const sep = autoDetectSep(text, sepOv);
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim() !== "");
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "");
   if (lines.length < 1) return { headers: [], rows: [], hasHeader: false };
-  const all = lines.map(l => l.split(sep).map(v => v.trim().replace(/^"|"$/g, "")));
+  const all = lines.map((l) => l.split(sep).map((v) => v.trim().replace(/^"|"$/g, "")));
   if (all.length === 0) return { headers: [], rows: [], hasHeader: false };
-  const mx = Math.max(...all.map(r => r.length));
-  const pad = all.map(r => { while (r.length < mx) r.push(""); return r; });
+  const mx = Math.max(...all.map((r) => r.length));
+  const pad = all.map((r) => {
+    while (r.length < mx) r.push("");
+    return r;
+  });
   const hh = detectHeader(pad);
   if (hh) return { headers: pad[0], rows: pad.slice(1), hasHeader: true };
-  return { headers: pad[0].map((_, i) => `Col_${i+1}`), rows: pad, hasHeader: false };
+  return { headers: pad[0].map((_, i) => `Col_${i + 1}`), rows: pad, hasHeader: false };
 }
 
 function guessColumnType(vals) {
-  const ne = vals.filter(v => v != null && v !== "");
+  const ne = vals.filter((v) => v != null && v !== "");
   if (ne.length === 0) return "ignore";
-  if (ne.filter(v => isNumericValue(v)).length / ne.length > 0.8) return "value";
+  if (ne.filter((v) => isNumericValue(v)).length / ne.length > 0.8) return "value";
   const u = new Set(ne);
   if (u.size <= 20 && u.size < ne.length * 0.5) return "group";
   return "text";
@@ -192,8 +342,8 @@ function guessColumnType(vals) {
 function detectWideFormat(headers, rows) {
   if (headers.length < 2 || rows.length < 2) return false;
   const numericCols = headers.map((_, ci) => {
-    const vals = rows.map(r => r[ci]).filter(v => v !== "");
-    return vals.length > 0 && vals.filter(v => isNumericValue(v)).length / vals.length > 0.8;
+    const vals = rows.map((r) => r[ci]).filter((v) => v !== "");
+    return vals.length > 0 && vals.filter((v) => isNumericValue(v)).length / vals.length > 0.8;
   });
   return numericCols.every(Boolean);
 }
@@ -202,16 +352,20 @@ function detectWideFormat(headers, rows) {
 
 function parseData(text, sepOv = "") {
   const sep = autoDetectSep(text, sepOv);
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim() !== "");
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "");
   if (lines.length < 2) return { headers: [], data: [], rawData: [] };
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ""));
+  const headers = lines[0].split(sep).map((h) => h.trim().replace(/^"|"$/g, ""));
   const nCols = headers.length;
-  const data = [], rawData = [];
+  const data = [],
+    rawData = [];
   for (let i = 1; i < lines.length; i++) {
-    const rawVals = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ""));
+    const rawVals = lines[i].split(sep).map((v) => v.trim().replace(/^"|"$/g, ""));
     while (rawVals.length < nCols) rawVals.push("");
-    if (rawVals.every(v => v === "")) continue;
-    data.push(rawVals.map(s => isNumericValue(s) ? Number(s) : null));
+    if (rawVals.every((v) => v === "")) continue;
+    data.push(rawVals.map((s) => (isNumericValue(s) ? Number(s) : null)));
     rawData.push(rawVals);
   }
   return { headers, data, rawData };
@@ -231,7 +385,7 @@ function dataToColumns(data, nCols) {
 
 function wideToLong(headers, rows) {
   const longRows = [];
-  rows.forEach(r => {
+  rows.forEach((r) => {
     headers.forEach((h, ci) => {
       if (r[ci] !== "" && isNumericValue(r[ci])) longRows.push([h, r[ci]]);
     });
@@ -241,13 +395,17 @@ function wideToLong(headers, rows) {
 
 function reshapeWide(rows, gi, vi) {
   const g = {};
-  rows.forEach(r => { const k = r[gi] || "?"; if (!g[k]) g[k] = []; g[k].push(r[vi]); });
+  rows.forEach((r) => {
+    const k = r[gi] || "?";
+    if (!g[k]) g[k] = [];
+    g[k].push(r[vi]);
+  });
   const vals = Object.values(g);
   if (vals.length === 0) return { headers: [], rows: [] };
-  const mx = Math.max(...vals.map(v => v.length));
+  const mx = Math.max(...vals.map((v) => v.length));
   const names = Object.keys(g);
   const w = [];
-  for (let i = 0; i < mx; i++) w.push(names.map(n => g[n][i] != null ? g[n][i] : ""));
+  for (let i = 0; i < mx; i++) w.push(names.map((n) => (g[n][i] != null ? g[n][i] : "")));
   return { headers: names, rows: w };
 }
 
@@ -263,29 +421,56 @@ function computeStats(arr) {
   const sorted = [...arr].sort((a, b) => a - b);
   const min = sorted[0];
   const max = sorted[n - 1];
-  const median = n % 2 === 0 ? (sorted[n/2-1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+  const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
   return { mean, sd, sem, n, min, max, median };
 }
 
 function quartiles(arr) {
-  const s = [...arr].sort((a, b) => a - b), n = s.length;
+  const s = [...arr].sort((a, b) => a - b),
+    n = s.length;
   if (n === 0) return null;
-  const q = p => { const i = p*(n-1), lo = Math.floor(i), hi = Math.min(Math.ceil(i), n-1); return lo === hi ? s[lo] : s[lo]*(hi-i)+s[hi]*(i-lo); };
-  const q1 = q(.25), med = q(.5), q3 = q(.75), iqr = q3 - q1;
-  return { min: s[0], max: s[n-1], q1, med, q3, iqr,
-    wLo: s.find(v => v >= q1 - 1.5*iqr) ?? s[0],
-    wHi: [...s].reverse().find(v => v <= q3 + 1.5*iqr) ?? s[n-1], n };
+  const q = (p) => {
+    const i = p * (n - 1),
+      lo = Math.floor(i),
+      hi = Math.min(Math.ceil(i), n - 1);
+    return lo === hi ? s[lo] : s[lo] * (hi - i) + s[hi] * (i - lo);
+  };
+  const q1 = q(0.25),
+    med = q(0.5),
+    q3 = q(0.75),
+    iqr = q3 - q1;
+  return {
+    min: s[0],
+    max: s[n - 1],
+    q1,
+    med,
+    q3,
+    iqr,
+    wLo: s.find((v) => v >= q1 - 1.5 * iqr) ?? s[0],
+    wHi: [...s].reverse().find((v) => v <= q3 + 1.5 * iqr) ?? s[n - 1],
+    n,
+  };
 }
 
 function kde(values, nPoints = 50) {
   const n = values.length;
   if (n === 0) return [];
   const sorted = [...values].sort((a, b) => a - b);
-  const min = sorted[0], max = sorted[n - 1];
+  const min = sorted[0],
+    max = sorted[n - 1];
   const iqr = n >= 4 ? sorted[Math.floor(n * 0.75)] - sorted[Math.floor(n * 0.25)] : max - min;
-  const bw = 1.06 * Math.min(Math.sqrt(values.reduce((s, v) => s + (v - values.reduce((a, b) => a + b, 0) / n) ** 2, 0) / n), (iqr || 1) / 1.34) * n ** -0.2 || 1;
+  const bw =
+    1.06 *
+      Math.min(
+        Math.sqrt(
+          values.reduce((s, v) => s + (v - values.reduce((a, b) => a + b, 0) / n) ** 2, 0) / n
+        ),
+        (iqr || 1) / 1.34
+      ) *
+      n ** -0.2 || 1;
   const pad = bw * 2;
-  const lo = min - pad, hi = max + pad;
+  const lo = min - pad,
+    hi = max + pad;
   const step = (hi - lo) / (nPoints - 1);
   const pts = [];
   for (let i = 0; i < nPoints; i++) {
@@ -303,9 +488,10 @@ function kde(values, nPoints = 50) {
 
 function computeGroupStats(groups) {
   return Object.entries(groups).map(([name, vals]) => {
-    const nums = vals.filter(v => v !== "" && isNumericValue(v)).map(Number);
+    const nums = vals.filter((v) => v !== "" && isNumericValue(v)).map(Number);
     const stats = computeStats(nums);
-    if (!stats) return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
+    if (!stats)
+      return { name, n: 0, mean: null, sd: null, sem: null, min: null, max: null, median: null };
     return { name, ...stats };
   });
 }
@@ -317,7 +503,10 @@ function flashSaved(btn) {
   const original = btn.innerHTML;
   btn.innerHTML = "✓ Saved";
   btn.disabled = true;
-  setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 1500);
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }, 1500);
 }
 
 function downloadSvg(svgEl, filename) {
@@ -327,8 +516,12 @@ function downloadSvg(svgEl, filename) {
   const blob = new Blob([svgStr], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename; a.style.display = "none";
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function downloadPng(svgEl, filename, scale) {
@@ -349,25 +542,38 @@ function downloadPng(svgEl, filename, scale) {
   const img = new Image();
   const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
-  img.onload = function() {
+  img.onload = function () {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     URL.revokeObjectURL(url);
-    canvas.toBlob(function(pngBlob) {
+    canvas.toBlob(function (pngBlob) {
       const pngUrl = URL.createObjectURL(pngBlob);
       const a = document.createElement("a");
-      a.href = pngUrl; a.download = filename; a.style.display = "none";
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function() { URL.revokeObjectURL(pngUrl); }, 1000);
+      a.href = pngUrl;
+      a.download = filename;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () {
+        URL.revokeObjectURL(pngUrl);
+      }, 1000);
     }, "image/png");
   };
   img.src = url;
 }
 function downloadCsv(headers, rows, filename) {
-  const lines = [headers.join(","), ...rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","))];
+  const lines = [
+    headers.join(","),
+    ...rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")),
+  ];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = filename; a.style.display = "none";
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  a.href = url;
+  a.download = filename;
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

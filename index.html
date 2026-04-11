@@ -1,291 +1,686 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Data Visualization Toolbox</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='8' cy='22' r='3.5' fill='%23648FFF'/><circle cx='14' cy='12' r='2.5' fill='%23648FFF'/><circle cx='22' cy='18' r='4' fill='%23648FFF'/><circle cx='26' cy='8' r='2.5' fill='%23648FFF'/></svg>">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: monospace;
-      background: #f0f0f4;
-      background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px);
-      background-size: 20px 20px;
-      color: #333;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .landing {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 30px;
-    }
-    .landing-header { text-align: center; }
-    .landing-header h1 { font-size: 26px; font-weight: 700; color: #222; letter-spacing: 0.5px; }
-    .landing-header .version { font-size: 11px; font-weight: 400; color: #aaa; vertical-align: super; margin-left: 4px; }
-    .landing-header .tagline { margin-top: 8px; font-size: 13px; color: #888; font-style: italic; }
-    .landing-header p { margin-top: 6px; font-size: 11px; color: #888; }
-    .tile-groups { display: flex; flex-direction: column; gap: 28px; align-items: center; }
-    .tile-group-label { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: -8px; }
-    .tiles { display: grid; grid-template-columns: repeat(5, 150px); gap: 14px; justify-content: center; }
-    .tiles.tiles-narrow { grid-template-columns: repeat(2, 150px); }
-    .tile {
-      width: 150px; height: 130px; background: #fff; border: 1px solid #ddd; border-radius: 12px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-      cursor: pointer; transition: all 0.2s ease; text-decoration: none; color: inherit; font-family: inherit;
-    }
-    .tile:hover {
-      border-color: #648FFF; box-shadow: 0 6px 20px rgba(100, 143, 255, 0.15); transform: translateY(-4px);
-    }
-    .tile-icon { line-height: 1; display: flex; align-items: center; justify-content: center; }
-    .tile-icon svg { width: 34px; height: 34px; }
-    .tile-label { font-size: 12px; font-weight: 600; color: #333; }
-    .tile-desc { font-size: 10px; color: #999; text-align: center; padding: 0 10px; line-height: 1.4; }
-    .tile.help-tile { width: 150px; height: 50px; gap: 4px; border-style: dashed; }
-    .tile.help-tile .tile-icon { font-size: 18px; }
-    .tile.help-tile .tile-label { font-size: 11px; color: #888; }
-
-    .prefetch-bar {
-      display: flex; align-items: center; gap: 10px; font-size: 11px; color: #999;
-      margin-top: 10px;
-    }
-    .prefetch-bar .pf-track {
-      width: 120px; height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden;
-    }
-    .prefetch-bar .pf-fill {
-      height: 100%; background: #648FFF; border-radius: 3px;
-      transition: width 0.3s ease;
-    }
-    .prefetch-bar.ready { color: #16a34a; }
-    .prefetch-bar.ready .pf-fill { background: #16a34a; }
-
-    .tool-view { display: none; flex-direction: column; height: 100vh; }
-    .tool-view.active { display: flex; }
-    .tool-topbar {
-      display: flex; align-items: center; padding: 0 20px; background: #fff;
-      border-bottom: 1px solid #ddd; flex-shrink: 0; height: 46px; gap: 16px;
-    }
-    .back-btn {
-      display: flex; align-items: center; gap: 6px; background: none; border: 1px solid #ccc;
-      border-radius: 6px; padding: 5px 14px; font-family: inherit; font-size: 12px; color: #555;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .back-btn:hover { border-color: #648FFF; color: #648FFF; }
-    .tool-name { font-size: 14px; font-weight: 600; color: #333; }
-    .tool-view iframe { flex: 1; width: 100%; border: none; }
-
-    .help-content {
-      flex: 1; overflow-y: auto; padding: 32px 48px; max-width: 900px; margin: 0 auto; width: 100%;
-    }
-    .help-content h2 {
-      font-size: 18px; font-weight: 700; color: #222; margin: 32px 0 12px; padding-bottom: 6px;
-      border-bottom: 2px solid #648FFF;
-    }
-    .help-content h2:first-child { margin-top: 0; }
-    .help-content h3 { font-size: 14px; font-weight: 600; color: #555; margin: 18px 0 8px; }
-    .help-content p { font-size: 13px; line-height: 1.7; color: #444; margin: 0 0 10px; }
-    .help-content .note {
-      background: #eef2ff; border-left: 3px solid #648FFF; padding: 10px 14px;
-      border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 12px; color: #444;
-    }
-    .help-content table {
-      border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 12px;
-    }
-    .help-content th {
-      background: #f0f0f5; text-align: left; padding: 6px 12px; border: 1px solid #ddd;
-      font-weight: 600; color: #555;
-    }
-    .help-content td { padding: 5px 12px; border: 1px solid #ddd; color: #444; }
-    .help-content code {
-      background: #f0f0f5; padding: 1px 5px; border-radius: 3px; font-size: 12px; color: #d6336c;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="landing" id="landing">
-    <div class="landing-header">
-      <h1>Toolbox<span class="version">v1.0</span></h1>
-      <div class="tagline">- Skip the R -</div>
-    </div>
-    <div class="tile-groups">
-      <span class="tile-group-label">Plots</span>
-      <div class="tiles">
-        <button class="tile" data-tool="boxplot">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg></span>
-          <span class="tile-label">Boxplot</span>
-          <span class="tile-desc">Auto-detect long/wide<br/>instant boxplots</span>
-        </button>
-        <button class="tile" data-tool="bargraph">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg></span>
-          <span class="tile-label">Bar Graph</span>
-          <span class="tile-desc">Mean &#xB1; SEM/SD<br/>grouped &amp; faceted</span>
-        </button>
-        <button class="tile" data-tool="scatter">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="#648FFF" stroke="none"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg></span>
-          <span class="tile-label">Scatter Plot</span>
-          <span class="tile-desc">XY with color<br/>&amp; size mapping</span>
-        </button>
-        <button class="tile" data-tool="venn">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke-width="1.5"><circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)"/><circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)"/></svg></span>
-          <span class="tile-label">Venn Diagram</span>
-          <span class="tile-desc">Set overlaps<br/>2&#x2013;3 sets</span>
-        </button>
-        <button class="tile" data-tool="aequorin">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg></span>
-          <span class="tile-label">Aequorin Ca&#xB2;&#x207A;</span>
-          <span class="tile-desc">RLU time-courses<br/>Ca&#xB2;&#x207A; calibration</span>
-        </button>
-      </div>
-      <span class="tile-group-label">Statistics &amp; Calculators</span>
-      <div class="tiles tiles-narrow">
-        <button class="tile" data-tool="power">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.5"/></svg></span>
-          <span class="tile-label">Power Analysis</span>
-          <span class="tile-desc">Sample size &amp; power<br/>for t, ANOVA, &chi;&sup2;, r</span>
-        </button>
-        <button class="tile" data-tool="molarity">
-          <span class="tile-icon"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2.5" stroke-linecap="round"><line x1="8" y1="10" x2="18" y2="10"/><line x1="13" y1="5" x2="13" y2="15"/><line x1="26" y1="10" x2="36" y2="10"/><line x1="8" y1="30" x2="18" y2="30"/><circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none"/><circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none"/><line x1="28" y1="27" x2="34" y2="33"/><line x1="34" y1="27" x2="28" y2="33"/></svg></span>
-          <span class="tile-label">Calculator</span>
-          <span class="tile-desc">Molarity, dilution<br/>&amp; batch prep sheets</span>
-        </button>
-      </div>
-    </div>
-    <div class="prefetch-bar" id="prefetch-bar">
-      <div class="pf-track"><div class="pf-fill" id="pf-fill" style="width:0%"></div></div>
-      <span id="pf-label">Loading dependencies…</span>
-    </div>
-    <div class="landing-header">
-      <p><i>"Data is like garbage. You'd better know what you are going to do with it before you collect it."</i> — Mark Twain</p>
-    </div>
-  </div>
-
-  <div class="tool-view" id="view-boxplot">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>Boxplot</span>
-    </div>
-    <iframe id="frame-boxplot" src="tools/boxplot.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-aequorin">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>Aequorin Ca&#xB2;&#x207A; Calibration</span>
-    </div>
-    <iframe id="frame-aequorin" src="tools/aequorin.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-bargraph">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><rect x="6" y="20" width="8" height="18" rx="1"/><rect x="18" y="10" width="8" height="28" rx="1"/><rect x="30" y="16" width="8" height="22" rx="1"/><line x1="10" y1="16" x2="10" y2="24"/><line x1="22" y1="6" x2="22" y2="14"/><line x1="34" y1="12" x2="34" y2="20"/></svg>Bar Graph Viewer</span>
-    </div>
-    <iframe id="frame-bargraph" src="tools/bargraph.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-scatter">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="#648FFF" stroke="none" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>Scatter Plot</span>
-    </div>
-    <iframe id="frame-scatter" src="tools/scatter.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-venn">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke-width="1.5" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)"/><circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)"/></svg>Venn Diagram</span>
-    </div>
-    <iframe id="frame-venn" src="tools/venn.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-molarity">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><line x1="8" y1="10" x2="18" y2="10"/><line x1="13" y1="5" x2="13" y2="15"/><line x1="26" y1="10" x2="36" y2="10"/><line x1="8" y1="30" x2="18" y2="30"/><circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none"/><circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none"/><line x1="28" y1="27" x2="34" y2="33"/><line x1="34" y1="27" x2="28" y2="33"/></svg>Calculator</span>
-    </div>
-    <iframe id="frame-molarity" src="tools/molarity.html"></iframe>
-  </div>
-  <div class="tool-view" id="view-power">
-    <div class="tool-topbar">
-      <button class="back-btn" data-back>&larr; Back</button>
-      <span class="tool-name"><svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:4px"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.5"/></svg>Power Analysis</span>
-    </div>
-    <iframe id="frame-power" src="tools/power.html"></iframe>
-  </div>
-
-  <script>
-    // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
-    (function() {
-      var scripts = [
-        { src: "vendor/react.production.min.js",     size: 6 },
-        { src: "vendor/react-dom.production.min.js",  size: 130 },
-        { src: "tools/shared.js",                     size: 5 },
-        { src: "tools/shared-components.js",          size: 8 }
-      ];
-      var totalWeight = scripts.reduce(function(s, f) { return s + f.size; }, 0);
-      var progress = scripts.map(function() { return 0; });
-      var bar = document.getElementById("prefetch-bar");
-      var fill = document.getElementById("pf-fill");
-      var label = document.getElementById("pf-label");
-      var done = 0;
-
-      function update() {
-        var loaded = progress.reduce(function(s, v) { return s + v; }, 0);
-        var pct = Math.min(100, Math.round((loaded / totalWeight) * 100));
-        fill.style.width = pct + "%";
-        if (done < scripts.length) {
-          label.textContent = "Loading dependencies\u2026 " + pct + "%";
-        } else {
-          fill.style.width = "100%";
-          label.textContent = "Loading dependencies\u2026";
-          setTimeout(function() {
-            label.textContent = "Ready";
-            bar.classList.add("ready");
-          }, 350);
-        }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Visualization Toolbox</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='8' cy='22' r='3.5' fill='%23648FFF'/><circle cx='14' cy='12' r='2.5' fill='%23648FFF'/><circle cx='22' cy='18' r='4' fill='%23648FFF'/><circle cx='26' cy='8' r='2.5' fill='%23648FFF'/></svg>"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: monospace;
+        background: #f0f0f4;
+        background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px);
+        background-size: 20px 20px;
+        color: #333;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .landing {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+      }
+      .landing-header {
+        text-align: center;
+      }
+      .landing-header h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: #222;
+        letter-spacing: 0.5px;
+      }
+      .landing-header .version {
+        font-size: 11px;
+        font-weight: 400;
+        color: #aaa;
+        vertical-align: super;
+        margin-left: 4px;
+      }
+      .landing-header .tagline {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #888;
+        font-style: italic;
+      }
+      .landing-header p {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #888;
+      }
+      .tile-groups {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        align-items: center;
+      }
+      .tile-group-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: -8px;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(5, 150px);
+        gap: 14px;
+        justify-content: center;
+      }
+      .tiles.tiles-narrow {
+        grid-template-columns: repeat(2, 150px);
+      }
+      .tile {
+        width: 150px;
+        height: 130px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+        font-family: inherit;
+      }
+      .tile:hover {
+        border-color: #648fff;
+        box-shadow: 0 6px 20px rgba(100, 143, 255, 0.15);
+        transform: translateY(-4px);
+      }
+      .tile-icon {
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tile-icon svg {
+        width: 34px;
+        height: 34px;
+      }
+      .tile-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #333;
+      }
+      .tile-desc {
+        font-size: 10px;
+        color: #999;
+        text-align: center;
+        padding: 0 10px;
+        line-height: 1.4;
+      }
+      .tile.help-tile {
+        width: 150px;
+        height: 50px;
+        gap: 4px;
+        border-style: dashed;
+      }
+      .tile.help-tile .tile-icon {
+        font-size: 18px;
+      }
+      .tile.help-tile .tile-label {
+        font-size: 11px;
+        color: #888;
       }
 
-      scripts.forEach(function(file, i) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", file.src);
-        xhr.onprogress = function(e) {
-          if (e.lengthComputable) {
-            progress[i] = (e.loaded / e.total) * file.size;
+      .prefetch-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        color: #999;
+        margin-top: 10px;
+      }
+      .prefetch-bar .pf-track {
+        width: 120px;
+        height: 5px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .prefetch-bar .pf-fill {
+        height: 100%;
+        background: #648fff;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+      }
+      .prefetch-bar.ready {
+        color: #16a34a;
+      }
+      .prefetch-bar.ready .pf-fill {
+        background: #16a34a;
+      }
+
+      .tool-view {
+        display: none;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .tool-view.active {
+        display: flex;
+      }
+      .tool-topbar {
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+        flex-shrink: 0;
+        height: 46px;
+        gap: 16px;
+      }
+      .back-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 5px 14px;
+        font-family: inherit;
+        font-size: 12px;
+        color: #555;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .back-btn:hover {
+        border-color: #648fff;
+        color: #648fff;
+      }
+      .tool-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+      }
+      .tool-view iframe {
+        flex: 1;
+        width: 100%;
+        border: none;
+      }
+
+      .help-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 32px 48px;
+        max-width: 900px;
+        margin: 0 auto;
+        width: 100%;
+      }
+      .help-content h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #222;
+        margin: 32px 0 12px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #648fff;
+      }
+      .help-content h2:first-child {
+        margin-top: 0;
+      }
+      .help-content h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #555;
+        margin: 18px 0 8px;
+      }
+      .help-content p {
+        font-size: 13px;
+        line-height: 1.7;
+        color: #444;
+        margin: 0 0 10px;
+      }
+      .help-content .note {
+        background: #eef2ff;
+        border-left: 3px solid #648fff;
+        padding: 10px 14px;
+        border-radius: 0 6px 6px 0;
+        margin: 12px 0;
+        font-size: 12px;
+        color: #444;
+      }
+      .help-content table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0 16px;
+        font-size: 12px;
+      }
+      .help-content th {
+        background: #f0f0f5;
+        text-align: left;
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        font-weight: 600;
+        color: #555;
+      }
+      .help-content td {
+        padding: 5px 12px;
+        border: 1px solid #ddd;
+        color: #444;
+      }
+      .help-content code {
+        background: #f0f0f5;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        color: #d6336c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="landing" id="landing">
+      <div class="landing-header">
+        <h1>Toolbox<span class="version">v1.0</span></h1>
+        <div class="tagline">- Skip the R -</div>
+      </div>
+      <div class="tile-groups">
+        <span class="tile-group-label">Plots</span>
+        <div class="tiles">
+          <button class="tile" data-tool="boxplot">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="22" y1="4" x2="22" y2="12" />
+                <rect x="14" y="12" width="16" height="18" rx="2" />
+                <line x1="14" y1="22" x2="30" y2="22" />
+                <line x1="22" y1="30" x2="22" y2="40" /></svg
+            ></span>
+            <span class="tile-label">Boxplot</span>
+            <span class="tile-desc">Auto-detect long/wide<br />instant boxplots</span>
+          </button>
+          <button class="tile" data-tool="bargraph">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="6" y="20" width="8" height="18" rx="1" />
+                <rect x="18" y="10" width="8" height="28" rx="1" />
+                <rect x="30" y="16" width="8" height="22" rx="1" />
+                <line x1="10" y1="16" x2="10" y2="24" />
+                <line x1="22" y1="6" x2="22" y2="14" />
+                <line x1="34" y1="12" x2="34" y2="20" /></svg
+            ></span>
+            <span class="tile-label">Bar Graph</span>
+            <span class="tile-desc">Mean &#xB1; SEM/SD<br />grouped &amp; faceted</span>
+          </button>
+          <button class="tile" data-tool="scatter">
+            <span class="tile-icon"
+              ><svg viewBox="0 0 44 44" fill="#648FFF" stroke="none">
+                <circle cx="10" cy="30" r="3" />
+                <circle cx="16" cy="22" r="2.5" />
+                <circle cx="24" cy="26" r="3.5" />
+                <circle cx="20" cy="14" r="2" />
+                <circle cx="32" cy="18" r="3" />
+                <circle cx="36" cy="10" r="2.5" />
+                <circle cx="28" cy="32" r="2" /></svg
+            ></span>
+            <span class="tile-label">Scatter Plot</span>
+            <span class="tile-desc">XY with color<br />&amp; size mapping</span>
+          </button>
+          <button class="tile" data-tool="venn">
+            <span class="tile-icon"
+              ><svg viewBox="0 0 44 44" fill="none" stroke-width="1.5">
+                <circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)" />
+                <circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)" /></svg
+            ></span>
+            <span class="tile-label">Venn Diagram</span>
+            <span class="tile-desc">Set overlaps<br />2&#x2013;3 sets</span>
+          </button>
+          <button class="tile" data-tool="aequorin">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"
+                /></svg
+            ></span>
+            <span class="tile-label">Aequorin Ca&#xB2;&#x207A;</span>
+            <span class="tile-desc">RLU time-courses<br />Ca&#xB2;&#x207A; calibration</span>
+          </button>
+        </div>
+        <span class="tile-group-label">Statistics &amp; Calculators</span>
+        <div class="tiles tiles-narrow">
+          <button class="tile" data-tool="power">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="6" y1="38" x2="6" y2="6" />
+                <line x1="6" y1="38" x2="38" y2="38" />
+                <path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5" />
+                <line
+                  x1="6"
+                  y1="14"
+                  x2="38"
+                  y2="14"
+                  stroke-dasharray="3,3"
+                  stroke-width="1"
+                  opacity="0.5"
+                /></svg
+            ></span>
+            <span class="tile-label">Power Analysis</span>
+            <span class="tile-desc">Sample size &amp; power<br />for t, ANOVA, &chi;&sup2;, r</span>
+          </button>
+          <button class="tile" data-tool="molarity">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              >
+                <line x1="8" y1="10" x2="18" y2="10" />
+                <line x1="13" y1="5" x2="13" y2="15" />
+                <line x1="26" y1="10" x2="36" y2="10" />
+                <line x1="8" y1="30" x2="18" y2="30" />
+                <circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none" />
+                <circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none" />
+                <line x1="28" y1="27" x2="34" y2="33" />
+                <line x1="34" y1="27" x2="28" y2="33" /></svg
+            ></span>
+            <span class="tile-label">Calculator</span>
+            <span class="tile-desc">Molarity, dilution<br />&amp; batch prep sheets</span>
+          </button>
+        </div>
+      </div>
+      <div class="prefetch-bar" id="prefetch-bar">
+        <div class="pf-track"><div class="pf-fill" id="pf-fill" style="width: 0%"></div></div>
+        <span id="pf-label">Loading dependencies…</span>
+      </div>
+      <div class="landing-header">
+        <p>
+          <i
+            >"Data is like garbage. You'd better know what you are going to do with it before you
+            collect it."</i
+          >
+          — Mark Twain
+        </p>
+      </div>
+    </div>
+
+    <div class="tool-view" id="view-boxplot">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke="#648FFF"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <line x1="22" y1="4" x2="22" y2="12" />
+            <rect x="14" y="12" width="16" height="18" rx="2" />
+            <line x1="14" y1="22" x2="30" y2="22" />
+            <line x1="22" y1="30" x2="22" y2="40" /></svg
+          >Boxplot</span
+        >
+      </div>
+      <iframe id="frame-boxplot" src="tools/boxplot.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-aequorin">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke="#648FFF"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <path
+              d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"
+            /></svg
+          >Aequorin Ca&#xB2;&#x207A; Calibration</span
+        >
+      </div>
+      <iframe id="frame-aequorin" src="tools/aequorin.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-bargraph">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke="#648FFF"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <rect x="6" y="20" width="8" height="18" rx="1" />
+            <rect x="18" y="10" width="8" height="28" rx="1" />
+            <rect x="30" y="16" width="8" height="22" rx="1" />
+            <line x1="10" y1="16" x2="10" y2="24" />
+            <line x1="22" y1="6" x2="22" y2="14" />
+            <line x1="34" y1="12" x2="34" y2="20" /></svg
+          >Bar Graph Viewer</span
+        >
+      </div>
+      <iframe id="frame-bargraph" src="tools/bargraph.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-scatter">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="#648FFF"
+            stroke="none"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <circle cx="10" cy="30" r="3" />
+            <circle cx="16" cy="22" r="2.5" />
+            <circle cx="24" cy="26" r="3.5" />
+            <circle cx="20" cy="14" r="2" />
+            <circle cx="32" cy="18" r="3" />
+            <circle cx="36" cy="10" r="2.5" />
+            <circle cx="28" cy="32" r="2" /></svg
+          >Scatter Plot</span
+        >
+      </div>
+      <iframe id="frame-scatter" src="tools/scatter.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-venn">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke-width="1.5"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)" />
+            <circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)" /></svg
+          >Venn Diagram</span
+        >
+      </div>
+      <iframe id="frame-venn" src="tools/venn.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-molarity">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke="#648FFF"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <line x1="8" y1="10" x2="18" y2="10" />
+            <line x1="13" y1="5" x2="13" y2="15" />
+            <line x1="26" y1="10" x2="36" y2="10" />
+            <line x1="8" y1="30" x2="18" y2="30" />
+            <circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none" />
+            <circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none" />
+            <line x1="28" y1="27" x2="34" y2="33" />
+            <line x1="34" y1="27" x2="28" y2="33" /></svg
+          >Calculator</span
+        >
+      </div>
+      <iframe id="frame-molarity" src="tools/molarity.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-power">
+      <div class="tool-topbar">
+        <button class="back-btn" data-back>&larr; Back</button>
+        <span class="tool-name"
+          ><svg
+            viewBox="0 0 44 44"
+            fill="none"
+            stroke="#648FFF"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
+          >
+            <line x1="6" y1="38" x2="6" y2="6" />
+            <line x1="6" y1="38" x2="38" y2="38" />
+            <path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5" />
+            <line
+              x1="6"
+              y1="14"
+              x2="38"
+              y2="14"
+              stroke-dasharray="3,3"
+              stroke-width="1"
+              opacity="0.5"
+            /></svg
+          >Power Analysis</span
+        >
+      </div>
+      <iframe id="frame-power" src="tools/power.html"></iframe>
+    </div>
+
+    <script>
+      // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
+      (function () {
+        var scripts = [
+          { src: "vendor/react.production.min.js", size: 6 },
+          { src: "vendor/react-dom.production.min.js", size: 130 },
+          { src: "tools/shared.js", size: 5 },
+          { src: "tools/shared-components.js", size: 8 },
+        ];
+        var totalWeight = scripts.reduce(function (s, f) {
+          return s + f.size;
+        }, 0);
+        var progress = scripts.map(function () {
+          return 0;
+        });
+        var bar = document.getElementById("prefetch-bar");
+        var fill = document.getElementById("pf-fill");
+        var label = document.getElementById("pf-label");
+        var done = 0;
+
+        function update() {
+          var loaded = progress.reduce(function (s, v) {
+            return s + v;
+          }, 0);
+          var pct = Math.min(100, Math.round((loaded / totalWeight) * 100));
+          fill.style.width = pct + "%";
+          if (done < scripts.length) {
+            label.textContent = "Loading dependencies\u2026 " + pct + "%";
           } else {
-            progress[i] = file.size * 0.5;
+            fill.style.width = "100%";
+            label.textContent = "Loading dependencies\u2026";
+            setTimeout(function () {
+              label.textContent = "Ready";
+              bar.classList.add("ready");
+            }, 350);
           }
-          update();
-        };
-        xhr.onload = xhr.onerror = function() {
-          progress[i] = file.size;
-          done++;
-          update();
-        };
-        xhr.send();
+        }
+
+        scripts.forEach(function (file, i) {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", file.src);
+          xhr.onprogress = function (e) {
+            if (e.lengthComputable) {
+              progress[i] = (e.loaded / e.total) * file.size;
+            } else {
+              progress[i] = file.size * 0.5;
+            }
+            update();
+          };
+          xhr.onload = xhr.onerror = function () {
+            progress[i] = file.size;
+            done++;
+            update();
+          };
+          xhr.send();
+        });
+      })();
+
+      function openTool(name) {
+        document.getElementById("landing").style.display = "none";
+        document.querySelectorAll(".tool-view").forEach(function (v) {
+          v.classList.remove("active");
+        });
+        document.getElementById("view-" + name).classList.add("active");
+      }
+
+      function goBack() {
+        document.querySelectorAll(".tool-view").forEach(function (v) {
+          v.classList.remove("active");
+        });
+        document.getElementById("landing").style.display = "";
+      }
+
+      document.querySelectorAll(".tile[data-tool]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          openTool(btn.dataset.tool);
+        });
       });
-    })();
-
-    function openTool(name) {
-      document.getElementById("landing").style.display = "none";
-      document.querySelectorAll(".tool-view").forEach(function(v) { v.classList.remove("active"); });
-      document.getElementById("view-" + name).classList.add("active");
-    }
-
-    function goBack() {
-      document.querySelectorAll(".tool-view").forEach(function(v) { v.classList.remove("active"); });
-      document.getElementById("landing").style.display = "";
-    }
-
-    document.querySelectorAll(".tile[data-tool]").forEach(function(btn) {
-      btn.addEventListener("click", function() { openTool(btn.dataset.tool); });
-    });
-    document.querySelectorAll("[data-back]").forEach(function(btn) {
-      btn.addEventListener("click", goBack);
-    });
-  </script>
-
-</body>
+      document.querySelectorAll("[data-back]").forEach(function (btn) {
+        btn.addEventListener("click", goBack);
+      });
+    </script>
+  </body>
 </html>
