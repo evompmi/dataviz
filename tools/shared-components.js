@@ -1,13 +1,26 @@
 // shared-components.js — plain JS, no JSX
 // Requires React to be loaded globally before this script.
 
+// Accepts #rgb or #rrggbb (case-insensitive); returns lowercased #rrggbb
+// or null if the string is not a valid hex color.
+function normalizeHexColor(v) {
+  if (typeof v !== "string") return null;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(v)) {
+    const s = v.toLowerCase();
+    return "#" + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  }
+  return null;
+}
+
 function ColorInput({ value, onChange, size = 22 }) {
   const [text, setText] = React.useState(value);
   React.useEffect(() => {
     setText(value);
   }, [value]);
   const commit = (v) => {
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v);
+    const n = normalizeHexColor(v);
+    if (n) onChange(n);
   };
   return React.createElement(
     "div",
@@ -34,7 +47,8 @@ function ColorInput({ value, onChange, size = 22 }) {
         commit(e.target.value);
       },
       onBlur: (e) => {
-        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) onChange(e.target.value);
+        const n = normalizeHexColor(e.target.value);
+        if (n) onChange(n);
         else setText(value);
       },
       maxLength: 7,
