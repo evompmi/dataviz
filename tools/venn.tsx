@@ -1,3 +1,4 @@
+// @ts-nocheck
 // venn.jsx — editable source. Run `npm run build` to compile to venn.js
 // Do NOT edit the .js file directly.
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;

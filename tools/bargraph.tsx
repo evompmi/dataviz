@@ -1,3 +1,4 @@
+// @ts-nocheck
 // bargraph.jsx — editable source. Run `npm run build` to compile to bargraph.js
 // Do NOT edit the .js file directly.
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;

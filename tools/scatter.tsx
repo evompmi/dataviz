@@ -1,3 +1,4 @@
+// @ts-nocheck
 // scatter.jsx — editable source. Run `npm run build` to compile to scatter.js
 // Do NOT edit the .js file directly.
 

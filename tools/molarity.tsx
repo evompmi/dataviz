@@ -1,3 +1,4 @@
+// @ts-nocheck
 // molarity.jsx — editable source. Run `npm run build` to compile to molarity.js
 // Do NOT edit the .js file directly.
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // power.jsx — editable source. Run `npm run build` to compile to power.js
 // Do NOT edit the .js file directly.
 

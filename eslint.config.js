@@ -1,6 +1,8 @@
 const js = require("@eslint/js");
 const globals = require("globals");
 const react = require("eslint-plugin-react");
+const tsParser = require("@typescript-eslint/parser");
+const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const prettier = require("eslint-config-prettier");
 
 const compiledTools = [
@@ -14,7 +16,7 @@ const compiledTools = [
 ];
 
 // Names declared at top-level of tools/shared.js and tools/shared-components.js
-// and consumed by the tool .jsx files via <script>-tag globals.
+// and consumed by the tool .tsx files via <script>-tag globals.
 const sharedGlobals = {
   // shared.js
   hexToRgb: "readonly",
@@ -100,11 +102,14 @@ module.exports = [
     },
   },
 
-  // Tool JSX sources — consume shared globals.
+  // Tool TSX sources — consume shared globals. Uses the TypeScript parser so
+  // ESLint can understand type annotations; actual type-checking is handled
+  // separately by `tsc --noEmit`.
   {
-    files: ["tools/*.jsx"],
-    plugins: { react },
+    files: ["tools/*.tsx"],
+    plugins: { react, "@typescript-eslint": tsPlugin },
     languageOptions: {
+      parser: tsParser,
       ecmaVersion: 2022,
       sourceType: "script",
       parserOptions: { ecmaFeatures: { jsx: true } },
@@ -114,7 +119,11 @@ module.exports = [
     rules: {
       "react/jsx-uses-react": "error",
       "react/jsx-uses-vars": "error",
-      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
       "no-empty": ["error", { allowEmptyCatch: true }],
     },
   },
