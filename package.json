@@ -1,8 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform",
-    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --watch",
+    "build": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --minify",
+    "watch": "esbuild tools/boxplot.jsx tools/bargraph.jsx tools/scatter.jsx tools/aequorin.jsx tools/venn.jsx tools/molarity.jsx tools/power.jsx --outdir=tools --jsx=transform --minify --watch",
     "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
