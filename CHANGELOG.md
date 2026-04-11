@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Source maps emitted alongside compiled `tools/*.js` for debuggable stack traces in browser devtools.
 - `CHANGELOG.md` following the Keep a Changelog convention.
 
@@ -17,6 +18,7 @@ First tracked release. Baseline of features shipped to GitHub Pages prior to
 the introduction of this changelog.
 
 ### Added
+
 - Six browser-only tools: Aequorin, Boxplot, Bargraph, Scatter, Venn, Calculators (Molarity, Power).
 - Landing page with iframe-loaded tools and vendor prefetch progress bar.
 - Shared utilities (`tools/shared.js`) and plain-JS React components (`tools/shared-components.js`).
