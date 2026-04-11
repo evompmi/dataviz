@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `tools/stats.js` — new plain-JS module loaded via `<script>` tag alongside `shared.js`. Houses the statistical distribution functions (normal / gamma / beta / t / F / chi-square, plus noncentral t/F/chi-square), the generic `bisect` solver, sample helpers (`sampleMean`, `sampleVariance`, `sampleSD`, `rankWithTies`), and **Shapiro-Wilk normality test** (Royston 1995 AS R94), benchmarked against real R output to ≤5×10⁻³ tolerance on 8 datasets spanning n=3 to n=150 (iris, PlantGrowth, sleep, women, mtcars, …). New `tests/stats.test.js` (26 tests). Groundwork for the forthcoming statistical analysis tile on bargraph / boxplot.
+- `tools/stats.js` — new plain-JS module loaded via `<script>` tag alongside `shared.js`. Houses the statistical distribution functions (normal / gamma / beta / t / F / chi-square, plus noncentral t/F/chi-square), the generic `bisect` solver, sample helpers (`sampleMean`, `sampleVariance`, `sampleSD`, `rankWithTies`), and the statistical tests needed for the forthcoming analysis tile on bargraph / boxplot, all benchmarked against real R output at ±5×10⁻³ tolerance:
+  - **Normality & equal-variance**: Shapiro-Wilk (Royston 1995 AS R94), Brown-Forsythe Levene test
+  - **Two-sample**: Student t, Welch t, Mann-Whitney U (normal approx with continuity correction), Cohen's d, Hedges' g, rank-biserial
+  - **k-sample**: one-way ANOVA, Welch ANOVA, Kruskal-Wallis, η², ε²
+  - **Post-hocs**: Tukey HSD (Tukey-Kramer for unbalanced), Games-Howell, Dunn (BH-corrected), plus `ptukey` / `qtukey` via double Gauss-Legendre quadrature in log-s space, and a generic `bhAdjust`
+  - **Compact letter display**: Piepho 2004 insert-and-absorb algorithm for rendering group groupings (e.g. `["a", "ab", "b"]`) following any pairwise post-hoc
+  - `tests/stats.test.js` — 90 tests covering primitives, sample helpers, Shapiro-Wilk on 8 datasets (iris, PlantGrowth, sleep, women, mtcars, …), Levene, t-tests, Mann-Whitney, effect sizes, ANOVAs, Kruskal-Wallis, Tukey HSD on PlantGrowth + iris, `ptukey`/`qtukey` scan, Games-Howell, Dunn, BH adjustment, and CLD edge cases.
 
 ### Changed
 

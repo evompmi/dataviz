@@ -826,3 +826,289 @@ function epsilonSquared(groups) {
   for (const g of groups) N += g.length;
   return N > 1 ? kw.H / (N - 1) : NaN;
 }
+
+// ── 10. Studentized range distribution ─────────────────────────────────────
+//
+// The CDF of the studentized range Q (k means, ν error df) is
+//
+//   P(Q ≤ q) = ∫₀^∞ f_S(s) · P(R ≤ q·s) ds
+//
+// where S = √(χ²_ν/ν) and R is the range of k independent standard normals.
+// The range CDF itself is
+//
+//   P(R ≤ w) = ∫_{−∞}^{∞} k · φ(u) · [Φ(u+w) − Φ(u)]^{k−1} du
+//
+// Both integrals are handled by the cached 48-point Gauss-Legendre rule.
+// Matches R's `ptukey` to ~5 decimal places on the cases we benchmark.
+
+// P(range of k standard normals ≤ w)
+function _wprob(w, k) {
+  if (w <= 0) return 0;
+  const gl = _gaussLegendre(48);
+  // Truncate at ±8σ — φ is negligible beyond.
+  const lo = -8,
+    hi = 8;
+  const half = (hi - lo) / 2,
+    mid = (hi + lo) / 2;
+  const invSqrt2Pi = 1 / Math.sqrt(2 * Math.PI);
+  let sum = 0;
+  for (let i = 0; i < 48; i++) {
+    const u = mid + half * gl.nodes[i];
+    const phiU = invSqrt2Pi * Math.exp(-0.5 * u * u);
+    const diff = normcdf(u + w) - normcdf(u);
+    if (diff <= 0) continue;
+    const term = k * phiU * Math.pow(diff, k - 1);
+    sum += half * gl.weights[i] * term;
+  }
+  return Math.max(0, Math.min(1, sum));
+}
+
+// P(Q ≤ q | k groups, df error degrees of freedom)
+//
+// Substitute y = log(s) — integrate f_S(e^y)·e^y dy. Integration bounds
+// [yLo, yHi] are set by the chi² quantiles so the support is exactly where
+// the mass lives. This keeps the 48 Gauss-Legendre nodes concentrated on the
+// peak regardless of df (a fixed s = u/(1−u) map leaks nodes into the
+// exponential tail at high df, saturating ptukey well below 1).
+function ptukey(q, k, df) {
+  if (q <= 0) return 0;
+  if (k < 2 || df < 1) return NaN;
+  const gl = _gaussLegendre(48);
+  // S = √(χ²_ν / ν). Bound y = log(S) via chi² quantiles at ±1e-10.
+  const chiLo = chi2inv(1e-10, df);
+  const chiHi = chi2inv(1 - 1e-10, df);
+  const yLo = 0.5 * Math.log(Math.max(chiLo, 1e-300) / df);
+  const yHi = 0.5 * Math.log(chiHi / df);
+  const halfDf = df / 2;
+  const logConst = Math.log(2) + halfDf * Math.log(halfDf) - gammaln(halfDf);
+  const halfW = (yHi - yLo) / 2;
+  const midW = (yHi + yLo) / 2;
+  let sum = 0;
+  for (let i = 0; i < 48; i++) {
+    const y = midW + halfW * gl.nodes[i];
+    const s = Math.exp(y);
+    // f_S(s) · ds = 2·(ν/2)^(ν/2)/Γ(ν/2) · s^(ν−1) · exp(−ν·s²/2) · s dy
+    const logFS = logConst + df * y - (df * s * s) / 2;
+    const fSds = Math.exp(logFS);
+    if (!Number.isFinite(fSds) || fSds === 0) continue;
+    sum += halfW * gl.weights[i] * fSds * _wprob(q * s, k);
+  }
+  return Math.max(0, Math.min(1, sum));
+}
+
+// Inverse: find q such that ptukey(q, k, df) = p. Bisection in [0.01, 100].
+function qtukey(p, k, df) {
+  if (p <= 0) return 0;
+  if (p >= 1) return Infinity;
+  return bisect((q) => ptukey(q, k, df), p, 0.01, 100, 1e-5);
+}
+
+// ── 11. Post-hoc tests ──────────────────────────────────────────────────────
+
+// Tukey HSD — all pairwise comparisons following one-way ANOVA.
+// Uses Tukey-Kramer for unbalanced designs.
+//   q_ij = |m_i − m_j| / √(MSE · (1/n_i + 1/n_j) / 2)
+//   p_ij = 1 − ptukey(q_ij, k, df_error)
+//   CI half-width = qtukey(1−α, k, df_error) · √(MSE · (1/n_i + 1/n_j) / 2)
+// Returns { pairs: [{ i, j, diff, se, q, p, lwr, upr }], k, df }
+function tukeyHSD(groups, opts = {}) {
+  const alpha = opts.alpha != null ? opts.alpha : 0.05;
+  const k = groups.length;
+  if (k < 2) return { pairs: [], error: "≥2 groups required" };
+  const anova = oneWayANOVA(groups);
+  if (anova.error) return { pairs: [], error: anova.error };
+  const dfErr = anova.df2;
+  const mse = anova.ssWithin / dfErr;
+  const means = groups.map(sampleMean);
+  const ns = groups.map((g) => g.length);
+  const qCrit = qtukey(1 - alpha, k, dfErr);
+  const pairs = [];
+  for (let i = 0; i < k - 1; i++) {
+    for (let j = i + 1; j < k; j++) {
+      const diff = means[j] - means[i];
+      const se = Math.sqrt((mse * (1 / ns[i] + 1 / ns[j])) / 2);
+      const q = Math.abs(diff) / se;
+      const p = 1 - ptukey(q, k, dfErr);
+      const margin = qCrit * se;
+      pairs.push({
+        i,
+        j,
+        diff,
+        se,
+        q,
+        p,
+        lwr: diff - margin,
+        upr: diff + margin,
+      });
+    }
+  }
+  return { pairs, k, df: dfErr, mse };
+}
+
+// Games-Howell — post-hoc for Welch's ANOVA. Uses Welch-Satterthwaite df
+// per pair and the studentized range distribution.
+//   se_ij = √(s_i²/n_i + s_j²/n_j)
+//   q     = (m_i − m_j) / √(se²/2)  … Tukey form, see Day & Quinn 1989
+//   df    = (s_i²/n_i + s_j²/n_j)² / ((s_i²/n_i)²/(n_i−1) + (s_j²/n_j)²/(n_j−1))
+//   p     = 1 − ptukey(|q|, k, df)
+// Returns { pairs: [{ i, j, diff, se, q, df, p }], k }
+function gamesHowell(groups) {
+  const k = groups.length;
+  if (k < 2) return { pairs: [], error: "≥2 groups required" };
+  const means = groups.map(sampleMean);
+  const vars = groups.map(sampleVariance);
+  const ns = groups.map((g) => g.length);
+  const pairs = [];
+  for (let i = 0; i < k - 1; i++) {
+    for (let j = i + 1; j < k; j++) {
+      const vi = vars[i] / ns[i];
+      const vj = vars[j] / ns[j];
+      const se = Math.sqrt(vi + vj);
+      const diff = means[j] - means[i];
+      // Tukey-form q using SE/√2 (consistent with TukeyHSD's SE convention).
+      const q = Math.abs(diff) / (se / Math.SQRT2);
+      const num = (vi + vj) * (vi + vj);
+      const den = (vi * vi) / (ns[i] - 1) + (vj * vj) / (ns[j] - 1);
+      const df = num / den;
+      const p = 1 - ptukey(q, k, df);
+      pairs.push({ i, j, diff, se, q, df, p });
+    }
+  }
+  return { pairs, k };
+}
+
+// Benjamini-Hochberg adjusted p-values.
+// Sort p-values ascending, compute p_(i) · m/i, then enforce monotonicity
+// from largest down, and finally cap at 1.
+function bhAdjust(ps) {
+  const m = ps.length;
+  const order = ps.map((p, i) => [p, i]).sort((a, b) => a[0] - b[0]);
+  const adj = new Array(m);
+  let running = 1;
+  for (let rank = m; rank >= 1; rank--) {
+    const [p, origIdx] = order[rank - 1];
+    const q = (p * m) / rank;
+    running = Math.min(running, q);
+    adj[origIdx] = Math.min(1, running);
+  }
+  return adj;
+}
+
+// Dunn's test — pairwise rank-based post-hoc following Kruskal-Wallis.
+// Uses the *global* rank sums with midranks and tie correction (Siegel
+// & Castellan 1988). Z-statistic, two-sided normal p-values, BH-adjusted.
+//
+//   z_ij = (R_i/n_i − R_j/n_j) / √(σ² · (1/n_i + 1/n_j))
+//   σ²   = (N(N+1)/12 − Σ(t³−t)/(12(N−1)))
+//   p    = 2 · (1 − Φ(|z|))
+// Returns { pairs: [{ i, j, z, p, pAdj }], method }
+function dunnTest(groups) {
+  const k = groups.length;
+  if (k < 2) return { pairs: [], error: "≥2 groups required" };
+  const all = [];
+  const owner = [];
+  for (let i = 0; i < k; i++) {
+    for (const v of groups[i]) {
+      all.push(v);
+      owner.push(i);
+    }
+  }
+  const N = all.length;
+  const { ranks, tieCorrection } = rankWithTies(all);
+  const meanR = new Array(k).fill(0);
+  const ns = groups.map((g) => g.length);
+  const sumR = new Array(k).fill(0);
+  for (let idx = 0; idx < N; idx++) sumR[owner[idx]] += ranks[idx];
+  for (let i = 0; i < k; i++) meanR[i] = sumR[i] / ns[i];
+  // Tie-corrected variance term (Dunn 1964 with Siegel-Castellan fix):
+  //   σ² = (N(N+1)/12 − (Σ(t³−t)) / (12·(N−1)))
+  const sigma2 = (N * (N + 1)) / 12 - tieCorrection / (12 * (N - 1));
+  const rawPs = [];
+  const pairs = [];
+  for (let i = 0; i < k - 1; i++) {
+    for (let j = i + 1; j < k; j++) {
+      const se = Math.sqrt(sigma2 * (1 / ns[i] + 1 / ns[j]));
+      const z = (meanR[i] - meanR[j]) / se;
+      const p = 2 * (1 - normcdf(Math.abs(z)));
+      pairs.push({ i, j, z, p });
+      rawPs.push(p);
+    }
+  }
+  const adj = bhAdjust(rawPs);
+  for (let i = 0; i < pairs.length; i++) pairs[i].pAdj = adj[i];
+  return { pairs, method: "Benjamini-Hochberg" };
+}
+
+// ── 12. Compact letter display ──────────────────────────────────────────────
+//
+// Piepho 2004 "An Algorithm for a Letter-Based Representation of
+// All-Pairwise Comparisons". Given pairwise significance (p < α), assign
+// letters to groups such that any two groups sharing at least one letter
+// are NOT significantly different.
+//
+// Input:  pairs = [{ i, j, p }], k groups total, alpha
+// Output: array of k strings — each group's letter label, e.g. ["a", "ab", "b"]
+//
+// Algorithm (insert-and-absorb):
+//  1. Start with one letter containing all groups.
+//  2. For every significant pair (i, j): split any letter containing both
+//     i and j into two letters — one drops i, the other drops j.
+//  3. Remove any letter that is a subset of another (absorb).
+//  4. Letters are labeled "a", "b", "c"... by order of first appearance.
+function compactLetterDisplay(pairs, k, alpha = 0.05) {
+  if (k <= 0) return [];
+  // Sets of groups, each set = one letter.
+  let letters = [new Set(Array.from({ length: k }, (_, i) => i))];
+  for (const pr of pairs) {
+    const p = pr.pAdj != null ? pr.pAdj : pr.p;
+    if (p >= alpha) continue;
+    const { i, j } = pr;
+    const newLetters = [];
+    for (const L of letters) {
+      if (L.has(i) && L.has(j)) {
+        const L1 = new Set(L);
+        L1.delete(i);
+        const L2 = new Set(L);
+        L2.delete(j);
+        if (L1.size > 0) newLetters.push(L1);
+        if (L2.size > 0) newLetters.push(L2);
+      } else {
+        newLetters.push(L);
+      }
+    }
+    // Absorb: drop any letter that is a strict subset of another.
+    const filtered = [];
+    for (const L of newLetters) {
+      let absorbed = false;
+      for (const M of newLetters) {
+        if (L === M) continue;
+        if (L.size < M.size) {
+          let sub = true;
+          for (const v of L) {
+            if (!M.has(v)) {
+              sub = false;
+              break;
+            }
+          }
+          if (sub) {
+            absorbed = true;
+            break;
+          }
+        }
+      }
+      if (!absorbed && !filtered.some((F) => F.size === L.size && [...F].every((v) => L.has(v)))) {
+        filtered.push(L);
+      }
+    }
+    letters = filtered;
+  }
+  // Assign labels in order of first group-index each letter contains.
+  letters.sort((A, B) => Math.min(...A) - Math.min(...B));
+  const labels = "abcdefghijklmnopqrstuvwxyz";
+  const out = Array.from({ length: k }, () => "");
+  for (let li = 0; li < letters.length; li++) {
+    const lbl = labels[li] || `[${li}]`;
+    for (const g of letters[li]) out[g] += lbl;
+  }
+  return out;
+}

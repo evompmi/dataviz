@@ -112,6 +112,13 @@ const sharedGlobals = {
   kruskalWallis: "readonly",
   etaSquared: "readonly",
   epsilonSquared: "readonly",
+  ptukey: "readonly",
+  qtukey: "readonly",
+  tukeyHSD: "readonly",
+  gamesHowell: "readonly",
+  bhAdjust: "readonly",
+  dunnTest: "readonly",
+  compactLetterDisplay: "readonly",
 };
 
 const browserPlus = {

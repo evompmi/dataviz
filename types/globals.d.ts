@@ -274,6 +274,50 @@ declare global {
   };
   function etaSquared(groups: number[][]): number;
   function epsilonSquared(groups: number[][]): number;
+  function ptukey(q: number, k: number, df: number): number;
+  function qtukey(p: number, k: number, df: number): number;
+  interface TukeyPair {
+    i: number;
+    j: number;
+    diff: number;
+    se: number;
+    q: number;
+    p: number;
+    lwr: number;
+    upr: number;
+  }
+  function tukeyHSD(
+    groups: number[][],
+    opts?: { alpha?: number }
+  ): { pairs: TukeyPair[]; k?: number; df?: number; mse?: number; error?: string };
+  interface GamesHowellPair {
+    i: number;
+    j: number;
+    diff: number;
+    se: number;
+    q: number;
+    df: number;
+    p: number;
+  }
+  function gamesHowell(groups: number[][]): {
+    pairs: GamesHowellPair[];
+    k?: number;
+    error?: string;
+  };
+  function bhAdjust(ps: number[]): number[];
+  interface DunnPair {
+    i: number;
+    j: number;
+    z: number;
+    p: number;
+    pAdj?: number;
+  }
+  function dunnTest(groups: number[][]): { pairs: DunnPair[]; method?: string; error?: string };
+  function compactLetterDisplay(
+    pairs: Array<{ i: number; j: number; p: number; pAdj?: number }>,
+    k: number,
+    alpha?: number
+  ): string[];
 }
 
 export {};

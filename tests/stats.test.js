@@ -38,6 +38,13 @@ const {
   kruskalWallis,
   etaSquared,
   epsilonSquared,
+  ptukey,
+  qtukey,
+  tukeyHSD,
+  gamesHowell,
+  bhAdjust,
+  dunnTest,
+  compactLetterDisplay,
 } = ctx;
 
 // ── Primitives smoke test ──────────────────────────────────────────────────
@@ -537,6 +544,267 @@ test("PlantGrowth ε² = 0.275456", () => {
 
 test("iris SL ε² = 0.650587", () => {
   approx(epsilonSquared(irisSL), 0.650587, 5e-3);
+});
+
+// ── Studentized range distribution ─────────────────────────────────────────
+//
+// Reference values from R's stats::ptukey and stats::qtukey:
+//   ptukey(3, 3, 20)   = 0.889243
+//   ptukey(3.5, 3, 20) = 0.944108
+//   ptukey(4, 4, 30)   = 0.960928
+//   ptukey(5, 5, 60)   = 0.993166
+//   ptukey(2, 3, 10)   = 0.629455
+//   qtukey(0.95, 3, 27) = 3.506426
+//   qtukey(0.95, 6, 66) = 4.150851
+//   qtukey(0.99, 4, 20) = 5.018016
+
+suite("stats.js — ptukey / qtukey vs R");
+
+test("ptukey(3, 3, 20) ≈ 0.889243", () => {
+  approx(ptukey(3, 3, 20), 0.889243, 5e-3);
+});
+
+test("ptukey(3.5, 3, 20) ≈ 0.944108", () => {
+  approx(ptukey(3.5, 3, 20), 0.944108, 5e-3);
+});
+
+test("ptukey(4, 4, 30) ≈ 0.960928", () => {
+  approx(ptukey(4, 4, 30), 0.960928, 5e-3);
+});
+
+test("ptukey(5, 5, 60) ≈ 0.993166", () => {
+  approx(ptukey(5, 5, 60), 0.993166, 5e-3);
+});
+
+test("ptukey(2, 3, 10) ≈ 0.629455", () => {
+  approx(ptukey(2, 3, 10), 0.629455, 5e-3);
+});
+
+test("qtukey(0.95, 3, 27) ≈ 3.506426", () => {
+  approx(qtukey(0.95, 3, 27), 3.506426, 5e-3);
+});
+
+test("qtukey(0.95, 6, 66) ≈ 4.150851", () => {
+  approx(qtukey(0.95, 6, 66), 4.150851, 5e-3);
+});
+
+test("qtukey(0.99, 4, 20) ≈ 5.018016", () => {
+  approx(qtukey(0.99, 4, 20), 5.018016, 5e-3);
+});
+
+// ── Tukey HSD ──────────────────────────────────────────────────────────────
+//
+// Reference: R's TukeyHSD(aov(weight ~ group, PlantGrowth))
+//   trt1-ctrl  diff=-0.371  lwr=-1.0622  upr=0.3202  p=0.390871
+//   trt2-ctrl  diff= 0.494  lwr=-0.1972  upr=1.1852  p=0.197996
+//   trt2-trt1  diff= 0.865  lwr= 0.1738  upr=1.5562  p=0.012006
+//
+// iris Sepal.Length TukeyHSD (all p ≈ 0):
+//   versicolor-setosa     diff=0.930  lwr=0.6862  upr=1.1738
+//   virginica-setosa      diff=1.582  lwr=1.3382  upr=1.8258
+//   virginica-versicolor  diff=0.652  lwr=0.4082  upr=0.8958
+
+suite("stats.js — Tukey HSD vs R");
+
+test("PlantGrowth TukeyHSD: 3 pairs, diffs match", () => {
+  const r = tukeyHSD(pg);
+  assert(r.pairs.length === 3, "expected 3 pairs");
+  approx(r.pairs[0].diff, -0.371, 5e-3);
+  approx(r.pairs[1].diff, 0.494, 5e-3);
+  approx(r.pairs[2].diff, 0.865, 5e-3);
+});
+
+test("PlantGrowth TukeyHSD: p-values match R", () => {
+  const r = tukeyHSD(pg);
+  approx(r.pairs[0].p, 0.390871, 5e-3);
+  approx(r.pairs[1].p, 0.197996, 5e-3);
+  approx(r.pairs[2].p, 0.012006, 5e-3);
+});
+
+test("PlantGrowth TukeyHSD: 95% CI bounds match R", () => {
+  const r = tukeyHSD(pg);
+  approx(r.pairs[0].lwr, -1.0622, 5e-3);
+  approx(r.pairs[0].upr, 0.3202, 5e-3);
+  approx(r.pairs[2].lwr, 0.1738, 5e-3);
+  approx(r.pairs[2].upr, 1.5562, 5e-3);
+});
+
+test("iris SL TukeyHSD: diffs and CI bounds match R", () => {
+  const r = tukeyHSD(irisSL);
+  approx(r.pairs[0].diff, 0.93, 5e-3);
+  approx(r.pairs[1].diff, 1.582, 5e-3);
+  approx(r.pairs[2].diff, 0.652, 5e-3);
+  approx(r.pairs[0].lwr, 0.6862, 5e-3);
+  approx(r.pairs[0].upr, 1.1738, 5e-3);
+});
+
+test("iris SL TukeyHSD: all three pairs highly significant", () => {
+  const r = tukeyHSD(irisSL);
+  for (const pr of r.pairs) assert(pr.p < 1e-6, `expected p<1e-6, got ${pr.p}`);
+});
+
+test("TukeyHSD rejects k<2", () => {
+  const r = tukeyHSD([[1, 2, 3]]);
+  assert(r.error != null, "expected error");
+});
+
+// ── Games-Howell ───────────────────────────────────────────────────────────
+//
+// Reference values hand-computed from the Welch-Satterthwaite df per pair
+// fed to R's ptukey (see docstring). iris Sepal.Length, k=3:
+//   (1,2) setosa–versicolor:    q=14.8789  df=86.54  p=2.86e-10
+//   (1,3) setosa–virginica:     q=21.7594  df=76.52  p≈0
+//   (2,3) versicolor–virginica: q= 7.9608  df=94.03  p=5.58e-07
+
+suite("stats.js — Games-Howell vs R-derived reference");
+
+test("iris SL Games-Howell: q statistics", () => {
+  const r = gamesHowell(irisSL);
+  assert(r.pairs.length === 3, "expected 3 pairs");
+  approx(r.pairs[0].q, 14.8789, 5e-3);
+  approx(r.pairs[1].q, 21.7594, 5e-3);
+  approx(r.pairs[2].q, 7.9608, 5e-3);
+});
+
+test("iris SL Games-Howell: Welch-Satterthwaite df", () => {
+  const r = gamesHowell(irisSL);
+  approx(r.pairs[0].df, 86.54, 5e-3);
+  approx(r.pairs[1].df, 76.52, 5e-3);
+  approx(r.pairs[2].df, 94.03, 5e-3);
+});
+
+test("iris SL Games-Howell: all pairs highly significant", () => {
+  const r = gamesHowell(irisSL);
+  for (const pr of r.pairs) assert(pr.p < 1e-5, `expected p<1e-5, got ${pr.p}`);
+});
+
+// ── Benjamini-Hochberg adjustment ──────────────────────────────────────────
+//
+// Reference: R's p.adjust(c(0.001, 0.008, 0.039, 0.041, 0.042, 0.06, 0.074,
+// 0.205), "BH") = 0.00800, 0.03200, 0.06720, 0.06720, 0.06720, 0.08000,
+// 0.08457, 0.20500
+
+suite("stats.js — Benjamini-Hochberg vs R p.adjust");
+
+test("bhAdjust matches R p.adjust", () => {
+  const adj = bhAdjust([0.001, 0.008, 0.039, 0.041, 0.042, 0.06, 0.074, 0.205]);
+  const expected = [0.008, 0.032, 0.0672, 0.0672, 0.0672, 0.08, 0.08457, 0.205];
+  for (let i = 0; i < adj.length; i++) approx(adj[i], expected[i], 5e-3);
+});
+
+test("bhAdjust preserves input order", () => {
+  const adj = bhAdjust([0.05, 0.001, 0.2]);
+  // rank-1: 0.001 → 0.001*3/1 = 0.003
+  // rank-2: 0.05  → 0.05*3/2  = 0.075
+  // rank-3: 0.2   → 0.2*3/3   = 0.2
+  approx(adj[0], 0.075, 5e-3);
+  approx(adj[1], 0.003, 5e-3);
+  approx(adj[2], 0.2, 5e-3);
+});
+
+test("bhAdjust enforces monotonicity", () => {
+  const adj = bhAdjust([0.01, 0.02, 0.03, 0.04]);
+  for (let i = 1; i < adj.length; i++) assert(adj[i] >= adj[i - 1], "monotone");
+});
+
+// ── Dunn's test ────────────────────────────────────────────────────────────
+//
+// Reference: hand-computed from the Dunn/Siegel-Castellan formula using R's
+// rank() on PlantGrowth (N=30, tie correction T=6, σ²=77.4828):
+//   (ctrl, trt1)  z=  1.1177  p=0.2637
+//   (ctrl, trt2)  z= -1.6893  p=0.0912
+//   (trt1, trt2)  z= -2.8070  p=0.00500
+// Matching BH-adjusted p's (m=3):
+//   ranked: 0.00500 → 0.01500
+//           0.0912  → 0.1368
+//           0.2637  → 0.2637
+
+suite("stats.js — Dunn's test vs R-derived reference");
+
+test("PlantGrowth Dunn: z statistics", () => {
+  const r = dunnTest(pg);
+  approx(Math.abs(r.pairs[0].z), 1.1177, 5e-3);
+  approx(Math.abs(r.pairs[1].z), 1.6893, 5e-3);
+  approx(Math.abs(r.pairs[2].z), 2.807, 5e-3);
+});
+
+test("PlantGrowth Dunn: raw p-values", () => {
+  const r = dunnTest(pg);
+  approx(r.pairs[0].p, 0.2637, 5e-3);
+  approx(r.pairs[1].p, 0.0912, 5e-3);
+  approx(r.pairs[2].p, 0.005, 5e-3);
+});
+
+test("PlantGrowth Dunn: BH-adjusted p-values", () => {
+  const r = dunnTest(pg);
+  approx(r.pairs[0].pAdj, 0.2637, 5e-3);
+  approx(r.pairs[1].pAdj, 0.1368, 5e-3);
+  approx(r.pairs[2].pAdj, 0.015, 5e-3);
+});
+
+test("Dunn reports BH as method", () => {
+  const r = dunnTest(pg);
+  assert(r.method === "Benjamini-Hochberg", "expected BH label");
+});
+
+// ── Compact letter display ─────────────────────────────────────────────────
+
+suite("stats.js — compact letter display");
+
+test("CLD: all pairs significant → distinct letters", () => {
+  const pairs = [
+    { i: 0, j: 1, p: 0.001 },
+    { i: 0, j: 2, p: 0.001 },
+    { i: 1, j: 2, p: 0.001 },
+  ];
+  const cld = compactLetterDisplay(pairs, 3);
+  assert(cld[0] !== cld[1] && cld[1] !== cld[2] && cld[0] !== cld[2], "all distinct");
+});
+
+test("CLD: no pairs significant → all share a letter", () => {
+  const pairs = [
+    { i: 0, j: 1, p: 0.5 },
+    { i: 0, j: 2, p: 0.5 },
+    { i: 1, j: 2, p: 0.5 },
+  ];
+  const cld = compactLetterDisplay(pairs, 3);
+  assert(cld[0] === cld[1] && cld[1] === cld[2], "all same");
+});
+
+test("CLD: one group different → a/a/b pattern", () => {
+  // 0≈1, 0≠2, 1≠2 → groups {0,1} and {2}
+  const pairs = [
+    { i: 0, j: 1, p: 0.5 },
+    { i: 0, j: 2, p: 0.001 },
+    { i: 1, j: 2, p: 0.001 },
+  ];
+  const cld = compactLetterDisplay(pairs, 3);
+  assert(cld[0] === cld[1], "0 and 1 share letter");
+  assert(cld[0] !== cld[2], "2 differs");
+});
+
+test("CLD: overlapping groups → ab middle", () => {
+  // 0≠2 significant, others not → {0,1} and {1,2} → "a","ab","b"
+  const pairs = [
+    { i: 0, j: 1, p: 0.5 },
+    { i: 0, j: 2, p: 0.001 },
+    { i: 1, j: 2, p: 0.5 },
+  ];
+  const cld = compactLetterDisplay(pairs, 3);
+  assert(cld[1].length === 2, `expected two letters on middle, got "${cld[1]}"`);
+  assert(cld[0] !== cld[2], "0 and 2 differ");
+  assert(cld[1].includes(cld[0]) && cld[1].includes(cld[2]), "middle shares with both");
+});
+
+test("CLD: prefers pAdj over p when available", () => {
+  // raw p says significant, adjusted says not
+  const pairs = [
+    { i: 0, j: 1, p: 0.001, pAdj: 0.5 },
+    { i: 0, j: 2, p: 0.001, pAdj: 0.5 },
+    { i: 1, j: 2, p: 0.001, pAdj: 0.5 },
+  ];
+  const cld = compactLetterDisplay(pairs, 3);
+  assert(cld[0] === cld[1] && cld[1] === cld[2], "all same under pAdj");
 });
 
 summary();
