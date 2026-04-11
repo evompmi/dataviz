@@ -117,10 +117,10 @@ DONE 6. **Create CHANGELOG.md** — Track changes for users.
 DONE 7. **Add error boundaries** — Graceful tool failure handling.
 
 ### Medium Priority
-8. **Consolidate margin constants** — Yes, it's "marginal benefit", but it's also low effort.
-9. **Fix color input regex** — Accept 3-digit hex. Takes 5 minutes.
-10. **Add file size config** — Make limits configurable, not hardcoded.
-11. **Improve commit messages** — Use conventional commits. feat(scatter): add regression line not Add regression line...
+WONTFIX 8. **Consolidate margin constants** — Every tool's margins are unique values; only the name `MARGIN`/`M` was shared, so consolidation would centralize nothing.
+DONE 9. **Fix color input regex** — Accept 3-digit hex. Takes 5 minutes.
+WONTFIX 10. **Add file size config** — Single-dev project, no external users hitting the 2 MB cap; skipped in favor of raising the constant if it ever becomes a pain.
+DONE 11. **Improve commit messages** — Adopted Conventional Commits (free-form scope) from 2026-04-11 onward.
 
 ### Nice to Have
 12. **Migrate to Vite** — Faster dev, better DX, built-in HMR.
