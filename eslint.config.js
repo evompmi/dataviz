@@ -13,6 +13,7 @@ const compiledTools = [
   "tools/power.js",
   "tools/scatter.js",
   "tools/venn.js",
+  "tools/version.js",
 ];
 
 // Names declared at top-level of tools/shared.js and tools/shared-components.js
@@ -93,9 +94,9 @@ module.exports = [
 
   js.configs.recommended,
 
-  // This config file itself (CommonJS, Node).
+  // This config file itself + build scripts (CommonJS, Node).
   {
-    files: ["eslint.config.js", ".prettierrc.js"],
+    files: ["eslint.config.js", ".prettierrc.js", "scripts/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "commonjs",

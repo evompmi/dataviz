@@ -7,3 +7,4 @@ tools/molarity.js
 tools/power.js
 tools/scatter.js
 tools/venn.js
+tools/version.js

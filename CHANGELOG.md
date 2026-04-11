@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Landing page now displays the real git version (derived from `git describe --tags`) instead of a hardcoded string. A build-time script writes `tools/version.js`, which the page loads to set the header badge — so between-tag commits show up as `v1.1.0-3-gabcdef`.
+
 ## [1.1.0] - 2026-04-11
 
 ### Added

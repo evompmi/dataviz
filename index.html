@@ -287,7 +287,7 @@
   <body>
     <div class="landing" id="landing">
       <div class="landing-header">
-        <h1>Toolbox<span class="version">v1.0</span></h1>
+        <h1>Toolbox<span class="version" id="app-version">dev</span></h1>
         <div class="tagline">- Skip the R -</div>
       </div>
       <div class="tile-groups">
@@ -600,7 +600,16 @@
       <iframe id="frame-power" src="tools/power.html"></iframe>
     </div>
 
+    <script src="tools/version.js"></script>
     <script>
+      // ── Display the real git tag in the header ──
+      (function () {
+        var el = document.getElementById("app-version");
+        if (el && typeof window.__APP_VERSION__ === "string") {
+          el.textContent = window.__APP_VERSION__;
+        }
+      })();
+
       // ── Prefetch vendor + shared scripts so tool iframes load instantly ──
       (function () {
         var scripts = [
