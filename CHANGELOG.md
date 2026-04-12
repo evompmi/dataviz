@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Aequorin StatsTile** — the aequorin tool now includes a full statistical analysis tile below the integral barplot, reusing the same StatsTile component as Group Plot. Supports Shapiro-Wilk, Levene, recommended test selection, post-hoc tables, compact letter display, and significance brackets — all driven by per-replicate integral sums.
+- **Aequorin jitter points** — optional jittered data-point overlay on the integral barplot, with color picker and size slider in the control panel.
+
 ### Changed
 
-- **Stats summary embedded in SVG** — when "Show on plot" is active in the StatsTile, a grey monospace text block (test name + result, post-hoc pairs, effect size, sample sizes) is rendered inside the chart SVG below the legend, so it is included in SVG and PNG downloads.
+- **Stats summary embedded in SVG** — when "Show on plot" is active in the StatsTile, a grey monospace text block (test name + result, post-hoc pairs, effect size, sample sizes) is rendered inside the chart SVG below the legend, so it is included in SVG and PNG downloads. Applies to both Group Plot and Aequorin integral barplot.
+- **Aequorin plot page restructured** — time-course chart is now collapsible into its own tile. Below it, a single Integral tile with a Raw / Baseline-corrected toggle shows one full-size barplot (auto-sized by condition count), a per-replicate CSV table with download, and the StatsTile. Replaces the previous side-by-side dual-barplot layout.
+- **Aequorin barplot controls decluttered** — removed Width, Height, X/Y label size, bar stroke opacity, and bar stroke width controls (overridden or unused). Bar stroke opacity defaults to 0. Condition color pickers simplified to fill-only.
 - **Calculator tool mobile-friendly** — removed `min-width: 1100px` from the calculator page only; layouts (Molarity, Dilution, Ligation) stack vertically on screens narrower than 600 px; input fields and "Solve for" buttons reflow for touch use.
 - **Merged bargraph into boxplot** — the tool is now called "Group Plot" and offers box, violin, raincloud, and bar chart (mean ± SEM/SD) as plot styles from a single dropdown. The separate bargraph tool is replaced by a redirect to `boxplot.html?style=bar`. Landing page updated with a combined icon and card.
 - Power analysis table now shows achieved power and required n at three α levels (0.05, 0.01, 0.001) instead of only α = 0.05. Both the on-screen tile and the downloadable plain-text report are updated.
@@ -19,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Filter panel now shows checkboxes for numeric columns when the user explicitly assigns them a "filter" or "text" role (e.g. repetition numbers). Previously these columns were hidden with a "numeric — use axis range in plot" message regardless of the assigned role.
+- **Calculator tool mobile scrolling** — added `overflow-y: auto` and `-webkit-overflow-scrolling: touch` to the calculator page body, plus bottom padding on mobile, so the last result tile is always reachable by scrolling.
 
 ## [2.0.0] - 2026-04-12
 
