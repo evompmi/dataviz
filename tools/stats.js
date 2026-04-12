@@ -411,7 +411,7 @@ function bisect(fn, target, lo, hi, tol = 1e-6, maxIter = 200) {
 
 // ── 2b. Power functions ─────────────────────────────────────────────────────
 // Keyed by test shape, same formulas used by tools/power.tsx. Kept here so
-// the StatsTile (bargraph + boxplot) can report achieved power and the
+// the StatsTile (group plot) can report achieved power and the
 // n-per-group needed for 80 % power directly from the observed data.
 
 function powerTwoSample(d, n, alpha, tails) {

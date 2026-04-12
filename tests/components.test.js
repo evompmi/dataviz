@@ -410,7 +410,7 @@ suite("BoxplotChart");
 suite("BarChart");
 
 (function () {
-  var tool = loadTool("bargraph");
+  var tool = loadTool("boxplot");
   var BarChart = tool.ctx.BarChart;
 
   var sampleGroups = [

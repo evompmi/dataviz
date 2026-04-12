@@ -235,7 +235,7 @@ function seededRandom(seed) {
   };
 }
 
-// ── Example dataset (long format, used by bargraph + boxplot "Load example") ──
+// ── Example dataset (long format, used by group plot "Load example") ──
 // Arabidopsis biomass × 3 genotypes × 3 treatments × 8 replicates = 72 rows.
 // Effects are tuned so k=3 ANOVA + Tukey is meaningful, facet-by-Treatment works,
 // and group colors / filters / renames all have something interesting to show.

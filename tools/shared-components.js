@@ -808,7 +808,7 @@ function ActionsPanel(props) {
 
 // ── Long-format Pipeline Components ─────────────────────────────────────────
 
-// Column role assignment editor (used in boxplot, bargraph long format)
+// Column role assignment editor (used in group plot long format)
 function ColumnRoleEditor(props) {
   const headers = props.headers,
     rows = props.rows,
@@ -1261,7 +1261,7 @@ function RenameReorderPanel(props) {
   );
 }
 
-// Summary stats table (used in boxplot & bargraph output step)
+// Summary stats table (used in group plot output step)
 function StatsTable(props) {
   const stats = props.stats,
     groupLabel = props.groupLabel;

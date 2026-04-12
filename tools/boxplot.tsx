@@ -502,6 +502,206 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   );
 });
 
+// ── Bar Chart ──────────────────────────────────────────────────────────────
+
+const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
+  {
+    groups,
+    yLabel,
+    plotTitle,
+    plotBg,
+    showGrid,
+    gridColor,
+    barWidth,
+    pointSize,
+    showPoints,
+    jitterWidth,
+    pointOpacity,
+    xLabelAngle,
+    errorType,
+    barOpacity,
+    yMin: yMinProp,
+    yMax: yMaxProp,
+    catColors,
+    errStrokeWidth,
+    showBarOutline,
+    barOutlineWidth,
+    svgLegend,
+    annotations,
+  },
+  ref
+) {
+  const angle = xLabelAngle || 0;
+  const bottomMargin = 60 + Math.abs(angle) * 0.9;
+
+  const annotPairs =
+    annotations && annotations.kind === "brackets"
+      ? assignBracketLevels(annotations.pairs || [])
+      : [];
+  const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
+  const annotTopPad =
+    annotations && annotations.kind === "cld"
+      ? 22
+      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
+        ? (annotMaxLevel + 1) * 20 + 6
+        : 0;
+  const MChart = { top: 24, right: 24, bottom: bottomMargin, left: 62 };
+
+  const allVals = groups.flatMap((g) => g.allValues);
+  if (allVals.length === 0) return null;
+
+  let dataMax = 0;
+  let dataMin = 0;
+  groups.forEach((g) => {
+    if (!g.stats) return;
+    const errVal = errorType === "sd" ? g.stats.sd : g.stats.sem;
+    const top = g.stats.mean + errVal;
+    const bot = g.stats.mean - errVal;
+    if (top > dataMax) dataMax = top;
+    if (bot < dataMin) dataMin = bot;
+    if (g.stats.max > dataMax) dataMax = g.stats.max;
+    if (g.stats.min < dataMin) dataMin = g.stats.min;
+  });
+
+  const pad = (dataMax - dataMin) * 0.08 || 1;
+  const yMin = yMinProp != null ? yMinProp : dataMin >= 0 ? 0 : dataMin - pad;
+  let yMax = yMaxProp != null ? yMaxProp : dataMax + pad;
+
+  const n = groups.length;
+  const vbW = Math.max(400, n * 100 + MChart.left + MChart.right);
+  const vbH_chart = 420 + Math.abs(angle) * 0.9;
+  const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
+  const vbH = vbH_chart + legendH;
+  const w = vbW - MChart.left - MChart.right;
+  const h = vbH_chart - MChart.top - MChart.bottom;
+
+  if (annotTopPad > 0 && h > annotTopPad + 10) {
+    yMax = yMin + ((yMax - yMin) * h) / (h - annotTopPad);
+  }
+
+  const bandW = w / n;
+  const bx = (i) => MChart.left + i * bandW + bandW / 2;
+  const sy = (v) => MChart.top + (1 - (v - yMin) / (yMax - yMin || 1)) * h;
+
+  const yTicks = makeTicks(yMin, yMax, 8);
+  const halfBar = (barWidth / 100) * bandW * 0.4;
+
+  return (
+    <svg
+      ref={ref}
+      viewBox={`0 0 ${vbW} ${vbH}`}
+      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label={plotTitle || "Bar chart"}
+    >
+      <title>{plotTitle || "Bar chart"}</title>
+      <desc>{`Bar chart with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
+      <rect x={MChart.left} y={MChart.top} width={w} height={h} fill={plotBg} />
+
+      {showGrid &&
+        yTicks.map((t) => (
+          <line
+            key={t}
+            x1={MChart.left}
+            x2={MChart.left + w}
+            y1={sy(t)}
+            y2={sy(t)}
+            stroke={gridColor}
+            strokeWidth="0.5"
+          />
+        ))}
+
+      {yTicks.map((t) => (
+        <g key={t}>
+          <line x1={MChart.left - 5} x2={MChart.left} y1={sy(t)} y2={sy(t)} stroke="#333" strokeWidth="1" />
+          <text x={MChart.left - 8} y={sy(t) + 4} textAnchor="end" fontSize="11" fill="#555" fontFamily="sans-serif">
+            {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
+          </text>
+        </g>
+      ))}
+
+      {groups.map((g, gi) => {
+        if (!g.stats) return null;
+        const cx = bx(gi);
+        const { mean, sd, sem } = g.stats;
+        if (mean < yMin || mean > yMax) return null;
+        const errVal = errorType === "sd" ? sd : sem;
+        const baseline = sy(Math.max(0, yMin));
+        const barTop = sy(mean);
+        const yBar = mean >= 0 ? barTop : baseline;
+        const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
+
+        return (
+          <g key={g.name} role="group" aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}>
+            <rect x={cx - halfBar} y={yBar} width={halfBar * 2} height={Math.max(0, barH)} fill={g.color} fillOpacity={barOpacity} stroke={showBarOutline ? g.color : "none"} strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0} rx="1" />
+            <line x1={cx} x2={cx} y1={sy(mean + errVal)} y2={sy(mean - errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
+            <line x1={cx - halfBar * 0.4} x2={cx + halfBar * 0.4} y1={sy(mean + errVal)} y2={sy(mean + errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
+            <line x1={cx - halfBar * 0.4} x2={cx + halfBar * 0.4} y1={sy(mean - errVal)} y2={sy(mean - errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
+
+            {showPoints &&
+              g.sources.map((src, si) => {
+                const rng = seededRandom(gi * 1000 + si * 100 + 42);
+                const ptColors = getPointColors(g.color, g.sources.length);
+                return src.values.map((v, vi) => {
+                  const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
+                  const cat = src.categories?.[vi];
+                  const ptColor = catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
+                  return (
+                    <circle key={`${g.name}-${si}-${vi}`} cx={cx + jitter} cy={sy(v)} r={pointSize} fill={ptColor} fillOpacity={pointOpacity || 0.6} stroke={ptColor} strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)} strokeWidth="0.3" />
+                  );
+                });
+              })}
+          </g>
+        );
+      })}
+
+      <rect x={MChart.left} y={MChart.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
+
+      {annotations && annotations.kind === "cld" &&
+        (annotations.labels || []).map((lbl, gi) => (
+          <text key={`cld-${gi}`} x={bx(gi)} y={MChart.top + 15} textAnchor="middle" fontSize="13" fontWeight="700" fill="#222" fontFamily="sans-serif">{lbl}</text>
+        ))}
+
+      {annotations && annotations.kind === "brackets" &&
+        annotPairs.map((pr, idx) => {
+          const x1 = bx(pr.i);
+          const x2 = bx(pr.j);
+          const lvl = pr._level || 0;
+          const yLine = MChart.top + annotTopPad - 6 - lvl * 20;
+          const tick = 4;
+          return (
+            <g key={`br-${idx}`}>
+              <path d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`} stroke="#333" strokeWidth="1" fill="none" />
+              <text x={(x1 + x2) / 2} y={yLine - 2} textAnchor="middle" fontSize="12" fontWeight="700" fill="#222" fontFamily="sans-serif">{pr.label}</text>
+            </g>
+          );
+        })}
+
+      {groups.map((g, gi) => {
+        const lx = bx(gi);
+        const ly = MChart.top + h + 8;
+        const angled = angle !== 0;
+        return (
+          <g key={`xl-${g.name}`} transform={`translate(${lx},${ly}) rotate(${angle})`}>
+            <text x={0} y={0} textAnchor={angled ? "end" : "middle"} dominantBaseline={angled ? "middle" : "hanging"} fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text>
+            <text x={0} y={14} textAnchor={angled ? "end" : "middle"} dominantBaseline={angled ? "middle" : "hanging"} fontSize="9" fill="#999" fontFamily="sans-serif">{`n=${g.stats?.n || 0}`}</text>
+          </g>
+        );
+      })}
+
+      {yLabel && (
+        <text transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>
+      )}
+
+      {plotTitle && (
+        <text x={MChart.left + w / 2} y={14} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>
+      )}
+      {renderSvgLegend(svgLegend, vbH_chart + 10, MChart.left, vbW - MChart.left - MChart.right, 88, 14)}
+    </svg>
+  );
+});
+
 /* ── Sub-components (JSX, inline) ──────────────────────────────────────────── */
 
 function UploadStep({
@@ -551,9 +751,9 @@ function UploadStep({
         >
           {toolIcon("boxplot", 24, { circle: true })}
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>Boxplot — How to use</div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>Group Plot — How to use</div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
-              Long or wide data → auto-detect → customizable boxplots
+              Long or wide data → auto-detect → box / violin / raincloud / bar charts
             </div>
           </div>
         </div>
@@ -588,10 +788,10 @@ function UploadStep({
               Purpose
             </div>
             <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
-              An all-in-one boxplot tool that accepts <strong>both long and wide formats</strong>.
-              Wide data (all-numeric columns, headers = group names) is auto-detected and goes
-              straight to plot. Long data gets the full pipeline: assign column roles, filter,
-              rename, reorder, then plot — all without code.
+              An all-in-one group comparison tool that accepts <strong>both long and wide formats</strong>.
+              Switch between box, violin, raincloud, and bar chart (mean ± SEM/SD) styles from the
+              plot controls. Wide data is auto-detected and goes straight to plot. Long data gets
+              the full pipeline: assign column roles, filter, rename, reorder, then plot.
             </p>
           </div>
           <div
@@ -826,6 +1026,10 @@ function UploadStep({
                   step: "Raincloud",
                   text: "Half-violin on the left + narrow box in the center + jitter points on the right. Best for showing raw data alongside the distribution shape.",
                 },
+                {
+                  step: "Bar",
+                  text: "Mean ± SEM/SD error bars. Choose SEM or SD in the plot controls. Supports jittered points overlay.",
+                },
               ].map(({ step, text }) => (
                 <div key={step} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <span
@@ -868,7 +1072,7 @@ function UploadStep({
           >
             <span style={{ fontSize: 11, fontWeight: 700, color: "#3b6cf7" }}>💡 Tip — </span>
             <span style={{ fontSize: 11, color: "#444" }}>
-              Wide-format files (like the output of the Bar Graph or Aequorin tools) are
+              Wide-format files (all-numeric columns, headers = group names) are
               auto-detected and go straight to plot. For long-format, you can facet by one column
               while coloring points by another.
             </span>
@@ -1318,6 +1522,7 @@ function PlotControls({
             <option value="box">Box plot</option>
             <option value="violin">Violin plot</option>
             <option value="raincloud">Raincloud plot</option>
+            <option value="bar">Bar chart (mean ± error)</option>
           </select>
         </div>
         <BaseStyleControls
@@ -1329,7 +1534,7 @@ function PlotControls({
           onGridColorChange={sv("gridColor")}
         />
         <SliderControl
-          label={vis.plotStyle === "box" ? "Box width" : "Width"}
+          label={vis.plotStyle === "box" ? "Box width" : vis.plotStyle === "bar" ? "Bar width" : "Width"}
           value={vis.boxWidth}
           displayValue={vis.boxWidth + "%"}
           min={20}
@@ -1337,24 +1542,80 @@ function PlotControls({
           step={5}
           onChange={sv("boxWidth")}
         />
-        <SliderControl
-          label={vis.plotStyle === "box" ? "Box gap" : "Gap"}
-          value={vis.boxGap}
-          displayValue={vis.boxGap + "%"}
-          min={0}
-          max={80}
-          step={5}
-          onChange={sv("boxGap")}
-        />
-        <SliderControl
-          label="Fill opacity"
-          value={vis.boxFillOpacity}
-          displayValue={vis.boxFillOpacity.toFixed(2)}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={sv("boxFillOpacity")}
-        />
+        {vis.plotStyle !== "bar" && (
+          <SliderControl
+            label={vis.plotStyle === "box" ? "Box gap" : "Gap"}
+            value={vis.boxGap}
+            displayValue={vis.boxGap + "%"}
+            min={0}
+            max={80}
+            step={5}
+            onChange={sv("boxGap")}
+          />
+        )}
+        {vis.plotStyle === "bar" ? (
+          <>
+            <SliderControl
+              label="Fill opacity"
+              value={vis.barOpacity}
+              displayValue={vis.barOpacity.toFixed(2)}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={sv("barOpacity")}
+            />
+            <div>
+              <span style={lbl}>Error bars</span>
+              <select
+                value={vis.errorType}
+                onChange={(e) => updVis({ errorType: e.target.value })}
+                style={{ width: "100%", background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer", marginTop: 2 }}
+              >
+                <option value="sem">SEM</option>
+                <option value="sd">SD</option>
+              </select>
+            </div>
+            <SliderControl
+              label="Error bar stroke"
+              value={vis.errStrokeWidth}
+              displayValue={vis.errStrokeWidth.toFixed(1)}
+              min={0.5}
+              max={4}
+              step={0.1}
+              onChange={sv("errStrokeWidth")}
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={lbl}>Bar outline</span>
+              <input
+                type="checkbox"
+                checked={vis.showBarOutline}
+                onChange={(e) => updVis({ showBarOutline: e.target.checked })}
+                style={{ accentColor: "#648FFF" }}
+              />
+            </div>
+            {vis.showBarOutline && (
+              <SliderControl
+                label="Outline width"
+                value={vis.barOutlineWidth}
+                displayValue={vis.barOutlineWidth.toFixed(1)}
+                min={0.5}
+                max={4}
+                step={0.1}
+                onChange={sv("barOutlineWidth")}
+              />
+            )}
+          </>
+        ) : (
+          <SliderControl
+            label="Fill opacity"
+            value={vis.boxFillOpacity}
+            displayValue={vis.boxFillOpacity.toFixed(2)}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={sv("boxFillOpacity")}
+          />
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={lbl}>Points</span>
           <input
@@ -1381,7 +1642,7 @@ function PlotControls({
                 ))}
               </select>
             </div>
-            {colorByCol >= 0 && (
+            {colorByCol >= 0 && vis.plotStyle !== "bar" && (
               <label
                 style={{
                   display: "flex",
@@ -1558,7 +1819,9 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
           ({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)
         </span>
       </div>
-      <BoxplotChart ref={localRef} {...chartProps} />
+      {chartProps.plotStyle === "bar"
+        ? <BarChart ref={localRef} {...chartProps} barWidth={chartProps.boxWidth} catColors={chartProps.categoryColors} />
+        : <BoxplotChart ref={localRef} {...chartProps} />}
     </div>
   );
 });
@@ -1629,44 +1892,85 @@ function PlotArea({
         <div
           style={{ background: "#fff", borderRadius: 10, padding: 20, border: "1px solid #ddd" }}
         >
-          <BoxplotChart
-            ref={chartRef}
-            groups={displayBoxplotGroups}
-            yLabel={vis.yLabel}
-            plotTitle={vis.plotTitle}
-            plotBg={vis.plotBg}
-            showGrid={vis.showGrid}
-            gridColor={vis.gridColor}
-            boxWidth={vis.boxWidth}
-            boxFillOpacity={vis.boxFillOpacity}
-            pointSize={vis.pointSize}
-            showPoints={vis.showPoints}
-            jitterWidth={vis.jitterWidth}
-            pointOpacity={vis.pointOpacity}
-            xLabelAngle={vis.xLabelAngle}
-            yMin={yMinVal}
-            yMax={yMaxVal}
-            categoryColors={categoryColors}
-            colorByCol={colorByCol}
-            boxGap={vis.boxGap}
-            showCompPie={vis.showCompPie}
-            plotStyle={vis.plotStyle}
-            annotations={statsAnnotations}
-            svgLegend={
-              colorByCol >= 0 && colorByCategories.length > 0
-                ? [
-                    {
-                      title: `Points colored by: ${colNames[colorByCol]}`,
-                      items: colorByCategories.map((c) => ({
-                        label: c,
-                        color: categoryColors[c] || "#999",
-                        shape: "dot",
-                      })),
-                    },
-                  ]
-                : null
-            }
-          />
+          {vis.plotStyle === "bar" ? (
+            <BarChart
+              ref={chartRef}
+              groups={displayBoxplotGroups}
+              yLabel={vis.yLabel}
+              plotTitle={vis.plotTitle}
+              plotBg={vis.plotBg}
+              showGrid={vis.showGrid}
+              gridColor={vis.gridColor}
+              barWidth={vis.boxWidth}
+              barOpacity={vis.barOpacity}
+              pointSize={vis.pointSize}
+              showPoints={vis.showPoints}
+              jitterWidth={vis.jitterWidth}
+              pointOpacity={vis.pointOpacity}
+              xLabelAngle={vis.xLabelAngle}
+              errorType={vis.errorType}
+              errStrokeWidth={vis.errStrokeWidth}
+              showBarOutline={vis.showBarOutline}
+              barOutlineWidth={vis.barOutlineWidth}
+              yMin={yMinVal}
+              yMax={yMaxVal}
+              catColors={categoryColors}
+              annotations={statsAnnotations}
+              svgLegend={
+                colorByCol >= 0 && colorByCategories.length > 0
+                  ? [
+                      {
+                        title: `Points colored by: ${colNames[colorByCol]}`,
+                        items: colorByCategories.map((c) => ({
+                          label: c,
+                          color: categoryColors[c] || "#999",
+                          shape: "dot",
+                        })),
+                      },
+                    ]
+                  : null
+              }
+            />
+          ) : (
+            <BoxplotChart
+              ref={chartRef}
+              groups={displayBoxplotGroups}
+              yLabel={vis.yLabel}
+              plotTitle={vis.plotTitle}
+              plotBg={vis.plotBg}
+              showGrid={vis.showGrid}
+              gridColor={vis.gridColor}
+              boxWidth={vis.boxWidth}
+              boxFillOpacity={vis.boxFillOpacity}
+              pointSize={vis.pointSize}
+              showPoints={vis.showPoints}
+              jitterWidth={vis.jitterWidth}
+              pointOpacity={vis.pointOpacity}
+              xLabelAngle={vis.xLabelAngle}
+              yMin={yMinVal}
+              yMax={yMaxVal}
+              categoryColors={categoryColors}
+              colorByCol={colorByCol}
+              boxGap={vis.boxGap}
+              showCompPie={vis.showCompPie}
+              plotStyle={vis.plotStyle}
+              annotations={statsAnnotations}
+              svgLegend={
+                colorByCol >= 0 && colorByCategories.length > 0
+                  ? [
+                      {
+                        title: `Points colored by: ${colNames[colorByCol]}`,
+                        items: colorByCategories.map((c) => ({
+                          label: c,
+                          color: categoryColors[c] || "#999",
+                          shape: "dot",
+                        })),
+                      },
+                    ]
+                  : null
+              }
+            />
+          )}
         </div>
       )}
       {facetByCol >= 0 && facetedData.length > 0 && (
@@ -1698,6 +2002,11 @@ function PlotArea({
               boxGap: vis.boxGap,
               showCompPie: vis.showCompPie,
               plotStyle: vis.plotStyle,
+              barOpacity: vis.barOpacity,
+              errorType: vis.errorType,
+              errStrokeWidth: vis.errStrokeWidth,
+              showBarOutline: vis.showBarOutline,
+              barOutlineWidth: vis.barOutlineWidth,
               svgLegend:
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -1753,6 +2062,9 @@ function App() {
   const [valueRenames, setValueRenames] = useState({});
 
   // Visual settings
+  const urlStyle = typeof location !== "undefined"
+    ? new URLSearchParams(location.search).get("style")
+    : null;
   const visInit = {
     plotTitle: "",
     yLabel: "Value",
@@ -1770,7 +2082,13 @@ function App() {
     yMinCustom: "",
     yMaxCustom: "",
     showCompPie: false,
-    plotStyle: "box",
+    plotStyle: urlStyle === "bar" ? "bar" : "box",
+    // bar-specific
+    errorType: "sem",
+    errStrokeWidth: 1.2,
+    showBarOutline: false,
+    barOutlineWidth: 1.5,
+    barOpacity: 0.25,
   };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
 
@@ -1994,7 +2312,7 @@ function App() {
           name,
           sources,
           allValues,
-          stats: quartiles(allValues),
+          stats: { ...quartiles(allValues), ...computeStats(allValues) },
           color: boxplotColors[name] || PALETTE[gi % PALETTE.length],
         };
       });
@@ -2071,7 +2389,7 @@ function App() {
             name,
             sources,
             allValues,
-            stats: quartiles(allValues),
+            stats: { ...quartiles(allValues), ...computeStats(allValues) },
             color: globalColorMap[name] || boxplotColors[name] || PALETTE[gi % PALETTE.length],
           };
         });
@@ -2135,25 +2453,26 @@ function App() {
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
 
+  const fileStem = vis.plotStyle === "bar" ? "bargraph" : "boxplot";
   const handleDownloadSvg = useCallback(() => {
     if (facetByCol >= 0 && facetedData.length > 0) {
       facetedData.forEach((fd) =>
-        downloadSvg(facetRefs.current[fd.category], `boxplot_${fd.category}.svg`)
+        downloadSvg(facetRefs.current[fd.category], `${fileStem}_${fd.category}.svg`)
       );
     } else {
-      downloadSvg(chartRef.current, "boxplot.svg");
+      downloadSvg(chartRef.current, `${fileStem}.svg`);
     }
-  }, [facetByCol, facetedData]);
+  }, [facetByCol, facetedData, fileStem]);
 
   const handleDownloadPng = useCallback(() => {
     if (facetByCol >= 0 && facetedData.length > 0) {
       facetedData.forEach((fd) =>
-        downloadPng(facetRefs.current[fd.category], `boxplot_${fd.category}.png`)
+        downloadPng(facetRefs.current[fd.category], `${fileStem}_${fd.category}.png`)
       );
     } else {
-      downloadPng(chartRef.current, "boxplot.png");
+      downloadPng(chartRef.current, `${fileStem}.png`);
     }
-  }, [facetByCol, facetedData]);
+  }, [facetByCol, facetedData, fileStem]);
 
   return (
     <div
@@ -2161,7 +2480,7 @@ function App() {
     >
       <PageHeader
         toolName="boxplot"
-        title="Boxplot"
+        title="Group Plot"
         subtitle={`Load → label columns → filter → plot & export${dataFormat === "wide" ? " · Wide format auto-detected" : ""}`}
       />
       <StepNavBar
