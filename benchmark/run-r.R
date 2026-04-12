@@ -120,7 +120,18 @@ shapiro_cases <- list(
   list(label = "women height",       x = women$height),
   list(label = "trees Height",       x = trees$Height),
   list(label = "airquality Temp",    x = na.omit(airquality$Temp)),
-  list(label = "ToothGrowth len",    x = ToothGrowth$len)
+  list(label = "ToothGrowth len",    x = ToothGrowth$len),
+  # bimodal → strongly non-normal, tiny W (stress test)
+  list(label = "faithful eruptions", x = faithful$eruptions),
+  list(label = "faithful waiting",   x = faithful$waiting),
+  list(label = "quakes mag",         x = quakes$mag),
+  list(label = "USArrests Murder",   x = USArrests$Murder),
+  list(label = "swiss Fertility",    x = swiss$Fertility),
+  list(label = "morley Speed",       x = morley$Speed),
+  list(label = "CO2 uptake",         x = CO2$uptake),
+  list(label = "LakeHuron",          x = as.numeric(LakeHuron)),
+  list(label = "attitude rating",    x = attitude$rating),
+  list(label = "precip",             x = as.numeric(precip))
 )
 
 for (c in shapiro_cases) {
@@ -139,6 +150,8 @@ for (c in shapiro_cases) {
 
 # ── 2. Brown-Forsythe Levene ───────────────────────────────────────────────
 
+cw21 <- ChickWeight[ChickWeight$Time == 21, ]
+
 levene_cases <- list(
   list(label = "iris Sepal.Length by Species",
        values = iris$Sepal.Length, groups = as.character(iris$Species)),
@@ -153,7 +166,17 @@ levene_cases <- list(
   list(label = "chickwts weight by feed",
        values = chickwts$weight, groups = as.character(chickwts$feed)),
   list(label = "InsectSprays count by spray",
-       values = InsectSprays$count, groups = as.character(InsectSprays$spray))
+       values = InsectSprays$count, groups = as.character(InsectSprays$spray)),
+  list(label = "CO2 uptake by Treatment",
+       values = CO2$uptake, groups = as.character(CO2$Treatment)),
+  list(label = "CO2 uptake by Type",
+       values = CO2$uptake, groups = as.character(CO2$Type)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "OrchardSprays decrease by treatment",
+       values = OrchardSprays$decrease, groups = as.character(OrchardSprays$treatment))
 )
 
 for (c in levene_cases) {
@@ -200,6 +223,26 @@ t_cases <- list(
   list(label = "warpbreaks breaks: wool A vs wool B",
        x = warpbreaks$breaks[warpbreaks$wool == "A"],
        y = warpbreaks$breaks[warpbreaks$wool == "B"],
+       equal = FALSE, kind = "Welch t"),
+  list(label = "CO2 uptake: Quebec vs Mississippi",
+       x = CO2$uptake[CO2$Type == "Quebec"],
+       y = CO2$uptake[CO2$Type == "Mississippi"],
+       equal = TRUE, kind = "Student t"),
+  list(label = "CO2 uptake: nonchilled vs chilled",
+       x = CO2$uptake[CO2$Treatment == "nonchilled"],
+       y = CO2$uptake[CO2$Treatment == "chilled"],
+       equal = FALSE, kind = "Welch t"),
+  list(label = "ChickWeight@21: Diet 1 vs Diet 4",
+       x = cw21$weight[cw21$Diet == 1],
+       y = cw21$weight[cw21$Diet == 4],
+       equal = FALSE, kind = "Welch t"),
+  list(label = "morley Speed: Expt 1 vs Expt 5",
+       x = morley$Speed[morley$Expt == 1],
+       y = morley$Speed[morley$Expt == 5],
+       equal = TRUE, kind = "Student t"),
+  list(label = "swiss Fertility: high vs low Catholic",
+       x = swiss$Fertility[swiss$Catholic >= 50],
+       y = swiss$Fertility[swiss$Catholic <  50],
        equal = FALSE, kind = "Welch t")
 )
 
@@ -228,7 +271,16 @@ mwu_cases <- list(
        y = mtcars$mpg[mtcars$am == 1]),
   list(label = "InsectSprays: spray A vs spray F",
        x = InsectSprays$count[InsectSprays$spray == "A"],
-       y = InsectSprays$count[InsectSprays$spray == "F"])
+       y = InsectSprays$count[InsectSprays$spray == "F"]),
+  list(label = "CO2 uptake: Quebec vs Mississippi",
+       x = CO2$uptake[CO2$Type == "Quebec"],
+       y = CO2$uptake[CO2$Type == "Mississippi"]),
+  list(label = "ChickWeight@21: Diet 1 vs Diet 3",
+       x = cw21$weight[cw21$Diet == 1],
+       y = cw21$weight[cw21$Diet == 3]),
+  list(label = "OrchardSprays: A vs H",
+       x = OrchardSprays$decrease[OrchardSprays$treatment == "A"],
+       y = OrchardSprays$decrease[OrchardSprays$treatment == "H"])
 )
 
 for (c in mwu_cases) {
@@ -258,7 +310,15 @@ anova_cases <- list(
   list(label = "PlantGrowth weight by group",
        values = PlantGrowth$weight, groups = as.character(PlantGrowth$group)),
   list(label = "ToothGrowth len by dose",
-       values = ToothGrowth$len, groups = as.character(ToothGrowth$dose))
+       values = ToothGrowth$len, groups = as.character(ToothGrowth$dose)),
+  list(label = "CO2 uptake by Treatment",
+       values = CO2$uptake, groups = as.character(CO2$Treatment)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "OrchardSprays decrease by treatment",
+       values = OrchardSprays$decrease, groups = as.character(OrchardSprays$treatment))
 )
 
 for (c in anova_cases) {
@@ -283,7 +343,13 @@ welch_anova_cases <- list(
   list(label = "chickwts weight by feed",
        values = chickwts$weight, groups = as.character(chickwts$feed)),
   list(label = "InsectSprays count by spray",
-       values = InsectSprays$count, groups = as.character(InsectSprays$spray))
+       values = InsectSprays$count, groups = as.character(InsectSprays$spray)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "OrchardSprays decrease by treatment",
+       values = OrchardSprays$decrease, groups = as.character(OrchardSprays$treatment))
 )
 
 for (c in welch_anova_cases) {
@@ -307,7 +373,13 @@ kw_cases <- list(
   list(label = "chickwts weight by feed",
        values = chickwts$weight, groups = as.character(chickwts$feed)),
   list(label = "PlantGrowth weight by group",
-       values = PlantGrowth$weight, groups = as.character(PlantGrowth$group))
+       values = PlantGrowth$weight, groups = as.character(PlantGrowth$group)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "OrchardSprays decrease by treatment",
+       values = OrchardSprays$decrease, groups = as.character(OrchardSprays$treatment))
 )
 
 for (c in kw_cases) {
@@ -329,7 +401,13 @@ tukey_cases <- list(
   list(label = "PlantGrowth weight by group",
        values = PlantGrowth$weight, groups = as.character(PlantGrowth$group)),
   list(label = "ToothGrowth len by dose",
-       values = ToothGrowth$len, groups = as.character(ToothGrowth$dose))
+       values = ToothGrowth$len, groups = as.character(ToothGrowth$dose)),
+  list(label = "chickwts weight by feed",
+       values = chickwts$weight, groups = as.character(chickwts$feed)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt))
 )
 
 for (c in tukey_cases) {
@@ -359,7 +437,11 @@ gh_cases <- list(
   list(label = "iris Sepal.Width by Species",
        values = iris$Sepal.Width, groups = as.character(iris$Species)),
   list(label = "chickwts weight by feed",
-       values = chickwts$weight, groups = as.character(chickwts$feed))
+       values = chickwts$weight, groups = as.character(chickwts$feed)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "morley Speed by Expt",
+       values = morley$Speed, groups = as.character(morley$Expt))
 )
 
 for (c in gh_cases) {
@@ -379,7 +461,13 @@ dunn_cases <- list(
   list(label = "InsectSprays count by spray",
        values = InsectSprays$count, groups = as.character(InsectSprays$spray)),
   list(label = "PlantGrowth weight by group",
-       values = PlantGrowth$weight, groups = as.character(PlantGrowth$group))
+       values = PlantGrowth$weight, groups = as.character(PlantGrowth$group)),
+  list(label = "chickwts weight by feed",
+       values = chickwts$weight, groups = as.character(chickwts$feed)),
+  list(label = "ChickWeight@21 weight by Diet",
+       values = cw21$weight, groups = as.character(cw21$Diet)),
+  list(label = "OrchardSprays decrease by treatment",
+       values = OrchardSprays$decrease, groups = as.character(OrchardSprays$treatment))
 )
 
 for (c in dunn_cases) {

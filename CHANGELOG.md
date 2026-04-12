@@ -13,13 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Shapiro-Wilk, Brown-Forsythe Levene, Student/Welch t, Mann-Whitney U, one-way
   ANOVA, Welch ANOVA, Kruskal-Wallis, Tukey HSD, Games-Howell, Dunn (BH)) on real
   built-in R datasets (iris, PlantGrowth, ToothGrowth, mtcars, chickwts,
-  InsectSprays, sleep, women, trees, airquality, warpbreaks) and writes
-  reference values + bit-identical inputs to `benchmark/results-r.json`.
-  `benchmark/run.js` then loads `tools/stats.js` in a Node VM, reruns the same
-  tests on the same inputs, and emits `benchmark.html` at the repo root with
-  per-category tables. Failures (|Δ| > 5×10⁻³) render as red rows — no
-  whitewashing. Reproduce with `npm run benchmark`. Initial run: 123
-  comparisons, all passing, max |Δ| ≈ 3.6×10⁻⁷.
+  InsectSprays, sleep, women, trees, airquality, warpbreaks, faithful, quakes,
+  USArrests, swiss, morley, CO2, LakeHuron, attitude, precip, ChickWeight,
+  OrchardSprays) and writes reference values + bit-identical inputs to
+  `benchmark/results-r.json`. `benchmark/run.js` then loads `tools/stats.js`
+  in a Node VM, reruns the same tests on the same inputs, and emits
+  `benchmark.html` at the repo root with per-category tables. Failures
+  (|Δ| > 5×10⁻³) render as red rows — no whitewashing. Reproduce with
+  `npm run benchmark`. Current run: **285 comparisons, all passing, max
+  |Δ| ≈ 8.2×10⁻⁷**.
 - **Landing page benchmark link** — replaced the Mark Twain quote at the bottom
   of `index.html` with a one-liner advertising the test count and a link to
   `benchmark.html`. Humour doesn't translate; verifiable cross-validation does.
