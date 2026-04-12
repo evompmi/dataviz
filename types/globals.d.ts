@@ -174,6 +174,7 @@ declare global {
     i: number;
     j: number;
     p?: number;
+    pAdj?: number;
     label?: string;
     _level?: number;
   }
