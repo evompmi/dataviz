@@ -2262,8 +2262,6 @@ function App() {
   const [valueRenames, setValueRenames] = useState({});
 
   // Visual settings
-  const urlStyle =
-    typeof location !== "undefined" ? new URLSearchParams(location.search).get("style") : null;
   const visInit = {
     plotTitle: "",
     yLabel: "Value",
@@ -2281,7 +2279,7 @@ function App() {
     yMinCustom: "",
     yMaxCustom: "",
     showCompPie: false,
-    plotStyle: urlStyle === "bar" ? "bar" : "box",
+    plotStyle: "box",
     // bar-specific
     errorType: "sem",
     errStrokeWidth: 1.2,
@@ -2653,7 +2651,7 @@ function App() {
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
 
-  const fileStem = vis.plotStyle === "bar" ? "bargraph" : "boxplot";
+  const fileStem = "groupplot";
   const handleDownloadSvg = useCallback(() => {
     if (facetByCol >= 0 && facetedData.length > 0) {
       facetedData.forEach((fd) =>

@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **Dead `bargraph.tsx`** — deleted the 1,984-line orphan source file that was never built after bar chart functionality was merged into `boxplot.tsx`. The `bargraph.html` redirect to `boxplot.html?style=bar` is unchanged.
+- **Bargraph remnants** — deleted `bargraph.tsx` (1,984-line dead source), `bargraph.html` (redirect shim), the unused `bargraph` icon from `TOOL_ICONS`, and the `?style=bar` URL parameter handling in boxplot. The merge into Group Plot is now complete.
 
 ### Fixed
 
