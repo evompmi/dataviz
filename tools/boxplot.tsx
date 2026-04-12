@@ -647,8 +647,22 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
 
       {yTicks.map((t) => (
         <g key={t}>
-          <line x1={MChart.left - 5} x2={MChart.left} y1={sy(t)} y2={sy(t)} stroke="#333" strokeWidth="1" />
-          <text x={MChart.left - 8} y={sy(t) + 4} textAnchor="end" fontSize="11" fill="#555" fontFamily="sans-serif">
+          <line
+            x1={MChart.left - 5}
+            x2={MChart.left}
+            y1={sy(t)}
+            y2={sy(t)}
+            stroke="#333"
+            strokeWidth="1"
+          />
+          <text
+            x={MChart.left - 8}
+            y={sy(t) + 4}
+            textAnchor="end"
+            fontSize="11"
+            fill="#555"
+            fontFamily="sans-serif"
+          >
             {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
           </text>
         </g>
@@ -666,11 +680,46 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
 
         return (
-          <g key={g.name} role="group" aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}>
-            <rect x={cx - halfBar} y={yBar} width={halfBar * 2} height={Math.max(0, barH)} fill={g.color} fillOpacity={barOpacity} stroke={showBarOutline ? g.color : "none"} strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0} rx="1" />
-            <line x1={cx} x2={cx} y1={sy(mean + errVal)} y2={sy(mean - errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
-            <line x1={cx - halfBar * 0.4} x2={cx + halfBar * 0.4} y1={sy(mean + errVal)} y2={sy(mean + errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
-            <line x1={cx - halfBar * 0.4} x2={cx + halfBar * 0.4} y1={sy(mean - errVal)} y2={sy(mean - errVal)} stroke="#333" strokeWidth={errStrokeWidth || 1.2} />
+          <g
+            key={g.name}
+            role="group"
+            aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
+          >
+            <rect
+              x={cx - halfBar}
+              y={yBar}
+              width={halfBar * 2}
+              height={Math.max(0, barH)}
+              fill={g.color}
+              fillOpacity={barOpacity}
+              stroke={showBarOutline ? g.color : "none"}
+              strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
+              rx="1"
+            />
+            <line
+              x1={cx}
+              x2={cx}
+              y1={sy(mean + errVal)}
+              y2={sy(mean - errVal)}
+              stroke="#333"
+              strokeWidth={errStrokeWidth || 1.2}
+            />
+            <line
+              x1={cx - halfBar * 0.4}
+              x2={cx + halfBar * 0.4}
+              y1={sy(mean + errVal)}
+              y2={sy(mean + errVal)}
+              stroke="#333"
+              strokeWidth={errStrokeWidth || 1.2}
+            />
+            <line
+              x1={cx - halfBar * 0.4}
+              x2={cx + halfBar * 0.4}
+              y1={sy(mean - errVal)}
+              y2={sy(mean - errVal)}
+              stroke="#333"
+              strokeWidth={errStrokeWidth || 1.2}
+            />
 
             {showPoints &&
               g.sources.map((src, si) => {
@@ -679,9 +728,20 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
                 return src.values.map((v, vi) => {
                   const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
                   const cat = src.categories?.[vi];
-                  const ptColor = catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
+                  const ptColor =
+                    catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
                   return (
-                    <circle key={`${g.name}-${si}-${vi}`} cx={cx + jitter} cy={sy(v)} r={pointSize} fill={ptColor} fillOpacity={pointOpacity || 0.6} stroke={ptColor} strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)} strokeWidth="0.3" />
+                    <circle
+                      key={`${g.name}-${si}-${vi}`}
+                      cx={cx + jitter}
+                      cy={sy(v)}
+                      r={pointSize}
+                      fill={ptColor}
+                      fillOpacity={pointOpacity || 0.6}
+                      stroke={ptColor}
+                      strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
+                      strokeWidth="0.3"
+                    />
                   );
                 });
               })}
@@ -689,14 +749,35 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         );
       })}
 
-      <rect x={MChart.left} y={MChart.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
+      <rect
+        x={MChart.left}
+        y={MChart.top}
+        width={w}
+        height={h}
+        fill="none"
+        stroke="#333"
+        strokeWidth="1"
+      />
 
-      {annotations && annotations.kind === "cld" &&
+      {annotations &&
+        annotations.kind === "cld" &&
         (annotations.labels || []).map((lbl, gi) => (
-          <text key={`cld-${gi}`} x={bx(gi)} y={MChart.top + 15} textAnchor="middle" fontSize="13" fontWeight="700" fill="#222" fontFamily="sans-serif">{lbl}</text>
+          <text
+            key={`cld-${gi}`}
+            x={bx(gi)}
+            y={MChart.top + 15}
+            textAnchor="middle"
+            fontSize="13"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {lbl}
+          </text>
         ))}
 
-      {annotations && annotations.kind === "brackets" &&
+      {annotations &&
+        annotations.kind === "brackets" &&
         annotPairs.map((pr, idx) => {
           const x1 = bx(pr.i);
           const x2 = bx(pr.j);
@@ -705,8 +786,23 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
           const tick = 4;
           return (
             <g key={`br-${idx}`}>
-              <path d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`} stroke="#333" strokeWidth="1" fill="none" />
-              <text x={(x1 + x2) / 2} y={yLine - 2} textAnchor="middle" fontSize="12" fontWeight="700" fill="#222" fontFamily="sans-serif">{pr.label}</text>
+              <path
+                d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                stroke="#333"
+                strokeWidth="1"
+                fill="none"
+              />
+              <text
+                x={(x1 + x2) / 2}
+                y={yLine - 2}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight="700"
+                fill="#222"
+                fontFamily="sans-serif"
+              >
+                {pr.label}
+              </text>
             </g>
           );
         })}
@@ -717,21 +813,70 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         const angled = angle !== 0;
         return (
           <g key={`xl-${g.name}`} transform={`translate(${lx},${ly}) rotate(${angle})`}>
-            <text x={0} y={0} textAnchor={angled ? "end" : "middle"} dominantBaseline={angled ? "middle" : "hanging"} fontSize="11" fill="#333" fontFamily="sans-serif" fontWeight="600">{g.name}</text>
-            <text x={0} y={14} textAnchor={angled ? "end" : "middle"} dominantBaseline={angled ? "middle" : "hanging"} fontSize="9" fill="#999" fontFamily="sans-serif">{`n=${g.stats?.n || 0}`}</text>
+            <text
+              x={0}
+              y={0}
+              textAnchor={angled ? "end" : "middle"}
+              dominantBaseline={angled ? "middle" : "hanging"}
+              fontSize="11"
+              fill="#333"
+              fontFamily="sans-serif"
+              fontWeight="600"
+            >
+              {g.name}
+            </text>
+            <text
+              x={0}
+              y={14}
+              textAnchor={angled ? "end" : "middle"}
+              dominantBaseline={angled ? "middle" : "hanging"}
+              fontSize="9"
+              fill="#999"
+              fontFamily="sans-serif"
+            >{`n=${g.stats?.n || 0}`}</text>
           </g>
         );
       })}
 
       {yLabel && (
-        <text transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`} textAnchor="middle" fontSize="13" fill="#444" fontFamily="sans-serif">{yLabel}</text>
+        <text
+          transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`}
+          textAnchor="middle"
+          fontSize="13"
+          fill="#444"
+          fontFamily="sans-serif"
+        >
+          {yLabel}
+        </text>
       )}
 
       {plotTitle && (
-        <text x={MChart.left + w / 2} y={14} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>
+        <text
+          x={MChart.left + w / 2}
+          y={14}
+          textAnchor="middle"
+          fontSize="15"
+          fontWeight="700"
+          fill="#222"
+          fontFamily="sans-serif"
+        >
+          {plotTitle}
+        </text>
       )}
-      {renderSvgLegend(svgLegend, vbH_chart + 10, MChart.left, vbW - MChart.left - MChart.right, 88, 14)}
-      {renderStatsSummary(statsSummary, vbH_chart + legendH, MChart.left, vbW - MChart.left - MChart.right)}
+      {renderSvgLegend(
+        svgLegend,
+        vbH_chart + 10,
+        MChart.left,
+        vbW - MChart.left - MChart.right,
+        88,
+        14
+      )}
+      {renderStatsSummary(
+        statsSummary,
+        vbH_chart + legendH,
+        MChart.left,
+        vbW - MChart.left - MChart.right
+      )}
     </svg>
   );
 });
@@ -785,7 +930,9 @@ function UploadStep({
         >
           {toolIcon("boxplot", 24, { circle: true })}
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>Group Plot — How to use</div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+              Group Plot — How to use
+            </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
               Long or wide data → auto-detect → box / violin / raincloud / bar charts
             </div>
@@ -822,10 +969,11 @@ function UploadStep({
               Purpose
             </div>
             <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
-              An all-in-one group comparison tool that accepts <strong>both long and wide formats</strong>.
-              Switch between box, violin, raincloud, and bar chart (mean ± SEM/SD) styles from the
-              plot controls. Wide data is auto-detected and goes straight to plot. Long data gets
-              the full pipeline: assign column roles, filter, rename, reorder, then plot.
+              An all-in-one group comparison tool that accepts{" "}
+              <strong>both long and wide formats</strong>. Switch between box, violin, raincloud,
+              and bar chart (mean ± SEM/SD) styles from the plot controls. Wide data is
+              auto-detected and goes straight to plot. Long data gets the full pipeline: assign
+              column roles, filter, rename, reorder, then plot.
             </p>
           </div>
           <div
@@ -1106,9 +1254,9 @@ function UploadStep({
           >
             <span style={{ fontSize: 11, fontWeight: 700, color: "#3b6cf7" }}>💡 Tip — </span>
             <span style={{ fontSize: 11, color: "#444" }}>
-              Wide-format files (all-numeric columns, headers = group names) are
-              auto-detected and go straight to plot. For long-format, you can facet by one column
-              while coloring points by another.
+              Wide-format files (all-numeric columns, headers = group names) are auto-detected and
+              go straight to plot. For long-format, you can facet by one column while coloring
+              points by another.
             </span>
           </div>
           <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1568,7 +1716,9 @@ function PlotControls({
           onGridColorChange={sv("gridColor")}
         />
         <SliderControl
-          label={vis.plotStyle === "box" ? "Box width" : vis.plotStyle === "bar" ? "Bar width" : "Width"}
+          label={
+            vis.plotStyle === "box" ? "Box width" : vis.plotStyle === "bar" ? "Bar width" : "Width"
+          }
           value={vis.boxWidth}
           displayValue={vis.boxWidth + "%"}
           min={20}
@@ -1603,7 +1753,18 @@ function PlotControls({
               <select
                 value={vis.errorType}
                 onChange={(e) => updVis({ errorType: e.target.value })}
-                style={{ width: "100%", background: "#fff", border: "1px solid #ccc", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontFamily: "inherit", color: "#333", cursor: "pointer", marginTop: 2 }}
+                style={{
+                  width: "100%",
+                  background: "#fff",
+                  border: "1px solid #ccc",
+                  borderRadius: 4,
+                  padding: "4px 8px",
+                  fontSize: 12,
+                  fontFamily: "inherit",
+                  color: "#333",
+                  cursor: "pointer",
+                  marginTop: 2,
+                }}
               >
                 <option value="sem">SEM</option>
                 <option value="sd">SD</option>
@@ -1853,9 +2014,16 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
           ({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)
         </span>
       </div>
-      {chartProps.plotStyle === "bar"
-        ? <BarChart ref={localRef} {...chartProps} barWidth={chartProps.boxWidth} catColors={chartProps.categoryColors} />
-        : <BoxplotChart ref={localRef} {...chartProps} />}
+      {chartProps.plotStyle === "bar" ? (
+        <BarChart
+          ref={localRef}
+          {...chartProps}
+          barWidth={chartProps.boxWidth}
+          catColors={chartProps.categoryColors}
+        />
+      ) : (
+        <BoxplotChart ref={localRef} {...chartProps} />
+      )}
     </div>
   );
 });
@@ -2099,9 +2267,8 @@ function App() {
   const [valueRenames, setValueRenames] = useState({});
 
   // Visual settings
-  const urlStyle = typeof location !== "undefined"
-    ? new URLSearchParams(location.search).get("style")
-    : null;
+  const urlStyle =
+    typeof location !== "undefined" ? new URLSearchParams(location.search).get("style") : null;
   const visInit = {
     plotTitle: "",
     yLabel: "Value",

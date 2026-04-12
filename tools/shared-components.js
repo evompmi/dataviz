@@ -1976,7 +1976,10 @@ function _computePower(chosenTest, values) {
       let needed = null;
       if (d > 0) {
         for (let n = 2; n <= 5000; n++) {
-          if (powerTwoSample(d, n, alpha, 2) >= target) { needed = n; break; }
+          if (powerTwoSample(d, n, alpha, 2) >= target) {
+            needed = n;
+            break;
+          }
         }
       }
       return { alpha: alpha, achieved: achieved, nForTarget: needed };
@@ -1999,8 +2002,15 @@ function _computePower(chosenTest, values) {
     const kk = values.length;
     if (kk < 2) return null;
     const means = values.map(sampleMean);
-    const ns = values.map(function (v) { return v.length; });
-    if (ns.some(function (n) { return n < 2; })) return null;
+    const ns = values.map(function (v) {
+      return v.length;
+    });
+    if (
+      ns.some(function (n) {
+        return n < 2;
+      })
+    )
+      return null;
     let ssW = 0,
       dfW = 0;
     for (let i = 0; i < kk; i++) {
@@ -2010,14 +2020,21 @@ function _computePower(chosenTest, values) {
     }
     const sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
     const f = fFromGroupMeans(means, sp);
-    const nh = kk / ns.reduce(function (a, b) { return a + 1 / b; }, 0);
+    const nh =
+      kk /
+      ns.reduce(function (a, b) {
+        return a + 1 / b;
+      }, 0);
     const nEff = Math.max(2, Math.round(nh));
     const rows = alphas.map(function (alpha) {
       const achieved = powerAnova(f, nEff, alpha, kk);
       let needed = null;
       if (f > 0) {
         for (let n = 2; n <= 5000; n++) {
-          if (powerAnova(f, n, alpha, kk) >= target) { needed = n; break; }
+          if (powerAnova(f, n, alpha, kk) >= target) {
+            needed = n;
+            break;
+          }
         }
       }
       return { alpha: alpha, achieved: achieved, nForTarget: needed };
@@ -2124,26 +2141,40 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   }, [showOnPlot, annotKind, k, testResult, postHocResult, names]);
 
   // Build a plain-text stats summary for display below the plot.
-  const statsSummary = React.useMemo(function () {
-    if (!showOnPlot || !chosenTest || !testResult || testResult.error) return null;
-    const parts = [];
-    parts.push((STATS_LABELS[chosenTest] || chosenTest) + ": " + _formatTestLine(chosenTest, testResult));
-    if (k > 2 && postHocResult && !postHocResult.error) {
-      const phLabel = POSTHOC_LABELS[postHocName] || postHocName;
-      parts.push("Post-hoc: " + phLabel);
-      postHocResult.pairs.forEach(function (pr) {
-        const p = pr.pAdj != null ? pr.pAdj : pr.p;
+  const statsSummary = React.useMemo(
+    function () {
+      if (!showOnPlot || !chosenTest || !testResult || testResult.error) return null;
+      const parts = [];
+      parts.push(
+        (STATS_LABELS[chosenTest] || chosenTest) + ": " + _formatTestLine(chosenTest, testResult)
+      );
+      if (k > 2 && postHocResult && !postHocResult.error) {
+        const phLabel = POSTHOC_LABELS[postHocName] || postHocName;
+        parts.push("Post-hoc: " + phLabel);
+        postHocResult.pairs.forEach(function (pr) {
+          const p = pr.pAdj != null ? pr.pAdj : pr.p;
+          parts.push(
+            "  " + names[pr.i] + " vs " + names[pr.j] + ": p = " + formatP(p) + " " + pStars(p)
+          );
+        });
+      }
+      if (powerResult) {
         parts.push(
-          "  " + names[pr.i] + " vs " + names[pr.j] + ": p = " + formatP(p) + " " + pStars(p)
+          "Effect size: " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
         );
-      });
-    }
-    if (powerResult) {
-      parts.push("Effect size: " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3));
-    }
-    parts.push("n per group: " + names.map(function (n, i) { return n + "=" + values[i].length; }).join(", "));
-    return parts.join("\n");
-  }, [showOnPlot, chosenTest, testResult, k, postHocResult, postHocName, names, powerResult, values]);
+      }
+      parts.push(
+        "n per group: " +
+          names
+            .map(function (n, i) {
+              return n + "=" + values[i].length;
+            })
+            .join(", ")
+      );
+      return parts.join("\n");
+    },
+    [showOnPlot, chosenTest, testResult, k, postHocResult, postHocName, names, powerResult, values]
+  );
 
   // Emit annotations to the parent. We hold the latest spec in a ref and
   // fire the effect only when its serialized form changes, so unrelated
@@ -2163,9 +2194,12 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   latestSummary.current = statsSummary;
   const onSummaryRef = React.useRef(onStatsSummaryChange);
   onSummaryRef.current = onStatsSummaryChange;
-  React.useEffect(function () {
-    if (typeof onSummaryRef.current === "function") onSummaryRef.current(latestSummary.current);
-  }, [summaryKey]);
+  React.useEffect(
+    function () {
+      if (typeof onSummaryRef.current === "function") onSummaryRef.current(latestSummary.current);
+    },
+    [summaryKey]
+  );
 
   // Nothing to show.
   if (k < 2) return null;
