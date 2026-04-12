@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Statistical benchmark vs R** — `benchmark/run-r.R` runs 11 statistical tests
+  (Shapiro-Wilk, Brown-Forsythe Levene, Student/Welch t, Mann-Whitney U, one-way
+  ANOVA, Welch ANOVA, Kruskal-Wallis, Tukey HSD, Games-Howell, Dunn (BH)) on real
+  built-in R datasets (iris, PlantGrowth, ToothGrowth, mtcars, chickwts,
+  InsectSprays, sleep, women, trees, airquality, warpbreaks) and writes
+  reference values + bit-identical inputs to `benchmark/results-r.json`.
+  `benchmark/run.js` then loads `tools/stats.js` in a Node VM, reruns the same
+  tests on the same inputs, and emits `benchmark.html` at the repo root with
+  per-category tables. Failures (|Δ| > 5×10⁻³) render as red rows — no
+  whitewashing. Reproduce with `npm run benchmark`. Initial run: 123
+  comparisons, all passing, max |Δ| ≈ 3.6×10⁻⁷.
+- **Landing page benchmark link** — replaced the Mark Twain quote at the bottom
+  of `index.html` with a one-liner advertising the test count and a link to
+  `benchmark.html`. Humour doesn't translate; verifiable cross-validation does.
+
 - **Aequorin example dataset** — "Load example dataset" link in the aequorin upload panel, wired to `tools/aequorin_example.tsv` (real CO7 elicitor time-course, mutant vs WT, with Ca²⁺ discharge calibration at the end). Fetched on click so it doesn't bloat the main bundle. New users can see a populated time-course, run Allen & Blinks calibration, and exercise the integral barplot + StatsTile in one click.
 - **Aequorin StatsTile** — the aequorin tool now includes a full statistical analysis tile below the integral barplot, reusing the same StatsTile component as Group Plot. Supports Shapiro-Wilk, Levene, recommended test selection, post-hoc tables, compact letter display, and significance brackets — all driven by per-replicate integral sums.
 - **Aequorin jitter points** — optional jittered data-point overlay on the integral barplot, with color picker and size slider in the control panel.
