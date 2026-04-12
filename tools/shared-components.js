@@ -2108,16 +2108,15 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
       const labels = compactLetterDisplay(postHocResult.pairs, k);
       return { kind: "cld", labels, groupNames: names };
     }
-    // Brackets: only draw significant pairs (α = 0.05), prefer pAdj if present.
-    const sig = postHocResult.pairs
+    // Brackets: draw all pairs, prefer pAdj if present.
+    const all = postHocResult.pairs
       .map((pr) => ({
         i: pr.i,
         j: pr.j,
         p: pr.pAdj != null ? pr.pAdj : pr.p,
       }))
-      .filter((pr) => pr.p < 0.05)
       .map((pr) => ({ ...pr, label: pStars(pr.p) }));
-    return { kind: "brackets", pairs: sig, groupNames: names };
+    return { kind: "brackets", pairs: all, groupNames: names };
   }, [showOnPlot, annotKind, k, testResult, postHocResult, names]);
 
   // Emit annotations to the parent. We hold the latest spec in a ref and
