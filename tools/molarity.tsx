@@ -1119,8 +1119,10 @@ function App() {
             activeBg="#f5f3ff"
             onClick={() => setMode(m.key)}
             style={{
-              flex: "0 1 auto",
-              width: `calc(${100 / chemModes.length}% - ${(10 * (chemModes.length - 1)) / chemModes.length}px)`,
+              flex: compact ? 1 : "0 1 auto",
+              width: compact
+                ? undefined
+                : `calc(${100 / chemModes.length}% - ${(10 * (chemModes.length - 1)) / chemModes.length}px)`,
             }}
           />
         ))}
