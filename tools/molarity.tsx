@@ -1058,7 +1058,7 @@ function App() {
   const dnaColor = "#785EF0";
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: compact ? "16px 10px" : "32px 20px" }}>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: compact ? "16px 10px 80px" : "32px 20px" }}>
       <PageHeader
         toolName="molarity"
         title="Calculator"

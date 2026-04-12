@@ -481,17 +481,47 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     plotSubtitle,
     corrected,
     replicateSums,
+    annotations,
+    statsSummary,
+    showPoints,
+    pointSize,
+    pointColor,
   },
   ref
 ) {
-  const iW = insetW || 200,
-    iH = insetH || 150;
+  const iW = insetW || 400,
+    iH = insetH || 200;
   const topPad = (plotTitle ? 20 : 0) + (plotSubtitle ? 16 : 0);
   const xAngle = insetXLabelAngle || 0;
   const absAngle = Math.abs(xAngle);
-  const M = { top: 12, right: 8, bottom: 20 + (absAngle > 0 ? absAngle * 0.6 + 10 : 12), left: 46 };
+
+  const annotPairs =
+    annotations && annotations.kind === "brackets"
+      ? assignBracketLevels(annotations.pairs || [])
+      : [];
+  const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
+  const annotTopPad =
+    annotations && annotations.kind === "cld"
+      ? 22
+      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
+        ? (annotMaxLevel + 1) * 20 + 6
+        : 0;
+
+  // Stats summary below chart
+  const STATS_LINE_H = 11;
+  const STATS_FONT = 8;
+  const summaryLines = statsSummary ? statsSummary.split("\n") : [];
+  const summaryH = summaryLines.length > 0 ? summaryLines.length * STATS_LINE_H + 14 : 0;
+
+  const M = {
+    top: 24,
+    right: 24,
+    bottom: 60 + (absAngle > 0 ? absAngle * 0.8 : 0),
+    left: 62,
+  };
   const w = iW - M.left - M.right;
   const h = iH - M.top - M.bottom;
+  const totalH = iH + summaryH;
 
   const bars = series.map((s) => {
     const repData = replicateSums ? replicateSums.find((r) => r.prefix === s.prefix) : null;
@@ -513,6 +543,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
       sd,
       sem,
       n,
+      vals,
     };
   });
 
@@ -524,13 +555,17 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
 
   const dataMax = Math.max(...bars.map((b, i) => b.barMean + (errBars[i] || 0)), 0.001);
   const yMin2 = insetYMin != null ? insetYMin : 0;
-  const yMax2 = insetYMax != null ? insetYMax : dataMax * 1.1;
+  let yMax2 = insetYMax != null ? insetYMax : dataMax * 1.15;
+  // Reserve headroom inside the plot frame for annotations (same approach as boxplot)
+  if (annotTopPad > 0 && h > annotTopPad + 10) {
+    yMax2 = yMin2 + ((yMax2 - yMin2) * h) / (h - annotTopPad);
+  }
   const yRange = yMax2 - yMin2 || 1;
 
   const bandW = w / bars.length;
   const bx = (i) => M.left + i * bandW + bandW / 2;
   const sy = (v) => M.top + (1 - (v - yMin2) / yRange) * h;
-  const yTicks = makeTicks(yMin2, yMax2, 4);
+  const yTicks = makeTicks(yMin2, yMax2, 8);
   const halfBar = bandW * 0.35;
   const fOp = insetFillOpacity != null ? insetFillOpacity : 0.7;
   const sOp = insetStrokeOpacity != null ? insetStrokeOpacity : 1;
@@ -538,11 +573,11 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   return (
     <svg
       ref={ref}
-      viewBox={`0 0 ${iW} ${iH + topPad}`}
-      style={{ width: "100%", height: "100%", display: "block" }}
+      viewBox={`0 0 ${iW} ${totalH + topPad}`}
+      style={{ width: iW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label={plotTitle || "Inset bar plot"}
+      aria-label={plotTitle || "Bar plot"}
     >
       <title>{plotTitle || "Inset bar plot"}</title>
       {plotTitle && (
@@ -654,6 +689,25 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                   />
                 </>
               )}
+              {showPoints &&
+                b.vals &&
+                b.vals.map((v, vi) => {
+                  const rng = seededRandom(i * 1000 + vi + 42);
+                  const jitter = (rng() - 0.5) * halfBar * 1.2;
+                  return (
+                    <circle
+                      key={`pt-${i}-${vi}`}
+                      cx={bx(i) + jitter}
+                      cy={sy(v)}
+                      r={pointSize || 3}
+                      fill={pointColor || "#333"}
+                      fillOpacity={0.6}
+                      stroke={pointColor || "#333"}
+                      strokeOpacity={0.75}
+                      strokeWidth="0.3"
+                    />
+                  );
+                })}
               {absAngle === 0 ? (
                 <text
                   x={bx(i)}
@@ -693,16 +747,86 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
           stroke="#333"
           strokeWidth="0.5"
         />
+        {/* CLD annotations — inside the plot frame, above bars */}
+        {annotations &&
+          annotations.kind === "cld" &&
+          annotations.letters &&
+          annotations.letters.map((letter, i) => {
+            if (i >= bars.length) return null;
+            const top = sy(bars[i].barMean + (errBars[i] || 0));
+            return (
+              <text
+                key={`cld-${i}`}
+                x={bx(i)}
+                y={top - 6}
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight="700"
+                fill="#333"
+                fontFamily="sans-serif"
+              >
+                {letter}
+              </text>
+            );
+          })}
+        {/* Bracket annotations — inside the plot frame (same layout as boxplot) */}
+        {annotations &&
+          annotations.kind === "brackets" &&
+          annotPairs.map((pr, pi) => {
+            const x1 = bx(pr.i);
+            const x2 = bx(pr.j);
+            const lvl = pr._level || 0;
+            const yLine = M.top + annotTopPad - 6 - lvl * 20;
+            const tick = 4;
+            const p = pr.pAdj != null ? pr.pAdj : pr.p;
+            const label =
+              p >= 0.05 ? "ns" : p < 0.0001 ? "****" : p < 0.001 ? "***" : p < 0.01 ? "**" : "*";
+            return (
+              <g key={`br-${pi}`}>
+                <path
+                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                  stroke="#333"
+                  strokeWidth="1"
+                  fill="none"
+                />
+                <text
+                  x={(x1 + x2) / 2}
+                  y={yLine - 2}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="700"
+                  fill={p >= 0.05 ? "#999" : "#333"}
+                  fontFamily="sans-serif"
+                >
+                  {label}
+                </text>
+              </g>
+            );
+          })}
         <text
-          transform={`translate(8,${M.top + h / 2}) rotate(-90)`}
+          transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
           textAnchor="middle"
-          fontSize={insetYFontSize || 7}
+          fontSize={insetYFontSize || 12}
           fill="#444"
           fontFamily="sans-serif"
         >
-          {corrected ? `\u03A3 (corrected)` : `\u03A3`}
+          {corrected ? `\u03A3 (baseline-corrected)` : `\u03A3 (raw)`}
         </text>
       </g>
+      {/* Stats summary below chart */}
+      {summaryLines.length > 0 &&
+        summaryLines.map((line, i) => (
+          <text
+            key={`ss-${i}`}
+            x={M.left}
+            y={iH + topPad + 10 + i * STATS_LINE_H}
+            fontSize={STATS_FONT}
+            fill="#aaa"
+            fontFamily="monospace"
+          >
+            {line}
+          </text>
+        ))}
     </svg>
   );
 });
@@ -764,6 +888,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     insetXFontSize,
     insetYFontSize,
     insetXLabelAngle,
+    insetShowPoints,
+    insetPointSize,
+    insetPointColor,
     formula,
     replicateSums,
     fileName,
@@ -773,6 +900,23 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const activeStats = stats.filter((s) => s.enabled);
   const combinedRef = useRef();
   const facetRefs = useRef({});
+  const [statsDataMode, setStatsDataMode] = useState<"raw" | "corrected">("corrected");
+  const [statsAnnotations, setStatsAnnotations] = useState(null);
+  const [statsSummary, setStatsSummary] = useState<string | null>(null);
+  const [chartOpen, setChartOpen] = useState(true);
+  const barRef = useRef();
+
+  const statsGroups = useMemo(() => {
+    if (!showInset || !replicateSums || replicateSums.length < 2) return null;
+    // Only include conditions that are enabled (match activeStats)
+    const activeLabels = new Set(activeStats.map((s) => s.prefix));
+    const filtered = replicateSums.filter((rs) => activeLabels.has(rs.prefix));
+    if (filtered.length < 2) return null;
+    return filtered.map((rs) => ({
+      name: rs.label,
+      values: rs.repSums.map((rep) => (statsDataMode === "raw" ? rep.rawSum : rep.corrSum)),
+    }));
+  }, [showInset, replicateSums, activeStats, statsDataMode]);
 
   const series = useMemo(() => {
     if (activeStats.length === 0) return [];
@@ -818,9 +962,6 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     }));
   }, [series, ts, convFactor]);
 
-  const insetBarRef = useRef();
-  const insetBarCorrRef = useRef();
-
   React.useImperativeHandle(
     ref,
     () => ({
@@ -830,9 +971,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
         } else {
           downloadSvg(combinedRef.current, "combined_plot.svg");
         }
-        if (showInset) {
-          downloadSvg(insetBarRef.current, "barplot_sum.svg");
-          downloadSvg(insetBarCorrRef.current, "barplot_sum_corrected.svg");
+        if (showInset && barRef.current) {
+          const suffix = statsDataMode === "raw" ? "raw" : "corrected";
+          downloadSvg(barRef.current, `barplot_sum_${suffix}.svg`);
         }
       },
       downloadMainPng: () => {
@@ -841,13 +982,13 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
         } else {
           downloadPng(combinedRef.current, "combined_plot.png");
         }
-        if (showInset) {
-          downloadPng(insetBarRef.current, "barplot_sum.png");
-          downloadPng(insetBarCorrRef.current, "barplot_sum_corrected.png");
+        if (showInset && barRef.current) {
+          const suffix = statsDataMode === "raw" ? "raw" : "corrected";
+          downloadPng(barRef.current, `barplot_sum_${suffix}.png`);
         }
       },
     }),
-    [faceted, displaySeries, showInset]
+    [faceted, displaySeries, showInset, statsDataMode]
   );
 
   const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
@@ -881,328 +1022,316 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     replicateSums,
   };
 
-  const BarTiles = showInset ? (
-    <div style={{ display: "flex", gap: 16, marginTop: 16 }}>
-      {/* Raw column */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-        <div
+  const isCorrected = statsDataMode === "corrected";
+  const modeColor = isCorrected ? "#0f766e" : "#1d4ed8";
+  const modeBg = isCorrected ? "#f0fdfa" : "#eff6ff";
+  const modeBorder = isCorrected ? "#99f6e4" : "#bfdbfe";
+  const sumKey = isCorrected ? "corrSum" : "rawSum";
+  const sumLabel = isCorrected ? "Corrected Sum" : "Raw Sum";
+  const csvFileName = isCorrected ? `corrected_sums_${baseName}.csv` : `raw_sums_${baseName}.csv`;
+
+  const IntegralTile = showInset ? (
+    <div
+      style={{
+        marginTop: 16,
+        borderRadius: 10,
+        padding: 16,
+        border: `1px solid ${modeBorder}`,
+        background: modeBg,
+      }}
+    >
+      {/* Toggle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Integral:</span>
+        <button
+          onClick={() => setStatsDataMode("raw")}
           style={{
-            borderRadius: 10,
-            padding: 14,
-            border: "1px solid #bfdbfe",
-            background: "#eff6ff",
+            padding: "5px 14px",
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            background: statsDataMode === "raw" ? "#1d4ed8" : "#fff",
+            color: statsDataMode === "raw" ? "#fff" : "#888",
+            border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "#ccc"}`,
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
-          <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "#1d4ed8" }}>
-            Σ Raw
-          </p>
-          <InsetBarplot
-            ref={insetBarRef}
-            {...insetBarProps}
-            insetYMin={insetYMin}
-            insetYMax={insetYMax}
-            corrected={false}
-          />
-        </div>
-        {replicateSums && replicateSums.length > 0 && (
-          <div
-            style={{
-              borderRadius: 10,
-              padding: 14,
-              border: "1px solid #bfdbfe",
-              background: "#eff6ff",
-              flex: 1,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#1d4ed8" }}>
-                Σ Raw — per replicate
-              </p>
-              <button
-                onClick={(e) => {
-                  const rows = replicateSums.flatMap((rs) =>
-                    rs.repSums.map((rep, ri) => [
-                      rs.prefix,
-                      `Rep ${ri + 1}`,
-                      rep.rawSum != null ? rep.rawSum.toFixed(6) : "",
-                    ])
-                  );
-                  downloadCsv(
-                    ["Condition", "Replicate", "Raw Sum"],
-                    rows,
-                    `raw_sums_${baseName}.csv`
-                  );
-                  flashSaved(e.currentTarget);
-                }}
-                style={{
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  fontSize: 11,
-                  cursor: "pointer",
-                  background: "#16a34a",
-                  border: "none",
-                  color: "#fff",
-                  fontFamily: "inherit",
-                  fontWeight: 600,
-                }}
-              >
-                ⬇ CSV
-              </button>
-            </div>
-            <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid #bfdbfe" }}>
-                  {["Condition", "Replicate", "Raw Sum"].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "3px 8px",
-                        textAlign: "left",
-                        color: "#1d4ed8",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {replicateSums.map((rs) =>
-                  rs.repSums.map((rep, ri) => (
-                    <tr key={`${rs.prefix}-${ri}`} style={{ borderBottom: "1px solid #dbeafe" }}>
-                      <td style={{ padding: "3px 8px", color: "#334155", fontWeight: 600 }}>
-                        {rs.label}
-                      </td>
-                      <td style={{ padding: "3px 8px", color: "#64748b" }}>Rep {ri + 1}</td>
-                      <td style={{ padding: "3px 8px", color: "#1e40af", fontFamily: "monospace" }}>
-                        {rep.rawSum != null ? rep.rawSum.toFixed(4) : "—"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-      {/* Corrected column */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-        <div
+          Σ Raw
+        </button>
+        <button
+          onClick={() => setStatsDataMode("corrected")}
           style={{
-            borderRadius: 10,
-            padding: 14,
-            border: "1px solid #99f6e4",
-            background: "#f0fdfa",
+            padding: "5px 14px",
+            borderRadius: 6,
+            fontSize: 12,
+            fontWeight: 600,
+            background: statsDataMode === "corrected" ? "#0f766e" : "#fff",
+            color: statsDataMode === "corrected" ? "#fff" : "#888",
+            border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "#ccc"}`,
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
-          <p style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 600, color: "#0f766e" }}>
-            Σ Baseline-corrected
-          </p>
-          <InsetBarplot
-            ref={insetBarCorrRef}
-            {...insetBarProps}
-            insetYMin={insetYMin}
-            insetYMax={insetYMax}
-            corrected={true}
-          />
-        </div>
-        {replicateSums && replicateSums.length > 0 && (
+          Σ Baseline-corrected
+        </button>
+      </div>
+
+      {/* Bar plot */}
+      <div style={{ background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
+        <InsetBarplot
+          ref={barRef}
+          {...insetBarProps}
+          insetW={Math.max(200, series.length * 100 + 86)}
+          insetH={420}
+          insetYMin={insetYMin}
+          insetYMax={insetYMax}
+          corrected={isCorrected}
+          annotations={statsAnnotations}
+          statsSummary={statsSummary}
+          insetXFontSize={12}
+          insetYFontSize={11}
+          showPoints={insetShowPoints}
+          pointSize={insetPointSize}
+          pointColor={insetPointColor}
+        />
+      </div>
+
+      {/* CSV table */}
+      {replicateSums && replicateSums.length > 0 && (
+        <div style={{ marginTop: 12 }}>
           <div
             style={{
-              borderRadius: 10,
-              padding: 14,
-              border: "1px solid #99f6e4",
-              background: "#f0fdfa",
-              flex: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
             }}
           >
-            <div
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: modeColor }}>
+              Per replicate
+            </p>
+            <button
+              onClick={(e) => {
+                const rows = replicateSums.flatMap((rs) =>
+                  rs.repSums.map((rep, ri) => [
+                    rs.prefix,
+                    `Rep ${ri + 1}`,
+                    rep[sumKey] != null ? rep[sumKey].toFixed(6) : "",
+                  ])
+                );
+                downloadCsv(["Condition", "Replicate", sumLabel], rows, csvFileName);
+                flashSaved(e.currentTarget);
+              }}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
+                padding: "5px 10px",
+                borderRadius: 6,
+                fontSize: 11,
+                cursor: "pointer",
+                background: "#16a34a",
+                border: "none",
+                color: "#fff",
+                fontFamily: "inherit",
+                fontWeight: 600,
               }}
             >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#0f766e" }}>
-                Σ Baseline-corrected — per replicate
-              </p>
-              <button
-                onClick={(e) => {
-                  const rows = replicateSums.flatMap((rs) =>
-                    rs.repSums.map((rep, ri) => [
-                      rs.prefix,
-                      `Rep ${ri + 1}`,
-                      rep.corrSum != null ? rep.corrSum.toFixed(6) : "",
-                    ])
-                  );
-                  downloadCsv(
-                    ["Condition", "Replicate", "Corrected Sum"],
-                    rows,
-                    `corrected_sums_${baseName}.csv`
-                  );
-                  flashSaved(e.currentTarget);
-                }}
-                style={{
-                  padding: "5px 10px",
-                  borderRadius: 6,
-                  fontSize: 11,
-                  cursor: "pointer",
-                  background: "#dcfce7",
-                  border: "1px solid #86efac",
-                  color: "#166534",
-                  fontFamily: "inherit",
-                  fontWeight: 600,
-                }}
-              >
-                ⬇ CSV
-              </button>
-            </div>
-            <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid #99f6e4" }}>
-                  {["Condition", "Replicate", "Corrected Sum"].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        padding: "3px 8px",
-                        textAlign: "left",
-                        color: "#0f766e",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {replicateSums.map((rs) =>
-                  rs.repSums.map((rep, ri) => (
-                    <tr key={`${rs.prefix}-${ri}`} style={{ borderBottom: "1px solid #ccfbf1" }}>
-                      <td style={{ padding: "3px 8px", color: "#334155", fontWeight: 600 }}>
-                        {rs.label}
-                      </td>
-                      <td style={{ padding: "3px 8px", color: "#64748b" }}>Rep {ri + 1}</td>
-                      <td style={{ padding: "3px 8px", color: "#0f766e", fontFamily: "monospace" }}>
-                        {rep.corrSum != null ? rep.corrSum.toFixed(4) : "—"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+              ⬇ CSV
+            </button>
           </div>
-        )}
-      </div>
+          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+            <thead>
+              <tr style={{ borderBottom: `2px solid ${modeBorder}` }}>
+                {["Condition", "Replicate", sumLabel].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: "3px 8px",
+                      textAlign: "left",
+                      color: modeColor,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {replicateSums.map((rs) =>
+                rs.repSums.map((rep, ri) => (
+                  <tr
+                    key={`${rs.prefix}-${ri}`}
+                    style={{ borderBottom: `1px solid ${modeBorder}` }}
+                  >
+                    <td style={{ padding: "3px 8px", color: "#334155", fontWeight: 600 }}>
+                      {rs.label}
+                    </td>
+                    <td style={{ padding: "3px 8px", color: "#64748b" }}>Rep {ri + 1}</td>
+                    <td style={{ padding: "3px 8px", color: modeColor, fontFamily: "monospace" }}>
+                      {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* StatsTile */}
+      {statsGroups && (
+        <div style={{ marginTop: 12 }}>
+          <StatsTile
+            groups={statsGroups}
+            onAnnotationsChange={setStatsAnnotations}
+            onStatsSummaryChange={setStatsSummary}
+          />
+        </div>
+      )}
     </div>
   ) : null;
+
+  // ── Collapsible time-course chart tile ──
+  const ChartTile = (chartContent) => (
+    <div
+      style={{
+        borderRadius: 10,
+        border: "1px solid #ddd",
+        background: "#fafafa",
+        overflow: "hidden",
+      }}
+    >
+      <button
+        onClick={() => setChartOpen(!chartOpen)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Time-course plot</span>
+        <span style={{ fontSize: 11, color: "#999" }}>{chartOpen ? "▲ collapse" : "▼ expand"}</span>
+      </button>
+      {chartOpen && <div style={{ padding: "0 12px 12px" }}>{chartContent}</div>}
+    </div>
+  );
 
   if (faceted) {
     const nCols = Math.min(displaySeries.length, 3);
     return (
       <div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${nCols}, 1fr)`,
-            gap: 16,
-            alignItems: "stretch",
-          }}
-        >
-          {displaySeries.map((s) => {
-            const chartProps = {
-              series: [s],
-              xStart: displayXStart,
-              xEnd: displayXEnd,
-              yMin,
-              yMax,
-              vbW: 400,
-              vbH: 260,
-              xLabel: xLabelText,
-              yLabel: formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)",
-              plotBg,
-              showGrid,
-              lineWidth,
-              ribbonOpacity,
-              gridColor,
-              plotTitle: s.label,
-              svgLegend: null,
-            };
-            return (
-              <FacetChartItem key={s.prefix} s={s} facetRefs={facetRefs} chartProps={chartProps} />
-            );
-          })}
-        </div>
-        {BarTiles}
+        {ChartTile(
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${nCols}, 1fr)`,
+              gap: 16,
+              alignItems: "stretch",
+            }}
+          >
+            {displaySeries.map((s) => {
+              const chartProps = {
+                series: [s],
+                xStart: displayXStart,
+                xEnd: displayXEnd,
+                yMin,
+                yMax,
+                vbW: 400,
+                vbH: 260,
+                xLabel: xLabelText,
+                yLabel: formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)",
+                plotBg,
+                showGrid,
+                lineWidth,
+                ribbonOpacity,
+                gridColor,
+                plotTitle: s.label,
+                svgLegend: null,
+              };
+              return (
+                <FacetChartItem
+                  key={s.prefix}
+                  s={s}
+                  facetRefs={facetRefs}
+                  chartProps={chartProps}
+                />
+              );
+            })}
+          </div>
+        )}
+        {IntegralTile}
       </div>
     );
   }
 
   return (
     <div>
-      <div
-        style={{ background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}
-      >
-        <Chart
-          ref={combinedRef}
-          series={displaySeries}
-          xStart={displayXStart}
-          xEnd={displayXEnd}
-          yMin={yMin}
-          yMax={yMax}
-          vbW={800}
-          vbH={420}
-          xLabel={xLabelText}
-          yLabel={formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)"}
-          plotBg={plotBg}
-          showGrid={showGrid}
-          lineWidth={lineWidth}
-          ribbonOpacity={ribbonOpacity}
-          gridColor={gridColor}
-          plotTitle={title || null}
-          plotSubtitle={subtitle || null}
-          svgLegend={[
-            {
-              title: null,
-              items: displaySeries.map((s) => ({
-                label: `${s.label} (n=${s.n})`,
-                color: s.color,
-                shape: "line",
-              })),
-            },
-          ]}
-        />
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 16,
-            justifyContent: "center",
-            marginTop: 8,
-            alignItems: "center",
-          }}
-        >
-          {displaySeries.map((s) => (
-            <div
-              key={s.prefix}
-              style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#444" }}
-            >
-              <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
-              {s.label} <span style={{ color: "#999" }}>number of repeats used = {s.n}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      {BarTiles}
+      {ChartTile(
+        <>
+          <Chart
+            ref={combinedRef}
+            series={displaySeries}
+            xStart={displayXStart}
+            xEnd={displayXEnd}
+            yMin={yMin}
+            yMax={yMax}
+            vbW={800}
+            vbH={420}
+            xLabel={xLabelText}
+            yLabel={formula === "none" ? "RLU (raw)" : "[Ca²⁺] (µM)"}
+            plotBg={plotBg}
+            showGrid={showGrid}
+            lineWidth={lineWidth}
+            ribbonOpacity={ribbonOpacity}
+            gridColor={gridColor}
+            plotTitle={title || null}
+            plotSubtitle={subtitle || null}
+            svgLegend={[
+              {
+                title: null,
+                items: displaySeries.map((s) => ({
+                  label: `${s.label} (n=${s.n})`,
+                  color: s.color,
+                  shape: "line",
+                })),
+              },
+            ]}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 16,
+              justifyContent: "center",
+              marginTop: 8,
+              alignItems: "center",
+            }}
+          >
+            {displaySeries.map((s) => (
+              <div
+                key={s.prefix}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  color: "#444",
+                }}
+              >
+                <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
+                {s.label} <span style={{ color: "#999" }}>number of repeats used = {s.n}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {IntegralTile}
     </div>
   );
 });
@@ -2011,30 +2140,6 @@ function PlotControls({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               <div>
-                <div style={lbl}>Width</div>
-                <input
-                  type="number"
-                  value={vis.insetW}
-                  onChange={(e) => updVis({ insetW: Number(e.target.value) })}
-                  style={{ ...inpN, width: "100%", textAlign: "left" }}
-                  min="100"
-                  max="500"
-                  step="10"
-                />
-              </div>
-              <div>
-                <div style={lbl}>Height</div>
-                <input
-                  type="number"
-                  value={vis.insetH}
-                  onChange={(e) => updVis({ insetH: Number(e.target.value) })}
-                  style={{ ...inpN, width: "100%", textAlign: "left" }}
-                  min="80"
-                  max="400"
-                  step="10"
-                />
-              </div>
-              <div>
                 <div style={lbl}>Y min (auto)</div>
                 <input
                   value={vis.insetYMinCustom}
@@ -2072,22 +2177,6 @@ function PlotControls({
                 </div>
               )}
               <SliderControl
-                label="X label size"
-                value={vis.insetXFontSize}
-                min={4}
-                max={16}
-                step={0.5}
-                onChange={sv("insetXFontSize")}
-              />
-              <SliderControl
-                label="Y label size"
-                value={vis.insetYFontSize}
-                min={4}
-                max={16}
-                step={0.5}
-                onChange={sv("insetYFontSize")}
-              />
-              <SliderControl
                 label="X label angle"
                 value={vis.insetXLabelAngle}
                 displayValue={`${vis.insetXLabelAngle}°`}
@@ -2098,47 +2187,15 @@ function PlotControls({
               />
             </div>
 
-            {/* Bars */}
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "#999",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Bars
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-              <SliderControl
-                label="Fill opacity"
-                value={vis.insetFillOpacity}
-                displayValue={vis.insetFillOpacity.toFixed(2)}
-                min={0}
-                max={1}
-                step={0.05}
-                onChange={sv("insetFillOpacity")}
-              />
-              <SliderControl
-                label="Stroke opacity"
-                value={vis.insetStrokeOpacity}
-                displayValue={vis.insetStrokeOpacity.toFixed(2)}
-                min={0}
-                max={1}
-                step={0.05}
-                onChange={sv("insetStrokeOpacity")}
-              />
-              <SliderControl
-                label="Stroke width"
-                value={vis.insetBarStrokeWidth}
-                min={0}
-                max={4}
-                step={0.25}
-                onChange={sv("insetBarStrokeWidth")}
-              />
-            </div>
+            <SliderControl
+              label="Bar fill opacity"
+              value={vis.insetFillOpacity}
+              displayValue={vis.insetFillOpacity.toFixed(2)}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={sv("insetFillOpacity")}
+            />
 
             {/* Error bars */}
             <p
@@ -2178,6 +2235,52 @@ function PlotControls({
               )}
             </div>
 
+            {/* Points */}
+            <p
+              style={{
+                margin: "0 0 6px",
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#999",
+                textTransform: "uppercase",
+                letterSpacing: 1,
+              }}
+            >
+              Points
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={lbl}>Show</span>
+                <input
+                  type="checkbox"
+                  checked={vis.insetShowPoints}
+                  onChange={(e) => updVis({ insetShowPoints: e.target.checked })}
+                  style={{ accentColor: "#648FFF" }}
+                />
+              </div>
+              {vis.insetShowPoints && (
+                <>
+                  <div>
+                    <div style={lbl}>Color</div>
+                    <ColorInput
+                      value={vis.insetPointColor}
+                      onChange={sv("insetPointColor")}
+                      size={24}
+                    />
+                  </div>
+                  <SliderControl
+                    label="Size"
+                    value={vis.insetPointSize}
+                    displayValue={vis.insetPointSize}
+                    min={1}
+                    max={6}
+                    step={0.5}
+                    onChange={sv("insetPointSize")}
+                  />
+                </>
+              )}
+            </div>
+
             {/* Per-condition colors */}
             <p
               style={{
@@ -2207,26 +2310,11 @@ function PlotControls({
                     <div style={{ fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 6 }}>
                       {s.label}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 10, color: "#999", width: 28 }}>fill</span>
-                        <ColorInput
-                          value={insetColors[s.prefix] || s.color}
-                          onChange={(v) => setInsetColors((prev) => ({ ...prev, [s.prefix]: v }))}
-                          size={18}
-                        />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 10, color: "#999", width: 28 }}>line</span>
-                        <ColorInput
-                          value={insetStrokeColors[s.prefix] || s.color}
-                          onChange={(v) =>
-                            setInsetStrokeColors((prev) => ({ ...prev, [s.prefix]: v }))
-                          }
-                          size={18}
-                        />
-                      </div>
-                    </div>
+                    <ColorInput
+                      value={insetColors[s.prefix] || s.color}
+                      onChange={(v) => setInsetColors((prev) => ({ ...prev, [s.prefix]: v }))}
+                      size={18}
+                    />
                   </div>
                 ))}
             </div>
@@ -2442,11 +2530,11 @@ function App() {
     displayUnit: "s",
     showInset: true,
     insetFillOpacity: 0.7,
-    insetStrokeOpacity: 1,
+    insetStrokeOpacity: 0,
     insetYMinCustom: "",
     insetYMaxCustom: "",
-    insetW: 200,
-    insetH: 150,
+    insetW: 400,
+    insetH: 200,
     insetErrorType: "none",
     insetBarStrokeWidth: 1,
     insetShowGrid: false,
@@ -2456,6 +2544,9 @@ function App() {
     insetYFontSize: 7,
     insetXLabelAngle: -45,
     showColumnOverlay: false,
+    insetShowPoints: false,
+    insetPointSize: 3,
+    insetPointColor: "#333333",
   };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
   const [step, setStep] = useState("upload");
@@ -2886,6 +2977,9 @@ function App() {
                   insetXFontSize={vis.insetXFontSize}
                   insetYFontSize={vis.insetYFontSize}
                   insetXLabelAngle={vis.insetXLabelAngle}
+                  insetShowPoints={vis.insetShowPoints}
+                  insetPointSize={vis.insetPointSize}
+                  insetPointColor={vis.insetPointColor}
                 />
               </div>
             </div>
