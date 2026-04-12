@@ -808,7 +808,7 @@ function ActionsPanel(props) {
 
 // ── Long-format Pipeline Components ─────────────────────────────────────────
 
-// Column role assignment editor (used in boxplot, bargraph long format)
+// Column role assignment editor (used in group plot long format)
 function ColumnRoleEditor(props) {
   const headers = props.headers,
     rows = props.rows,
@@ -967,7 +967,7 @@ function FilterCheckboxPanel(props) {
           }).length /
             u.length >
             0.5;
-        if (isNumCol) {
+        if (isNumCol && colRoles[i] !== "filter" && colRoles[i] !== "text") {
           return React.createElement(
             "div",
             {
@@ -1261,7 +1261,7 @@ function RenameReorderPanel(props) {
   );
 }
 
-// Summary stats table (used in boxplot & bargraph output step)
+// Summary stats table (used in group plot output step)
 function StatsTable(props) {
   const stats = props.stats,
     groupLabel = props.groupLabel;
@@ -1887,19 +1887,25 @@ function _buildStatsReport(ctx) {
 
   if (powerResult) {
     lines.push(sep);
-    lines.push("POWER ANALYSIS (alpha = 0.05, target = 80%)");
+    lines.push("POWER ANALYSIS (target = 80%)");
     lines.push(sep);
     lines.push("");
     lines.push(
       "Effect size:       " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
     );
-    lines.push("Achieved power:    " + (powerResult.achieved * 100).toFixed(1) + "%");
-    lines.push(
-      "n for 80% power:   " +
-        (powerResult.nForTarget != null
-          ? powerResult.nForTarget + " " + powerResult.nLabel
-          : "> 5000")
-    );
+    lines.push("");
+    var aW = 8;
+    var pW = 16;
+    var nW = 16;
+    lines.push(_padR("alpha", aW) + _padR("Achieved power", pW) + "n for 80% power");
+    lines.push("-".repeat(aW + pW + nW));
+    for (var ri = 0; ri < powerResult.rows.length; ri++) {
+      var row = powerResult.rows[ri];
+      var aStr = String(row.alpha);
+      var pStr = (row.achieved * 100).toFixed(1) + "%";
+      var nStr = row.nForTarget != null ? row.nForTarget + " " + powerResult.nLabel : "> 5000";
+      lines.push(_padR(aStr, aW) + _padR(pStr, pW) + nStr);
+    }
     if (powerResult.approximate) {
       lines.push("");
       lines.push("  Note: rank-based test — power estimated from its parametric analog.");
@@ -1945,42 +1951,41 @@ function _buildStatsReport(ctx) {
 // dispatched by the test family chosen in the StatsTile. For non-parametric
 // tests (Mann-Whitney / Kruskal-Wallis) we report the parametric analog as
 // an approximation — noted in the returned `approximate` flag and in the
-// on-screen label. α = 0.05, two-tailed, target power = 0.80.
+// on-screen label. Computed at α = 0.05, 0.01, 0.001; target power = 0.80.
 function _computePower(chosenTest, values) {
   if (!chosenTest || !values || values.length < 2) return null;
-  const alpha = 0.05;
-  const target = 0.8;
+  var alphas = [0.05, 0.01, 0.001];
+  var target = 0.8;
 
   if (chosenTest === "studentT" || chosenTest === "welchT" || chosenTest === "mannWhitney") {
-    const x = values[0],
+    var x = values[0],
       y = values[1];
-    const n1 = x.length,
+    var n1 = x.length,
       n2 = y.length;
     if (n1 < 2 || n2 < 2) return null;
-    const m1 = sampleMean(x),
+    var m1 = sampleMean(x),
       m2 = sampleMean(y);
-    const s1 = sampleSD(x),
+    var s1 = sampleSD(x),
       s2 = sampleSD(y);
-    const sp = Math.sqrt(((n1 - 1) * s1 * s1 + (n2 - 1) * s2 * s2) / (n1 + n2 - 2));
-    const d = sp > 0 ? Math.abs(m1 - m2) / sp : 0;
-    const nh = 2 / (1 / n1 + 1 / n2);
-    const nEff = Math.max(2, Math.round(nh));
-    const achieved = powerTwoSample(d, nEff, alpha, 2);
-    let needed = null;
-    if (d > 0) {
-      for (let n = 2; n <= 5000; n++) {
-        if (powerTwoSample(d, n, alpha, 2) >= target) {
-          needed = n;
-          break;
+    var sp = Math.sqrt(((n1 - 1) * s1 * s1 + (n2 - 1) * s2 * s2) / (n1 + n2 - 2));
+    var d = sp > 0 ? Math.abs(m1 - m2) / sp : 0;
+    var nh = 2 / (1 / n1 + 1 / n2);
+    var nEff = Math.max(2, Math.round(nh));
+    var rows = alphas.map(function (alpha) {
+      var achieved = powerTwoSample(d, nEff, alpha, 2);
+      var needed = null;
+      if (d > 0) {
+        for (var n = 2; n <= 5000; n++) {
+          if (powerTwoSample(d, n, alpha, 2) >= target) { needed = n; break; }
         }
       }
-    }
+      return { alpha: alpha, achieved: achieved, nForTarget: needed };
+    });
     return {
       effectLabel: "Cohen's d",
       effect: d,
-      achieved,
+      rows: rows,
       targetPower: target,
-      nForTarget: needed,
       nLabel: "per group",
       approximate: chosenTest === "mannWhitney",
     };
@@ -1991,38 +1996,37 @@ function _computePower(chosenTest, values) {
     chosenTest === "welchANOVA" ||
     chosenTest === "kruskalWallis"
   ) {
-    const kk = values.length;
+    var kk = values.length;
     if (kk < 2) return null;
-    const means = values.map(sampleMean);
-    const ns = values.map((v) => v.length);
-    if (ns.some((n) => n < 2)) return null;
-    let ssW = 0,
+    var means = values.map(sampleMean);
+    var ns = values.map(function (v) { return v.length; });
+    if (ns.some(function (n) { return n < 2; })) return null;
+    var ssW = 0,
       dfW = 0;
-    for (let i = 0; i < kk; i++) {
-      const m = means[i];
-      for (const vv of values[i]) ssW += (vv - m) * (vv - m);
+    for (var i = 0; i < kk; i++) {
+      var m = means[i];
+      for (var j = 0; j < values[i].length; j++) ssW += (values[i][j] - m) * (values[i][j] - m);
       dfW += values[i].length - 1;
     }
-    const sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
-    const f = fFromGroupMeans(means, sp);
-    const nh = kk / ns.reduce((a, b) => a + 1 / b, 0);
-    const nEff = Math.max(2, Math.round(nh));
-    const achieved = powerAnova(f, nEff, alpha, kk);
-    let needed = null;
-    if (f > 0) {
-      for (let n = 2; n <= 5000; n++) {
-        if (powerAnova(f, n, alpha, kk) >= target) {
-          needed = n;
-          break;
+    var sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
+    var f = fFromGroupMeans(means, sp);
+    var nh = kk / ns.reduce(function (a, b) { return a + 1 / b; }, 0);
+    var nEff = Math.max(2, Math.round(nh));
+    var rows = alphas.map(function (alpha) {
+      var achieved = powerAnova(f, nEff, alpha, kk);
+      var needed = null;
+      if (f > 0) {
+        for (var n = 2; n <= 5000; n++) {
+          if (powerAnova(f, n, alpha, kk) >= target) { needed = n; break; }
         }
       }
-    }
+      return { alpha: alpha, achieved: achieved, nForTarget: needed };
+    });
     return {
       effectLabel: "Cohen's f",
       effect: f,
-      achieved,
+      rows: rows,
       targetPower: target,
-      nForTarget: needed,
       nLabel: "per group",
       approximate: chosenTest === "kruskalWallis",
     };
@@ -2108,16 +2112,15 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
       const labels = compactLetterDisplay(postHocResult.pairs, k);
       return { kind: "cld", labels, groupNames: names };
     }
-    // Brackets: only draw significant pairs (α = 0.05), prefer pAdj if present.
-    const sig = postHocResult.pairs
+    // Brackets: draw all pairs, prefer pAdj if present.
+    const all = postHocResult.pairs
       .map((pr) => ({
         i: pr.i,
         j: pr.j,
         p: pr.pAdj != null ? pr.pAdj : pr.p,
       }))
-      .filter((pr) => pr.p < 0.05)
       .map((pr) => ({ ...pr, label: pStars(pr.p) }));
-    return { kind: "brackets", pairs: sig, groupNames: names };
+    return { kind: "brackets", pairs: all, groupNames: names };
   }, [showOnPlot, annotKind, k, testResult, postHocResult, names]);
 
   // Emit annotations to the parent. We hold the latest spec in a ref and
@@ -2413,12 +2416,13 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
   let powerBlock = null;
   if (powerResult) {
     const fmtPct = (p) => (p * 100).toFixed(1) + "%";
-    const nNeededText =
-      powerResult.nForTarget != null ? powerResult.nForTarget + " " + powerResult.nLabel : "> 5000";
+    const fmtAlpha = (a) => String(a);
+    const nNeededText = (row) =>
+      row.nForTarget != null ? row.nForTarget + " " + powerResult.nLabel : "> 5000";
     powerBlock = React.createElement(
       "div",
       null,
-      React.createElement("div", { style: subhead }, "Power analysis (\u03B1 = 0.05, target 80%)"),
+      React.createElement("div", { style: subhead }, "Power analysis (target 80%)"),
       React.createElement(
         "table",
         { style: table },
@@ -2429,6 +2433,7 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
             "tr",
             null,
             React.createElement("th", { style: th }, "Effect size"),
+            React.createElement("th", { style: th }, "\u03B1"),
             React.createElement("th", { style: th }, "Achieved power"),
             React.createElement("th", { style: th }, "n for 80% power")
           )
@@ -2436,26 +2441,31 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
         React.createElement(
           "tbody",
           null,
-          React.createElement(
-            "tr",
-            null,
+          powerResult.rows.map((row, ri) =>
             React.createElement(
-              "td",
-              { style: td },
-              powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
-            ),
-            React.createElement(
-              "td",
-              {
-                style: {
-                  ...td,
-                  fontWeight: 700,
-                  color: powerResult.achieved >= 0.8 ? "#166534" : "#b45309",
+              "tr",
+              { key: ri },
+              ri === 0
+                ? React.createElement(
+                    "td",
+                    { style: td, rowSpan: powerResult.rows.length },
+                    powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
+                  )
+                : null,
+              React.createElement("td", { style: td }, fmtAlpha(row.alpha)),
+              React.createElement(
+                "td",
+                {
+                  style: {
+                    ...td,
+                    fontWeight: 700,
+                    color: row.achieved >= 0.8 ? "#166534" : "#b45309",
+                  },
                 },
-              },
-              fmtPct(powerResult.achieved)
-            ),
-            React.createElement("td", { style: td }, nNeededText)
+                fmtPct(row.achieved)
+              ),
+              React.createElement("td", { style: td }, nNeededText(row))
+            )
           )
         )
       ),

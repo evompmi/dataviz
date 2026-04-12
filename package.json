@@ -2,9 +2,9 @@
   "private": true,
   "scripts": {
     "prebuild": "node scripts/write-version.js",
-    "build": "esbuild tools/boxplot.tsx tools/bargraph.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap",
+    "build": "esbuild tools/boxplot.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap",
     "prewatch": "node scripts/write-version.js",
-    "watch": "esbuild tools/boxplot.tsx tools/bargraph.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap --watch",
+    "watch": "esbuild tools/boxplot.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap --watch",
     "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js && node tests/stats.test.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

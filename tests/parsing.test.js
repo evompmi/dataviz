@@ -1,4 +1,4 @@
-// Tests for CSV/TSV parsing functions used by bargraph, boxplot, and scatter.
+// Tests for CSV/TSV parsing functions used by group plot, scatter, etc.
 // Source: tools/shared.js (detectHeader, parseRaw, guessColumnType, detectWideFormat)
 
 const { suite, test, assert, eq, summary } = require("./harness");
