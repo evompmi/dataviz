@@ -9,7 +9,7 @@ function statsSummaryHeight(summary: string | null): number {
   if (!summary) return 0;
   return summary.split("\n").length * STATS_LINE_H + 14; // 14 = top/bottom padding
 }
-function renderStatsSummary(summary: string | null, y: number, x: number, maxW: number) {
+function renderStatsSummary(summary: string | null, y: number, x: number) {
   if (!summary) return null;
   const lines = summary.split("\n");
   return (
@@ -528,7 +528,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       )}
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
-      {renderStatsSummary(statsSummary, vbH_chart + _legH, M.left, vbW - M.left - M.right)}
+      {renderStatsSummary(statsSummary, vbH_chart + _legH, M.left)}
     </svg>
   );
 });
@@ -871,12 +871,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         88,
         14
       )}
-      {renderStatsSummary(
-        statsSummary,
-        vbH_chart + legendH,
-        MChart.left,
-        vbW - MChart.left - MChart.right
-      )}
+      {renderStatsSummary(statsSummary, vbH_chart + legendH, MChart.left)}
     </svg>
   );
 });

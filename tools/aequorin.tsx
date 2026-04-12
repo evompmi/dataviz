@@ -1917,8 +1917,6 @@ function PlotControls({
   resetAll,
   insetColors,
   setInsetColors,
-  insetStrokeColors,
-  setInsetStrokeColors,
 }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   return (
@@ -2921,8 +2919,6 @@ function App() {
               resetAll={resetAll}
               insetColors={insetColors}
               setInsetColors={setInsetColors}
-              insetStrokeColors={insetStrokeColors}
-              setInsetStrokeColors={setInsetStrokeColors}
             />
 
             {/* RIGHT: chart area */}
