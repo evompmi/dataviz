@@ -1894,16 +1894,16 @@ function _buildStatsReport(ctx) {
       "Effect size:       " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3)
     );
     lines.push("");
-    var aW = 8;
-    var pW = 16;
-    var nW = 16;
+    const aW = 8;
+    const pW = 16;
+    const nW = 16;
     lines.push(_padR("alpha", aW) + _padR("Achieved power", pW) + "n for 80% power");
     lines.push("-".repeat(aW + pW + nW));
-    for (var ri = 0; ri < powerResult.rows.length; ri++) {
-      var row = powerResult.rows[ri];
-      var aStr = String(row.alpha);
-      var pStr = (row.achieved * 100).toFixed(1) + "%";
-      var nStr = row.nForTarget != null ? row.nForTarget + " " + powerResult.nLabel : "> 5000";
+    for (let ri = 0; ri < powerResult.rows.length; ri++) {
+      const row = powerResult.rows[ri];
+      const aStr = String(row.alpha);
+      const pStr = (row.achieved * 100).toFixed(1) + "%";
+      const nStr = row.nForTarget != null ? row.nForTarget + " " + powerResult.nLabel : "> 5000";
       lines.push(_padR(aStr, aW) + _padR(pStr, pW) + nStr);
     }
     if (powerResult.approximate) {
@@ -1954,28 +1954,28 @@ function _buildStatsReport(ctx) {
 // on-screen label. Computed at α = 0.05, 0.01, 0.001; target power = 0.80.
 function _computePower(chosenTest, values) {
   if (!chosenTest || !values || values.length < 2) return null;
-  var alphas = [0.05, 0.01, 0.001];
-  var target = 0.8;
+  const alphas = [0.05, 0.01, 0.001];
+  const target = 0.8;
 
   if (chosenTest === "studentT" || chosenTest === "welchT" || chosenTest === "mannWhitney") {
-    var x = values[0],
+    const x = values[0],
       y = values[1];
-    var n1 = x.length,
+    const n1 = x.length,
       n2 = y.length;
     if (n1 < 2 || n2 < 2) return null;
-    var m1 = sampleMean(x),
+    const m1 = sampleMean(x),
       m2 = sampleMean(y);
-    var s1 = sampleSD(x),
+    const s1 = sampleSD(x),
       s2 = sampleSD(y);
-    var sp = Math.sqrt(((n1 - 1) * s1 * s1 + (n2 - 1) * s2 * s2) / (n1 + n2 - 2));
-    var d = sp > 0 ? Math.abs(m1 - m2) / sp : 0;
-    var nh = 2 / (1 / n1 + 1 / n2);
-    var nEff = Math.max(2, Math.round(nh));
-    var rows = alphas.map(function (alpha) {
-      var achieved = powerTwoSample(d, nEff, alpha, 2);
-      var needed = null;
+    const sp = Math.sqrt(((n1 - 1) * s1 * s1 + (n2 - 1) * s2 * s2) / (n1 + n2 - 2));
+    const d = sp > 0 ? Math.abs(m1 - m2) / sp : 0;
+    const nh = 2 / (1 / n1 + 1 / n2);
+    const nEff = Math.max(2, Math.round(nh));
+    const rows = alphas.map(function (alpha) {
+      const achieved = powerTwoSample(d, nEff, alpha, 2);
+      let needed = null;
       if (d > 0) {
-        for (var n = 2; n <= 5000; n++) {
+        for (let n = 2; n <= 5000; n++) {
           if (powerTwoSample(d, n, alpha, 2) >= target) { needed = n; break; }
         }
       }
@@ -1996,27 +1996,27 @@ function _computePower(chosenTest, values) {
     chosenTest === "welchANOVA" ||
     chosenTest === "kruskalWallis"
   ) {
-    var kk = values.length;
+    const kk = values.length;
     if (kk < 2) return null;
-    var means = values.map(sampleMean);
-    var ns = values.map(function (v) { return v.length; });
+    const means = values.map(sampleMean);
+    const ns = values.map(function (v) { return v.length; });
     if (ns.some(function (n) { return n < 2; })) return null;
-    var ssW = 0,
+    let ssW = 0,
       dfW = 0;
-    for (var i = 0; i < kk; i++) {
-      var m = means[i];
-      for (var j = 0; j < values[i].length; j++) ssW += (values[i][j] - m) * (values[i][j] - m);
+    for (let i = 0; i < kk; i++) {
+      const m = means[i];
+      for (let j = 0; j < values[i].length; j++) ssW += (values[i][j] - m) * (values[i][j] - m);
       dfW += values[i].length - 1;
     }
-    var sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
-    var f = fFromGroupMeans(means, sp);
-    var nh = kk / ns.reduce(function (a, b) { return a + 1 / b; }, 0);
-    var nEff = Math.max(2, Math.round(nh));
-    var rows = alphas.map(function (alpha) {
-      var achieved = powerAnova(f, nEff, alpha, kk);
-      var needed = null;
+    const sp = dfW > 0 ? Math.sqrt(ssW / dfW) : 0;
+    const f = fFromGroupMeans(means, sp);
+    const nh = kk / ns.reduce(function (a, b) { return a + 1 / b; }, 0);
+    const nEff = Math.max(2, Math.round(nh));
+    const rows = alphas.map(function (alpha) {
+      const achieved = powerAnova(f, nEff, alpha, kk);
+      let needed = null;
       if (f > 0) {
-        for (var n = 2; n <= 5000; n++) {
+        for (let n = 2; n <= 5000; n++) {
           if (powerAnova(f, n, alpha, kk) >= target) { needed = n; break; }
         }
       }
@@ -2059,7 +2059,7 @@ function assignBracketLevels(pairs) {
   return placed.map(({ _orig: _o, _span: _s, ...rest }) => rest);
 }
 
-function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
+function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultOpen }) {
   const validGroups = (groups || []).filter(
     (g) => g && Array.isArray(g.values) && g.values.length >= 2
   );
@@ -2123,6 +2123,28 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
     return { kind: "brackets", pairs: all, groupNames: names };
   }, [showOnPlot, annotKind, k, testResult, postHocResult, names]);
 
+  // Build a plain-text stats summary for display below the plot.
+  const statsSummary = React.useMemo(function () {
+    if (!showOnPlot || !chosenTest || !testResult || testResult.error) return null;
+    const parts = [];
+    parts.push((STATS_LABELS[chosenTest] || chosenTest) + ": " + _formatTestLine(chosenTest, testResult));
+    if (k > 2 && postHocResult && !postHocResult.error) {
+      const phLabel = POSTHOC_LABELS[postHocName] || postHocName;
+      parts.push("Post-hoc: " + phLabel);
+      postHocResult.pairs.forEach(function (pr) {
+        const p = pr.pAdj != null ? pr.pAdj : pr.p;
+        parts.push(
+          "  " + names[pr.i] + " vs " + names[pr.j] + ": p = " + formatP(p) + " " + pStars(p)
+        );
+      });
+    }
+    if (powerResult) {
+      parts.push("Effect size: " + powerResult.effectLabel + " = " + powerResult.effect.toFixed(3));
+    }
+    parts.push("n per group: " + names.map(function (n, i) { return n + "=" + values[i].length; }).join(", "));
+    return parts.join("\n");
+  }, [showOnPlot, chosenTest, testResult, k, postHocResult, postHocName, names, powerResult, values]);
+
   // Emit annotations to the parent. We hold the latest spec in a ref and
   // fire the effect only when its serialized form changes, so unrelated
   // re-renders don't trigger a parent state update.
@@ -2134,6 +2156,16 @@ function StatsTile({ groups, onAnnotationsChange, defaultOpen }) {
   React.useEffect(() => {
     if (typeof onChangeRef.current === "function") onChangeRef.current(latestSpec.current);
   }, [specKey]);
+
+  // Emit stats summary to the parent.
+  const summaryKey = statsSummary || "";
+  const latestSummary = React.useRef(statsSummary);
+  latestSummary.current = statsSummary;
+  const onSummaryRef = React.useRef(onStatsSummaryChange);
+  onSummaryRef.current = onStatsSummaryChange;
+  React.useEffect(function () {
+    if (typeof onSummaryRef.current === "function") onSummaryRef.current(latestSummary.current);
+  }, [summaryKey]);
 
   // Nothing to show.
   if (k < 2) return null;
