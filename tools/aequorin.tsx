@@ -1700,7 +1700,14 @@ function HowToSection() {
   );
 }
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+function UploadStep({
+  sepOverride,
+  setSepOverride,
+  rawText,
+  doParse,
+  handleFileLoad,
+  onLoadExample,
+}) {
   return (
     <div>
       <UploadPanel
@@ -1710,6 +1717,7 @@ function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileL
           if (rawText) doParse(rawText, v);
         }}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -2763,6 +2771,16 @@ function App() {
     },
     [sepOverride, doParse]
   );
+  const loadExample = useCallback(() => {
+    const text = (window as any).__AEQUORIN_EXAMPLE__;
+    if (!text) {
+      setParseError("Example dataset not loaded. Please try uploading a file instead.");
+      return;
+    }
+    setSepOverride("\t");
+    setFileName("aequorin_example.tsv");
+    doParse(text, "\t");
+  }, [doParse]);
   const resetAll = () => {
     setRawText(null);
     setFileName("");
@@ -2837,6 +2855,7 @@ function App() {
           rawText={rawText}
           doParse={doParse}
           handleFileLoad={handleFileLoad}
+          onLoadExample={loadExample}
         />
       )}
 
