@@ -1,7 +1,17 @@
 // molarity.jsx — editable source. Run `npm run build` to compile to molarity.js
 // Do NOT edit the .js file directly.
 
-const { useState, useMemo, useCallback } = React;
+const { useState, useMemo, useCallback, useEffect } = React;
+
+function useIsMobile(breakpoint = 600) {
+  const [mobile, setMobile] = useState(window.innerWidth < breakpoint);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, [breakpoint]);
+  return mobile;
+}
 
 // ── Unit definitions & conversions ──────────────────────────────────────────
 
@@ -55,10 +65,28 @@ function UnitInput({
   units,
   disabled,
   placeholder,
+  compact,
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 10,
+        flexWrap: compact ? "wrap" : "nowrap",
+      }}
+    >
+      <label
+        style={{
+          ...lbl,
+          width: compact ? "100%" : 150,
+          flexShrink: 0,
+          marginBottom: compact ? 2 : 0,
+          fontWeight: 600,
+          fontSize: compact ? 11 : undefined,
+        }}
+      >
         {label}
       </label>
       <input
@@ -69,7 +97,9 @@ function UnitInput({
         placeholder={placeholder || ""}
         style={{
           ...inp,
-          width: 130,
+          width: compact ? 0 : 130,
+          flex: compact ? 1 : undefined,
+          minWidth: compact ? 80 : undefined,
           fontSize: 13,
           textAlign: "left",
           background: disabled ? "#f0fdf4" : "#fff",
@@ -95,7 +125,7 @@ function UnitInput({
 
 // ── Molarity Mode ───────────────────────────────────────────────────────────
 
-function MolarityMode() {
+function MolarityMode({ compact }: { compact?: boolean }) {
   const [mw, setMw] = useState("");
   const [mass, setMass] = useState("");
   const [massUnit, setMassUnit] = useState("g");
@@ -172,28 +202,52 @@ function MolarityMode() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: compact ? "column" : "row",
+          gap: 10,
+          marginBottom: 16,
+          alignItems: compact ? undefined : "stretch",
+        }}
+      >
         <div
           style={{
             ...sec,
-            flex: "0 0 calc((100% - 20px) / 3)",
+            flex: compact ? undefined : "0 0 calc((100% - 20px) / 3)",
             marginBottom: 0,
             display: "flex",
-            flexDirection: "column",
+            flexDirection: compact ? "row" : "column",
+            ...(compact ? { flexWrap: "wrap", gap: 6, alignItems: "center" } : {}),
           }}
         >
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p
+            style={{
+              margin: compact ? "0 8px 0 0" : "0 0 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#555",
+              ...(compact ? { width: "100%", marginBottom: 4 } : {}),
+            }}
+          >
             Solve for:
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: compact ? "row" : "column",
+              gap: 6,
+              flexWrap: compact ? "wrap" : undefined,
+            }}
+          >
             {fields.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setSolveFor(f.key)}
                 style={{
-                  padding: "6px 16px",
+                  padding: compact ? "5px 10px" : "6px 16px",
                   borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: compact ? 11 : 12,
                   fontWeight: 600,
                   background: solveFor === f.key ? "#648FFF" : "#fff",
                   color: solveFor === f.key ? "#fff" : "#888",
@@ -213,8 +267,25 @@ function MolarityMode() {
           <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
             Inputs:
           </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <label style={{ ...lbl, width: 150, flexShrink: 0, marginBottom: 0, fontWeight: 600 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 10,
+              flexWrap: compact ? "wrap" : "nowrap",
+            }}
+          >
+            <label
+              style={{
+                ...lbl,
+                width: compact ? "100%" : 150,
+                flexShrink: 0,
+                marginBottom: compact ? 2 : 0,
+                fontWeight: 600,
+                fontSize: compact ? 11 : undefined,
+              }}
+            >
               MW (g/mol)
             </label>
             <input
@@ -225,7 +296,9 @@ function MolarityMode() {
               placeholder={solveFor === "mw" ? "calculated" : ""}
               style={{
                 ...inp,
-                width: 130,
+                width: compact ? 0 : 130,
+                flex: compact ? 1 : undefined,
+                minWidth: compact ? 80 : undefined,
                 fontSize: 13,
                 textAlign: "left",
                 background: solveFor === "mw" ? "#f0fdf4" : "#fff",
@@ -237,6 +310,7 @@ function MolarityMode() {
 
           <UnitInput
             label="Mass"
+            compact={compact}
             value={solveFor === "mass" ? "" : mass}
             onValueChange={setMass}
             unit={massUnit}
@@ -254,6 +328,7 @@ function MolarityMode() {
             units={VOL_UNITS}
             disabled={solveFor === "volume"}
             placeholder={solveFor === "volume" ? "calculated" : ""}
+            compact={compact}
           />
           <UnitInput
             label="Concentration"
@@ -264,6 +339,7 @@ function MolarityMode() {
             units={CONC_UNITS}
             disabled={solveFor === "conc"}
             placeholder={solveFor === "conc" ? "calculated" : ""}
+            compact={compact}
           />
 
           {result && (
@@ -295,7 +371,7 @@ function MolarityMode() {
 
 // ── Dilution Mode ───────────────────────────────────────────────────────────
 
-function DilutionMode() {
+function DilutionMode({ compact }: { compact?: boolean }) {
   const [c1, setC1] = useState("");
   const [c1Unit, setC1Unit] = useState("mM");
   const [v1, setV1] = useState("");
@@ -353,29 +429,55 @@ function DilutionMode() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "stretch" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: compact ? "column" : "row",
+          gap: 10,
+          marginBottom: 16,
+          alignItems: compact ? undefined : "stretch",
+        }}
+      >
         <div
           style={{
             ...sec,
-            flex: "0 0 calc((100% - 20px) / 3)",
+            flex: compact ? undefined : "0 0 calc((100% - 20px) / 3)",
             marginBottom: 0,
             display: "flex",
-            flexDirection: "column",
+            flexDirection: compact ? "row" : "column",
+            ...(compact ? { flexWrap: "wrap", gap: 6, alignItems: "center" } : {}),
           }}
         >
-          <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#555" }}>
-            C1 × V1 = C2 × V2
+          <p
+            style={{
+              margin: compact ? "0 0 4px" : "0 0 6px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#555",
+              ...(compact ? { width: "100%" } : {}),
+            }}
+          >
+            C1 × V1 = C2 × V2 — Solve for:
           </p>
-          <p style={{ margin: "0 0 10px", fontSize: 11, color: "#999" }}>Solve for:</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {!compact && (
+            <p style={{ margin: "0 0 10px", fontSize: 11, color: "#999" }}>Solve for:</p>
+          )}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: compact ? "row" : "column",
+              gap: 6,
+              flexWrap: compact ? "wrap" : undefined,
+            }}
+          >
             {fields.map((f) => (
               <button
                 key={f.key}
                 onClick={() => setSolveFor(f.key)}
                 style={{
-                  padding: "6px 16px",
+                  padding: compact ? "5px 10px" : "6px 16px",
                   borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: compact ? 11 : 12,
                   fontWeight: 600,
                   background: solveFor === f.key ? "#648FFF" : "#fff",
                   color: solveFor === f.key ? "#fff" : "#888",
@@ -407,6 +509,7 @@ function DilutionMode() {
             units={CONC_UNITS}
             disabled={solveFor === "c1"}
             placeholder={solveFor === "c1" ? "calculated" : ""}
+            compact={compact}
           />
           <UnitInput
             label="V1 (volume)"
@@ -417,6 +520,7 @@ function DilutionMode() {
             units={VOL_UNITS}
             disabled={solveFor === "v1"}
             placeholder={solveFor === "v1" ? "calculated" : ""}
+            compact={compact}
           />
           <p style={{ margin: "12px 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>
             Final solution
@@ -430,6 +534,7 @@ function DilutionMode() {
             units={CONC_UNITS}
             disabled={solveFor === "c2"}
             placeholder={solveFor === "c2" ? "calculated" : ""}
+            compact={compact}
           />
           <UnitInput
             label="V2 (volume)"
@@ -440,6 +545,7 @@ function DilutionMode() {
             units={VOL_UNITS}
             disabled={solveFor === "v2"}
             placeholder={solveFor === "v2" ? "calculated" : ""}
+            compact={compact}
           />
 
           {result && (
@@ -748,7 +854,7 @@ function formatMass(grams) {
 
 // ── Ligation Mode ───────────────────────────────────────────────────────────
 
-function LigationMode() {
+function LigationMode({ compact }: { compact?: boolean }) {
   const [vectorBp, setVectorBp] = useState("");
   const [vectorNg, setVectorNg] = useState("");
   const [insertBp, setInsertBp] = useState("");
@@ -787,7 +893,14 @@ function LigationMode() {
         </p>
       </div>
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: compact ? "column" : "row",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
           <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
             Vector
@@ -929,6 +1042,7 @@ function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style
 
 function App() {
   const [mode, setMode] = useState("molarity");
+  const compact = useIsMobile();
 
   const chemModes = [
     { key: "molarity", label: "Molarity", desc: "MW / mass / volume / concentration" },
@@ -944,7 +1058,7 @@ function App() {
   const dnaColor = "#785EF0";
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px" }}>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: compact ? "16px 10px" : "32px 20px" }}>
       <PageHeader
         toolName="molarity"
         title="Calculator"
@@ -965,7 +1079,7 @@ function App() {
         </span>
         <span style={{ flex: 1, height: 1, background: chemColor, opacity: 0.3 }} />
       </div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: compact ? 6 : 10, marginBottom: 16, flexWrap: "wrap" }}>
         {chemModes.map((m) => (
           <ModeButton
             key={m.key}
@@ -975,7 +1089,7 @@ function App() {
             accentColor={chemColor}
             activeBg="#eef2ff"
             onClick={() => setMode(m.key)}
-            style={{ flex: 1 }}
+            style={{ flex: compact ? "1 1 calc(50% - 6px)" : 1, minWidth: compact ? 0 : undefined }}
           />
         ))}
       </div>
@@ -994,7 +1108,7 @@ function App() {
         </span>
         <span style={{ flex: 1, height: 1, background: dnaColor, opacity: 0.3 }} />
       </div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: compact ? 6 : 10, marginBottom: 24 }}>
         {dnaModes.map((m) => (
           <ModeButton
             key={m.key}
@@ -1012,10 +1126,10 @@ function App() {
         ))}
       </div>
 
-      {mode === "molarity" && <MolarityMode />}
-      {mode === "dilution" && <DilutionMode />}
+      {mode === "molarity" && <MolarityMode compact={compact} />}
+      {mode === "dilution" && <DilutionMode compact={compact} />}
       {mode === "batch" && <BatchMode />}
-      {mode === "ligation" && <LigationMode />}
+      {mode === "ligation" && <LigationMode compact={compact} />}
     </div>
   );
 }

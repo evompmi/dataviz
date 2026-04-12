@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Stats summary embedded in SVG** — when "Show on plot" is active in the StatsTile, a grey monospace text block (test name + result, post-hoc pairs, effect size, sample sizes) is rendered inside the chart SVG below the legend, so it is included in SVG and PNG downloads.
+- **Calculator tool mobile-friendly** — removed `min-width: 1100px` from the calculator page only; layouts (Molarity, Dilution, Ligation) stack vertically on screens narrower than 600 px; input fields and "Solve for" buttons reflow for touch use.
 - **Merged bargraph into boxplot** — the tool is now called "Group Plot" and offers box, violin, raincloud, and bar chart (mean ± SEM/SD) as plot styles from a single dropdown. The separate bargraph tool is replaced by a redirect to `boxplot.html?style=bar`. Landing page updated with a combined icon and card.
 - Power analysis table now shows achieved power and required n at three α levels (0.05, 0.01, 0.001) instead of only α = 0.05. Both the on-screen tile and the downloadable plain-text report are updated.
 - Significance brackets now show all pairwise comparisons, including non-significant ones labeled "ns". Previously only significant pairs (p < 0.05) were drawn.
