@@ -2,6 +2,34 @@
 // Do NOT edit the .js file directly.
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
+// ── Stats summary SVG helper ──────────────────────────────────────────────
+const STATS_LINE_H = 11;
+const STATS_FONT = 8;
+function statsSummaryHeight(summary: string | null): number {
+  if (!summary) return 0;
+  return summary.split("\n").length * STATS_LINE_H + 14; // 14 = top/bottom padding
+}
+function renderStatsSummary(summary: string | null, y: number, x: number, maxW: number) {
+  if (!summary) return null;
+  const lines = summary.split("\n");
+  return (
+    <g>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={x}
+          y={y + 10 + i * STATS_LINE_H}
+          fontSize={STATS_FONT}
+          fill="#aaa"
+          fontFamily="monospace"
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
 const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   {
     groups,
@@ -26,6 +54,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     showCompPie,
     plotStyle = "box",
     annotations,
+    statsSummary,
   },
   ref
 ) {
@@ -76,7 +105,8 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const vbW = Math.max(200, n * 100 * compact + M.left + M.right);
   const vbH_chart = 504 + (absA > 0 ? absA * 0.8 : 0);
   const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right, 88);
-  const vbH = vbH_chart + _legH;
+  const _statsH = statsSummaryHeight(statsSummary);
+  const vbH = vbH_chart + _legH + _statsH;
   const w = vbW - M.left - M.right;
   const h = vbH_chart - M.top - M.bottom;
 
@@ -498,6 +528,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       )}
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
+      {renderStatsSummary(statsSummary, vbH_chart + _legH, M.left, vbW - M.left - M.right)}
     </svg>
   );
 });
@@ -528,6 +559,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     barOutlineWidth,
     svgLegend,
     annotations,
+    statsSummary,
   },
   ref
 ) {
@@ -571,7 +603,8 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
   const vbW = Math.max(400, n * 100 + MChart.left + MChart.right);
   const vbH_chart = 420 + Math.abs(angle) * 0.9;
   const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
-  const vbH = vbH_chart + legendH;
+  const _statsH = statsSummaryHeight(statsSummary);
+  const vbH = vbH_chart + legendH + _statsH;
   const w = vbW - MChart.left - MChart.right;
   const h = vbH_chart - MChart.top - MChart.bottom;
 
@@ -698,6 +731,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         <text x={MChart.left + w / 2} y={14} textAnchor="middle" fontSize="15" fontWeight="700" fill="#222" fontFamily="sans-serif">{plotTitle}</text>
       )}
       {renderSvgLegend(svgLegend, vbH_chart + 10, MChart.left, vbW - MChart.left - MChart.right, 88, 14)}
+      {renderStatsSummary(statsSummary, vbH_chart + legendH, MChart.left, vbW - MChart.left - MChart.right)}
     </svg>
   );
 });
@@ -1842,6 +1876,7 @@ function PlotArea({
   plotGroupRenames,
   boxplotColors,
   statsAnnotations,
+  statsSummary,
 }) {
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
@@ -1916,6 +1951,7 @@ function PlotArea({
               yMax={yMaxVal}
               catColors={categoryColors}
               annotations={statsAnnotations}
+              statsSummary={statsSummary}
               svgLegend={
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -1955,6 +1991,7 @@ function PlotArea({
               showCompPie={vis.showCompPie}
               plotStyle={vis.plotStyle}
               annotations={statsAnnotations}
+              statsSummary={statsSummary}
               svgLegend={
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2102,6 +2139,7 @@ function App() {
   const [dragIdx, setDragIdx] = useState(null);
   const [facetByCol, setFacetByCol] = useState(-1);
   const [statsAnnotations, setStatsAnnotations] = useState(null);
+  const [statsSummary, setStatsSummary] = useState<string | null>(null);
 
   const facetRefs = useRef({});
   const chartRef = useRef();
@@ -2606,6 +2644,7 @@ function App() {
               plotGroupRenames={plotGroupRenames}
               boxplotColors={boxplotColors}
               statsAnnotations={facetByCol < 0 ? statsAnnotations : null}
+              statsSummary={statsSummary}
             />
             {facetByCol < 0 && displayBoxplotGroups.length >= 2 && (
               <StatsTile
@@ -2614,6 +2653,7 @@ function App() {
                   values: g.allValues,
                 }))}
                 onAnnotationsChange={setStatsAnnotations}
+                onStatsSummaryChange={setStatsSummary}
               />
             )}
           </div>
