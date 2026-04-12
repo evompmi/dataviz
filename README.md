@@ -24,15 +24,14 @@ open index.html
 
 Each tool has a built-in **How to** panel — open a tool and click the help tab for input format examples and feature walkthroughs.
 
-| Tool               | What it does                                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| **Aequorin Ca²⁺**  | Luminescence time-courses with optional Ca²⁺ calibration (Allen & Blinks, Hill). Baseline correction, summary bars. |
-| **Boxplot**        | Distribution plots (median, IQR, whiskers) with violin / raincloud styles, faceting, and composition pies.          |
-| **Bar Graph**      | Mean ± SEM/SD with jittered point overlay, faceting, and color-by category.                                         |
-| **Scatter Plot**   | XY scatter with color / size / shape mapping, reference lines, row filters, and regression overlay.                 |
-| **Venn Diagram**   | 2–3 set diagrams (equal-size or area-proportional). Click a region to extract members; export as CSV.               |
-| **Power Analysis** | Sample size & power for t-tests, ANOVA, χ², correlation.                                                            |
-| **Calculator**     | Molarity, dilution (C₁V₁=C₂V₂), ligation ratios, batch prep sheets.                                                 |
+| Tool               | What it does                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Aequorin Ca²⁺**  | Luminescence time-courses with optional Ca²⁺ calibration (Allen & Blinks, Hill). Baseline correction, integral barplot with automatic statistical testing and post-hoc analysis. |
+| **Group Plot**     | Box, violin, raincloud, and bar chart styles from one tool. Automatic stats (t-test / ANOVA / non-parametric), post-hoc tables, significance brackets, and compact letters.      |
+| **Scatter Plot**   | XY scatter with color / size / shape mapping, reference lines, row filters, and regression overlay.                                                                              |
+| **Venn Diagram**   | 2–3 set diagrams (equal-size or area-proportional). Click a region to extract members; export as CSV.                                                                            |
+| **Power Analysis** | Sample size & power for t-tests, ANOVA, χ², correlation.                                                                                                                         |
+| **Calculator**     | Molarity, dilution (C₁V₁=C₂V₂), ligation ratios, batch prep sheets.                                                                                                              |
 
 ## Common Features
 
@@ -56,4 +55,4 @@ All tools share:
 | **Charts**       | Custom SVG rendering                                                           |
 | **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo     |
 | **Hosting**      | GitHub Pages (static files)                                                    |
-| **Tests**        | 217 tests across 5 suites (utilities, parsing, integration, components, power) |
+| **Tests**        | 485 tests across 6 suites (utilities, parsing, integration, components, power, stats) |

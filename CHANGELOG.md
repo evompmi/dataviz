@@ -23,8 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Significance brackets now show all pairwise comparisons, including non-significant ones labeled "ns". Previously only significant pairs (p < 0.05) were drawn.
 - Example dataset now produces a mix of significant and non-significant comparisons (WT vs abi4 genotype overlap, control vs salt treatment overlap) so users can see all possible statistical outputs including underpowered/NS results.
 
+### Removed
+
+- **Dead `bargraph.tsx`** — deleted the 1,984-line orphan source file that was never built after bar chart functionality was merged into `boxplot.tsx`. The `bargraph.html` redirect to `boxplot.html?style=bar` is unchanged.
+
 ### Fixed
 
+- **TypeScript: `BracketPair` missing `pAdj`** — added the `pAdj` field to the `BracketPair` interface in `types/globals.d.ts`, fixing a `TS2339` error for code that reads adjusted p-values on bracket pairs.
+- **Unused `maxW` parameter** in `renderStatsSummary` (boxplot) — removed from signature and call sites.
+- **Unused props in aequorin `PlotControls`** — `insetStrokeColors` and `setInsetStrokeColors` were passed but never read; removed from the component and its call site.
 - Filter panel now shows checkboxes for numeric columns when the user explicitly assigns them a "filter" or "text" role (e.g. repetition numbers). Previously these columns were hidden with a "numeric — use axis range in plot" message regardless of the assigned role.
 - **Calculator tool mobile scrolling** — added `overflow-y: auto` and `-webkit-overflow-scrolling: touch` to the calculator page body, plus bottom padding on mobile, so the last result tile is always reachable by scrolling.
 
@@ -102,7 +109,7 @@ the introduction of this changelog.
 - TypeScript compile-time checking across tool sources (`npm run typecheck`).
 - ESLint + Prettier configuration and GitHub Actions CI workflow.
 - Minified esbuild output for production bundles.
-- Custom test harness with 217 tests across shared utilities, parsing, components, and power calculators.
+- Custom test harness with tests across shared utilities, parsing, components, and power calculators.
 
 [Unreleased]: https://github.com/evompmi/dataviz/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/evompmi/dataviz/compare/v1.1.1...v2.0.0
