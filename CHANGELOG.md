@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-04-13
+
+### Fixed
+
+- **StatsTile test assertions** — three component tests checked `el.type === "div"` but `StatsTile` now returns a `React.Fragment`; updated to `"Fragment"` with a 2-child check.
+- **Prettier formatting** — `benchmark.html`, `benchmark/results-r.json`, `benchmark/run.js`, `README.md`, and `tools/shared-components.js` were flagged by `format:check` in CI; reformatted with `--write`.
+
 ## [2.1.0] - 2026-04-13
 
 ### Added
@@ -146,7 +153,8 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/evompmi/dataviz/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/evompmi/dataviz/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/evompmi/dataviz/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/evompmi/dataviz/compare/v1.1.0...v1.1.1
