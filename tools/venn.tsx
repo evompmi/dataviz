@@ -773,10 +773,7 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH, blend) {
 
   // Triangle inequality check — if the pairwise distances cannot form a
   // valid triangle, the layout will only approximate the requested overlaps.
-  const feasible =
-    d01 <= d02 + d12 + 1e-6 &&
-    d02 <= d01 + d12 + 1e-6 &&
-    d12 <= d01 + d02 + 1e-6;
+  const feasible = d01 <= d02 + d12 + 1e-6 && d02 <= d01 + d12 + 1e-6 && d12 <= d01 + d02 + 1e-6;
   if (!feasible) {
     warnings.push(
       "Pairwise overlaps are geometrically inconsistent (triangle inequality violated) — layout approximated"
