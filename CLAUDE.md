@@ -152,3 +152,7 @@ npm run benchmark      # R + JS cross-validation suite
 ```
 
 Edit `.tsx` source files, run build (or use watch mode), reload in browser. The compiled `.js` files are checked into git for static deployment via GitHub Pages. Do **not** edit the `.js` files directly.
+
+## CHANGELOG.md
+
+**Any user-visible change must be logged in `CHANGELOG.md` under `## [Unreleased]`** before the commit that ships it, using the Keep a Changelog sections (`Added` / `Changed` / `Fixed` / `Removed`). This applies to bug fixes, new features, UI tweaks, and behavior changes — not to internal refactors or test-only edits. Entries should be one paragraph, lead with a bold title, and explain both *what* changed and *why* / *how* so a future reader can reconstruct the fix without reading the diff. Don't wait to be asked — update the changelog in the same commit as the code change.
