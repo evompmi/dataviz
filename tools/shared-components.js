@@ -2339,7 +2339,15 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     showOnPlot && (k === 2 || annotKind === "brackets")
       ? React.createElement(
           "label",
-          { style: { display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" } },
+          {
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              cursor: "pointer",
+            },
+          },
           React.createElement("input", {
             type: "checkbox",
             checked: showNs,
@@ -2350,7 +2358,12 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       : null
   );
 
-  const displayTile = React.createElement("div", { style: wrap }, displayTileHeader, displayControls);
+  const displayTile = React.createElement(
+    "div",
+    { style: wrap },
+    displayTileHeader,
+    displayControls
+  );
 
   if (!open)
     return React.createElement(

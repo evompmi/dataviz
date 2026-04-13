@@ -84,37 +84,93 @@ for (const t of data.tests) {
   try {
     if (cat === "Shapiro-Wilk") {
       const j = shapiroWilk(t.inputs.x);
-      pushRow({ category: cat, label: lbl, n, metric: "W", r: t.r.statistic, js: j.W, ...cmp(j.W, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "W",
+        r: t.r.statistic,
+        js: j.W,
+        ...cmp(j.W, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Levene (Brown-Forsythe)") {
       const { arrays } = groupsToArrays(t.inputs.groups);
       const j = leveneTest(arrays);
-      pushRow({ category: cat, label: lbl, n, metric: "F", r: t.r.statistic, js: j.F, ...cmp(j.F, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "F",
+        r: t.r.statistic,
+        js: j.F,
+        ...cmp(j.F, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Student t" || cat === "Welch t") {
       const equalVar = cat === "Student t";
       const j = tTest(t.inputs.a, t.inputs.b, { equalVar });
-      pushRow({ category: cat, label: lbl, n, metric: "t", r: t.r.statistic, js: j.t, ...cmp(j.t, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "t",
+        r: t.r.statistic,
+        js: j.t,
+        ...cmp(j.t, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Mann-Whitney U") {
       const j = mannWhitneyU(t.inputs.a, t.inputs.b);
       // R's wilcox.test reports W = U1 (sum of ranks - n1(n1+1)/2 of the 1st sample).
-      pushRow({ category: cat, label: lbl, n, metric: "U", r: t.r.statistic, js: j.U1, ...cmp(j.U1, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "U",
+        r: t.r.statistic,
+        js: j.U1,
+        ...cmp(j.U1, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "one-way ANOVA") {
       const { arrays } = groupsToArrays(t.inputs.groups);
       const j = oneWayANOVA(arrays);
-      pushRow({ category: cat, label: lbl, n, metric: "F", r: t.r.statistic, js: j.F, ...cmp(j.F, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "F",
+        r: t.r.statistic,
+        js: j.F,
+        ...cmp(j.F, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Welch ANOVA") {
       const { arrays } = groupsToArrays(t.inputs.groups);
       const j = welchANOVA(arrays);
-      pushRow({ category: cat, label: lbl, n, metric: "F", r: t.r.statistic, js: j.F, ...cmp(j.F, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "F",
+        r: t.r.statistic,
+        js: j.F,
+        ...cmp(j.F, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Kruskal-Wallis") {
       const { arrays } = groupsToArrays(t.inputs.groups);
       const j = kruskalWallis(arrays);
-      pushRow({ category: cat, label: lbl, n, metric: "H", r: t.r.statistic, js: j.H, ...cmp(j.H, t.r.statistic) });
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "H",
+        r: t.r.statistic,
+        js: j.H,
+        ...cmp(j.H, t.r.statistic),
+      });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
     } else if (cat === "Tukey HSD" || cat === "Games-Howell" || cat === "Dunn (BH)") {
       const { keys, arrays } = groupsToArrays(t.inputs.groups);
@@ -122,7 +178,7 @@ for (const t of data.tests) {
       const j = fn(arrays);
       for (const rp of t.r.pairs) {
         const jp = findPair(j.pairs, keys, rp.i, rp.j);
-        const jsP = jp == null ? NaN : (cat === "Dunn (BH)" ? jp.pAdj : jp.p);
+        const jsP = jp == null ? NaN : cat === "Dunn (BH)" ? jp.pAdj : jp.p;
         pushRow({
           category: cat,
           label: `${lbl} [${rp.i} vs ${rp.j}]`,
@@ -183,10 +239,7 @@ function fmtDelta(d) {
 }
 
 function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 const cats = Object.keys(byCategory);
@@ -391,6 +444,8 @@ console.log(`  ${passed} pass, ${failed} fail, max |Δ| = ${fmtDelta(maxDelta)}`
 if (failed > 0) {
   console.log("  failing rows:");
   for (const r of rows.filter((r) => !r.pass)) {
-    console.log(`    [${r.category}] ${r.label} (${r.metric}): R=${fmt(r.r)} JS=${fmt(r.js)} |Δ|=${fmtDelta(r.delta)}`);
+    console.log(
+      `    [${r.category}] ${r.label} (${r.metric}): R=${fmt(r.r)} JS=${fmt(r.js)} |Δ|=${fmtDelta(r.delta)}`
+    );
   }
 }

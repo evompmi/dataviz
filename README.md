@@ -24,8 +24,8 @@ open index.html
 
 Each tool has a built-in **How to** panel — open a tool and click the help tab for input format examples and feature walkthroughs.
 
-| Tool               | What it does                                                                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool               | What it does                                                                                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Aequorin Ca²⁺**  | Luminescence time-courses with optional Ca²⁺ calibration (Allen & Blinks, Hill). Baseline correction, integral barplot with automatic statistical testing and post-hoc analysis. |
 | **Group Plot**     | Box, violin, raincloud, and bar chart styles from one tool. Automatic stats (t-test / ANOVA / non-parametric), post-hoc tables, significance brackets, and compact letters.      |
 | **Scatter Plot**   | XY scatter with color / size / shape mapping, reference lines, row filters, and regression overlay.                                                                              |
@@ -48,11 +48,11 @@ All tools share:
 
 ## Stack
 
-|                  |                                                                                |
-| ---------------- | ------------------------------------------------------------------------------ |
-| **UI**           | React 18 (vendored)                                                            |
-| **Build**        | esbuild (JSX compilation, ~5 ms rebuilds)                                      |
-| **Charts**       | Custom SVG rendering                                                           |
-| **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo     |
-| **Hosting**      | GitHub Pages (static files)                                                    |
+|                  |                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| **UI**           | React 18 (vendored)                                                                   |
+| **Build**        | esbuild (JSX compilation, ~5 ms rebuilds)                                             |
+| **Charts**       | Custom SVG rendering                                                                  |
+| **Dependencies** | Vendored locally (`vendor/`) — no CDN, works offline if you clone the repo            |
+| **Hosting**      | GitHub Pages (static files)                                                           |
 | **Tests**        | 485 tests across 6 suites (utilities, parsing, integration, components, power, stats) |
