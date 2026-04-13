@@ -56,6 +56,7 @@ const sharedGlobals = {
   kde: "readonly",
   computeGroupStats: "readonly",
   flashSaved: "readonly",
+  svgSafeId: "readonly",
   downloadSvg: "readonly",
   downloadPng: "readonly",
   downloadCsv: "readonly",
