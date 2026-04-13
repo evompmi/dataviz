@@ -525,6 +525,20 @@ function computeGroupStats(groups) {
 
 // ── Download helpers ──────────────────────────────────────────────────────────
 
+// Sanitize an arbitrary string into an SVG-safe id fragment so exported
+// <g id="..."> values are valid NCNames and show up as readable group names
+// in Inkscape's Objects panel / XML editor. Non-alphanumerics become hyphens,
+// runs are collapsed, edges trimmed, and a leading digit is prefixed with "_".
+function svgSafeId(s) {
+  if (s == null) return "unnamed";
+  const cleaned = String(s)
+    .replace(/[^A-Za-z0-9_.-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (!cleaned) return "unnamed";
+  return /^[A-Za-z_]/.test(cleaned) ? cleaned : "_" + cleaned;
+}
+
 function flashSaved(btn) {
   if (!btn) return;
   const original = btn.innerHTML;

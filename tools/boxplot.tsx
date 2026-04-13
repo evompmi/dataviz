@@ -203,328 +203,353 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       <title>{plotTitle || "Box plot"}</title>
       <desc>{`Box plot with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
 
-      <rect x={M.left} y={M.top} width={w} height={h} fill={plotBg} />
+      <rect id="plot-area-background" x={M.left} y={M.top} width={w} height={h} fill={plotBg} />
 
-      {showGrid &&
-        yTicks.map((t) => (
-          <line
-            key={t}
-            x1={M.left}
-            x2={M.left + w}
-            y1={sy(t)}
-            y2={sy(t)}
-            stroke={gridColor}
-            strokeWidth="0.5"
-          />
-        ))}
-
-      {yTicks.map((t) => (
-        <g key={t}>
-          <line x1={M.left - 5} x2={M.left} y1={sy(t)} y2={sy(t)} stroke="#333" strokeWidth="1" />
-          <text
-            x={M.left - 8}
-            y={sy(t) + 4}
-            textAnchor="end"
-            fontSize="11"
-            fill="#555"
-            fontFamily="sans-serif"
-          >
-            {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
-          </text>
+      {showGrid && (
+        <g id="grid">
+          {yTicks.map((t) => (
+            <line
+              key={t}
+              x1={M.left}
+              x2={M.left + w}
+              y1={sy(t)}
+              y2={sy(t)}
+              stroke={gridColor}
+              strokeWidth="0.5"
+            />
+          ))}
         </g>
-      ))}
+      )}
 
-      {groups.map((g, gi) => {
-        if (!g.stats) return null;
-        const cx = bx(gi);
-        const { q1, med, q3, wLo, wHi } = g.stats;
-        const isRain = plotStyle === "raincloud";
-        const isViolin = plotStyle === "violin" || isRain;
+      <g id="axis-y">
+        {yTicks.map((t) => (
+          <g key={t}>
+            <line x1={M.left - 5} x2={M.left} y1={sy(t)} y2={sy(t)} stroke="#333" strokeWidth="1" />
+            <text
+              x={M.left - 8}
+              y={sy(t) + 4}
+              textAnchor="end"
+              fontSize="11"
+              fill="#555"
+              fontFamily="sans-serif"
+            >
+              {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
+            </text>
+          </g>
+        ))}
+      </g>
 
-        /* ── Violin / raincloud KDE shape ── */
-        let violinPath = null;
-        if (isViolin && g.allValues.length >= 2) {
-          const pts = kde(g.allValues, 60);
-          const maxD = Math.max(...pts.map((p) => p.d));
-          if (maxD > 0) {
-            const sc = (d) => (d / maxD) * halfBox;
-            if (isRain) {
-              // Half-violin on the left side only
-              let d = `M ${cx},${sy(pts[0].x)}`;
-              for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
-              d += ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
-              violinPath = (
-                <path
-                  d={d}
-                  fill={g.color}
-                  fillOpacity={boxFillOpacity}
-                  stroke={g.color}
-                  strokeWidth="1"
-                />
-              );
-            } else {
-              // Full symmetric violin
-              let d = `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
-              for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
-              d += ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
-              for (let i = pts.length - 1; i >= 0; i--)
-                d += ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
-              d += " Z";
-              violinPath = (
-                <path
-                  d={d}
-                  fill={g.color}
-                  fillOpacity={boxFillOpacity}
-                  stroke={g.color}
-                  strokeWidth="1"
-                />
-              );
+      <g id="groups">
+        {groups.map((g, gi) => {
+          if (!g.stats) return null;
+          const cx = bx(gi);
+          const { q1, med, q3, wLo, wHi } = g.stats;
+          const isRain = plotStyle === "raincloud";
+          const isViolin = plotStyle === "violin" || isRain;
+
+          /* ── Violin / raincloud KDE shape ── */
+          let violinPath = null;
+          if (isViolin && g.allValues.length >= 2) {
+            const pts = kde(g.allValues, 60);
+            const maxD = Math.max(...pts.map((p) => p.d));
+            if (maxD > 0) {
+              const sc = (d) => (d / maxD) * halfBox;
+              if (isRain) {
+                // Half-violin on the left side only
+                let d = `M ${cx},${sy(pts[0].x)}`;
+                for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+                d += ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
+                violinPath = (
+                  <path
+                    d={d}
+                    fill={g.color}
+                    fillOpacity={boxFillOpacity}
+                    stroke={g.color}
+                    strokeWidth="1"
+                  />
+                );
+              } else {
+                // Full symmetric violin
+                let d = `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
+                for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
+                d += ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
+                for (let i = pts.length - 1; i >= 0; i--)
+                  d += ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
+                d += " Z";
+                violinPath = (
+                  <path
+                    d={d}
+                    fill={g.color}
+                    fillOpacity={boxFillOpacity}
+                    stroke={g.color}
+                    strokeWidth="1"
+                  />
+                );
+              }
             }
           }
-        }
 
-        /* ── Box elements ── */
-        const boxHalf = isViolin ? halfBox * 0.35 : halfBox;
-        const boxCx = isRain ? cx + halfBox * 0.15 : cx;
-        const boxEls = (
-          <>
-            <line x1={boxCx} x2={boxCx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
-            <line x1={boxCx} x2={boxCx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
-            <line
-              x1={boxCx - boxHalf * 0.5}
-              x2={boxCx + boxHalf * 0.5}
-              y1={sy(wHi)}
-              y2={sy(wHi)}
-              stroke="#333"
-              strokeWidth="1"
-            />
-            <line
-              x1={boxCx - boxHalf * 0.5}
-              x2={boxCx + boxHalf * 0.5}
-              y1={sy(wLo)}
-              y2={sy(wLo)}
-              stroke="#333"
-              strokeWidth="1"
-            />
-            <rect
-              x={boxCx - boxHalf}
-              y={sy(q3)}
-              width={boxHalf * 2}
-              height={sy(q1) - sy(q3)}
-              fill={isViolin ? "#fff" : g.color}
-              fillOpacity={isViolin ? 0.7 : boxFillOpacity}
-              stroke={g.color}
-              strokeWidth="1.5"
-              rx="2"
-            />
-            <line
-              x1={boxCx - boxHalf}
-              x2={boxCx + boxHalf}
-              y1={sy(med)}
-              y2={sy(med)}
-              stroke={g.color}
-              strokeWidth="2.5"
-            />
-          </>
-        );
-
-        /* ── Jitter points ── */
-        const ptOffset = isRain ? halfBox * 0.55 : 0;
-        const jitterEls =
-          showPoints &&
-          g.sources.map((src, si) => {
-            const rng = seededRandom(gi * 1000 + si * 100 + 42);
-            const ptColor = pointColor(g, src, si);
-            return src.values.map((v, vi) => {
-              const j = isRain
-                ? ptOffset + Math.abs(rng() - 0.5) * jitterWidth * halfBox
-                : (rng() - 0.5) * jitterWidth * halfBox * 2;
-              return (
-                <circle
-                  key={`${g.name}-${si}-${vi}`}
-                  cx={cx + j}
-                  cy={sy(v)}
-                  r={pointSize}
-                  fill={ptColor}
-                  fillOpacity={pointOpacity || 0.6}
-                  stroke={ptColor}
-                  strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
-                  strokeWidth="0.3"
-                />
-              );
-            });
-          });
-
-        /* ── Outlier dots (always visible) ── */
-        const outlierCx = isRain ? cx + ptOffset : cx;
-        const outlierEls = g.sources.flatMap((src, si) =>
-          src.values
-            .filter((v) => v < wLo || v > wHi)
-            .map((v, oi) => (
-              <circle
-                key={`out-${g.name}-${si}-${oi}`}
-                cx={outlierCx}
-                cy={sy(v)}
-                r={2.5}
-                fill="#000"
-                fillOpacity={0.8}
-                stroke="none"
+          /* ── Box elements ── */
+          const boxHalf = isViolin ? halfBox * 0.35 : halfBox;
+          const boxCx = isRain ? cx + halfBox * 0.15 : cx;
+          const boxEls = (
+            <>
+              <line x1={boxCx} x2={boxCx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
+              <line x1={boxCx} x2={boxCx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
+              <line
+                x1={boxCx - boxHalf * 0.5}
+                x2={boxCx + boxHalf * 0.5}
+                y1={sy(wHi)}
+                y2={sy(wHi)}
+                stroke="#333"
+                strokeWidth="1"
               />
-            ))
-        );
+              <line
+                x1={boxCx - boxHalf * 0.5}
+                x2={boxCx + boxHalf * 0.5}
+                y1={sy(wLo)}
+                y2={sy(wLo)}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              <rect
+                x={boxCx - boxHalf}
+                y={sy(q3)}
+                width={boxHalf * 2}
+                height={sy(q1) - sy(q3)}
+                fill={isViolin ? "#fff" : g.color}
+                fillOpacity={isViolin ? 0.7 : boxFillOpacity}
+                stroke={g.color}
+                strokeWidth="1.5"
+                rx="2"
+              />
+              <line
+                x1={boxCx - boxHalf}
+                x2={boxCx + boxHalf}
+                y1={sy(med)}
+                y2={sy(med)}
+                stroke={g.color}
+                strokeWidth="2.5"
+              />
+            </>
+          );
 
-        return (
-          <g
-            key={g.name}
-            role="group"
-            aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}
-          >
-            {violinPath}
-            {boxEls}
-            {jitterEls}
-            {outlierEls}
-          </g>
-        );
-      })}
+          /* ── Jitter points ── */
+          const ptOffset = isRain ? halfBox * 0.55 : 0;
+          const jitterEls =
+            showPoints &&
+            g.sources.map((src, si) => {
+              const rng = seededRandom(gi * 1000 + si * 100 + 42);
+              const ptColor = pointColor(g, src, si);
+              return src.values.map((v, vi) => {
+                const j = isRain
+                  ? ptOffset + Math.abs(rng() - 0.5) * jitterWidth * halfBox
+                  : (rng() - 0.5) * jitterWidth * halfBox * 2;
+                return (
+                  <circle
+                    key={`${g.name}-${si}-${vi}`}
+                    cx={cx + j}
+                    cy={sy(v)}
+                    r={pointSize}
+                    fill={ptColor}
+                    fillOpacity={pointOpacity || 0.6}
+                    stroke={ptColor}
+                    strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
+                    strokeWidth="0.3"
+                  />
+                );
+              });
+            });
 
-      <rect x={M.left} y={M.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
+          /* ── Outlier dots (always visible) ── */
+          const outlierCx = isRain ? cx + ptOffset : cx;
+          const outlierEls = g.sources.flatMap((src, si) =>
+            src.values
+              .filter((v) => v < wLo || v > wHi)
+              .map((v, oi) => (
+                <circle
+                  key={`out-${g.name}-${si}-${oi}`}
+                  cx={outlierCx}
+                  cy={sy(v)}
+                  r={2.5}
+                  fill="#000"
+                  fillOpacity={0.8}
+                  stroke="none"
+                />
+              ))
+          );
 
-      {groups.map((g, gi) => {
-        const lx = bx(gi);
-        const ly = M.top + h + 16;
-        const compBar = renderCompPie(g, lx);
-        return (
-          <React.Fragment key={`xl-${g.name}`}>
-            {angle === 0 ? (
-              <g>
+          return (
+            <g
+              key={g.name}
+              id={`group-${svgSafeId(g.name)}`}
+              role="group"
+              aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}
+            >
+              {violinPath}
+              {boxEls}
+              {jitterEls}
+              {outlierEls}
+            </g>
+          );
+        })}
+      </g>
+
+      <rect
+        id="plot-frame"
+        x={M.left}
+        y={M.top}
+        width={w}
+        height={h}
+        fill="none"
+        stroke="#333"
+        strokeWidth="1"
+      />
+
+      <g id="axis-x">
+        {groups.map((g, gi) => {
+          const lx = bx(gi);
+          const ly = M.top + h + 16;
+          const compBar = renderCompPie(g, lx);
+          return (
+            <React.Fragment key={`xl-${g.name}`}>
+              {angle === 0 ? (
+                <g>
+                  <text
+                    x={lx}
+                    y={ly}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="#333"
+                    fontFamily="sans-serif"
+                    fontWeight="600"
+                  >
+                    {g.name}
+                  </text>
+                  <text
+                    x={lx}
+                    y={ly + 14}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fill="#999"
+                    fontFamily="sans-serif"
+                  >
+                    n={g.stats?.n || 0}
+                  </text>
+                </g>
+              ) : (
+                <g transform={`rotate(${angle},${lx},${ly})`}>
+                  <text
+                    x={lx}
+                    y={ly}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize="11"
+                    fill="#333"
+                    fontFamily="sans-serif"
+                    fontWeight="600"
+                  >
+                    {g.name}
+                  </text>
+                  <text
+                    x={lx}
+                    y={ly + 12}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize="9"
+                    fill="#999"
+                    fontFamily="sans-serif"
+                  >
+                    n={g.stats?.n || 0}
+                  </text>
+                </g>
+              )}
+              {compBar}
+            </React.Fragment>
+          );
+        })}
+      </g>
+
+      {annotations && annotations.kind === "cld" && (
+        <g id="cld-annotations">
+          {(annotations.labels || []).map((lbl, gi) => (
+            <text
+              key={`cld-${gi}`}
+              x={bx(gi)}
+              y={M.top + 15}
+              textAnchor="middle"
+              fontSize="13"
+              fontWeight="700"
+              fill="#222"
+              fontFamily="sans-serif"
+            >
+              {lbl}
+            </text>
+          ))}
+        </g>
+      )}
+
+      {annotations && annotations.kind === "brackets" && (
+        <g id="significance-brackets">
+          {annotPairs.map((pr, idx) => {
+            const x1 = bx(pr.i);
+            const x2 = bx(pr.j);
+            const lvl = pr._level || 0;
+            const yLine = M.top + annotTopPad - 6 - lvl * 20;
+            const tick = 4;
+            return (
+              <g key={`br-${idx}`}>
+                <path
+                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                  stroke="#333"
+                  strokeWidth="1"
+                  fill="none"
+                />
                 <text
-                  x={lx}
-                  y={ly}
+                  x={(x1 + x2) / 2}
+                  y={yLine - 2}
                   textAnchor="middle"
-                  fontSize="11"
-                  fill="#333"
-                  fontFamily="sans-serif"
-                  fontWeight="600"
-                >
-                  {g.name}
-                </text>
-                <text
-                  x={lx}
-                  y={ly + 14}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="#999"
+                  fontSize="12"
+                  fontWeight="700"
+                  fill="#222"
                   fontFamily="sans-serif"
                 >
-                  n={g.stats?.n || 0}
+                  {pr.label}
                 </text>
               </g>
-            ) : (
-              <g transform={`rotate(${angle},${lx},${ly})`}>
-                <text
-                  x={lx}
-                  y={ly}
-                  textAnchor="end"
-                  dominantBaseline="middle"
-                  fontSize="11"
-                  fill="#333"
-                  fontFamily="sans-serif"
-                  fontWeight="600"
-                >
-                  {g.name}
-                </text>
-                <text
-                  x={lx}
-                  y={ly + 12}
-                  textAnchor="end"
-                  dominantBaseline="middle"
-                  fontSize="9"
-                  fill="#999"
-                  fontFamily="sans-serif"
-                >
-                  n={g.stats?.n || 0}
-                </text>
-              </g>
-            )}
-            {compBar}
-          </React.Fragment>
-        );
-      })}
+            );
+          })}
+        </g>
+      )}
 
-      {/* Stats annotations — compact letter display */}
-      {annotations &&
-        annotations.kind === "cld" &&
-        (annotations.labels || []).map((lbl, gi) => (
+      {yLabel && (
+        <g id="y-axis-label">
           <text
-            key={`cld-${gi}`}
-            x={bx(gi)}
-            y={M.top + 15}
+            transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
             textAnchor="middle"
             fontSize="13"
+            fill="#444"
+            fontFamily="sans-serif"
+          >
+            {yLabel}
+          </text>
+        </g>
+      )}
+
+      {plotTitle && (
+        <g id="title">
+          <text
+            x={M.left + w / 2}
+            y={14}
+            textAnchor="middle"
+            fontSize="15"
             fontWeight="700"
             fill="#222"
             fontFamily="sans-serif"
           >
-            {lbl}
+            {plotTitle}
           </text>
-        ))}
-
-      {/* Stats annotations — significance brackets */}
-      {annotations &&
-        annotations.kind === "brackets" &&
-        annotPairs.map((pr, idx) => {
-          const x1 = bx(pr.i);
-          const x2 = bx(pr.j);
-          const lvl = pr._level || 0;
-          const yLine = M.top + annotTopPad - 6 - lvl * 20;
-          const tick = 4;
-          return (
-            <g key={`br-${idx}`}>
-              <path
-                d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                stroke="#333"
-                strokeWidth="1"
-                fill="none"
-              />
-              <text
-                x={(x1 + x2) / 2}
-                y={yLine - 2}
-                textAnchor="middle"
-                fontSize="12"
-                fontWeight="700"
-                fill="#222"
-                fontFamily="sans-serif"
-              >
-                {pr.label}
-              </text>
-            </g>
-          );
-        })}
-
-      {yLabel && (
-        <text
-          transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
-          textAnchor="middle"
-          fontSize="13"
-          fill="#444"
-          fontFamily="sans-serif"
-        >
-          {yLabel}
-        </text>
-      )}
-
-      {plotTitle && (
-        <text
-          x={M.left + w / 2}
-          y={14}
-          textAnchor="middle"
-          fontSize="15"
-          fontWeight="700"
-          fill="#222"
-          fontFamily="sans-serif"
-        >
-          {plotTitle}
-        </text>
+        </g>
       )}
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
@@ -632,126 +657,142 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     >
       <title>{plotTitle || "Bar chart"}</title>
       <desc>{`Bar chart with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
-      <rect x={MChart.left} y={MChart.top} width={w} height={h} fill={plotBg} />
+      <rect
+        id="plot-area-background"
+        x={MChart.left}
+        y={MChart.top}
+        width={w}
+        height={h}
+        fill={plotBg}
+      />
 
-      {showGrid &&
-        yTicks.map((t) => (
-          <line
-            key={t}
-            x1={MChart.left}
-            x2={MChart.left + w}
-            y1={sy(t)}
-            y2={sy(t)}
-            stroke={gridColor}
-            strokeWidth="0.5"
-          />
-        ))}
-
-      {yTicks.map((t) => (
-        <g key={t}>
-          <line
-            x1={MChart.left - 5}
-            x2={MChart.left}
-            y1={sy(t)}
-            y2={sy(t)}
-            stroke="#333"
-            strokeWidth="1"
-          />
-          <text
-            x={MChart.left - 8}
-            y={sy(t) + 4}
-            textAnchor="end"
-            fontSize="11"
-            fill="#555"
-            fontFamily="sans-serif"
-          >
-            {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
-          </text>
+      {showGrid && (
+        <g id="grid">
+          {yTicks.map((t) => (
+            <line
+              key={t}
+              x1={MChart.left}
+              x2={MChart.left + w}
+              y1={sy(t)}
+              y2={sy(t)}
+              stroke={gridColor}
+              strokeWidth="0.5"
+            />
+          ))}
         </g>
-      ))}
+      )}
 
-      {groups.map((g, gi) => {
-        if (!g.stats) return null;
-        const cx = bx(gi);
-        const { mean, sd, sem } = g.stats;
-        if (mean < yMin || mean > yMax) return null;
-        const errVal = errorType === "sd" ? sd : sem;
-        const baseline = sy(Math.max(0, yMin));
-        const barTop = sy(mean);
-        const yBar = mean >= 0 ? barTop : baseline;
-        const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
-
-        return (
-          <g
-            key={g.name}
-            role="group"
-            aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
-          >
-            <rect
-              x={cx - halfBar}
-              y={yBar}
-              width={halfBar * 2}
-              height={Math.max(0, barH)}
-              fill={g.color}
-              fillOpacity={barOpacity}
-              stroke={showBarOutline ? g.color : "none"}
-              strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
-              rx="1"
-            />
+      <g id="axis-y">
+        {yTicks.map((t) => (
+          <g key={t}>
             <line
-              x1={cx}
-              x2={cx}
-              y1={sy(mean + errVal)}
-              y2={sy(mean - errVal)}
+              x1={MChart.left - 5}
+              x2={MChart.left}
+              y1={sy(t)}
+              y2={sy(t)}
               stroke="#333"
-              strokeWidth={errStrokeWidth || 1.2}
+              strokeWidth="1"
             />
-            <line
-              x1={cx - halfBar * 0.4}
-              x2={cx + halfBar * 0.4}
-              y1={sy(mean + errVal)}
-              y2={sy(mean + errVal)}
-              stroke="#333"
-              strokeWidth={errStrokeWidth || 1.2}
-            />
-            <line
-              x1={cx - halfBar * 0.4}
-              x2={cx + halfBar * 0.4}
-              y1={sy(mean - errVal)}
-              y2={sy(mean - errVal)}
-              stroke="#333"
-              strokeWidth={errStrokeWidth || 1.2}
-            />
-
-            {showPoints &&
-              g.sources.map((src, si) => {
-                const rng = seededRandom(gi * 1000 + si * 100 + 42);
-                const ptColors = getPointColors(g.color, g.sources.length);
-                return src.values.map((v, vi) => {
-                  const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
-                  const cat = src.categories?.[vi];
-                  const ptColor =
-                    catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
-                  return (
-                    <circle
-                      key={`${g.name}-${si}-${vi}`}
-                      cx={cx + jitter}
-                      cy={sy(v)}
-                      r={pointSize}
-                      fill={ptColor}
-                      fillOpacity={pointOpacity || 0.6}
-                      stroke={ptColor}
-                      strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
-                      strokeWidth="0.3"
-                    />
-                  );
-                });
-              })}
+            <text
+              x={MChart.left - 8}
+              y={sy(t) + 4}
+              textAnchor="end"
+              fontSize="11"
+              fill="#555"
+              fontFamily="sans-serif"
+            >
+              {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
+            </text>
           </g>
-        );
-      })}
+        ))}
+      </g>
+
+      <g id="bars">
+        {groups.map((g, gi) => {
+          if (!g.stats) return null;
+          const cx = bx(gi);
+          const { mean, sd, sem } = g.stats;
+          if (mean < yMin || mean > yMax) return null;
+          const errVal = errorType === "sd" ? sd : sem;
+          const baseline = sy(Math.max(0, yMin));
+          const barTop = sy(mean);
+          const yBar = mean >= 0 ? barTop : baseline;
+          const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
+
+          return (
+            <g
+              key={g.name}
+              id={`bar-${svgSafeId(g.name)}`}
+              role="group"
+              aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
+            >
+              <rect
+                x={cx - halfBar}
+                y={yBar}
+                width={halfBar * 2}
+                height={Math.max(0, barH)}
+                fill={g.color}
+                fillOpacity={barOpacity}
+                stroke={showBarOutline ? g.color : "none"}
+                strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
+                rx="1"
+              />
+              <line
+                x1={cx}
+                x2={cx}
+                y1={sy(mean + errVal)}
+                y2={sy(mean - errVal)}
+                stroke="#333"
+                strokeWidth={errStrokeWidth || 1.2}
+              />
+              <line
+                x1={cx - halfBar * 0.4}
+                x2={cx + halfBar * 0.4}
+                y1={sy(mean + errVal)}
+                y2={sy(mean + errVal)}
+                stroke="#333"
+                strokeWidth={errStrokeWidth || 1.2}
+              />
+              <line
+                x1={cx - halfBar * 0.4}
+                x2={cx + halfBar * 0.4}
+                y1={sy(mean - errVal)}
+                y2={sy(mean - errVal)}
+                stroke="#333"
+                strokeWidth={errStrokeWidth || 1.2}
+              />
+
+              {showPoints &&
+                g.sources.map((src, si) => {
+                  const rng = seededRandom(gi * 1000 + si * 100 + 42);
+                  const ptColors = getPointColors(g.color, g.sources.length);
+                  return src.values.map((v, vi) => {
+                    const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
+                    const cat = src.categories?.[vi];
+                    const ptColor =
+                      catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
+                    return (
+                      <circle
+                        key={`${g.name}-${si}-${vi}`}
+                        cx={cx + jitter}
+                        cy={sy(v)}
+                        r={pointSize}
+                        fill={ptColor}
+                        fillOpacity={pointOpacity || 0.6}
+                        stroke={ptColor}
+                        strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
+                        strokeWidth="0.3"
+                      />
+                    );
+                  });
+                })}
+            </g>
+          );
+        })}
+      </g>
 
       <rect
+        id="plot-frame"
         x={MChart.left}
         y={MChart.top}
         width={w}
@@ -761,109 +802,123 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         strokeWidth="1"
       />
 
-      {annotations &&
-        annotations.kind === "cld" &&
-        (annotations.labels || []).map((lbl, gi) => (
+      {annotations && annotations.kind === "cld" && (
+        <g id="cld-annotations">
+          {(annotations.labels || []).map((lbl, gi) => (
+            <text
+              key={`cld-${gi}`}
+              x={bx(gi)}
+              y={MChart.top + 15}
+              textAnchor="middle"
+              fontSize="13"
+              fontWeight="700"
+              fill="#222"
+              fontFamily="sans-serif"
+            >
+              {lbl}
+            </text>
+          ))}
+        </g>
+      )}
+
+      {annotations && annotations.kind === "brackets" && (
+        <g id="significance-brackets">
+          {annotPairs.map((pr, idx) => {
+            const x1 = bx(pr.i);
+            const x2 = bx(pr.j);
+            const lvl = pr._level || 0;
+            const yLine = MChart.top + annotTopPad - 6 - lvl * 20;
+            const tick = 4;
+            return (
+              <g key={`br-${idx}`}>
+                <path
+                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                  stroke="#333"
+                  strokeWidth="1"
+                  fill="none"
+                />
+                <text
+                  x={(x1 + x2) / 2}
+                  y={yLine - 2}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="700"
+                  fill="#222"
+                  fontFamily="sans-serif"
+                >
+                  {pr.label}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
+
+      <g id="axis-x">
+        {groups.map((g, gi) => {
+          const lx = bx(gi);
+          const ly = MChart.top + h + 8;
+          const angled = angle !== 0;
+          return (
+            <g
+              key={`xl-${g.name}`}
+              id={`xlabel-${svgSafeId(g.name)}`}
+              transform={`translate(${lx},${ly}) rotate(${angle})`}
+            >
+              <text
+                x={0}
+                y={0}
+                textAnchor={angled ? "end" : "middle"}
+                dominantBaseline={angled ? "middle" : "hanging"}
+                fontSize="11"
+                fill="#333"
+                fontFamily="sans-serif"
+                fontWeight="600"
+              >
+                {g.name}
+              </text>
+              <text
+                x={0}
+                y={14}
+                textAnchor={angled ? "end" : "middle"}
+                dominantBaseline={angled ? "middle" : "hanging"}
+                fontSize="9"
+                fill="#999"
+                fontFamily="sans-serif"
+              >{`n=${g.stats?.n || 0}`}</text>
+            </g>
+          );
+        })}
+      </g>
+
+      {yLabel && (
+        <g id="y-axis-label">
           <text
-            key={`cld-${gi}`}
-            x={bx(gi)}
-            y={MChart.top + 15}
+            transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`}
             textAnchor="middle"
             fontSize="13"
+            fill="#444"
+            fontFamily="sans-serif"
+          >
+            {yLabel}
+          </text>
+        </g>
+      )}
+
+      {plotTitle && (
+        <g id="title">
+          <text
+            x={MChart.left + w / 2}
+            y={14}
+            textAnchor="middle"
+            fontSize="15"
             fontWeight="700"
             fill="#222"
             fontFamily="sans-serif"
           >
-            {lbl}
+            {plotTitle}
           </text>
-        ))}
-
-      {annotations &&
-        annotations.kind === "brackets" &&
-        annotPairs.map((pr, idx) => {
-          const x1 = bx(pr.i);
-          const x2 = bx(pr.j);
-          const lvl = pr._level || 0;
-          const yLine = MChart.top + annotTopPad - 6 - lvl * 20;
-          const tick = 4;
-          return (
-            <g key={`br-${idx}`}>
-              <path
-                d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                stroke="#333"
-                strokeWidth="1"
-                fill="none"
-              />
-              <text
-                x={(x1 + x2) / 2}
-                y={yLine - 2}
-                textAnchor="middle"
-                fontSize="12"
-                fontWeight="700"
-                fill="#222"
-                fontFamily="sans-serif"
-              >
-                {pr.label}
-              </text>
-            </g>
-          );
-        })}
-
-      {groups.map((g, gi) => {
-        const lx = bx(gi);
-        const ly = MChart.top + h + 8;
-        const angled = angle !== 0;
-        return (
-          <g key={`xl-${g.name}`} transform={`translate(${lx},${ly}) rotate(${angle})`}>
-            <text
-              x={0}
-              y={0}
-              textAnchor={angled ? "end" : "middle"}
-              dominantBaseline={angled ? "middle" : "hanging"}
-              fontSize="11"
-              fill="#333"
-              fontFamily="sans-serif"
-              fontWeight="600"
-            >
-              {g.name}
-            </text>
-            <text
-              x={0}
-              y={14}
-              textAnchor={angled ? "end" : "middle"}
-              dominantBaseline={angled ? "middle" : "hanging"}
-              fontSize="9"
-              fill="#999"
-              fontFamily="sans-serif"
-            >{`n=${g.stats?.n || 0}`}</text>
-          </g>
-        );
-      })}
-
-      {yLabel && (
-        <text
-          transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`}
-          textAnchor="middle"
-          fontSize="13"
-          fill="#444"
-          fontFamily="sans-serif"
-        >
-          {yLabel}
-        </text>
-      )}
-
-      {plotTitle && (
-        <text
-          x={MChart.left + w / 2}
-          y={14}
-          textAnchor="middle"
-          fontSize="15"
-          fontWeight="700"
-          fill="#222"
-          fontFamily="sans-serif"
-        >
-          {plotTitle}
-        </text>
+        </g>
       )}
       {renderSvgLegend(
         svgLegend,

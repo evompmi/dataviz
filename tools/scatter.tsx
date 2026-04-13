@@ -270,36 +270,44 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         </clipPath>
       </defs>
 
-      <rect width={VBW} height={VBH} fill={plotBg || "#fff"} />
-      <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} fill={plotBg || "#fff"} />
+      <rect id="background" width={VBW} height={VBH} fill={plotBg || "#fff"} />
+      <rect
+        id="plot-area-background"
+        x={MARGIN.left}
+        y={MARGIN.top}
+        width={w}
+        height={h}
+        fill={plotBg || "#fff"}
+      />
 
-      {showGrid &&
-        yTicks.map((t) => (
-          <line
-            key={t}
-            x1={MARGIN.left}
-            x2={MARGIN.left + w}
-            y1={sy(t)}
-            y2={sy(t)}
-            stroke={gridColor || "#e0e0e0"}
-            strokeWidth="0.5"
-          />
-        ))}
-      {showGrid &&
-        xTicks.map((t) => (
-          <line
-            key={t}
-            x1={sx(t)}
-            x2={sx(t)}
-            y1={MARGIN.top}
-            y2={MARGIN.top + h}
-            stroke={gridColor || "#e0e0e0"}
-            strokeWidth="0.5"
-          />
-        ))}
+      {showGrid && (
+        <g id="grid">
+          {yTicks.map((t) => (
+            <line
+              key={`gy-${t}`}
+              x1={MARGIN.left}
+              x2={MARGIN.left + w}
+              y1={sy(t)}
+              y2={sy(t)}
+              stroke={gridColor || "#e0e0e0"}
+              strokeWidth="0.5"
+            />
+          ))}
+          {xTicks.map((t) => (
+            <line
+              key={`gx-${t}`}
+              x1={sx(t)}
+              x2={sx(t)}
+              y1={MARGIN.top}
+              y2={MARGIN.top + h}
+              stroke={gridColor || "#e0e0e0"}
+              strokeWidth="0.5"
+            />
+          ))}
+        </g>
+      )}
 
-      {/* Reference lines (clipped) */}
-      <g clipPath="url(#sc-clip)">
+      <g id="reference-lines" clipPath="url(#sc-clip)">
         {refLines.map((rl) => {
           const isH = rl.dir === "h";
           const x1 = isH ? MARGIN.left : sx(rl.value);
@@ -326,49 +334,54 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         })}
       </g>
 
-      {/* Reference line labels */}
-      {refLines.map((rl) => {
-        if (!rl.label) return null;
-        const isH = rl.dir === "h";
-        if (isH) {
-          if (rl.value < yMin || rl.value > yMax) return null;
-          const lx = rl.labelSide === "left" ? MARGIN.left + 4 : MARGIN.left + w - 4;
-          return (
-            <text
-              key={`lbl-${rl.id}`}
-              x={lx}
-              y={sy(rl.value) - 4}
-              textAnchor={rl.labelSide === "left" ? "start" : "end"}
-              fontSize="10"
-              fill={rl.color || "#444"}
-              fontFamily="sans-serif"
-              fontStyle="italic"
-            >
-              {rl.label}
-            </text>
-          );
-        } else {
-          if (rl.value < xMin || rl.value > xMax) return null;
-          const ly = rl.labelSide === "bottom" ? MARGIN.top + h - 4 : MARGIN.top + 12;
-          return (
-            <text
-              key={`lbl-${rl.id}`}
-              x={sx(rl.value) + 4}
-              y={ly}
-              textAnchor="start"
-              fontSize="10"
-              fill={rl.color || "#444"}
-              fontFamily="sans-serif"
-              fontStyle="italic"
-            >
-              {rl.label}
-            </text>
-          );
-        }
-      })}
+      <g id="reference-line-labels">
+        {refLines.map((rl) => {
+          if (!rl.label) return null;
+          const isH = rl.dir === "h";
+          if (isH) {
+            if (rl.value < yMin || rl.value > yMax) return null;
+            const lx = rl.labelSide === "left" ? MARGIN.left + 4 : MARGIN.left + w - 4;
+            return (
+              <text
+                key={`lbl-${rl.id}`}
+                x={lx}
+                y={sy(rl.value) - 4}
+                textAnchor={rl.labelSide === "left" ? "start" : "end"}
+                fontSize="10"
+                fill={rl.color || "#444"}
+                fontFamily="sans-serif"
+                fontStyle="italic"
+              >
+                {rl.label}
+              </text>
+            );
+          } else {
+            if (rl.value < xMin || rl.value > xMax) return null;
+            const ly = rl.labelSide === "bottom" ? MARGIN.top + h - 4 : MARGIN.top + 12;
+            return (
+              <text
+                key={`lbl-${rl.id}`}
+                x={sx(rl.value) + 4}
+                y={ly}
+                textAnchor="start"
+                fontSize="10"
+                fill={rl.color || "#444"}
+                fontFamily="sans-serif"
+                fontStyle="italic"
+              >
+                {rl.label}
+              </text>
+            );
+          }
+        })}
+      </g>
 
-      {/* Data points */}
-      <g clipPath="url(#sc-clip)" role="group" aria-label={`${data.length} data points`}>
+      <g
+        id="data-points"
+        clipPath="url(#sc-clip)"
+        role="group"
+        aria-label={`${data.length} data points`}
+      >
         {data.map((row, ri) => {
           const xVal = row[xCol],
             yVal = row[yCol];
@@ -383,9 +396,8 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         })}
       </g>
 
-      {/* Regression line (clipped) */}
       {regression && regression.on && regressionStats && regressionStats.valid && (
-        <g clipPath="url(#sc-clip)">
+        <g id="regression-line" clipPath="url(#sc-clip)">
           <line
             x1={sx(xMin)}
             y1={sy(regressionStats.slope * xMin + regressionStats.intercept)}
@@ -416,7 +428,12 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
           const r2 = `R² = ${regressionStats.r2.toFixed(4)}`;
           const nTxt = `n = ${regressionStats.n}`;
           return (
-            <g fontFamily="sans-serif" fontSize="11" fill={regression.color || "#dc2626"}>
+            <g
+              id="regression-stats"
+              fontFamily="sans-serif"
+              fontSize="11"
+              fill={regression.color || "#dc2626"}
+            >
               <text x={tx} y={ty + 10} textAnchor={anchor}>
                 {eq}
               </text>
@@ -431,6 +448,7 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         })()}
 
       <rect
+        id="plot-frame"
         x={MARGIN.left}
         y={MARGIN.top}
         width={w}
@@ -440,86 +458,96 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         strokeWidth="1"
       />
 
-      {xTicks.map((t) => (
-        <g key={t}>
-          <line
-            x1={sx(t)}
-            x2={sx(t)}
-            y1={MARGIN.top + h}
-            y2={MARGIN.top + h + 5}
-            stroke="#333"
-            strokeWidth="1"
-          />
-          <text
-            x={sx(t)}
-            y={MARGIN.top + h + 18}
-            textAnchor="middle"
-            fontSize="11"
-            fill="#555"
-            fontFamily="sans-serif"
-          >
-            {fmtTick(t)}
-          </text>
-        </g>
-      ))}
-      {yTicks.map((t) => (
-        <g key={t}>
-          <line
-            x1={MARGIN.left - 5}
-            x2={MARGIN.left}
-            y1={sy(t)}
-            y2={sy(t)}
-            stroke="#333"
-            strokeWidth="1"
-          />
-          <text
-            x={MARGIN.left - 8}
-            y={sy(t) + 4}
-            textAnchor="end"
-            fontSize="11"
-            fill="#555"
-            fontFamily="sans-serif"
-          >
-            {fmtTick(t)}
-          </text>
-        </g>
-      ))}
+      <g id="axis-x">
+        {xTicks.map((t) => (
+          <g key={t}>
+            <line
+              x1={sx(t)}
+              x2={sx(t)}
+              y1={MARGIN.top + h}
+              y2={MARGIN.top + h + 5}
+              stroke="#333"
+              strokeWidth="1"
+            />
+            <text
+              x={sx(t)}
+              y={MARGIN.top + h + 18}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#555"
+              fontFamily="sans-serif"
+            >
+              {fmtTick(t)}
+            </text>
+          </g>
+        ))}
+      </g>
+      <g id="axis-y">
+        {yTicks.map((t) => (
+          <g key={t}>
+            <line
+              x1={MARGIN.left - 5}
+              x2={MARGIN.left}
+              y1={sy(t)}
+              y2={sy(t)}
+              stroke="#333"
+              strokeWidth="1"
+            />
+            <text
+              x={MARGIN.left - 8}
+              y={sy(t) + 4}
+              textAnchor="end"
+              fontSize="11"
+              fill="#555"
+              fontFamily="sans-serif"
+            >
+              {fmtTick(t)}
+            </text>
+          </g>
+        ))}
+      </g>
 
       {xLabel && (
-        <text
-          x={MARGIN.left + w / 2}
-          y={VBH - 6}
-          textAnchor="middle"
-          fontSize="13"
-          fill="#444"
-          fontFamily="sans-serif"
-        >
-          {xLabel}
-        </text>
+        <g id="x-axis-label">
+          <text
+            x={MARGIN.left + w / 2}
+            y={VBH - 6}
+            textAnchor="middle"
+            fontSize="13"
+            fill="#444"
+            fontFamily="sans-serif"
+          >
+            {xLabel}
+          </text>
+        </g>
       )}
       {yLabel && (
-        <text
-          transform={`translate(14,${MARGIN.top + h / 2}) rotate(-90)`}
-          textAnchor="middle"
-          fontSize="13"
-          fill="#444"
-          fontFamily="sans-serif"
-        >
-          {yLabel}
-        </text>
+        <g id="y-axis-label">
+          <text
+            transform={`translate(14,${MARGIN.top + h / 2}) rotate(-90)`}
+            textAnchor="middle"
+            fontSize="13"
+            fill="#444"
+            fontFamily="sans-serif"
+          >
+            {yLabel}
+          </text>
+        </g>
       )}
       {title && (
-        <text
-          x={VBW / 2}
-          y={16}
-          textAnchor="middle"
-          fontSize="15"
-          fontWeight="700"
-          fill="#222"
-          fontFamily="sans-serif"
-        >
-          {title}
-        </text>
+        <g id="title">
+          <text
+            x={VBW / 2}
+            y={16}
+            textAnchor="middle"
+            fontSize="15"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {title}
+          </text>
+        </g>
       )}
       {renderSvgLegend(
         svgLegend,

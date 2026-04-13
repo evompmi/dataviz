@@ -293,81 +293,101 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
       <title>{plotTitle || "Aequorin luminescence chart"}</title>
       <desc>{`Time series chart with ${series.length} series${xLabel ? `, X: ${xLabel}` : ""}${yLabel ? `, Y: ${yLabel}` : ""}`}</desc>
       {plotTitle && (
-        <text
-          x={vbW / 2}
-          y={17}
-          textAnchor="middle"
-          fontSize="15"
-          fontWeight="700"
-          fill="#222"
-          fontFamily="sans-serif"
-        >
-          {plotTitle}
-        </text>
+        <g id="title">
+          <text
+            x={vbW / 2}
+            y={17}
+            textAnchor="middle"
+            fontSize="15"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {plotTitle}
+          </text>
+        </g>
       )}
       {plotSubtitle && (
-        <text
-          x={vbW / 2}
-          y={plotTitle ? 34 : 17}
-          textAnchor="middle"
-          fontSize="12"
-          fill="#888"
-          fontFamily="sans-serif"
-        >
-          {plotSubtitle}
-        </text>
+        <g id="subtitle">
+          <text
+            x={vbW / 2}
+            y={plotTitle ? 34 : 17}
+            textAnchor="middle"
+            fontSize="12"
+            fill="#888"
+            fontFamily="sans-serif"
+          >
+            {plotSubtitle}
+          </text>
+        </g>
       )}
-      <g transform={`translate(0, ${topPad})`}>
-        <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} fill={plotBg || "#fff"} />
-        {showGrid &&
-          yTicks.map((t) => (
-            <line
-              key={t}
-              x1={MARGIN.left}
-              x2={MARGIN.left + w}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke={gridColor || "#e0e0e0"}
-              strokeWidth="0.5"
-            />
-          ))}
-        {showGrid &&
-          xTicks.map((t) => (
-            <line
-              key={t}
-              x1={sx(t)}
-              x2={sx(t)}
-              y1={MARGIN.top}
-              y2={MARGIN.top + h}
-              stroke={gridColor || "#e0e0e0"}
-              strokeWidth="0.5"
-            />
-          ))}
-        {paths.map((p) =>
-          p.areaD ? (
-            <path
-              key={`area-${p.prefix}`}
-              d={p.areaD}
-              fill={p.color}
-              fillOpacity={ribbonOpacity}
-              stroke={p.color}
-              strokeOpacity={ribbonOpacity}
-              strokeWidth="0.5"
-            />
-          ) : null
-        )}
-        {paths.map((p) =>
-          p.lineD ? (
-            <path
-              key={`line-${p.prefix}`}
-              d={p.lineD}
-              fill="none"
-              stroke={p.color}
-              strokeWidth={lineWidth}
-            />
-          ) : null
-        )}
+      <g id="chart" transform={`translate(0, ${topPad})`}>
         <rect
+          id="plot-area-background"
+          x={MARGIN.left}
+          y={MARGIN.top}
+          width={w}
+          height={h}
+          fill={plotBg || "#fff"}
+        />
+        {showGrid && (
+          <g id="grid">
+            {yTicks.map((t) => (
+              <line
+                key={`gy-${t}`}
+                x1={MARGIN.left}
+                x2={MARGIN.left + w}
+                y1={sy(t)}
+                y2={sy(t)}
+                stroke={gridColor || "#e0e0e0"}
+                strokeWidth="0.5"
+              />
+            ))}
+            {xTicks.map((t) => (
+              <line
+                key={`gx-${t}`}
+                x1={sx(t)}
+                x2={sx(t)}
+                y1={MARGIN.top}
+                y2={MARGIN.top + h}
+                stroke={gridColor || "#e0e0e0"}
+                strokeWidth="0.5"
+              />
+            ))}
+          </g>
+        )}
+        <g id="ribbons">
+          {paths.map((p) =>
+            p.areaD ? (
+              <path
+                key={`area-${p.prefix}`}
+                id={`ribbon-${svgSafeId(p.prefix)}`}
+                d={p.areaD}
+                fill={p.color}
+                fillOpacity={ribbonOpacity}
+                stroke={p.color}
+                strokeOpacity={ribbonOpacity}
+                strokeWidth="0.5"
+              />
+            ) : null
+          )}
+        </g>
+        <g id="traces">
+          {paths.map((p) =>
+            p.lineD ? (
+              <path
+                key={`line-${p.prefix}`}
+                id={`trace-${svgSafeId(p.prefix)}`}
+                d={p.lineD}
+                fill="none"
+                stroke={p.color}
+                strokeWidth={lineWidth}
+              />
+            ) : null
+          )}
+        </g>
+        <rect
+          id="plot-frame"
           x={MARGIN.left}
           y={MARGIN.top}
           width={w}
@@ -376,72 +396,80 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
           stroke="#333"
           strokeWidth="1"
         />
-        {xTicks.map((t) => (
-          <g key={t}>
-            <line
-              x1={sx(t)}
-              x2={sx(t)}
-              y1={MARGIN.top + h}
-              y2={MARGIN.top + h + 5}
-              stroke="#333"
-              strokeWidth="1"
-            />
-            <text
-              x={sx(t)}
-              y={MARGIN.top + h + 18}
-              textAnchor="middle"
-              fontSize="11"
-              fill="#555"
-              fontFamily="sans-serif"
-            >
-              {t}
-            </text>
-          </g>
-        ))}
-        {yTicks.map((t) => (
-          <g key={t}>
-            <line
-              x1={MARGIN.left - 5}
-              x2={MARGIN.left}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke="#333"
-              strokeWidth="1"
-            />
-            <text
-              x={MARGIN.left - 8}
-              y={sy(t) + 4}
-              textAnchor="end"
-              fontSize="11"
-              fill="#555"
-              fontFamily="sans-serif"
-            >
-              {t % 1 === 0 ? t : t.toFixed(1)}
-            </text>
-          </g>
-        ))}
+        <g id="axis-x">
+          {xTicks.map((t) => (
+            <g key={t}>
+              <line
+                x1={sx(t)}
+                x2={sx(t)}
+                y1={MARGIN.top + h}
+                y2={MARGIN.top + h + 5}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              <text
+                x={sx(t)}
+                y={MARGIN.top + h + 18}
+                textAnchor="middle"
+                fontSize="11"
+                fill="#555"
+                fontFamily="sans-serif"
+              >
+                {t}
+              </text>
+            </g>
+          ))}
+        </g>
+        <g id="axis-y">
+          {yTicks.map((t) => (
+            <g key={t}>
+              <line
+                x1={MARGIN.left - 5}
+                x2={MARGIN.left}
+                y1={sy(t)}
+                y2={sy(t)}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              <text
+                x={MARGIN.left - 8}
+                y={sy(t) + 4}
+                textAnchor="end"
+                fontSize="11"
+                fill="#555"
+                fontFamily="sans-serif"
+              >
+                {t % 1 === 0 ? t : t.toFixed(1)}
+              </text>
+            </g>
+          ))}
+        </g>
         {xLabel && (
-          <text
-            x={MARGIN.left + w / 2}
-            y={vbH - 4}
-            textAnchor="middle"
-            fontSize="13"
-            fill="#444"
-            fontFamily="sans-serif"
-          >
-            {xLabel}
-          </text>
+          <g id="x-axis-label">
+            <text
+              x={MARGIN.left + w / 2}
+              y={vbH - 4}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#444"
+              fontFamily="sans-serif"
+            >
+              {xLabel}
+            </text>
+          </g>
         )}
         {yLabel && (
-          <text
-            transform={`translate(14,${MARGIN.top + h / 2}) rotate(-90)`}
-            textAnchor="middle"
-            fontSize="13"
-            fill="#444"
-            fontFamily="sans-serif"
-          >
-            {yLabel}
-          </text>
+          <g id="y-axis-label">
+            <text
+              transform={`translate(14,${MARGIN.top + h / 2}) rotate(-90)`}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#444"
+              fontFamily="sans-serif"
+            >
+              {yLabel}
+            </text>
+          </g>
         )}
         {renderSvgLegend(
           svgLegend,
@@ -588,164 +616,183 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     >
       <title>{plotTitle || "Inset bar plot"}</title>
       {plotTitle && (
-        <text
-          x={iW / 2}
-          y={15}
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="700"
-          fill="#222"
-          fontFamily="sans-serif"
-        >
-          {plotTitle}
-        </text>
+        <g id="title">
+          <text
+            x={iW / 2}
+            y={15}
+            textAnchor="middle"
+            fontSize="11"
+            fontWeight="700"
+            fill="#222"
+            fontFamily="sans-serif"
+          >
+            {plotTitle}
+          </text>
+        </g>
       )}
       {plotSubtitle && (
-        <text
-          x={iW / 2}
-          y={plotTitle ? 28 : 15}
-          textAnchor="middle"
-          fontSize="9"
-          fill="#888"
-          fontFamily="sans-serif"
-        >
-          {plotSubtitle}
-        </text>
+        <g id="subtitle">
+          <text
+            x={iW / 2}
+            y={plotTitle ? 28 : 15}
+            textAnchor="middle"
+            fontSize="9"
+            fill="#888"
+            fontFamily="sans-serif"
+          >
+            {plotSubtitle}
+          </text>
+        </g>
       )}
-      <g transform={`translate(0, ${topPad})`}>
-        <rect x={M.left} y={M.top} width={w} height={h} fill={plotBg || "#fff"} />
-        {insetShowGrid &&
-          yTicks.map((t) => (
-            <line
-              key={t}
-              x1={M.left}
-              x2={M.left + w}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke={insetGridColor || "#e0e0e0"}
-              strokeWidth="0.4"
-            />
-          ))}
-        {yTicks.map((t) => (
-          <g key={t}>
-            <line
-              x1={M.left - 3}
-              x2={M.left}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke="#333"
-              strokeWidth="0.5"
-            />
-            <text
-              x={M.left - 5}
-              y={sy(t) + 3}
-              textAnchor="end"
-              fontSize={insetYFontSize || 7}
-              fill="#555"
-              fontFamily="sans-serif"
-            >
-              {t % 1 === 0 ? t : t.toFixed(1)}
-            </text>
-          </g>
-        ))}
-        {bars.map((b, i) => {
-          const val = b.barMean;
-          const barTop = sy(Math.min(val, yMax2));
-          const baseline = sy(Math.max(0, yMin2));
-          const errVal = errBars[i] || 0;
-          const capW = halfBar * 0.4;
-          return (
-            <g key={b.prefix}>
-              <rect
-                x={bx(i) - halfBar}
-                y={barTop}
-                width={Math.max(0, halfBar * 2)}
-                height={Math.max(0, baseline - barTop)}
-                fill={b.fillColor}
-                fillOpacity={fOp}
-                stroke={b.strokeColor}
-                strokeOpacity={sOp}
-                strokeWidth={insetBarStrokeWidth}
-                rx="1"
-              />
-              {insetErrorType !== "none" && errVal > 0 && (
-                <>
-                  <line
-                    x1={bx(i)}
-                    x2={bx(i)}
-                    y1={sy(val + errVal)}
-                    y2={sy(val - errVal)}
-                    stroke="#333"
-                    strokeWidth={insetErrorStrokeWidth}
-                  />
-                  <line
-                    x1={bx(i) - capW}
-                    x2={bx(i) + capW}
-                    y1={sy(val + errVal)}
-                    y2={sy(val + errVal)}
-                    stroke="#333"
-                    strokeWidth={insetErrorStrokeWidth}
-                  />
-                  <line
-                    x1={bx(i) - capW}
-                    x2={bx(i) + capW}
-                    y1={sy(val - errVal)}
-                    y2={sy(val - errVal)}
-                    stroke="#333"
-                    strokeWidth={insetErrorStrokeWidth}
-                  />
-                </>
-              )}
-              {showPoints &&
-                b.vals &&
-                b.vals.map((v, vi) => {
-                  const rng = seededRandom(i * 1000 + vi + 42);
-                  const jitter = (rng() - 0.5) * halfBar * 1.2;
-                  return (
-                    <circle
-                      key={`pt-${i}-${vi}`}
-                      cx={bx(i) + jitter}
-                      cy={sy(v)}
-                      r={pointSize || 3}
-                      fill={pointColor || "#333"}
-                      fillOpacity={0.6}
-                      stroke={pointColor || "#333"}
-                      strokeOpacity={0.75}
-                      strokeWidth="0.3"
-                    />
-                  );
-                })}
-              {absAngle === 0 ? (
-                <text
-                  x={bx(i)}
-                  y={M.top + h + 12}
-                  textAnchor="middle"
-                  fontSize={insetXFontSize || 7}
-                  fill="#333"
-                  fontFamily="sans-serif"
-                  fontWeight="600"
-                >
-                  {b.label}
-                </text>
-              ) : (
-                <text
-                  x={bx(i)}
-                  y={M.top + h + 10}
-                  transform={`rotate(${xAngle}, ${bx(i)}, ${M.top + h + 10})`}
-                  textAnchor="end"
-                  dominantBaseline="middle"
-                  fontSize={insetXFontSize || 7}
-                  fill="#333"
-                  fontFamily="sans-serif"
-                  fontWeight="600"
-                >
-                  {b.label}
-                </text>
-              )}
-            </g>
-          );
-        })}
+      <g id="chart" transform={`translate(0, ${topPad})`}>
         <rect
+          id="plot-area-background"
+          x={M.left}
+          y={M.top}
+          width={w}
+          height={h}
+          fill={plotBg || "#fff"}
+        />
+        {insetShowGrid && (
+          <g id="grid">
+            {yTicks.map((t) => (
+              <line
+                key={t}
+                x1={M.left}
+                x2={M.left + w}
+                y1={sy(t)}
+                y2={sy(t)}
+                stroke={insetGridColor || "#e0e0e0"}
+                strokeWidth="0.4"
+              />
+            ))}
+          </g>
+        )}
+        <g id="axis-y">
+          {yTicks.map((t) => (
+            <g key={t}>
+              <line
+                x1={M.left - 3}
+                x2={M.left}
+                y1={sy(t)}
+                y2={sy(t)}
+                stroke="#333"
+                strokeWidth="0.5"
+              />
+              <text
+                x={M.left - 5}
+                y={sy(t) + 3}
+                textAnchor="end"
+                fontSize={insetYFontSize || 7}
+                fill="#555"
+                fontFamily="sans-serif"
+              >
+                {t % 1 === 0 ? t : t.toFixed(1)}
+              </text>
+            </g>
+          ))}
+        </g>
+        <g id="bars">
+          {bars.map((b, i) => {
+            const val = b.barMean;
+            const barTop = sy(Math.min(val, yMax2));
+            const baseline = sy(Math.max(0, yMin2));
+            const errVal = errBars[i] || 0;
+            const capW = halfBar * 0.4;
+            return (
+              <g key={b.prefix} id={`bar-${svgSafeId(b.prefix)}`}>
+                <rect
+                  x={bx(i) - halfBar}
+                  y={barTop}
+                  width={Math.max(0, halfBar * 2)}
+                  height={Math.max(0, baseline - barTop)}
+                  fill={b.fillColor}
+                  fillOpacity={fOp}
+                  stroke={b.strokeColor}
+                  strokeOpacity={sOp}
+                  strokeWidth={insetBarStrokeWidth}
+                  rx="1"
+                />
+                {insetErrorType !== "none" && errVal > 0 && (
+                  <>
+                    <line
+                      x1={bx(i)}
+                      x2={bx(i)}
+                      y1={sy(val + errVal)}
+                      y2={sy(val - errVal)}
+                      stroke="#333"
+                      strokeWidth={insetErrorStrokeWidth}
+                    />
+                    <line
+                      x1={bx(i) - capW}
+                      x2={bx(i) + capW}
+                      y1={sy(val + errVal)}
+                      y2={sy(val + errVal)}
+                      stroke="#333"
+                      strokeWidth={insetErrorStrokeWidth}
+                    />
+                    <line
+                      x1={bx(i) - capW}
+                      x2={bx(i) + capW}
+                      y1={sy(val - errVal)}
+                      y2={sy(val - errVal)}
+                      stroke="#333"
+                      strokeWidth={insetErrorStrokeWidth}
+                    />
+                  </>
+                )}
+                {showPoints &&
+                  b.vals &&
+                  b.vals.map((v, vi) => {
+                    const rng = seededRandom(i * 1000 + vi + 42);
+                    const jitter = (rng() - 0.5) * halfBar * 1.2;
+                    return (
+                      <circle
+                        key={`pt-${i}-${vi}`}
+                        cx={bx(i) + jitter}
+                        cy={sy(v)}
+                        r={pointSize || 3}
+                        fill={pointColor || "#333"}
+                        fillOpacity={0.6}
+                        stroke={pointColor || "#333"}
+                        strokeOpacity={0.75}
+                        strokeWidth="0.3"
+                      />
+                    );
+                  })}
+                {absAngle === 0 ? (
+                  <text
+                    x={bx(i)}
+                    y={M.top + h + 12}
+                    textAnchor="middle"
+                    fontSize={insetXFontSize || 7}
+                    fill="#333"
+                    fontFamily="sans-serif"
+                    fontWeight="600"
+                  >
+                    {b.label}
+                  </text>
+                ) : (
+                  <text
+                    x={bx(i)}
+                    y={M.top + h + 10}
+                    transform={`rotate(${xAngle}, ${bx(i)}, ${M.top + h + 10})`}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize={insetXFontSize || 7}
+                    fill="#333"
+                    fontFamily="sans-serif"
+                    fontWeight="600"
+                  >
+                    {b.label}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+        <rect
+          id="plot-frame"
           x={M.left}
           y={M.top}
           width={w}
@@ -754,86 +801,91 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
           stroke="#333"
           strokeWidth="0.5"
         />
-        {/* CLD annotations — inside the plot frame, above bars */}
-        {annotations &&
-          annotations.kind === "cld" &&
-          annotations.letters &&
-          annotations.letters.map((letter, i) => {
-            if (i >= bars.length) return null;
-            const top = sy(bars[i].barMean + (errBars[i] || 0));
-            return (
-              <text
-                key={`cld-${i}`}
-                x={bx(i)}
-                y={top - 6}
-                textAnchor="middle"
-                fontSize="10"
-                fontWeight="700"
-                fill="#333"
-                fontFamily="sans-serif"
-              >
-                {letter}
-              </text>
-            );
-          })}
-        {/* Bracket annotations — inside the plot frame (same layout as boxplot) */}
-        {annotations &&
-          annotations.kind === "brackets" &&
-          annotPairs.map((pr, pi) => {
-            const x1 = bx(pr.i);
-            const x2 = bx(pr.j);
-            const lvl = pr._level || 0;
-            const yLine = M.top + annotTopPad - 6 - lvl * 20;
-            const tick = 4;
-            const p = pr.pAdj != null ? pr.pAdj : pr.p;
-            const label =
-              p >= 0.05 ? "ns" : p < 0.0001 ? "****" : p < 0.001 ? "***" : p < 0.01 ? "**" : "*";
-            return (
-              <g key={`br-${pi}`}>
-                <path
-                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                  stroke="#333"
-                  strokeWidth="1"
-                  fill="none"
-                />
+        {annotations && annotations.kind === "cld" && annotations.letters && (
+          <g id="cld-annotations">
+            {annotations.letters.map((letter, i) => {
+              if (i >= bars.length) return null;
+              const top = sy(bars[i].barMean + (errBars[i] || 0));
+              return (
                 <text
-                  x={(x1 + x2) / 2}
-                  y={yLine - 2}
+                  key={`cld-${i}`}
+                  x={bx(i)}
+                  y={top - 6}
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="700"
-                  fill={p >= 0.05 ? "#999" : "#333"}
+                  fill="#333"
                   fontFamily="sans-serif"
                 >
-                  {label}
+                  {letter}
                 </text>
-              </g>
-            );
-          })}
-        <text
-          transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
-          textAnchor="middle"
-          fontSize={insetYFontSize || 12}
-          fill="#444"
-          fontFamily="sans-serif"
-        >
-          {corrected ? `\u03A3 (baseline-corrected)` : `\u03A3 (raw)`}
-        </text>
-      </g>
-      {/* Stats summary below chart */}
-      {summaryLines.length > 0 &&
-        summaryLines.map((line, i) => (
+              );
+            })}
+          </g>
+        )}
+        {annotations && annotations.kind === "brackets" && (
+          <g id="significance-brackets">
+            {annotPairs.map((pr, pi) => {
+              const x1 = bx(pr.i);
+              const x2 = bx(pr.j);
+              const lvl = pr._level || 0;
+              const yLine = M.top + annotTopPad - 6 - lvl * 20;
+              const tick = 4;
+              const p = pr.pAdj != null ? pr.pAdj : pr.p;
+              const label =
+                p >= 0.05 ? "ns" : p < 0.0001 ? "****" : p < 0.001 ? "***" : p < 0.01 ? "**" : "*";
+              return (
+                <g key={`br-${pi}`}>
+                  <path
+                    d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                    stroke="#333"
+                    strokeWidth="1"
+                    fill="none"
+                  />
+                  <text
+                    x={(x1 + x2) / 2}
+                    y={yLine - 2}
+                    textAnchor="middle"
+                    fontSize="10"
+                    fontWeight="700"
+                    fill={p >= 0.05 ? "#999" : "#333"}
+                    fontFamily="sans-serif"
+                  >
+                    {label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        )}
+        <g id="y-axis-label">
           <text
-            key={`ss-${i}`}
-            x={M.left}
-            y={iH + topPad + 10 + i * STATS_LINE_H}
-            fontSize={STATS_FONT}
-            fill="#aaa"
-            fontFamily="monospace"
+            transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
+            textAnchor="middle"
+            fontSize={insetYFontSize || 12}
+            fill="#444"
+            fontFamily="sans-serif"
           >
-            {line}
+            {corrected ? `\u03A3 (baseline-corrected)` : `\u03A3 (raw)`}
           </text>
-        ))}
+        </g>
+      </g>
+      {summaryLines.length > 0 && (
+        <g id="stats-summary">
+          {summaryLines.map((line, i) => (
+            <text
+              key={`ss-${i}`}
+              x={M.left}
+              y={iH + topPad + 10 + i * STATS_LINE_H}
+              fontSize={STATS_FONT}
+              fill="#aaa"
+              fontFamily="monospace"
+            >
+              {line}
+            </text>
+          ))}
+        </g>
+      )}
     </svg>
   );
 });

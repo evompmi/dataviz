@@ -558,34 +558,46 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
     >
       <title>Power curve</title>
       <desc>Statistical power as a function of sample size</desc>
-      <rect x={M.left} y={M.top} width={w} height={h} fill="#fafafa" />
-      {yTicks.map((t) => (
+      <rect id="plot-area-background" x={M.left} y={M.top} width={w} height={h} fill="#fafafa" />
+      <g id="grid">
+        {yTicks.map((t) => (
+          <line
+            key={`yg${t}`}
+            x1={M.left}
+            x2={M.left + w}
+            y1={sy(t)}
+            y2={sy(t)}
+            stroke="#e8e8e8"
+            strokeWidth="0.5"
+          />
+        ))}
+      </g>
+      <g id="reference-line">
         <line
-          key={`yg${t}`}
           x1={M.left}
           x2={M.left + w}
-          y1={sy(t)}
-          y2={sy(t)}
-          stroke="#e8e8e8"
-          strokeWidth="0.5"
+          y1={sy(0.8)}
+          y2={sy(0.8)}
+          stroke="#D55E00"
+          strokeWidth="1"
+          strokeDasharray="6,3"
+          opacity="0.6"
         />
-      ))}
-      <line
-        x1={M.left}
-        x2={M.left + w}
-        y1={sy(0.8)}
-        y2={sy(0.8)}
-        stroke="#D55E00"
-        strokeWidth="1"
-        strokeDasharray="6,3"
-        opacity="0.6"
-      />
-      <text x={M.left + w + 3} y={sy(0.8) + 3} fontSize="9" fill="#D55E00" fontFamily="sans-serif">
-        0.80
-      </text>
-      <path d={pathD} fill="none" stroke="#0072B2" strokeWidth="2.5" strokeLinejoin="round" />
+        <text
+          x={M.left + w + 3}
+          y={sy(0.8) + 3}
+          fontSize="9"
+          fill="#D55E00"
+          fontFamily="sans-serif"
+        >
+          0.80
+        </text>
+      </g>
+      <g id="power-curve">
+        <path d={pathD} fill="none" stroke="#0072B2" strokeWidth="2.5" strokeLinejoin="round" />
+      </g>
       {marker && (
-        <g>
+        <g id="marker">
           <line
             x1={marker.x}
             x2={marker.x}
@@ -605,54 +617,71 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
           />
         </g>
       )}
-      <rect x={M.left} y={M.top} width={w} height={h} fill="none" stroke="#333" strokeWidth="1" />
-      {yTicks.map((t) => (
+      <rect
+        id="plot-frame"
+        x={M.left}
+        y={M.top}
+        width={w}
+        height={h}
+        fill="none"
+        stroke="#333"
+        strokeWidth="1"
+      />
+      <g id="axis-y">
+        {yTicks.map((t) => (
+          <text
+            key={`yl${t}`}
+            x={M.left - 8}
+            y={sy(t) + 4}
+            textAnchor="end"
+            fontSize="11"
+            fill="#555"
+            fontFamily="sans-serif"
+          >
+            {t.toFixed(1)}
+          </text>
+        ))}
+      </g>
+      <g id="y-axis-label">
         <text
-          key={`yl${t}`}
-          x={M.left - 8}
-          y={sy(t) + 4}
-          textAnchor="end"
-          fontSize="11"
-          fill="#555"
-          fontFamily="sans-serif"
-        >
-          {t.toFixed(1)}
-        </text>
-      ))}
-      <text
-        x={14}
-        y={M.top + h / 2}
-        textAnchor="middle"
-        fontSize="12"
-        fill="#333"
-        fontFamily="sans-serif"
-        transform={`rotate(-90,14,${M.top + h / 2})`}
-      >
-        Power (1 − β)
-      </text>
-      {xTicks.map((t) => (
-        <text
-          key={`xl${t}`}
-          x={sx(t)}
-          y={M.top + h + 18}
+          x={14}
+          y={M.top + h / 2}
           textAnchor="middle"
-          fontSize="11"
-          fill="#555"
+          fontSize="12"
+          fill="#333"
+          fontFamily="sans-serif"
+          transform={`rotate(-90,14,${M.top + h / 2})`}
+        >
+          Power (1 − β)
+        </text>
+      </g>
+      <g id="axis-x">
+        {xTicks.map((t) => (
+          <text
+            key={`xl${t}`}
+            x={sx(t)}
+            y={M.top + h + 18}
+            textAnchor="middle"
+            fontSize="11"
+            fill="#555"
+            fontFamily="sans-serif"
+          >
+            {Math.round(t)}
+          </text>
+        ))}
+      </g>
+      <g id="x-axis-label">
+        <text
+          x={M.left + w / 2}
+          y={VBH - 6}
+          textAnchor="middle"
+          fontSize="12"
+          fill="#333"
           fontFamily="sans-serif"
         >
-          {Math.round(t)}
+          {test.nLabel}
         </text>
-      ))}
-      <text
-        x={M.left + w / 2}
-        y={VBH - 6}
-        textAnchor="middle"
-        fontSize="12"
-        fill="#333"
-        fontFamily="sans-serif"
-      >
-        {test.nLabel}
-      </text>
+      </g>
     </svg>
   );
 });
