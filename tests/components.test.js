@@ -737,9 +737,9 @@ test("collapsed header-only render when defaultOpen is false", function () {
     ],
     onAnnotationsChange: noop,
   });
-  assert(el && el.type === "div", "should return root div");
-  // Header-only render has exactly one child (the header row).
-  assert(el.children.length === 1, "collapsed should have only the header");
+  // StatsTile now returns a Fragment: [displayTile, summaryTile]
+  assert(el && el.type === "Fragment", "should return a Fragment");
+  assert(el.children.length === 2, "Fragment should have 2 tiles");
 });
 
 test("open render on k=2 shows assumption + test sections", function () {
@@ -752,7 +752,7 @@ test("open render on k=2 shows assumption + test sections", function () {
     onAnnotationsChange: noop,
     defaultOpen: true,
   });
-  assert(el && el.type === "div", "should return root div");
+  assert(el && el.type === "Fragment", "should return a Fragment");
   assert(countElements(el) > 30, "open tile should produce many elements");
 });
 
@@ -770,7 +770,7 @@ test("open render on k=3 shows post-hoc table", function () {
     onAnnotationsChange: noop,
     defaultOpen: true,
   });
-  assert(el && el.type === "div", "should return root div");
+  assert(el && el.type === "Fragment", "should return a Fragment");
   // PlantGrowth → k=3, so rendered tree should contain 3 post-hoc rows.
   var str = JSON.stringify(el);
   assert(str.indexOf("Post-hoc") >= 0, "should include Post-hoc heading");
