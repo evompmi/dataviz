@@ -71,6 +71,20 @@ Each tool's `.tsx` source file follows this pattern:
 2. **Step sub-components** — `UploadStep`, `ConfigureStep`, `FilterStep`, `OutputStep`, `PlotControls`, `PlotArea` (where applicable)
 3. **App()** — orchestrator holding state and routing between steps
 
+### SVG export: named groups for Inkscape
+Exported SVGs are routinely re-opened in Inkscape for touch-ups, so **every chart must wrap its elements in `<g id="...">` groups with human-readable ids**. When adding a new chart (or a new element to an existing chart), give the wrapping group a descriptive id so Inkscape users can select it by name from the Objects panel / XML editor.
+
+Conventional ids already used across tools — reuse them for consistency:
+
+- **Structure** — `background`, `plot-area-background`, `plot-frame`, `chart`
+- **Axes** — `grid`, `axis-x`, `axis-y`, `x-axis-label`, `y-axis-label`
+- **Data** — `data-points`, `groups`, `bars`, `traces`, `ribbons`, `set-circles`, `region-counts`, `power-curve`, `marker`
+- **Overlays** — `regression-line`, `regression-stats`, `reference-line`, `reference-lines`, `reference-line-labels`, `selected-region`
+- **Annotations** — `cld-annotations`, `significance-brackets`, `stats-summary`
+- **Text** — `title`, `subtitle`, `legend`
+
+For per-series / per-group elements, build individual ids with `svgSafeId(name)` (defined in `shared.js` and available as a global to all compiled tools): e.g. `set-${svgSafeId(setName)}`, `group-${svgSafeId(g.name)}`, `bar-${svgSafeId(prefix)}`, `trace-${svgSafeId(prefix)}`. `svgSafeId` sanitizes arbitrary strings into valid SVG NCNames (letters/digits/hyphens/underscores/periods, no leading digit), so it's safe to pass raw user-entered labels.
+
 ## Testing helpers
 
 Test helpers in `tests/helpers/` load shared code into Node `vm` contexts with DOM stubs:

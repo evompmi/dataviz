@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Named SVG group ids for Inkscape** — all chart SVG exports (venn, scatter, boxplot/bar, aequorin time-course + inset barplot, power) now wrap their elements in `<g id="...">` groups with human-readable ids: `background`, `grid`, `axis-x`, `axis-y`, `data-points` / `groups` / `bars` / `traces` / `ribbons`, `regression-line`, `regression-stats`, `reference-lines`, `reference-line-labels`, `selected-region`, `region-counts`, `cld-annotations`, `significance-brackets`, `plot-frame`, `legend`, `title`, `subtitle`, `x-axis-label`, `y-axis-label`, `stats-summary`, `marker`, `power-curve`, `reference-line`. Per-series/per-group elements also get individual ids (e.g. `set-<name>`, `group-<name>`, `bar-<prefix>`, `trace-<prefix>`, `ribbon-<prefix>`, `count-<names>`, `legend-<name>`) via a new `svgSafeId()` helper in `shared.js` that sanitizes arbitrary strings into valid SVG NCNames. Inkscape shows these ids in its Objects panel and XML editor, so opening an exported SVG lets users select and edit grouped elements by name without hunting through the DOM.
+
+### Changed
+
+- **Venn diagram refinement** — area-proportional layouts for 2- and 3-set diagrams now iteratively refine circle positions to minimize region-area error against the computed intersection sizes. A "Readability" slider blends between strict proportionality and a visually balanced layout when the raw subset counts would collapse regions. Analytic area helpers (`triangleArea`, `chordSegmentArea`, `tripleIntersectionArea`, `computeAllRegionAreas`, `computeLayoutError`) drive the refinement and are cross-validated against Monte Carlo reference values.
+
 ## [2.1.1] - 2026-04-13
 
 ### Fixed
