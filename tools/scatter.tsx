@@ -595,7 +595,14 @@ function AesBox({ theme, children }) {
 
 // ── Upload Step ────────────────────────────────────────────────────────────
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad, onLoadExample }) {
+function UploadStep({
+  sepOverride,
+  setSepOverride,
+  rawText,
+  doParse,
+  handleFileLoad,
+  onLoadExample,
+}) {
   return (
     <div>
       <UploadPanel

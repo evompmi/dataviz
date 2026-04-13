@@ -522,7 +522,10 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     bottom: 60 + (absAngle > 0 ? absAngle * 0.8 : 0),
     left: 62,
   };
-  const iW = Math.max(M.left + M.right + 40, Math.round((refIW - M.left - M.right) * _compact) + M.left + M.right);
+  const iW = Math.max(
+    M.left + M.right + 40,
+    Math.round((refIW - M.left - M.right) * _compact) + M.left + M.right
+  );
   const w = iW - M.left - M.right;
   const h = iH - M.top - M.bottom;
   const totalH = iH + summaryH;
