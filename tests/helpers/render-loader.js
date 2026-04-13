@@ -177,9 +177,19 @@ function buildContext() {
   const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
   vm.runInContext(statsSrc, ctx);
 
-  // Load shared-components.js
-  const compSrc = fs.readFileSync(path.join(toolsDir, "shared-components.js"), "utf8");
-  vm.runInContext(compSrc, ctx);
+  // Load shared component files in dependency order
+  const componentFiles = [
+    "shared-color-input.js",
+    "shared-file-drop.js",
+    "shared-svg-legend.js",
+    "shared-core.js",
+    "shared-ui.js",
+    "shared-long-format.js",
+    "shared-stats-tile.js",
+  ];
+  for (const file of componentFiles) {
+    vm.runInContext(fs.readFileSync(path.join(toolsDir, file), "utf8"), ctx);
+  }
 
   return { ctx: ctx, resetHooks: resetHooks };
 }

@@ -602,7 +602,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
 
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
-  const vbW = Math.max(400, n * 100 * compact + MChart.left + MChart.right);
+  const vbW = Math.max(200, n * 100 * compact + MChart.left + MChart.right);
   const vbH_chart = 420 + Math.abs(angle) * 0.9;
   const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
   const _statsH = statsSummaryHeight(statsSummary);

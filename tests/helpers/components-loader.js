@@ -1,13 +1,25 @@
-// Loads shared-components.js pure functions into a Node vm context.
+// Loads shared component files (pure functions) into a Node vm context.
 // React-dependent components (ColorInput, FileDropZone, etc.) are stubbed out.
-// Loads shared.js first to provide globals that shared-components.js depends on.
+// Loads shared.js first to provide globals that the component files depend on.
 
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
 
-const sharedSrc = fs.readFileSync(path.join(__dirname, "../../tools/shared.js"), "utf8");
-const compSrc = fs.readFileSync(path.join(__dirname, "../../tools/shared-components.js"), "utf8");
+const toolsDir = path.join(__dirname, "../../tools");
+
+const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
+
+// Component files in load order (dependencies must come before dependents)
+const componentFiles = [
+  "shared-color-input.js",
+  "shared-file-drop.js",
+  "shared-svg-legend.js",
+  "shared-core.js",
+  "shared-ui.js",
+  "shared-long-format.js",
+  "shared-stats-tile.js",
+];
 
 const ctx = {
   Math,
@@ -27,7 +39,7 @@ const ctx = {
   XMLSerializer: function () {
     this.serializeToString = () => "";
   },
-  // Minimal React stub — enough for the file to load without crashing
+  // Minimal React stub — enough for the files to load without crashing
   React: {
     useState: () => [null, () => {}],
     useEffect: () => {},
@@ -45,7 +57,9 @@ const ctx = {
 
 vm.createContext(ctx);
 vm.runInContext(sharedSrc, ctx);
-vm.runInContext(compSrc, ctx);
+for (const file of componentFiles) {
+  vm.runInContext(fs.readFileSync(path.join(toolsDir, file), "utf8"), ctx);
+}
 
 module.exports = {
   computeLegendHeight: ctx.computeLegendHeight,

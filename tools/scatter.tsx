@@ -595,7 +595,7 @@ function AesBox({ theme, children }) {
 
 // ── Upload Step ────────────────────────────────────────────────────────────
 
-function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad }) {
+function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileLoad, onLoadExample }) {
   return (
     <div>
       <UploadPanel
@@ -605,6 +605,8 @@ function UploadStep({ sepOverride, setSepOverride, rawText, doParse, handleFileL
           if (rawText) doParse(rawText, v);
         }}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
+        exampleLabel="Fisher's Iris dataset (150 rows, 3 species)"
         hint="CSV · TSV · TXT — one column per variable, one row per data point"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -2179,6 +2181,15 @@ function App() {
     },
     [sepOverride, doParse]
   );
+
+  const loadExample = useCallback(() => {
+    const text = (window as any).__SCATTER_EXAMPLE__;
+    if (!text) return;
+    setSepOverride(",");
+    setFileName("iris.csv");
+    doParse(text, ",");
+  }, [doParse]);
+
   const resetAll = () => {
     setRawText(null);
     setFileName("");
@@ -2237,6 +2248,7 @@ function App() {
           rawText={rawText}
           doParse={doParse}
           handleFileLoad={handleFileLoad}
+          onLoadExample={loadExample}
         />
       )}
 

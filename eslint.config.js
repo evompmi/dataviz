@@ -15,8 +15,8 @@ const compiledTools = [
   "tools/version.js",
 ];
 
-// Names declared at top-level of tools/shared.js and tools/shared-components.js
-// and consumed by the tool .tsx files via <script>-tag globals.
+// Names declared at top-level of tools/shared.js, tools/stats.js, and the
+// tools/shared-*.js component files, consumed by tool .tsx files via <script>-tag globals.
 const sharedGlobals = {
   // shared.js
   hexToRgb: "readonly",
@@ -67,7 +67,8 @@ const sharedGlobals = {
   powerCorrelation: "readonly",
   powerChi2: "readonly",
   fFromGroupMeans: "readonly",
-  // shared-components.js
+  // shared-color-input.js
+  normalizeHexColor: "readonly",
   ColorInput: "readonly",
   FileDropZone: "readonly",
   DataPreview: "readonly",
@@ -184,12 +185,12 @@ module.exports = [
   },
 
   // Hand-written shared plain JS and browser-only helper scripts. These files
-  // BOTH define and consume shared globals (shared-components.js uses styles
+  // BOTH define and consume shared globals (the shared-*.js files use styles
   // from shared.js), so we list the shared globals, disable no-redeclare
   // (self-declarations collide with the global list), and disable
   // no-unused-vars (names are consumed via globals).
   {
-    files: ["tools/shared.js", "tools/shared-components.js", "tools/stats.js", "tools/*.js"],
+    files: ["tools/shared.js", "tools/stats.js", "tools/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",

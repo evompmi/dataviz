@@ -376,22 +376,28 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint) {
   const warnings = [];
   const fixed = circles.map((c) => ({ ...c }));
 
-  // 1. Enforce subsets: the sub circle must be clearly INSIDE the sup circle
-  //    Use a margin of at least 3px so circles never become tangent (which
-  //    would create degenerate intersection points and broken paths).
+  // 1. Enforce subsets: the sub circle must be clearly INSIDE the sup circle.
+  //    A small clearance keeps circles non-tangent (tangency yields degenerate
+  //    intersection points and broken region paths). The offset when we do
+  //    need to re-seat a subset is proportional to the size ratio — a much
+  //    smaller sub lands closer to the centre of its superset.
   function enforceSubsets() {
     for (const { sub, sup } of subsets) {
       const dx = fixed[sub].cx - fixed[sup].cx;
       const dy = fixed[sub].cy - fixed[sup].cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const maxDist = fixed[sup].r - fixed[sub].r - 3; // 3px clearance
+      const maxDist = fixed[sup].r - fixed[sub].r - VENN_CONFIG.SUBSET_CLEARANCE;
       if (maxDist <= 0) continue;
       if (dist > maxDist) {
-        const target = maxDist * 0.8;
+        const subSize = sets.get(setNames[sub]).size;
+        const supSize = sets.get(setNames[sup]).size;
+        const ratio = supSize > 0 ? (supSize - subSize) / supSize : 0.5;
+        const proportion = Math.min(0.9, Math.max(0.2, ratio));
+        const target = maxDist * proportion;
         const scale = target / Math.max(dist, 1e-9);
         fixed[sub].cx = fixed[sup].cx + dx * scale;
         fixed[sub].cy = fixed[sup].cy + dy * scale;
-        return true; // signal that a fix was made
+        return true;
       }
     }
     return false;
@@ -410,7 +416,7 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint) {
     const dx = fixed[j].cx - fixed[i].cx;
     const dy = fixed[j].cy - fixed[i].cy;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const minDist = fixed[i].r + fixed[j].r + 2;
+    const minDist = fixed[i].r + fixed[j].r + VENN_CONFIG.DISJOINT_CLEARANCE;
     if (dist < minDist) {
       const push = (minDist - dist) / 2 + 1;
       const ux = dx / Math.max(dist, 1e-9),
@@ -444,7 +450,7 @@ function validateAndFixLayout(circles, setNames, sets, subsets, disjoint) {
       const dx = fixed[j].cx - fixed[i].cx;
       const dy = fixed[j].cy - fixed[i].cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const maxDist = fixed[i].r + fixed[j].r - 2;
+      const maxDist = fixed[i].r + fixed[j].r - VENN_CONFIG.OVERLAP_CLEARANCE;
       if (dist > maxDist) {
         const pull = (dist - maxDist) / 2 + 1;
         const ux = dx / Math.max(dist, 1e-9),
@@ -483,15 +489,21 @@ function fitCirclesToViewport(circles, viewW, viewH, margin = 15) {
   }));
 }
 
-// Readability constants for proportional mode
-const MIN_RADIUS_FRAC = 0.5; // smallest circle is at least 50% of the largest
-// Blend factor: proportional positions are blended toward the classic equilateral
-// layout to ensure all regions stay readable. 0 = pure proportional, 1 = pure classic.
-const READABILITY_BLEND = 0.45;
+// Single source of truth for proportional-layout magic numbers.
+const VENN_CONFIG = {
+  MIN_RADIUS_FRAC: 0.5, // smallest circle ≥ this fraction of the largest
+  DEFAULT_READABILITY_BLEND: 0.45, // 0 = pure proportional, 1 = pure classic
+  REFINEMENT_ITERATIONS: 40, // coordinate descent rounds for 3-set refinement
+  SUBSET_CLEARANCE: 3, // px margin when a subset sits inside its superset
+  DISJOINT_CLEARANCE: 2, // px gap between disjoint circles
+  OVERLAP_CLEARANCE: 2, // px overlap enforced when sets must intersect
+};
 
 function clampRadii(radii) {
   const maxR = Math.max(...radii);
-  const minAllowed = maxR * MIN_RADIUS_FRAC;
+  const minR = Math.min(...radii);
+  const actualRatio = maxR > 0 ? minR / maxR : 1;
+  const minAllowed = maxR * VENN_CONFIG.MIN_RADIUS_FRAC;
   let adjusted = false;
   const clamped = radii.map((r) => {
     if (r < minAllowed) {
@@ -500,10 +512,158 @@ function clampRadii(radii) {
     }
     return r;
   });
-  return { radii: clamped, adjusted };
+  return { radii: clamped, adjusted, actualRatio };
 }
 
-function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
+// ── Analytic region areas ───────────────────────────────────────────────────
+
+function triangleArea(a, b, c) {
+  return Math.abs((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y)) / 2;
+}
+
+// Minor circular segment cut by a chord of length L in a circle of radius r.
+function chordSegmentArea(r, chordLen) {
+  const ratio = Math.max(-1, Math.min(1, chordLen / (2 * r)));
+  const theta = 2 * Math.asin(ratio);
+  return (r * r * (theta - Math.sin(theta))) / 2;
+}
+
+// Area of the region inside ALL three circles. Returns 0 when no triple
+// intersection exists. Uses the classical triangle-plus-segments decomposition
+// built from the three "inner" pairwise intersection points.
+function tripleIntersectionArea(circles) {
+  function innerVertex(i, j, k) {
+    const pts = circleIntersectionPoints(circles[i], circles[j]);
+    if (!pts) return null;
+    for (const p of pts) {
+      if (isInsideCircle(p.x, p.y, circles[k])) return p;
+    }
+    return null;
+  }
+  const v01 = innerVertex(0, 1, 2);
+  const v02 = innerVertex(0, 2, 1);
+  const v12 = innerVertex(1, 2, 0);
+  if (!v01 || !v02 || !v12) return 0;
+  const tri = triangleArea(v01, v12, v02);
+  const s0 = chordSegmentArea(circles[0].r, Math.hypot(v01.x - v02.x, v01.y - v02.y));
+  const s1 = chordSegmentArea(circles[1].r, Math.hypot(v01.x - v12.x, v01.y - v12.y));
+  const s2 = chordSegmentArea(circles[2].r, Math.hypot(v02.x - v12.x, v02.y - v12.y));
+  return tri + s0 + s1 + s2;
+}
+
+// Returns a Map<mask, area> covering every non-empty Venn region for 2 or 3 circles.
+function computeAllRegionAreas(circles) {
+  const areas = new Map();
+  const n = circles.length;
+  if (n === 2) {
+    const [c0, c1] = circles;
+    const A0 = Math.PI * c0.r * c0.r;
+    const A1 = Math.PI * c1.r * c1.r;
+    const d = Math.hypot(c1.cx - c0.cx, c1.cy - c0.cy);
+    const P = circleOverlapArea(c0.r, c1.r, d);
+    areas.set(0b01, Math.max(0, A0 - P));
+    areas.set(0b10, Math.max(0, A1 - P));
+    areas.set(0b11, P);
+  } else if (n === 3) {
+    const [c0, c1, c2] = circles;
+    const A0 = Math.PI * c0.r * c0.r;
+    const A1 = Math.PI * c1.r * c1.r;
+    const A2 = Math.PI * c2.r * c2.r;
+    const d01 = Math.hypot(c1.cx - c0.cx, c1.cy - c0.cy);
+    const d02 = Math.hypot(c2.cx - c0.cx, c2.cy - c0.cy);
+    const d12 = Math.hypot(c2.cx - c1.cx, c2.cy - c1.cy);
+    const P01 = circleOverlapArea(c0.r, c1.r, d01);
+    const P02 = circleOverlapArea(c0.r, c2.r, d02);
+    const P12 = circleOverlapArea(c1.r, c2.r, d12);
+    const T = Math.max(0, Math.min(P01, P02, P12, tripleIntersectionArea(circles)));
+    areas.set(0b001, Math.max(0, A0 - P01 - P02 + T));
+    areas.set(0b010, Math.max(0, A1 - P01 - P12 + T));
+    areas.set(0b100, Math.max(0, A2 - P02 - P12 + T));
+    areas.set(0b011, Math.max(0, P01 - T));
+    areas.set(0b101, Math.max(0, P02 - T));
+    areas.set(0b110, Math.max(0, P12 - T));
+    areas.set(0b111, T);
+  }
+  return areas;
+}
+
+// Max/mean region-area error normalised against the total target area.
+// Relative error is scale-invariant, so callers may pass pre- or post-fit layouts.
+function computeLayoutError(circles, intersections, targetScale) {
+  if (circles.length < 2 || targetScale <= 0) return { maxError: 0, meanError: 0 };
+  const areas = computeAllRegionAreas(circles);
+  let totalTarget = 0;
+  for (const g of intersections) totalTarget += g.size * targetScale;
+  if (totalTarget < 1e-9) return { maxError: 0, meanError: 0 };
+  let maxErr = 0,
+    sumErr = 0,
+    count = 0;
+  for (const g of intersections) {
+    const target = g.size * targetScale;
+    const actual = areas.get(g.mask) || 0;
+    const err = Math.abs(actual - target) / totalTarget;
+    if (err > maxErr) maxErr = err;
+    sumErr += err;
+    count++;
+  }
+  return { maxError: maxErr, meanError: count > 0 ? sumErr / count : 0 };
+}
+
+// Coordinate descent on the 3 circle centers: shrinks the squared-area
+// residual across all 7 regions. Radii are held fixed (they are already
+// determined by absolute set sizes).
+function refine3SetLayout(initialCircles, intersections, targetScale) {
+  let current = initialCircles.map((c) => ({ ...c }));
+  const targets = new Map();
+  for (const g of intersections) targets.set(g.mask, g.size * targetScale);
+
+  function cost(cs) {
+    const areas = computeAllRegionAreas(cs);
+    let s = 0;
+    for (const [mask, target] of targets) {
+      const actual = areas.get(mask) || 0;
+      const diff = actual - target;
+      s += diff * diff;
+    }
+    return s;
+  }
+
+  let best = cost(current);
+  const maxR = Math.max(...current.map((c) => c.r));
+  let step = maxR * 0.2;
+  const minStep = maxR * 0.005;
+  const moves = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+  let iters = 0;
+  const maxIters = VENN_CONFIG.REFINEMENT_ITERATIONS * 6;
+  while (step > minStep && iters < maxIters) {
+    iters++;
+    let improved = false;
+    for (let i = 0; i < 3; i++) {
+      for (const [mx, my] of moves) {
+        const dx = mx * step,
+          dy = my * step;
+        const trial = current.map((c, k) =>
+          k === i ? { ...c, cx: c.cx + dx, cy: c.cy + dy } : { ...c }
+        );
+        const c = cost(trial);
+        if (c < best - 1e-6) {
+          current = trial;
+          best = c;
+          improved = true;
+        }
+      }
+    }
+    if (!improved) step *= 0.5;
+  }
+  return current;
+}
+
+function buildVenn2Layout(setNames, sets, intersections, viewW, viewH, blend) {
   const s0 = sets.get(setNames[0]).size;
   const s1 = sets.get(setNames[1]).size;
   const inter = intersections.find((g) => g.mask === 3);
@@ -514,70 +674,78 @@ function buildVenn2Layout(setNames, sets, intersections, viewW, viewH) {
   let radii = [scale * Math.sqrt(s0), scale * Math.sqrt(s1)];
   const warnings = [];
 
-  // Clamp radii so small sets remain visible
   const rc = clampRadii(radii);
-  if (rc.adjusted) warnings.push("Circle sizes adjusted for readability (small set enlarged)");
+  if (rc.adjusted) {
+    warnings.push(
+      `Set sizes differ drastically (ratio ${rc.actualRatio.toFixed(2)}) — smaller set enlarged for visibility`
+    );
+  }
   radii = rc.radii;
   const [r0, r1] = radii;
 
-  const targetOA = Math.PI * scale * scale * interSize;
+  const targetScale = Math.PI * scale * scale;
+  const targetOA = targetScale * interSize;
   const d = solveDistance(r0, r1, targetOA);
   const cx = viewW / 2,
     cy = viewH / 2;
 
-  // Proportional positions
   const propCircles = [
-    { cx: cx - d / 2, cy: cy, r: r0 },
-    { cx: cx + d / 2, cy: cy, r: r1 },
+    { cx: cx - d / 2, cy, r: r0 },
+    { cx: cx + d / 2, cy, r: r1 },
   ];
 
-  // Classic positions (equal radius, moderate overlap)
-  const classicR = Math.min(viewW, viewH) * 0.272;
-  const classicD = classicR;
-  const classicCircles = [
-    { cx: cx - classicD / 2, cy, r: classicR },
-    { cx: cx + classicD / 2, cy, r: classicR },
-  ];
-
-  // Blend toward classic for readability
-  const b = READABILITY_BLEND;
-  const blended = propCircles.map((pc, i) => ({
-    cx: pc.cx * (1 - b) + classicCircles[i].cx * b,
-    cy: pc.cy * (1 - b) + classicCircles[i].cy * b,
-    r: pc.r * (1 - b) + classicCircles[i].r * b,
-  }));
-  if (b > 0) warnings.push("Layout adjusted for readability — areas are approximate");
+  let working = propCircles;
+  if (blend > 0) {
+    const classicR = Math.min(viewW, viewH) * 0.272;
+    const classicD = classicR;
+    const classicCircles = [
+      { cx: cx - classicD / 2, cy, r: classicR },
+      { cx: cx + classicD / 2, cy, r: classicR },
+    ];
+    working = propCircles.map((pc, i) => ({
+      cx: pc.cx * (1 - blend) + classicCircles[i].cx * blend,
+      cy: pc.cy * (1 - blend) + classicCircles[i].cy * blend,
+      r: pc.r * (1 - blend) + classicCircles[i].r * blend,
+    }));
+  }
 
   const subsets = detectSubsets(setNames, sets);
   const disjoint = detectDisjoint(setNames, sets);
   const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(
-    blended,
+    working,
     setNames,
     sets,
     subsets,
     disjoint
   );
   warnings.push(...fixWarnings);
+
+  const errors = computeLayoutError(fixed, intersections, targetScale);
   return {
     circles: fitCirclesToViewport(fixed, viewW, viewH),
     warnings,
     proportional: warnings.length === 0,
+    maxError: errors.maxError,
+    meanError: errors.meanError,
   };
 }
 
-function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
+function buildVenn3Layout(setNames, sets, intersections, viewW, viewH, blend) {
   const sizes = setNames.map((n) => sets.get(n).size);
   const maxR = Math.min(viewW, viewH) * 0.256;
   const scale = maxR / Math.sqrt(Math.max(...sizes));
   let radii = sizes.map((s) => scale * Math.sqrt(s));
   const warnings = [];
 
-  // Clamp radii so small sets remain visible
   const rc = clampRadii(radii);
-  if (rc.adjusted) warnings.push("Circle sizes adjusted for readability (small set enlarged)");
+  if (rc.adjusted) {
+    warnings.push(
+      `Set sizes differ drastically (ratio ${rc.actualRatio.toFixed(2)}) — smaller sets enlarged for visibility`
+    );
+  }
   radii = rc.radii;
+  const targetScale = Math.PI * scale * scale;
 
-  // Compute pairwise distances from overlap areas
   const pairMasks = [
     [0, 1],
     [0, 2],
@@ -589,7 +757,7 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
     for (const g of intersections) {
       if (g.mask & (1 << i) && g.mask & (1 << j)) totalPairwise += g.size;
     }
-    const targetOA = Math.PI * scale * scale * totalPairwise;
+    const targetOA = targetScale * totalPairwise;
     pairDists.push(solveDistance(radii[i], radii[j], targetOA));
   }
 
@@ -597,19 +765,31 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   const disjoint = detectDisjoint(setNames, sets);
   const hasSubsets = subsets.length > 0;
 
-  // Triangulate: A at origin, B along x-axis, C by triangulation
   const cx = viewW / 2,
     cy = viewH / 2;
   const d01 = pairDists[0],
     d02 = pairDists[1],
     d12 = pairDists[2];
+
+  // Triangle inequality check — if the pairwise distances cannot form a
+  // valid triangle, the layout will only approximate the requested overlaps.
+  const feasible =
+    d01 <= d02 + d12 + 1e-6 &&
+    d02 <= d01 + d12 + 1e-6 &&
+    d12 <= d01 + d02 + 1e-6;
+  if (!feasible) {
+    warnings.push(
+      "Pairwise overlaps are geometrically inconsistent (triangle inequality violated) — layout approximated"
+    );
+  }
+
   const ax = 0,
     ay = 0;
   const bx = d01,
     by = 0;
-  let tcx = d01 > 1e-9 ? (d02 * d02 - d12 * d12 + d01 * d01) / (2 * d01) : 0;
-  let tcySq = d02 * d02 - tcx * tcx;
-  let tcy = tcySq > 0 ? -Math.sqrt(tcySq) : 0;
+  const tcx = d01 > 1e-9 ? (d02 * d02 - d12 * d12 + d01 * d01) / (2 * d01) : 0;
+  const tcySq = d02 * d02 - tcx * tcx;
+  const tcy = tcySq > 0 ? -Math.sqrt(tcySq) : 0;
   const triPts = [
     { x: ax, y: ay },
     { x: bx, y: by },
@@ -623,59 +803,67 @@ function buildVenn3Layout(setNames, sets, intersections, viewW, viewH) {
   if (hasSubsets) {
     pts = triCentered;
   } else {
+    // Cosmetic regularization: if the triangulation gives a very flat triangle,
+    // nudge towards equilateral so downstream refinement has a sensible start.
     const avgDist = (d01 + d02 + d12) / 3;
     const eqAngles = [-Math.PI / 6, (-5 * Math.PI) / 6, Math.PI / 2];
     const eqPts = eqAngles.map((a) => ({
       x: avgDist * 0.6 * Math.cos(a),
       y: avgDist * 0.6 * Math.sin(a),
     }));
-    const blend = Math.abs(tcy) < avgDist * 0.15 ? 0.4 : 0.7;
+    const mix = Math.abs(tcy) < avgDist * 0.15 ? 0.4 : 0.85;
     pts = triCentered.map((p, i) => ({
-      x: p.x * blend + eqPts[i].x * (1 - blend),
-      y: p.y * blend + eqPts[i].y * (1 - blend),
+      x: p.x * mix + eqPts[i].x * (1 - mix),
+      y: p.y * mix + eqPts[i].y * (1 - mix),
     }));
   }
 
   const centX = pts.reduce((s, p) => s + p.x, 0) / 3;
   const centY = pts.reduce((s, p) => s + p.y, 0) / 3;
-  const propCircles = pts.map((p, i) => ({
+  let propCircles = pts.map((p, i) => ({
     cx: cx + (p.x - centX),
     cy: cy + (p.y - centY),
     r: radii[i],
   }));
 
-  // Classic equilateral layout for blending
-  const classicR = Math.min(viewW, viewH) * 0.3;
-  const classicD = classicR * 0.65;
-  const classicAngles = [-Math.PI / 2, Math.PI / 6, (5 * Math.PI) / 6];
-  const classicCircles = classicAngles.map((a) => ({
-    cx: cx + classicD * Math.cos(a),
-    cy: cy + classicD * Math.sin(a),
-    r: classicR,
-  }));
+  // Refine the purely proportional layout before any readability blend.
+  if (!hasSubsets) {
+    propCircles = refine3SetLayout(propCircles, intersections, targetScale);
+  }
 
-  // Blend proportional toward classic for readability
-  const b = READABILITY_BLEND;
-  const blended = propCircles.map((pc, i) => ({
-    cx: pc.cx * (1 - b) + classicCircles[i].cx * b,
-    cy: pc.cy * (1 - b) + classicCircles[i].cy * b,
-    r: pc.r * (1 - b) + classicCircles[i].r * b,
-  }));
-  if (b > 0) warnings.push("Layout adjusted for readability — areas are approximate");
+  let working = propCircles;
+  if (blend > 0) {
+    const classicR = Math.min(viewW, viewH) * 0.3;
+    const classicD = classicR * 0.65;
+    const classicAngles = [-Math.PI / 2, Math.PI / 6, (5 * Math.PI) / 6];
+    const classicCircles = classicAngles.map((a) => ({
+      cx: cx + classicD * Math.cos(a),
+      cy: cy + classicD * Math.sin(a),
+      r: classicR,
+    }));
+    working = propCircles.map((pc, i) => ({
+      cx: pc.cx * (1 - blend) + classicCircles[i].cx * blend,
+      cy: pc.cy * (1 - blend) + classicCircles[i].cy * blend,
+      r: pc.r * (1 - blend) + classicCircles[i].r * blend,
+    }));
+  }
 
-  // Validate and fix: correctness > proportionality
   const { circles: fixed, warnings: fixWarnings } = validateAndFixLayout(
-    blended,
+    working,
     setNames,
     sets,
     subsets,
     disjoint
   );
   warnings.push(...fixWarnings);
+
+  const errors = computeLayoutError(fixed, intersections, targetScale);
   return {
     circles: fitCirclesToViewport(fixed, viewW, viewH),
     warnings,
     proportional: warnings.length === 0,
+    maxError: errors.maxError,
+    meanError: errors.meanError,
   };
 }
 
@@ -786,27 +974,34 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
     fillOpacity,
     onLayoutInfo,
     proportional,
+    readabilityBlend,
   },
   ref
 ) {
   const n = setNames.length;
+  const blend = readabilityBlend != null ? readabilityBlend : VENN_CONFIG.DEFAULT_READABILITY_BLEND;
 
   const layout = useMemo(() => {
     if (proportional) {
-      if (n === 2) return buildVenn2Layout(setNames, sets, intersections, VW, VH);
-      return buildVenn3Layout(setNames, sets, intersections, VW, VH);
+      if (n === 2) return buildVenn2Layout(setNames, sets, intersections, VW, VH, blend);
+      return buildVenn3Layout(setNames, sets, intersections, VW, VH, blend);
     }
     if (n === 2) return buildVenn2LayoutClassic(setNames, sets, intersections, VW, VH);
     return buildVenn3LayoutClassic(setNames, sets, intersections, VW, VH);
-  }, [setNames, sets, intersections, n, proportional]);
+  }, [setNames, sets, intersections, n, proportional, blend]);
 
   const circles = layout.circles;
 
-  // Notify parent of layout warnings/proportionality
+  // Notify parent of layout warnings/proportionality/error metrics
   useEffect(() => {
     if (onLayoutInfo)
-      onLayoutInfo({ warnings: layout.warnings, proportional: layout.proportional });
-  }, [layout.warnings, layout.proportional]);
+      onLayoutInfo({
+        warnings: layout.warnings,
+        proportional: layout.proportional,
+        maxError: layout.maxError || 0,
+        meanError: layout.meanError || 0,
+      });
+  }, [layout.warnings, layout.proportional, layout.maxError, layout.meanError]);
 
   const regionPaths = useMemo(() => buildRegionPaths(circles), [circles]);
   const centroids = useMemo(
@@ -932,13 +1127,15 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
 
 // ── UI Components ────────────────────────────────────────────────────────────
 
-function UploadStep({ sepOverride, setSepOverride, handleFileLoad }) {
+function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample }) {
   return (
     <div>
       <UploadPanel
         sepOverride={sepOverride}
         onSepChange={setSepOverride}
         onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
+        exampleLabel="Arabidopsis abiotic stress genes (Drought / Heat / Salt)"
         hint="CSV · TSV · TXT — one column per set (2–3), items listed in rows"
       />
       <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
@@ -1430,6 +1627,17 @@ function PlotControls({
               style={{ accentColor: "#648FFF" }}
             />
           </div>
+          {proportional && (
+            <SliderControl
+              label="Proportional ↔ Readable"
+              value={vis.readabilityBlend}
+              min={0}
+              max={1}
+              step={0.05}
+              displayValue={`${Math.round(vis.readabilityBlend * 100)}%`}
+              onChange={sv("readabilityBlend")}
+            />
+          )}
           <div>
             <div style={lbl}>Title</div>
             <input
@@ -1483,11 +1691,22 @@ function App() {
 
   const [proportional, setProportional] = useState(false);
 
-  const visInit = { plotTitle: "", plotBg: "#ffffff", fontSize: 14, fillOpacity: 0.25 };
+  const visInit = {
+    plotTitle: "",
+    plotBg: "#ffffff",
+    fontSize: 14,
+    fillOpacity: 0.25,
+    readabilityBlend: VENN_CONFIG.DEFAULT_READABILITY_BLEND,
+  };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
 
   const chartRef = useRef();
-  const [layoutInfo, setLayoutInfo] = useState({ warnings: [], proportional: true });
+  const [layoutInfo, setLayoutInfo] = useState({
+    warnings: [],
+    proportional: true,
+    maxError: 0,
+    meanError: 0,
+  });
 
   const activeSetNames = useMemo(
     () => setNames.filter((n) => activeSets.has(n)),
@@ -1557,6 +1776,14 @@ function App() {
     },
     [sepOverride, doParse]
   );
+
+  const loadExample = useCallback(() => {
+    const text = (window as any).__VENN_EXAMPLE__;
+    if (!text) return;
+    setSepOverride(",");
+    setFileName("arabidopsis_stress.csv");
+    doParse(text, ",");
+  }, [doParse]);
 
   const handleColorChange = (name, color) => {
     setSetColors((prev) => ({ ...prev, [name]: color }));
@@ -1652,6 +1879,7 @@ function App() {
           sepOverride={sepOverride}
           setSepOverride={setSepOverride}
           handleFileLoad={handleFileLoad}
+          onLoadExample={loadExample}
         />
       )}
 
@@ -1703,45 +1931,49 @@ function App() {
                   plotBg={vis.plotBg}
                   fontSize={vis.fontSize}
                   fillOpacity={vis.fillOpacity}
+                  readabilityBlend={vis.readabilityBlend}
                   onLayoutInfo={setLayoutInfo}
                   proportional={proportional}
                 />
               </div>
-              {/* Layout info banner */}
-              {proportional && layoutInfo.proportional ? (
-                <div
-                  style={{
-                    margin: "8px 0 0",
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    background: "#f0fdf4",
-                    border: "1px solid #86efac",
-                    fontSize: 11,
-                    color: "#166534",
-                  }}
-                >
-                  Areas are proportional to set sizes
-                </div>
-              ) : proportional && layoutInfo.warnings.length > 0 ? (
-                <div
-                  style={{
-                    margin: "8px 0 0",
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    background: "#fffbeb",
-                    border: "1px solid #fcd34d",
-                    fontSize: 11,
-                    color: "#92400e",
-                  }}
-                >
-                  {layoutInfo.warnings.map((w, i) => (
-                    <div key={i}>{w}</div>
-                  ))}
-                  <div style={{ marginTop: 2, color: "#b45309", fontStyle: "italic" }}>
-                    Area proportionality adjusted to preserve correctness
+              {/* Layout info banner — shows proportionality accuracy */}
+              {(() => {
+                if (!proportional) return null;
+                const pctMax = (layoutInfo.maxError * 100).toFixed(1);
+                const pctMean = (layoutInfo.meanError * 100).toFixed(1);
+                const exact = layoutInfo.warnings.length === 0 && layoutInfo.maxError < 0.005;
+                const hasWarnings = layoutInfo.warnings.length > 0;
+                const bg = exact ? "#f0fdf4" : hasWarnings ? "#fffbeb" : "#eff6ff";
+                const border = exact ? "#86efac" : hasWarnings ? "#fcd34d" : "#93c5fd";
+                const color = exact ? "#166534" : hasWarnings ? "#92400e" : "#1d4ed8";
+                return (
+                  <div
+                    style={{
+                      margin: "8px 0 0",
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      background: bg,
+                      border: `1px solid ${border}`,
+                      fontSize: 11,
+                      color,
+                    }}
+                  >
+                    {exact ? (
+                      <div>Areas are proportional to set sizes (max region error &lt; 0.5%)</div>
+                    ) : (
+                      <div>
+                        Max region error: <strong>{pctMax}%</strong> · mean {pctMean}%
+                      </div>
+                    )}
+                    {hasWarnings &&
+                      layoutInfo.warnings.map((w, i) => (
+                        <div key={i} style={{ marginTop: 2 }}>
+                          {w}
+                        </div>
+                      ))}
                   </div>
-                </div>
-              ) : null}
+                );
+              })()}
 
               {/* Data extraction panel */}
               <div style={{ ...sec, marginTop: 16 }}>
