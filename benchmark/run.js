@@ -413,7 +413,7 @@ const html = `<!doctype html>
       statistics and p-values. Failures are flagged in red and counted
       honestly — they mean we have work to do.
       Reproduce locally with <code>Rscript benchmark/run-r.R &amp;&amp; node benchmark/run.js</code>.
-      <a href="../index.html">← back to tools</a>
+      <a href="./index.html">← back to tools</a>
     </p>
   </header>
 

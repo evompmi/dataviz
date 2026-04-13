@@ -18,8 +18,7 @@
   .container { max-width: 1100px; margin: 0 auto; }
   header { margin-bottom: 1.5rem; }
   h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-  .lede { color: #444; margin-bottom: 1rem; padding-left: 1.4rem; line-height: 1.7; }
-  .lede li { margin-bottom: 0.2rem; }
+  .lede { color: #444; margin-bottom: 1rem; }
   .lede a { color: #0048a8; }
   .summary {
     padding: 1rem 1.25rem;
@@ -100,14 +99,17 @@
 <div class="container">
   <header>
     <h1>statistical cross-validation vs R 4.5.3 (2026-03-11)</h1>
-    <ul class="lede">
-      <li>Every function in <code>tools/stats.js</code> is rerun against its R 4.5.3 counterpart on real built-in datasets (iris, PlantGrowth, ToothGrowth, mtcars, chickwts, InsectSprays, sleep, women, trees, airquality, warpbreaks).</li>
-      <li>Inputs are bit-identical between R and the toolbox.</li>
-      <li>Target tolerance: |Δ| ≤ 0.005 on test statistics and p-values. <strong>Achieved: max |Δ| = 8.23×10⁻⁷</strong> — 0.016% of the tolerance budget.</li>
-      <li>Failures (if any) are flagged in red.</li>
-      <li>Reproduce locally: <code>Rscript benchmark/run-r.R &amp;&amp; node benchmark/run.js</code></li>
-      <li><a href="../index.html">← back to tools</a></li>
-    </ul>
+    <p class="lede">
+      Every test in <code>tools/stats.js</code> is rerun against the
+      corresponding R reference function on real built-in datasets
+      (iris, PlantGrowth, ToothGrowth, mtcars, chickwts, InsectSprays,
+      sleep, women, trees, airquality, warpbreaks). Inputs are bit-identical
+      between R and the tool. Target tolerance is |Δ| ≤ 0.005 on test
+      statistics and p-values. Failures are flagged in red and counted
+      honestly — they mean we have work to do.
+      Reproduce locally with <code>Rscript benchmark/run-r.R &amp;&amp; node benchmark/run.js</code>.
+      <a href="./index.html">← back to tools</a>
+    </p>
   </header>
 
   <div class="summary summary-pass">
