@@ -880,6 +880,8 @@ function buildVenn2LayoutClassic(setNames, sets, intersections, viewW, viewH) {
     circles: fitCirclesToViewport(circles, viewW, viewH),
     warnings: [],
     proportional: false,
+    maxError: 0,
+    meanError: 0,
   };
 }
 
@@ -900,6 +902,8 @@ function buildVenn3LayoutClassic(setNames, sets, intersections, viewW, viewH) {
     circles: fitCirclesToViewport(circles, viewW, viewH),
     warnings: [],
     proportional: false,
+    maxError: 0,
+    meanError: 0,
   };
 }
 

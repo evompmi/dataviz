@@ -142,6 +142,7 @@ declare global {
   function computeGroupStats(groups: Record<string, string[]>): GroupStats[];
 
   // ── Download helpers ───────────────────────────────────────────────────────
+  function svgSafeId(s: unknown): string;
   function flashSaved(btn: HTMLElement | null): void;
   function downloadSvg(svgEl: SVGSVGElement | null, filename: string): void;
   function downloadPng(svgEl: SVGSVGElement | null, filename: string, scale?: number): void;
