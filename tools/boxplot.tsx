@@ -557,6 +557,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     errStrokeWidth,
     showBarOutline,
     barOutlineWidth,
+    boxGap,
     svgLegend,
     annotations,
     statsSummary,
@@ -600,7 +601,8 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
   let yMax = yMaxProp != null ? yMaxProp : dataMax + pad;
 
   const n = groups.length;
-  const vbW = Math.max(400, n * 100 + MChart.left + MChart.right);
+  const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
+  const vbW = Math.max(400, n * 100 * compact + MChart.left + MChart.right);
   const vbH_chart = 420 + Math.abs(angle) * 0.9;
   const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
   const _statsH = statsSummaryHeight(statsSummary);
@@ -1721,17 +1723,15 @@ function PlotControls({
           step={5}
           onChange={sv("boxWidth")}
         />
-        {vis.plotStyle !== "bar" && (
-          <SliderControl
-            label={vis.plotStyle === "box" ? "Box gap" : "Gap"}
-            value={vis.boxGap}
-            displayValue={vis.boxGap + "%"}
-            min={0}
-            max={80}
-            step={5}
-            onChange={sv("boxGap")}
-          />
-        )}
+        <SliderControl
+          label={vis.plotStyle === "box" ? "Box gap" : vis.plotStyle === "bar" ? "Bar gap" : "Gap"}
+          value={vis.boxGap}
+          displayValue={vis.boxGap + "%"}
+          min={0}
+          max={80}
+          step={5}
+          onChange={sv("boxGap")}
+        />
         {vis.plotStyle === "bar" ? (
           <>
             <SliderControl
@@ -2110,6 +2110,7 @@ function PlotArea({
               errStrokeWidth={vis.errStrokeWidth}
               showBarOutline={vis.showBarOutline}
               barOutlineWidth={vis.barOutlineWidth}
+              boxGap={vis.boxGap}
               yMin={yMinVal}
               yMax={yMaxVal}
               catColors={categoryColors}
