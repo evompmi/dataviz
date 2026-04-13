@@ -1,5 +1,6 @@
 .DS_Store
 node_modules/
 future_improvement.txt
+claude_review.txt
 CLAUDE.md
 .claude/
