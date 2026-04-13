@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Group Plot bar style — point colors under "Color by"** — when the bar chart style was selected with a color-by column, jittered points were shaded by source index (`getPointColors(groupColor)[si]`) instead of the category color. The per-point lookup read `src.categories?.[vi]` (plural, never set), so the `catColors[cat]` branch was dead code and points always fell through to the group-shade fallback. Changed to `src.category` to match the Box/Violin/Raincloud path and restore proper category coloring.
+
 ### Added
 
 - **Named SVG group ids for Inkscape** — all chart SVG exports (venn, scatter, boxplot/bar, aequorin time-course + inset barplot, power) now wrap their elements in `<g id="...">` groups with human-readable ids: `background`, `grid`, `axis-x`, `axis-y`, `data-points` / `groups` / `bars` / `traces` / `ribbons`, `regression-line`, `regression-stats`, `reference-lines`, `reference-line-labels`, `selected-region`, `region-counts`, `cld-annotations`, `significance-brackets`, `plot-frame`, `legend`, `title`, `subtitle`, `x-axis-label`, `y-axis-label`, `stats-summary`, `marker`, `power-curve`, `reference-line`. Per-series/per-group elements also get individual ids (e.g. `set-<name>`, `group-<name>`, `bar-<prefix>`, `trace-<prefix>`, `ribbon-<prefix>`, `count-<names>`, `legend-<name>`) via a new `svgSafeId()` helper in `shared.js` that sanitizes arbitrary strings into valid SVG NCNames. Inkscape shows these ids in its Objects panel and XML editor, so opening an exported SVG lets users select and edit grouped elements by name without hunting through the DOM.

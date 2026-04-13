@@ -766,11 +766,11 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
                 g.sources.map((src, si) => {
                   const rng = seededRandom(gi * 1000 + si * 100 + 42);
                   const ptColors = getPointColors(g.color, g.sources.length);
+                  const cat = src.category;
+                  const ptColor =
+                    catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
                   return src.values.map((v, vi) => {
                     const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
-                    const cat = src.categories?.[vi];
-                    const ptColor =
-                      catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
                     return (
                       <circle
                         key={`${g.name}-${si}-${vi}`}
