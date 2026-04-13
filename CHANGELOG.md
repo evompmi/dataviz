@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-04-13
+
+### Added
+
+- **Bar gap control in Group Plot bar style** — a "Bar gap" slider (0–80 %) is now shown when the bar chart style is selected, matching the Box/Violin/Raincloud gap control. Wired into `BarChart`'s SVG-width compact factor so increasing the gap genuinely narrows the chart.
+- **Bar width + gap controls in Aequorin inset barplot** — "Bar width" (20–100 %, default 70) and "Bar gap" (0–80 %, default 0) sliders added to the Barplot section. Both affect `halfBar` multiplicatively, giving independent control of bar width and inter-bar spacing.
+- **Show ns toggle for bracket annotations** — when "Display on plot" is enabled and brackets are selected in the StatsTile, a "Show ns" checkbox appears. Unchecking it hides non-significant brackets from the chart (for k=2 the annotation disappears entirely; for k>2, only significant pairs are drawn). The control is absent in CLD (compact letters) mode. Default: checked (all brackets shown).
+
+### Changed
+
+- **StatsTile split into two tiles** — "Statistics display" (non-collapsible) holds the Display on plot / style / Show ns controls at all times. "Statistics summary" (collapsible) holds Assumptions, Test, Post-hoc, Power analysis and Download report. Display controls are now always visible without expanding the summary tile.
+- **Inward whiskers fixed** — box/violin/raincloud plots no longer draw whiskers pointing into the box when the interpolated Q3 falls between two data points and the larger one is an outlier. `wLo` and `wHi` are now clamped to `[−∞, Q1]` and `[Q3, +∞]` respectively; affected groups show a zero-length whisker cap at the box edge with outlier dots still rendered.
+
+### Fixed
+
+- **ESLint CI** — `benchmark/run.js` (Node globals: `require`, `__dirname`, `console`, `process`) and `tools/aequorin_example.js` (browser global: `window`) were not covered by any ESLint environment block, causing 15 `no-undef` errors in CI. Both files now match the correct environment config.
+
 ### Added
 
 - **Statistical benchmark vs R** — `benchmark/run-r.R` runs 11 statistical tests
@@ -129,7 +146,8 @@ the introduction of this changelog.
 - Minified esbuild output for production bundles.
 - Custom test harness with tests across shared utilities, parsing, components, and power calculators.
 
-[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/evompmi/dataviz/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/evompmi/dataviz/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/evompmi/dataviz/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/evompmi/dataviz/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/evompmi/dataviz/compare/v1.0.0...v1.1.0

@@ -478,8 +478,8 @@ function quartiles(arr) {
     med,
     q3,
     iqr,
-    wLo: s.find((v) => v >= q1 - 1.5 * iqr) ?? s[0],
-    wHi: [...s].reverse().find((v) => v <= q3 + 1.5 * iqr) ?? s[n - 1],
+    wLo: Math.min(s.find((v) => v >= q1 - 1.5 * iqr) ?? s[0], q1),
+    wHi: Math.max([...s].reverse().find((v) => v <= q3 + 1.5 * iqr) ?? s[n - 1], q3),
     n,
   };
 }

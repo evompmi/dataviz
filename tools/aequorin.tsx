@@ -464,6 +464,8 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     insetStrokeColors,
     insetFillOpacity,
     insetStrokeOpacity,
+    insetBarWidth,
+    insetBarGap,
     insetYMin,
     insetYMax,
     insetW,
@@ -566,7 +568,11 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   const bx = (i) => M.left + i * bandW + bandW / 2;
   const sy = (v) => M.top + (1 - (v - yMin2) / yRange) * h;
   const yTicks = makeTicks(yMin2, yMax2, 8);
-  const halfBar = bandW * 0.35;
+  const halfBar =
+    (insetBarWidth != null ? insetBarWidth / 100 : 0.7) *
+    (1 - (insetBarGap != null ? insetBarGap / 100 : 0)) *
+    bandW *
+    0.5;
   const fOp = insetFillOpacity != null ? insetFillOpacity : 0.7;
   const sOp = insetStrokeOpacity != null ? insetStrokeOpacity : 1;
 
@@ -876,6 +882,8 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     insetStrokeColors,
     insetFillOpacity,
     insetStrokeOpacity,
+    insetBarWidth,
+    insetBarGap,
     insetYMin,
     insetYMax,
     insetW,
@@ -1006,6 +1014,8 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     insetStrokeColors,
     insetFillOpacity,
     insetStrokeOpacity,
+    insetBarWidth,
+    insetBarGap,
     insetW,
     insetH,
     insetErrorType,
@@ -2194,6 +2204,24 @@ function PlotControls({
             </div>
 
             <SliderControl
+              label="Bar width"
+              value={vis.insetBarWidth}
+              displayValue={`${vis.insetBarWidth}%`}
+              min={20}
+              max={100}
+              step={5}
+              onChange={sv("insetBarWidth")}
+            />
+            <SliderControl
+              label="Bar gap"
+              value={vis.insetBarGap}
+              displayValue={`${vis.insetBarGap}%`}
+              min={0}
+              max={80}
+              step={5}
+              onChange={sv("insetBarGap")}
+            />
+            <SliderControl
               label="Bar fill opacity"
               value={vis.insetFillOpacity}
               displayValue={vis.insetFillOpacity.toFixed(2)}
@@ -2537,6 +2565,8 @@ function App() {
     showInset: true,
     insetFillOpacity: 0.7,
     insetStrokeOpacity: 0,
+    insetBarWidth: 70,
+    insetBarGap: 0,
     insetYMinCustom: "",
     insetYMaxCustom: "",
     insetW: 400,
@@ -2980,6 +3010,8 @@ function App() {
                   insetStrokeColors={insetStrokeColors}
                   insetFillOpacity={vis.insetFillOpacity}
                   insetStrokeOpacity={vis.insetStrokeOpacity}
+                  insetBarWidth={vis.insetBarWidth}
+                  insetBarGap={vis.insetBarGap}
                   insetYMin={vis.insetYMinCustom !== "" ? Number(vis.insetYMinCustom) : null}
                   insetYMax={vis.insetYMaxCustom !== "" ? Number(vis.insetYMaxCustom) : null}
                   insetW={vis.insetW}

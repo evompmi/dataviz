@@ -147,9 +147,9 @@ module.exports = [
 
   js.configs.recommended,
 
-  // This config file itself + build scripts (CommonJS, Node).
+  // This config file itself + build scripts + benchmark runner (CommonJS, Node).
   {
-    files: ["eslint.config.js", ".prettierrc.js", "scripts/**/*.js"],
+    files: ["eslint.config.js", ".prettierrc.js", "scripts/**/*.js", "benchmark/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "commonjs",
@@ -183,12 +183,13 @@ module.exports = [
     },
   },
 
-  // Hand-written shared plain JS. These files BOTH define and consume shared
-  // globals (shared-components.js uses styles from shared.js), so we list the
-  // shared globals, disable no-redeclare (self-declarations collide with the
-  // global list), and disable no-unused-vars (names are consumed via globals).
+  // Hand-written shared plain JS and browser-only helper scripts. These files
+  // BOTH define and consume shared globals (shared-components.js uses styles
+  // from shared.js), so we list the shared globals, disable no-redeclare
+  // (self-declarations collide with the global list), and disable
+  // no-unused-vars (names are consumed via globals).
   {
-    files: ["tools/shared.js", "tools/shared-components.js", "tools/stats.js"],
+    files: ["tools/shared.js", "tools/shared-components.js", "tools/stats.js", "tools/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
