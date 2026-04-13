@@ -582,6 +582,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
     errStrokeWidth,
     showBarOutline,
     barOutlineWidth,
+    barOutlineColor,
     boxGap,
     svgLegend,
     annotations,
@@ -733,7 +734,7 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
                 height={Math.max(0, barH)}
                 fill={g.color}
                 fillOpacity={barOpacity}
-                stroke={showBarOutline ? g.color : "none"}
+                stroke={showBarOutline ? barOutlineColor || g.color : "none"}
                 strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
                 rx="1"
               />
@@ -1839,15 +1840,25 @@ function PlotControls({
               />
             </div>
             {vis.showBarOutline && (
-              <SliderControl
-                label="Outline width"
-                value={vis.barOutlineWidth}
-                displayValue={vis.barOutlineWidth.toFixed(1)}
-                min={0.5}
-                max={4}
-                step={0.1}
-                onChange={sv("barOutlineWidth")}
-              />
+              <>
+                <SliderControl
+                  label="Outline width"
+                  value={vis.barOutlineWidth}
+                  displayValue={vis.barOutlineWidth.toFixed(1)}
+                  min={0.5}
+                  max={4}
+                  step={0.1}
+                  onChange={sv("barOutlineWidth")}
+                />
+                <div>
+                  <div style={lbl}>Outline color</div>
+                  <ColorInput
+                    value={vis.barOutlineColor}
+                    onChange={sv("barOutlineColor")}
+                    size={24}
+                  />
+                </div>
+              </>
             )}
           </>
         ) : (
@@ -2165,6 +2176,7 @@ function PlotArea({
               errStrokeWidth={vis.errStrokeWidth}
               showBarOutline={vis.showBarOutline}
               barOutlineWidth={vis.barOutlineWidth}
+              barOutlineColor={vis.barOutlineColor}
               boxGap={vis.boxGap}
               yMin={yMinVal}
               yMax={yMaxVal}
@@ -2263,6 +2275,7 @@ function PlotArea({
               errStrokeWidth: vis.errStrokeWidth,
               showBarOutline: vis.showBarOutline,
               barOutlineWidth: vis.barOutlineWidth,
+              barOutlineColor: vis.barOutlineColor,
               svgLegend:
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2341,6 +2354,7 @@ function App() {
     errStrokeWidth: 1.2,
     showBarOutline: false,
     barOutlineWidth: 1.5,
+    barOutlineColor: "#333333",
     barOpacity: 0.25,
   };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);

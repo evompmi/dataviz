@@ -489,9 +489,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   {
     series,
     insetColors,
-    insetStrokeColors,
     insetFillOpacity,
-    insetStrokeOpacity,
     insetBarWidth,
     insetBarGap,
     insetYMin,
@@ -499,6 +497,8 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     insetW,
     insetH,
     insetErrorType,
+    insetShowBarOutline,
+    insetBarOutlineColor,
     insetBarStrokeWidth,
     insetShowGrid,
     insetGridColor,
@@ -573,7 +573,6 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
       label: s.label,
       prefix: s.prefix,
       fillColor: insetColors[s.prefix] || s.color,
-      strokeColor: insetStrokeColors[s.prefix] || s.color,
       barMean,
       sd,
       sem,
@@ -603,7 +602,6 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   const yTicks = makeTicks(yMin2, yMax2, 8);
   const halfBar = (insetBarWidth != null ? insetBarWidth / 100 : 0.7) * bandW * 0.5;
   const fOp = insetFillOpacity != null ? insetFillOpacity : 0.7;
-  const sOp = insetStrokeOpacity != null ? insetStrokeOpacity : 1;
 
   return (
     <svg
@@ -708,9 +706,8 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                   height={Math.max(0, baseline - barTop)}
                   fill={b.fillColor}
                   fillOpacity={fOp}
-                  stroke={b.strokeColor}
-                  strokeOpacity={sOp}
-                  strokeWidth={insetBarStrokeWidth}
+                  stroke={insetShowBarOutline ? insetBarOutlineColor || b.fillColor : "none"}
+                  strokeWidth={insetShowBarOutline ? insetBarStrokeWidth || 1 : 0}
                   rx="1"
                 />
                 {insetErrorType !== "none" && errVal > 0 && (
@@ -932,9 +929,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     displayUnit,
     showInset,
     insetColors,
-    insetStrokeColors,
     insetFillOpacity,
-    insetStrokeOpacity,
     insetBarWidth,
     insetBarGap,
     insetYMin,
@@ -942,6 +937,8 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     insetW,
     insetH,
     insetErrorType,
+    insetShowBarOutline,
+    insetBarOutlineColor,
     insetBarStrokeWidth,
     insetShowGrid,
     insetGridColor,
@@ -1064,14 +1061,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const insetBarProps = {
     series,
     insetColors,
-    insetStrokeColors,
     insetFillOpacity,
-    insetStrokeOpacity,
     insetBarWidth,
     insetBarGap,
     insetW,
     insetH,
     insetErrorType,
+    insetShowBarOutline,
+    insetBarOutlineColor,
     insetBarStrokeWidth,
     insetShowGrid,
     insetGridColor,
@@ -2283,6 +2280,36 @@ function PlotControls({
               step={0.05}
               onChange={sv("insetFillOpacity")}
             />
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={lbl}>Bar outline</span>
+              <input
+                type="checkbox"
+                checked={vis.insetShowBarOutline}
+                onChange={(e) => updVis({ insetShowBarOutline: e.target.checked })}
+                style={{ accentColor: "#648FFF" }}
+              />
+            </div>
+            {vis.insetShowBarOutline && (
+              <>
+                <SliderControl
+                  label="Outline width"
+                  value={vis.insetBarStrokeWidth}
+                  displayValue={vis.insetBarStrokeWidth.toFixed(1)}
+                  min={0.2}
+                  max={4}
+                  step={0.1}
+                  onChange={sv("insetBarStrokeWidth")}
+                />
+                <div>
+                  <div style={lbl}>Outline color</div>
+                  <ColorInput
+                    value={vis.insetBarOutlineColor}
+                    onChange={sv("insetBarOutlineColor")}
+                    size={24}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Error bars */}
             <p
@@ -2617,7 +2644,6 @@ function App() {
     displayUnit: "s",
     showInset: true,
     insetFillOpacity: 0.7,
-    insetStrokeOpacity: 0,
     insetBarWidth: 70,
     insetBarGap: 0,
     insetYMinCustom: "",
@@ -2625,6 +2651,8 @@ function App() {
     insetW: 400,
     insetH: 200,
     insetErrorType: "none",
+    insetShowBarOutline: false,
+    insetBarOutlineColor: "#333333",
     insetBarStrokeWidth: 1,
     insetShowGrid: false,
     insetGridColor: "#e0e0e0",
@@ -2640,7 +2668,6 @@ function App() {
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
   const [step, setStep] = useState("upload");
   const [insetColors, setInsetColors] = useState({});
-  const [insetStrokeColors, setInsetStrokeColors] = useState({});
 
   const parsed = useMemo(() => (rawText ? parseData(rawText) : null), [rawText]);
   const calData = useMemo(() => {
@@ -2739,14 +2766,11 @@ function App() {
       };
     });
     setConditions(allConds);
-    const ic = { ...insetColors },
-      isc = { ...insetStrokeColors };
+    const ic = { ...insetColors };
     allConds.forEach((c) => {
       if (!ic[c.prefix]) ic[c.prefix] = c.color;
-      if (!isc[c.prefix]) isc[c.prefix] = c.color;
     });
     setInsetColors(ic);
-    setInsetStrokeColors(isc);
   };
 
   const handlePoolChange = (pool) => {
@@ -2837,13 +2861,10 @@ function App() {
     const detectedConds = detectConditions(headers, true, ce).map((c) => ({ ...c, enabled: true }));
     setConditions(detectedConds);
     const ic = {};
-    const isc = {};
     detectedConds.forEach((c) => {
       ic[c.prefix] = c.color;
-      isc[c.prefix] = c.color;
     });
     setInsetColors(ic);
-    setInsetStrokeColors(isc);
     updVis({ xStart: 0, xEnd: data.length, faceted: false });
     setStep("configure");
   }, []);
@@ -3060,9 +3081,7 @@ function App() {
                   displayUnit={vis.displayUnit}
                   showInset={vis.showInset}
                   insetColors={insetColors}
-                  insetStrokeColors={insetStrokeColors}
                   insetFillOpacity={vis.insetFillOpacity}
-                  insetStrokeOpacity={vis.insetStrokeOpacity}
                   insetBarWidth={vis.insetBarWidth}
                   insetBarGap={vis.insetBarGap}
                   insetYMin={vis.insetYMinCustom !== "" ? Number(vis.insetYMinCustom) : null}
@@ -3070,6 +3089,8 @@ function App() {
                   insetW={vis.insetW}
                   insetH={vis.insetH}
                   insetErrorType={vis.insetErrorType}
+                  insetShowBarOutline={vis.insetShowBarOutline}
+                  insetBarOutlineColor={vis.insetBarOutlineColor}
                   insetBarStrokeWidth={vis.insetBarStrokeWidth}
                   insetShowGrid={vis.insetShowGrid}
                   insetGridColor={vis.insetGridColor}
