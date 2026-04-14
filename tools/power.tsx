@@ -101,8 +101,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
   // correlation — no helper needed, r is intuitive
 
   const inputStyle: React.CSSProperties = { ...inpN, width: "100%", textAlign: "left" };
-  const smallLabel = { fontSize: 11, color: "#666", marginBottom: 2 };
-  const note = { fontSize: 10, color: "#999", marginTop: 2 };
+  const smallLabel = { fontSize: 11, color: "var(--text-muted)", marginBottom: 2 };
+  const note = { fontSize: 10, color: "var(--text-faint)", marginTop: 2 };
 
   // Parse ratio string like "3:1" or "0.75,0.25" into normalized proportions
   function parseProportions(str) {
@@ -209,7 +209,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
         ? "#E69F00"
         : sizeLabel === "large"
           ? "#D55E00"
-          : "#999";
+          : "var(--text-faint)";
 
   // Correlation uses direct input only (r is intuitive)
   if (testKey === "correlation") {
@@ -244,8 +244,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
             borderRadius: 4,
             fontSize: 11,
             cursor: "pointer",
-            background: mode === "helper" ? "#648FFF" : "#eee",
-            color: mode === "helper" ? "#fff" : "#666",
+            background: mode === "helper" ? "var(--accent-primary)" : "var(--surface-sunken)",
+            color: mode === "helper" ? "var(--on-accent)" : "var(--text-muted)",
             fontWeight: mode === "helper" ? 700 : 400,
             flex: 1,
             textAlign: "center",
@@ -261,8 +261,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
             borderRadius: 4,
             fontSize: 11,
             cursor: "pointer",
-            background: mode === "direct" ? "#648FFF" : "#eee",
-            color: mode === "direct" ? "#fff" : "#666",
+            background: mode === "direct" ? "var(--accent-primary)" : "var(--surface-sunken)",
+            color: mode === "direct" ? "var(--on-accent)" : "var(--text-muted)",
             fontWeight: mode === "direct" ? 700 : 400,
             flex: 1,
             textAlign: "center",
@@ -480,15 +480,15 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           style={{
             marginTop: 6,
             padding: "6px 10px",
-            background: "#f0f7ff",
+            background: "var(--info-bg)",
             borderRadius: 6,
-            border: "1px solid #d0e0f0",
+            border: "1px solid var(--info-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 12, color: "#333" }}>
+          <span style={{ fontSize: 12, color: "var(--text)" }}>
             Effect size = <b>{parseFloat(effectSize).toFixed(3)}</b>
           </span>
           {sizeLabel && (
@@ -558,6 +558,7 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
     >
       <title>Power curve</title>
       <desc>Statistical power as a function of sample size</desc>
+      <rect id="background" x={0} y={0} width={VBW} height={VBH} fill="#ffffff" />
       <rect id="plot-area-background" x={M.left} y={M.top} width={w} height={h} fill="#fafafa" />
       <g id="grid">
         {yTicks.map((t) => (
@@ -768,10 +769,10 @@ function App() {
     borderRadius: 4,
     fontSize: 12,
     cursor: "pointer",
-    border: active ? "1px solid #648FFF" : "1px solid #ccc",
-    background: active ? "#648FFF" : "#fff",
+    border: active ? "1px solid var(--accent-primary)" : "1px solid var(--border-strong)",
+    background: active ? "var(--accent-primary)" : "var(--surface)",
     fontWeight: active ? 600 : 400,
-    color: active ? "#fff" : "#333",
+    color: active ? "var(--on-accent)" : "var(--text)",
     fontFamily: "inherit",
     flex: 1,
     textAlign: "center",
@@ -790,7 +791,7 @@ function App() {
       <div
         style={{ ...sec, padding: "12px 16px", marginBottom: 16, borderLeft: "4px solid #0072B2" }}
       >
-        <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5 }}>{test.question}</div>
+        <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5 }}>{test.question}</div>
       </div>
 
       {/* ── Top row: test type + solve for ── */}
@@ -913,7 +914,7 @@ function App() {
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: 10, color: "#999", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 4 }}>
                   Two-sided: the difference could go either way. One-sided: you expect a specific
                   direction.
                 </div>
@@ -949,7 +950,7 @@ function App() {
                   onChange={(e) => setDfInput(e.target.value)}
                   style={inputStyle}
                 />
-                <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
                   Goodness-of-fit: categories − 1.
                   <br />
                   Independence: (rows−1)(cols−1).
@@ -962,7 +963,15 @@ function App() {
         {/* ── Right panel ── */}
         <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 6 }}>
           {/* Power curve */}
-          <div style={{ ...sec, padding: 12, flex: 1 }}>
+          <div
+            style={{
+              background: "var(--plot-card-bg)",
+              border: "1px solid var(--plot-card-border)",
+              borderRadius: 10,
+              padding: 12,
+              flex: 1,
+            }}
+          >
             <PowerCurve
               testKey={testKey}
               powerFn={test.power}
@@ -978,23 +987,25 @@ function App() {
               ...sec,
               padding: 16,
               textAlign: "center",
-              background: resultFlash ? "#d4edda" : sec.background || "#fff",
+              background: resultFlash ? "var(--success-bg)" : sec.background || "var(--surface)",
               transition: "background 0.3s ease",
             }}
           >
-            <div style={{ fontSize: 12, color: "#777", marginBottom: 4 }}>{resultLabel}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+              {resultLabel}
+            </div>
             <div
               style={{
                 fontSize: 36,
                 fontWeight: 700,
-                color: result != null ? "#0072B2" : "#ccc",
+                color: result != null ? "#0072B2" : "var(--border-strong)",
                 fontFamily: "monospace",
               }}
             >
               {resultText}
             </div>
             {solveFor === "n" && result != null && test.totalLabel && (
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>
                 {test.totalLabel(result, k)}
               </div>
             )}
@@ -1008,7 +1019,7 @@ function App() {
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "#555",
+            color: "var(--text-muted)",
             marginBottom: 6,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
@@ -1016,7 +1027,7 @@ function App() {
         >
           What do these numbers mean?
         </div>
-        <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7 }}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.7 }}>
           <b>Power</b> is the probability that you will correctly reject the null hypothesis (i.e.
           to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance
           of success — this is the standard minimum. Higher is better but costs more subjects.

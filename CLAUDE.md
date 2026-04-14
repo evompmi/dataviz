@@ -59,6 +59,13 @@ Each tool HTML loads vendored React/ReactDOM and shared scripts in `<head>`, the
 ### Shared code constraint
 **All `tools/shared*.js` files and `stats.js` must remain plain JS** (`React.createElement`, not JSX). They are loaded as regular `<script>` tags in each tool HTML so their top-level declarations are available as globals to the compiled tool `.js` files. If they used JSX, they would need their own build step and careful scoping.
 
+### Theming (light / dark)
+Theme switching is driven by CSS custom properties on `:root`, toggled via a `data-theme="dark"` attribute on `<html>`. The full palette lives in `tools/theme.css` (source of truth for every variable). Theme state is persisted in `localStorage` under `dataviz-theme`; a no-FOUC inline `<script>` in every HTML `<head>` reads it synchronously before first paint. On the very first visit with no stored choice, the `prefers-color-scheme` media query decides. A `ThemeToggle` button lives in `PageHeader` (all tools) and on the landing page; `storage` events sync toggles across all open same-origin iframes for free.
+
+**Rule for contributors: chrome colors use `var(--name)`, SVG colors stay as literals.** Every inline `style={{ … }}` on a React element that is *not* inside a chart component (`<svg>`, `<rect>`, `<path>`, `<text>`, etc.) must reference CSS variables so it themes correctly. Element fills, strokes, and text fills *inside* SVG must stay as hex literals so exported SVG/PNG charts render the same way on any reader — the plot card wrapping each chart is hard-coded to `var(--plot-card-bg)` which resolves to white in both themes, so charts always sit on a white canvas.
+
+Common variables: `--page-bg`, `--surface`, `--surface-subtle`, `--surface-sunken`, `--text`, `--text-muted`, `--text-faint`, `--border`, `--border-strong`, `--accent-primary`, `--accent-plot`, `--accent-download`, `--accent-dna`, `--on-accent`, `--plot-card-bg`, `--plot-card-border`, `--info-bg`/`--info-text`/`--info-border`, `--success-bg`/`--success-text`/`--success-border`, `--warning-bg`/`--warning-text`/`--warning-border`, `--danger-bg`/`--danger-text`/`--danger-border`, `--neutral-bg`/`--neutral-text`, `--subhead-bg`/`--subhead-text`. See `tools/theme.css` for the full list and the dark overrides.
+
 ### Data flow
 File upload/paste -> `autoDetectSep` + `fixDecimalCommas` + `parseRaw` -> `DataPreview` table -> user assigns column roles -> `computeStats`/`quartiles` -> React SVG rendering -> SVG/CSV export
 

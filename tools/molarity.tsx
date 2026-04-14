@@ -102,9 +102,9 @@ function UnitInput({
           minWidth: compact ? 80 : undefined,
           fontSize: 13,
           textAlign: "left",
-          background: disabled ? "#f0fdf4" : "#fff",
+          background: disabled ? "var(--success-bg)" : "var(--surface)",
           fontWeight: 400,
-          color: "#333",
+          color: "var(--text)",
           border: "1px solid #ccc",
         }}
       />
@@ -226,7 +226,7 @@ function MolarityMode({ compact }: { compact?: boolean }) {
               margin: compact ? "0 8px 0 0" : "0 0 10px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#555",
+              color: "var(--text-muted)",
               ...(compact ? { width: "100%", marginBottom: 4 } : {}),
             }}
           >
@@ -249,9 +249,11 @@ function MolarityMode({ compact }: { compact?: boolean }) {
                   borderRadius: 6,
                   fontSize: compact ? 11 : 12,
                   fontWeight: 600,
-                  background: solveFor === f.key ? "#648FFF" : "#fff",
-                  color: solveFor === f.key ? "#fff" : "#888",
-                  border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
+                  background: solveFor === f.key ? "var(--accent-primary)" : "var(--surface)",
+                  color: solveFor === f.key ? "var(--on-accent)" : "var(--text-faint)",
+                  border:
+                    "1px solid " +
+                    (solveFor === f.key ? "var(--accent-primary)" : "var(--border-strong)"),
                   cursor: "pointer",
                   fontFamily: "inherit",
                   textAlign: "left",
@@ -264,7 +266,14 @@ function MolarityMode({ compact }: { compact?: boolean }) {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p
+            style={{
+              margin: "0 0 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--text-muted)",
+            }}
+          >
             Inputs:
           </p>
           <div
@@ -301,11 +310,11 @@ function MolarityMode({ compact }: { compact?: boolean }) {
                 minWidth: compact ? 80 : undefined,
                 fontSize: 13,
                 textAlign: "left",
-                background: solveFor === "mw" ? "#f0fdf4" : "#fff",
+                background: solveFor === "mw" ? "var(--success-bg)" : "var(--surface)",
                 fontWeight: 400,
               }}
             />
-            <span style={{ fontSize: 12, color: "#999" }}>g/mol</span>
+            <span style={{ fontSize: 12, color: "var(--text-faint)" }}>g/mol</span>
           </div>
 
           <UnitInput
@@ -345,7 +354,7 @@ function MolarityMode({ compact }: { compact?: boolean }) {
           {result && (
             <div
               style={{
-                background: "#f0fdf4",
+                background: "var(--success-bg)",
                 borderRadius: 8,
                 border: "1px solid #86efac",
                 display: "flex",
@@ -355,10 +364,10 @@ function MolarityMode({ compact }: { compact?: boolean }) {
                 marginTop: 10,
               }}
             >
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "var(--success-text)" }}>
                 {formatResult(result.value)}
               </span>
-              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: "var(--success-text)", fontWeight: 600 }}>
                 {result.label}
               </span>
             </div>
@@ -453,14 +462,16 @@ function DilutionMode({ compact }: { compact?: boolean }) {
               margin: compact ? "0 0 4px" : "0 0 6px",
               fontSize: 13,
               fontWeight: 600,
-              color: "#555",
+              color: "var(--text-muted)",
               ...(compact ? { width: "100%" } : {}),
             }}
           >
             C1 × V1 = C2 × V2 — Solve for:
           </p>
           {!compact && (
-            <p style={{ margin: "0 0 10px", fontSize: 11, color: "#999" }}>Solve for:</p>
+            <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--text-faint)" }}>
+              Solve for:
+            </p>
           )}
           <div
             style={{
@@ -479,9 +490,11 @@ function DilutionMode({ compact }: { compact?: boolean }) {
                   borderRadius: 6,
                   fontSize: compact ? 11 : 12,
                   fontWeight: 600,
-                  background: solveFor === f.key ? "#648FFF" : "#fff",
-                  color: solveFor === f.key ? "#fff" : "#888",
-                  border: "1px solid " + (solveFor === f.key ? "#648FFF" : "#ccc"),
+                  background: solveFor === f.key ? "var(--accent-primary)" : "var(--surface)",
+                  color: solveFor === f.key ? "var(--on-accent)" : "var(--text-faint)",
+                  border:
+                    "1px solid " +
+                    (solveFor === f.key ? "var(--accent-primary)" : "var(--border-strong)"),
                   cursor: "pointer",
                   fontFamily: "inherit",
                   textAlign: "left",
@@ -494,10 +507,24 @@ function DilutionMode({ compact }: { compact?: boolean }) {
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p
+            style={{
+              margin: "0 0 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--text-muted)",
+            }}
+          >
             Inputs:
           </p>
-          <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--accent-primary)",
+            }}
+          >
             Stock solution
           </p>
           <UnitInput
@@ -522,7 +549,14 @@ function DilutionMode({ compact }: { compact?: boolean }) {
             placeholder={solveFor === "v1" ? "calculated" : ""}
             compact={compact}
           />
-          <p style={{ margin: "12px 0 12px", fontSize: 12, fontWeight: 600, color: "#648FFF" }}>
+          <p
+            style={{
+              margin: "12px 0 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--accent-primary)",
+            }}
+          >
             Final solution
           </p>
           <UnitInput
@@ -551,7 +585,7 @@ function DilutionMode({ compact }: { compact?: boolean }) {
           {result && (
             <div
               style={{
-                background: "#f0fdf4",
+                background: "var(--success-bg)",
                 borderRadius: 8,
                 border: "1px solid #86efac",
                 display: "flex",
@@ -561,10 +595,10 @@ function DilutionMode({ compact }: { compact?: boolean }) {
                 marginTop: 10,
               }}
             >
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: "var(--success-text)" }}>
                 {formatResult(result.value)}
               </span>
-              <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600 }}>
+              <span style={{ fontSize: 14, color: "var(--success-text)", fontWeight: 600 }}>
                 {result.label}
               </span>
             </div>
@@ -714,15 +748,17 @@ function BatchMode() {
   return (
     <div>
       <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Paste a table: Name, MW (g/mol), Concentration (with unit), Volume (with unit)
         </p>
-        <p style={{ margin: "0 0 8px", fontSize: 11, color: "#999" }}>
+        <p style={{ margin: "0 0 8px", fontSize: 11, color: "var(--text-faint)" }}>
           Units can be inline (e.g. "150 mM", "500 mL", "50 mg/mL"). Supported: M, mM, µM, nM, g/L,
           mg/mL, µg/µL, L, mL, µL.
         </p>
         <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#648FFF" }}>Separator:</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-primary)" }}>
+            Separator:
+          </span>
           <select
             value={sepOverride}
             onChange={(e) => setSepOverride(e.target.value)}
@@ -747,8 +783,8 @@ function BatchMode() {
             border: "1px solid #ccc",
             borderRadius: 6,
             resize: "vertical",
-            background: "#fff",
-            color: "#333",
+            background: "var(--surface)",
+            color: "var(--text)",
           }}
         />
         <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
@@ -767,14 +803,16 @@ function BatchMode() {
             marginBottom: 16,
             padding: "10px 14px",
             borderRadius: 8,
-            background: "#fef2f2",
+            background: "var(--danger-bg)",
             border: "1px solid #fca5a5",
             display: "flex",
             alignItems: "center",
             gap: 8,
           }}
         >
-          <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>{error}</span>
+          <span style={{ fontSize: 12, color: "var(--danger-text)", fontWeight: 600 }}>
+            {error}
+          </span>
         </div>
       )}
 
@@ -788,7 +826,9 @@ function BatchMode() {
               marginBottom: 12,
             }}
           >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>Prep Sheet</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+              Prep Sheet
+            </p>
             <button onClick={csvExport} style={btnDownload}>
               Download CSV
             </button>
@@ -803,7 +843,7 @@ function BatchMode() {
                       style={{
                         padding: "6px 10px",
                         textAlign: "left",
-                        color: "#666",
+                        color: "var(--text-muted)",
                         fontWeight: 600,
                       }}
                     >
@@ -815,13 +855,17 @@ function BatchMode() {
               <tbody>
                 {results.map((r, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={{ padding: "6px 10px", fontWeight: 600, color: "#333" }}>
+                    <td style={{ padding: "6px 10px", fontWeight: 600, color: "var(--text)" }}>
                       {r.name}
                     </td>
                     {r.error ? (
                       <td
                         colSpan={4}
-                        style={{ padding: "6px 10px", color: "#dc2626", fontStyle: "italic" }}
+                        style={{
+                          padding: "6px 10px",
+                          color: "var(--danger-text)",
+                          fontStyle: "italic",
+                        }}
                       >
                         {r.error}
                       </td>
@@ -830,7 +874,13 @@ function BatchMode() {
                         <td style={{ padding: "6px 10px" }}>{r.mw} g/mol</td>
                         <td style={{ padding: "6px 10px" }}>{r.conc}</td>
                         <td style={{ padding: "6px 10px" }}>{r.vol}</td>
-                        <td style={{ padding: "6px 10px", fontWeight: 700, color: "#16a34a" }}>
+                        <td
+                          style={{
+                            padding: "6px 10px",
+                            fontWeight: 700,
+                            color: "var(--success-text)",
+                          }}
+                        >
                           {r.massDisplay}
                         </td>
                       </>
@@ -885,10 +935,10 @@ function LigationMode({ compact }: { compact?: boolean }) {
   return (
     <div>
       <div style={{ ...sec, marginBottom: 16 }}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Ligation insert calculator
         </p>
-        <p style={{ margin: "0 0 0", fontSize: 11, color: "#999" }}>
+        <p style={{ margin: "0 0 0", fontSize: 11, color: "var(--text-faint)" }}>
           insert (ng) = (insert bp / vector bp) × vector ng × (insert:vector ratio)
         </p>
       </div>
@@ -902,7 +952,9 @@ function LigationMode({ compact }: { compact?: boolean }) {
         }}
       >
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
+          >
             Vector
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -913,7 +965,7 @@ function LigationMode({ compact }: { compact?: boolean }) {
               onChange={(e) => setVectorBp(e.target.value)}
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
-            <span style={{ fontSize: 11, color: "#999" }}>bp</span>
+            <span style={{ fontSize: 11, color: "var(--text-faint)" }}>bp</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Amount</label>
@@ -923,12 +975,14 @@ function LigationMode({ compact }: { compact?: boolean }) {
               onChange={(e) => setVectorNg(e.target.value)}
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
-            <span style={{ fontSize: 11, color: "#999" }}>ng</span>
+            <span style={{ fontSize: 11, color: "var(--text-faint)" }}>ng</span>
           </div>
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
+          >
             Insert
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -939,17 +993,25 @@ function LigationMode({ compact }: { compact?: boolean }) {
               onChange={(e) => setInsertBp(e.target.value)}
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
-            <span style={{ fontSize: 11, color: "#999" }}>bp</span>
+            <span style={{ fontSize: 11, color: "var(--text-faint)" }}>bp</span>
           </div>
         </div>
 
         <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "#785EF0" }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
+          >
             Molar ratio
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <label
-              style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}
+              style={{
+                ...lbl,
+                marginBottom: 0,
+                fontWeight: 600,
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
             >
               Vector
             </label>
@@ -963,7 +1025,13 @@ function LigationMode({ compact }: { compact?: boolean }) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label
-              style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11, color: "#555" }}
+              style={{
+                ...lbl,
+                marginBottom: 0,
+                fontWeight: 600,
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
             >
               Insert
             </label>
@@ -982,18 +1050,29 @@ function LigationMode({ compact }: { compact?: boolean }) {
         <div
           style={{
             ...sec,
-            background: "#f0fdf4",
-            borderColor: "#86efac",
+            background: "var(--success-bg)",
+            borderColor: "var(--success-border)",
             padding: "16px 20px",
           }}
         >
-          <p style={{ margin: "0 0 4px", fontSize: 11, color: "#16a34a", fontWeight: 600 }}>
+          <p
+            style={{
+              margin: "0 0 4px",
+              fontSize: 11,
+              color: "var(--success-text)",
+              fontWeight: 600,
+            }}
+          >
             Insert amount needed:
           </p>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#16a34a" }}>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--success-text)" }}>
             {formatResult(result)}
           </span>
-          <span style={{ fontSize: 14, color: "#16a34a", fontWeight: 600, marginLeft: 8 }}>ng</span>
+          <span
+            style={{ fontSize: 14, color: "var(--success-text)", fontWeight: 600, marginLeft: 8 }}
+          >
+            ng
+          </span>
         </div>
       )}
     </div>
@@ -1015,7 +1094,7 @@ function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style
         padding: "12px 8px",
         borderRadius: 10,
         border: showAccent ? `2px solid ${accentColor}` : "1px solid #ddd",
-        background: isActive ? activeBg : "#fff",
+        background: isActive ? activeBg : "var(--surface)",
         cursor: "pointer",
         fontFamily: "inherit",
         textAlign: "center",
@@ -1029,13 +1108,13 @@ function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: showAccent ? accentColor : "#555",
+          color: showAccent ? accentColor : "var(--text-muted)",
           transition: "color 0.2s ease",
         }}
       >
         {label}
       </div>
-      <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{desc}</div>
+      <div style={{ fontSize: 11, color: "var(--text-faint)", marginTop: 2 }}>{desc}</div>
     </button>
   );
 }
@@ -1054,8 +1133,8 @@ function App() {
     { key: "ligation", label: "Ligation", desc: "Insert mass from vector:insert ratio" },
   ];
 
-  const chemColor = "#648FFF";
-  const dnaColor = "#785EF0";
+  const chemColor = "var(--accent-primary)";
+  const dnaColor = "var(--accent-dna)";
 
   return (
     <div
@@ -1089,7 +1168,7 @@ function App() {
             desc={m.desc}
             active={mode === m.key}
             accentColor={chemColor}
-            activeBg="#eef2ff"
+            activeBg="var(--info-bg)"
             onClick={() => setMode(m.key)}
             style={{ flex: compact ? "1 1 calc(50% - 6px)" : 1, minWidth: compact ? 0 : undefined }}
           />
@@ -1118,7 +1197,7 @@ function App() {
             desc={m.desc}
             active={mode === m.key}
             accentColor={dnaColor}
-            activeBg="#f5f3ff"
+            activeBg="var(--surface-subtle)"
             onClick={() => setMode(m.key)}
             style={{
               flex: compact ? 1 : "0 1 auto",

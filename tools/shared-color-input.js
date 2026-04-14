@@ -32,7 +32,7 @@ function ColorInput({ value, onChange, size = 22 }) {
       style: {
         width: size,
         height: size,
-        border: "1px solid #ccc",
+        border: "1px solid var(--border-strong)",
         borderRadius: 4,
         cursor: "pointer",
         padding: 0,
@@ -57,11 +57,11 @@ function ColorInput({ value, onChange, size = 22 }) {
         width: 64,
         fontFamily: "monospace",
         fontSize: 11,
-        border: "1px solid #ccc",
+        border: "1px solid var(--border-strong)",
         borderRadius: 4,
         padding: "2px 5px",
-        color: "#333",
-        background: "#fff",
+        color: "var(--text)",
+        background: "var(--surface)",
       },
     })
   );

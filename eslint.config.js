@@ -134,6 +134,12 @@ const sharedGlobals = {
   formatP: "readonly",
   StatsTile: "readonly",
   assignBracketLevels: "readonly",
+  // theme.js
+  ThemeToggle: "readonly",
+  useThemeMode: "readonly",
+  setTheme: "readonly",
+  getTheme: "readonly",
+  toggleTheme: "readonly",
 };
 
 const browserPlus = {

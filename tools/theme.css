@@ -1,0 +1,129 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Theme variables — edit this file to tune either palette.
+   Plot cards (--plot-card-*) are intentionally white in both themes so that
+   exported SVG/PNG charts always sit on a white background.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Page */
+  --page-bg: #f0f0f4;
+  --page-bg-dot: #d0d0d8;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-subtle: #f8f8fa;
+  --surface-sunken: #f0f0f5;
+
+  /* Text */
+  --text: #222222;
+  --text-muted: #555555;
+  --text-faint: #888888;
+
+  /* Borders */
+  --border: #dddddd;
+  --border-strong: #cccccc;
+
+  /* Accents — kept identical in both themes */
+  --accent-primary: #648fff;
+  --accent-plot: #2ec4b6;
+  --accent-download: #16a34a;
+  --accent-dna: #785ef0;
+
+  /* State — danger / warning / info */
+  --danger-bg: #fef2f2;
+  --danger-text: #dc2626;
+  --danger-border: #fca5a5;
+  --warning-bg: #fffbeb;
+  --warning-text: #92400e;
+  --warning-border: #fbbf24;
+  --info-bg: #eef2ff;
+  --info-text: #1d4ed8;
+  --info-border: #b0c4ff;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+  --success-border: #86efac;
+  --neutral-bg: #e5e7eb;
+  --neutral-text: #374151;
+  --subhead-bg: #475569;
+  --subhead-text: #ffffff;
+
+  /* Plot card — ALWAYS white so exports stay on a white canvas */
+  --plot-card-bg: #ffffff;
+  --plot-card-border: #dddddd;
+
+  /* Inverse-contrast text (e.g. text on an accent-filled button) */
+  --on-accent: #ffffff;
+}
+
+/* Dark overrides — shared by the OS-follow media query and the explicit
+   [data-theme="dark"] selector. Keep them in sync. */
+:root[data-theme="dark"] {
+  --page-bg: #12131a;
+  --page-bg-dot: #1e1f28;
+
+  --surface: #1a1b23;
+  --surface-subtle: #23242e;
+  --surface-sunken: #16171f;
+
+  --text: #e8e8ef;
+  --text-muted: #a8a8b5;
+  --text-faint: #777785;
+
+  --border: #2e2f3a;
+  --border-strong: #3e3f4c;
+
+  --danger-bg: #2a1517;
+  --danger-text: #f87171;
+  --danger-border: #7f1d1d;
+  --warning-bg: #2a1f0a;
+  --warning-text: #fbbf24;
+  --warning-border: #78350f;
+  --info-bg: #1a1f3a;
+  --info-text: #a5b4fc;
+  --info-border: #3b4680;
+  --success-bg: #0f2a1a;
+  --success-text: #86efac;
+  --success-border: #166534;
+  --neutral-bg: #2e2f3a;
+  --neutral-text: #d1d5db;
+  --subhead-bg: #334155;
+  --subhead-text: #e8e8ef;
+}
+
+/* OS-preference fallback applies only if the user hasn't made an explicit
+   choice (no data-theme attribute written). Once they toggle, the explicit
+   attribute wins regardless of OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --page-bg: #12131a;
+    --page-bg-dot: #1e1f28;
+
+    --surface: #1a1b23;
+    --surface-subtle: #23242e;
+    --surface-sunken: #16171f;
+
+    --text: #e8e8ef;
+    --text-muted: #a8a8b5;
+    --text-faint: #777785;
+
+    --border: #2e2f3a;
+    --border-strong: #3e3f4c;
+
+    --danger-bg: #2a1517;
+    --danger-text: #f87171;
+    --danger-border: #7f1d1d;
+    --warning-bg: #2a1f0a;
+    --warning-text: #fbbf24;
+    --warning-border: #78350f;
+    --info-bg: #1a1f3a;
+    --info-text: #a5b4fc;
+    --info-border: #3b4680;
+    --success-bg: #0f2a1a;
+    --success-text: #86efac;
+    --success-border: #166534;
+    --neutral-bg: #2e2f3a;
+    --neutral-text: #d1d5db;
+    --subhead-bg: #334155;
+    --subhead-text: #e8e8ef;
+  }
+}

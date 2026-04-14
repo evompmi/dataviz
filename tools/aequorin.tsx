@@ -896,10 +896,17 @@ const FacetChartItem = memo(function FacetChartItem({ s, facetRefs, chartProps }
     };
   }, [s.prefix, facetRefs]);
   return (
-    <div style={{ background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
+    <div
+      style={{
+        background: "var(--plot-card-bg)",
+        borderRadius: 8,
+        padding: 12,
+        border: "1px solid var(--plot-card-border)",
+      }}
+    >
       <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color }}>
         {s.label}{" "}
-        <span style={{ fontSize: 11, fontWeight: 400, color: "#999" }}>
+        <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>
           number of repeats used = {s.n}
         </span>
       </p>
@@ -1053,7 +1060,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
 
   if (activeStats.length === 0)
     return (
-      <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+      <div
+        style={{
+          padding: "60px 20px",
+          textAlign: "center",
+          color: "var(--text-faint)",
+          fontSize: 14,
+        }}
+      >
         No conditions or samples selected. Enable at least one to display the plot.
       </div>
     );
@@ -1083,9 +1097,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   };
 
   const isCorrected = statsDataMode === "corrected";
-  const modeColor = isCorrected ? "#0f766e" : "#1d4ed8";
-  const modeBg = isCorrected ? "#f0fdfa" : "#eff6ff";
-  const modeBorder = isCorrected ? "#99f6e4" : "#bfdbfe";
+  const modeColor = isCorrected ? "var(--success-text)" : "var(--info-text)";
+  const modeBg = isCorrected ? "var(--success-bg)" : "var(--info-bg)";
+  const modeBorder = isCorrected ? "var(--success-border)" : "var(--info-border)";
   const sumKey = isCorrected ? "corrSum" : "rawSum";
   const sumLabel = isCorrected ? "Corrected Sum" : "Raw Sum";
   const csvFileName = isCorrected ? `corrected_sums_${baseName}.csv` : `raw_sums_${baseName}.csv`;
@@ -1102,7 +1116,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     >
       {/* Toggle */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Integral:</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>Integral:</span>
         <button
           onClick={() => setStatsDataMode("raw")}
           style={{
@@ -1110,9 +1124,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             borderRadius: 6,
             fontSize: 12,
             fontWeight: 600,
-            background: statsDataMode === "raw" ? "#1d4ed8" : "#fff",
-            color: statsDataMode === "raw" ? "#fff" : "#888",
-            border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "#ccc"}`,
+            background: statsDataMode === "raw" ? "#1d4ed8" : "var(--surface)",
+            color: statsDataMode === "raw" ? "#fff" : "var(--text-faint)",
+            border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "var(--border-strong)"}`,
             cursor: "pointer",
             fontFamily: "inherit",
           }}
@@ -1126,9 +1140,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             borderRadius: 6,
             fontSize: 12,
             fontWeight: 600,
-            background: statsDataMode === "corrected" ? "#0f766e" : "#fff",
-            color: statsDataMode === "corrected" ? "#fff" : "#888",
-            border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "#ccc"}`,
+            background: statsDataMode === "corrected" ? "#0f766e" : "var(--surface)",
+            color: statsDataMode === "corrected" ? "#fff" : "var(--text-faint)",
+            border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "var(--border-strong)"}`,
             cursor: "pointer",
             fontFamily: "inherit",
           }}
@@ -1138,7 +1152,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
       </div>
 
       {/* Bar plot */}
-      <div style={{ background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
+      <div
+        style={{
+          background: "var(--plot-card-bg)",
+          borderRadius: 8,
+          padding: 12,
+          border: "1px solid var(--plot-card-border)",
+        }}
+      >
         <InsetBarplot
           ref={barRef}
           {...insetBarProps}
@@ -1188,9 +1209,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 11,
                 cursor: "pointer",
-                background: "#16a34a",
+                background: "var(--accent-download)",
                 border: "none",
-                color: "#fff",
+                color: "var(--on-accent)",
                 fontFamily: "inherit",
                 fontWeight: 600,
               }}
@@ -1223,10 +1244,10 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                     key={`${rs.prefix}-${ri}`}
                     style={{ borderBottom: `1px solid ${modeBorder}` }}
                   >
-                    <td style={{ padding: "3px 8px", color: "#334155", fontWeight: 600 }}>
+                    <td style={{ padding: "3px 8px", color: "var(--text)", fontWeight: 600 }}>
                       {rs.label}
                     </td>
-                    <td style={{ padding: "3px 8px", color: "#64748b" }}>Rep {ri + 1}</td>
+                    <td style={{ padding: "3px 8px", color: "var(--text-muted)" }}>Rep {ri + 1}</td>
                     <td style={{ padding: "3px 8px", color: modeColor, fontFamily: "monospace" }}>
                       {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
                     </td>
@@ -1256,8 +1277,8 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     <div
       style={{
         borderRadius: 10,
-        border: "1px solid #ddd",
-        background: "#fafafa",
+        border: "1px solid var(--plot-card-border)",
+        background: "var(--plot-card-bg)",
         overflow: "hidden",
       }}
     >
@@ -1275,8 +1296,12 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
           fontFamily: "inherit",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Time-course plot</span>
-        <span style={{ fontSize: 11, color: "#999" }}>{chartOpen ? "▲ collapse" : "▼ expand"}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Time-course plot
+        </span>
+        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>
+          {chartOpen ? "▲ collapse" : "▼ expand"}
+        </span>
       </button>
       {chartOpen && <div style={{ padding: "0 12px 12px" }}>{chartContent}</div>}
     </div>
@@ -1381,11 +1406,12 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                   alignItems: "center",
                   gap: 6,
                   fontSize: 12,
-                  color: "#444",
+                  color: "var(--text-muted)",
                 }}
               >
                 <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
-                {s.label} <span style={{ color: "#999" }}>number of repeats used = {s.n}</span>
+                {s.label}{" "}
+                <span style={{ color: "var(--text-faint)" }}>number of repeats used = {s.n}</span>
               </div>
             ))}
           </div>
@@ -1415,9 +1441,9 @@ function ConditionEditor({ conditions, onChange }) {
             padding: "4px 8px",
             borderRadius: 6,
             fontSize: 12,
-            background: c.enabled ? "#f0f0f5" : "#fafafa",
+            background: c.enabled ? "var(--surface-sunken)" : "var(--surface-subtle)",
             opacity: c.enabled ? 1 : 0.4,
-            border: "1px solid #ccc",
+            border: "1px solid var(--border-strong)",
           }}
         >
           <input
@@ -1433,16 +1459,16 @@ function ConditionEditor({ conditions, onChange }) {
             style={{
               flex: 1,
               minWidth: 0,
-              background: "#fff",
-              border: "1px solid #ccc",
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
               borderRadius: 4,
-              color: "#333",
+              color: "var(--text)",
               padding: "2px 5px",
               fontSize: 12,
               fontFamily: "inherit",
             }}
           />
-          <span style={{ color: "#999", fontSize: 10, flexShrink: 0 }}>
+          <span style={{ color: "var(--text-faint)", fontSize: 10, flexShrink: 0 }}>
             ({c.colIndices.length})
           </span>
         </div>
@@ -1460,7 +1486,7 @@ function HowToSection() {
         marginTop: 24,
         borderRadius: 14,
         overflow: "hidden",
-        border: "2px solid #648FFF",
+        border: "2px solid var(--accent-primary)",
         boxShadow: "0 4px 20px rgba(100,143,255,0.12)",
       }}
     >
@@ -1475,7 +1501,7 @@ function HowToSection() {
       >
         {toolIcon("aequorin", 24, { circle: true })}
         <div>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+          <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
             Aequorin Ca²⁺ Calibration — How to use
           </div>
           <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
@@ -1485,7 +1511,7 @@ function HowToSection() {
       </div>
       <div
         style={{
-          background: "#eef2ff",
+          background: "var(--info-bg)",
           padding: "20px 24px",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -1494,10 +1520,10 @@ function HowToSection() {
       >
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
             gridColumn: "1/-1",
           }}
         >
@@ -1505,7 +1531,7 @@ function HowToSection() {
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 8,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1513,7 +1539,7 @@ function HowToSection() {
           >
             Purpose
           </div>
-          <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
+          <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
             Plots aequorin luminescence time-courses — either as raw RLU values or converted to
             [Ca²⁺] using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes
             mean ± SD across replicates and generates Σ barplots (raw and baseline-corrected) for
@@ -1522,17 +1548,17 @@ function HowToSection() {
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 8,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1540,20 +1566,20 @@ function HowToSection() {
           >
             Data layout — wide format
           </div>
-          <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}>
             Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one
             time-point. First row = header names.
           </p>
           <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
             <thead>
-              <tr style={{ background: "#dbeafe" }}>
+              <tr style={{ background: "var(--info-bg)" }}>
                 {["WT", "WT", "WT", "KO", "KO", "KO"].map((h, i) => (
                   <th
                     key={i}
                     style={{
                       padding: "4px 8px",
-                      border: "1px solid #b0c4ff",
-                      color: "#648FFF",
+                      border: "1px solid var(--info-border)",
+                      color: "var(--accent-primary)",
                       fontWeight: 700,
                     }}
                   >
@@ -1568,11 +1594,18 @@ function HowToSection() {
                 [1350, 1400, 1310, 850, 870, 840],
                 [980, 1010, 990, 620, 600, 640],
               ].map((r, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#f0f4ff" : "#fff" }}>
+                <tr
+                  key={i}
+                  style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+                >
                   {r.map((v, j) => (
                     <td
                       key={j}
-                      style={{ padding: "4px 8px", border: "1px solid #d0dbff", color: "#333" }}
+                      style={{
+                        padding: "4px 8px",
+                        border: "1px solid var(--info-border)",
+                        color: "var(--text)",
+                      }}
                     >
                       {v}
                     </td>
@@ -1584,17 +1617,17 @@ function HowToSection() {
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1621,23 +1654,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1664,23 +1699,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1711,23 +1748,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            borderLeft: "4px solid #648FFF",
-            background: "#dbeafe",
+            borderLeft: "4px solid var(--accent-primary)",
+            background: "var(--info-bg)",
             padding: "10px 14px",
             borderRadius: "0 8px 8px 0",
             gridColumn: "1/-1",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#3b6cf7" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-primary)" }}>
             💡 Replicate grouping —{" "}
           </span>
-          <span style={{ fontSize: 11, color: "#444" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed
             across them at each time-point. In Individual mode, each column is its own condition
             (labelled name_rep1, name_rep2…) and plotted separately.
@@ -1746,9 +1785,9 @@ function HowToSection() {
                 fontSize: 10,
                 padding: "3px 10px",
                 borderRadius: 20,
-                background: "#fff",
-                border: "1px solid #b0c4ff",
-                color: "#555",
+                background: "var(--surface)",
+                border: "1px solid var(--info-border)",
+                color: "var(--text-muted)",
               }}
             >
               {t}
@@ -1780,7 +1819,14 @@ function UploadStep({
         onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point"
       />
-      <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
         ⚠ Max file size: 2 MB
       </p>
       <HowToSection />
@@ -1812,7 +1858,9 @@ function ConfigureStep({
     <div>
       <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
         <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Calibration formula
           </p>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
@@ -1878,7 +1926,9 @@ function ConfigureStep({
           </div>
         </div>
         <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Time axis
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
@@ -1908,7 +1958,7 @@ function ConfigureStep({
               </select>
             </div>
             {parsed && (
-              <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--text-faint)", paddingBottom: 4 }}>
                 Range: 0 – {(parsed.data.length * vis.timeStep).toFixed(3)} {vis.baseUnit}
               </div>
             )}
@@ -1924,9 +1974,9 @@ function ConfigureStep({
             marginBottom: 8,
           }}
         >
-          <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
-            Loaded <strong style={{ color: "#333" }}>{fileName}</strong> — {parsed.headers.length}{" "}
-            samples × {parsed.data.length} time-points
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+            Loaded <strong style={{ color: "var(--text)" }}>{fileName}</strong> —{" "}
+            {parsed.headers.length} samples × {parsed.data.length} time-points
           </p>
           <button
             onClick={(e) => {
@@ -1938,9 +1988,9 @@ function ConfigureStep({
               borderRadius: 6,
               fontSize: 12,
               cursor: "pointer",
-              background: "#dcfce7",
-              border: "1px solid #86efac",
-              color: "#166534",
+              background: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
+              color: "var(--success-text)",
               fontFamily: "inherit",
               fontWeight: 600,
             }}
@@ -1954,7 +2004,14 @@ function ConfigureStep({
             const ei = parsed.headers.map((_, i) => i).filter((i) => columnEnabled[i] !== false);
             return (
               <div style={{ marginTop: 8 }}>
-                <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>
+                <p
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Preview — {formula === "none" ? "raw data" : "calibrated data"} · {ei.length} of{" "}
                   {parsed.headers.length} columns (first 15 rows):
                 </p>
@@ -2019,9 +2076,9 @@ function PlotControls({
             },
             style: {
               ...btnSecondary,
-              background: "#dcfce7",
-              border: "1px solid #86efac",
-              color: "#166534",
+              background: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
+              color: "var(--success-text)",
               width: "100%",
               fontWeight: 600,
             },
@@ -2031,18 +2088,18 @@ function PlotControls({
 
       {/* Conditions */}
       <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Conditions
         </p>
         <ConditionEditor conditions={conditions} onChange={setConditions} />
-        <details style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
+        <details style={{ marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
           <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
           <pre
             style={{
               whiteSpace: "pre-wrap",
               marginTop: 4,
               fontSize: 10,
-              background: "#eee",
+              background: "var(--surface-sunken)",
               padding: 8,
               borderRadius: 4,
             }}
@@ -2059,7 +2116,7 @@ function PlotControls({
 
       {/* Plot parameters */}
       <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Plot parameters
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2130,7 +2187,9 @@ function PlotControls({
 
       {/* Style controls */}
       <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Style</p>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Style
+        </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <BaseStyleControls
             plotBg={vis.plotBg}
@@ -2176,7 +2235,9 @@ function PlotControls({
 
       {/* Barplot controls */}
       <div style={sec}>
-        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <p
+          style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+        >
           Barplot (Σ of plotted values)
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -2185,7 +2246,7 @@ function PlotControls({
             type="checkbox"
             checked={vis.showInset}
             onChange={(e) => updVis({ showInset: e.target.checked })}
-            style={{ accentColor: "#648FFF" }}
+            style={{ accentColor: "var(--accent-primary)" }}
           />
         </div>
 
@@ -2197,7 +2258,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2229,7 +2290,7 @@ function PlotControls({
                   type="checkbox"
                   checked={vis.insetShowGrid}
                   onChange={(e) => updVis({ insetShowGrid: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
               </div>
               {vis.insetShowGrid && (
@@ -2286,7 +2347,7 @@ function PlotControls({
                 type="checkbox"
                 checked={vis.insetShowBarOutline}
                 onChange={(e) => updVis({ insetShowBarOutline: e.target.checked })}
-                style={{ accentColor: "#648FFF" }}
+                style={{ accentColor: "var(--accent-primary)" }}
               />
             </div>
             {vis.insetShowBarOutline && (
@@ -2317,7 +2378,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2355,7 +2416,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2369,7 +2430,7 @@ function PlotControls({
                   type="checkbox"
                   checked={vis.insetShowPoints}
                   onChange={(e) => updVis({ insetShowPoints: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
               </div>
               {vis.insetShowPoints && (
@@ -2401,7 +2462,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2416,12 +2477,19 @@ function PlotControls({
                     key={s.prefix}
                     style={{
                       padding: "6px 8px",
-                      background: "#f0f0f5",
+                      background: "var(--surface-sunken)",
                       borderRadius: 5,
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border)",
                     }}
                   >
-                    <div style={{ fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 6 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        fontWeight: 600,
+                        marginBottom: 6,
+                      }}
+                    >
                       {s.label}
                     </div>
                     <ColorInput
@@ -2460,8 +2528,8 @@ function SampleSelectionOverlay({
             fontWeight: 700,
             fontFamily: "inherit",
             cursor: "pointer",
-            background: showColumnOverlay ? "#f59e0b" : "#fffbeb",
-            color: showColumnOverlay ? "#fff" : "#92400e",
+            background: showColumnOverlay ? "#f59e0b" : "var(--warning-bg)",
+            color: showColumnOverlay ? "#fff" : "var(--warning-text)",
             border: "2px solid #f59e0b",
             boxShadow: "0 2px 10px rgba(245,158,11,0.3)",
           }}
@@ -2476,7 +2544,7 @@ function SampleSelectionOverlay({
               left: 0,
               marginTop: 6,
               width: 420,
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               border: "2px solid #f59e0b",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
@@ -2493,7 +2561,7 @@ function SampleSelectionOverlay({
                 marginBottom: 10,
               }}
             >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#555" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
                 Column grouping
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -2511,9 +2579,9 @@ function SampleSelectionOverlay({
                       fontWeight: 600,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: poolReplicates === val ? "#f59e0b" : "#fff",
-                      color: poolReplicates === val ? "#fff" : "#888",
-                      border: `1px solid ${poolReplicates === val ? "#f59e0b" : "#ccc"}`,
+                      background: poolReplicates === val ? "#f59e0b" : "var(--surface)",
+                      color: poolReplicates === val ? "#fff" : "var(--text-faint)",
+                      border: `1px solid ${poolReplicates === val ? "#f59e0b" : "var(--border-strong)"}`,
                     }}
                   >
                     {label}
@@ -2545,9 +2613,9 @@ function SampleSelectionOverlay({
                   <div
                     key={g.name}
                     style={{
-                      background: "#f4f4f8",
+                      background: "var(--surface-subtle)",
                       borderRadius: 6,
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border)",
                       padding: "5px 7px",
                       minWidth: 0,
                     }}
@@ -2556,7 +2624,7 @@ function SampleSelectionOverlay({
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: "#555",
+                        color: "var(--text-muted)",
                         marginBottom: 3,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -2577,9 +2645,9 @@ function SampleSelectionOverlay({
                               alignItems: "center",
                               gap: 3,
                               padding: "2px 6px",
-                              background: enabled ? "#fff" : "#fafafa",
+                              background: enabled ? "var(--surface)" : "var(--surface-subtle)",
                               borderRadius: 4,
-                              border: `1px solid ${enabled ? "#bbb" : "#e0e0e0"}`,
+                              border: `1px solid ${enabled ? "var(--border-strong)" : "var(--border)"}`,
                               opacity: enabled ? 1 : 0.45,
                               fontSize: 10,
                               cursor: "pointer",
@@ -2909,7 +2977,12 @@ function App() {
 
   return (
     <div
-      style={{ minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }}
+      style={{
+        minHeight: "100vh",
+        color: "var(--text)",
+        fontFamily: "monospace",
+        padding: "24px 32px",
+      }}
     >
       <PageHeader
         toolName="aequorin"
@@ -2997,9 +3070,9 @@ function App() {
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: "inherit",
-                background: !vis.faceted ? "#648FFF" : "#fff",
-                color: !vis.faceted ? "#fff" : "#888",
-                border: `1px solid ${!vis.faceted ? "#648FFF" : "#ccc"}`,
+                background: !vis.faceted ? "var(--accent-primary)" : "var(--surface)",
+                color: !vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
+                border: `1px solid ${!vis.faceted ? "var(--accent-primary)" : "var(--border-strong)"}`,
                 cursor: "pointer",
               }}
             >
@@ -3013,9 +3086,9 @@ function App() {
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: "inherit",
-                background: vis.faceted ? "#648FFF" : "#fff",
-                color: vis.faceted ? "#fff" : "#888",
-                border: `1px solid ${vis.faceted ? "#648FFF" : "#ccc"}`,
+                background: vis.faceted ? "var(--accent-primary)" : "var(--surface)",
+                color: vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
+                border: `1px solid ${vis.faceted ? "var(--accent-primary)" : "var(--border-strong)"}`,
                 cursor: "pointer",
               }}
             >
@@ -3056,7 +3129,14 @@ function App() {
                 columnEnabled={columnEnabled}
                 handleColumnToggle={handleColumnToggle}
               />
-              <div style={{ ...sec, padding: 20, background: "#fff" }}>
+              <div
+                style={{
+                  ...sec,
+                  padding: 20,
+                  background: "var(--plot-card-bg)",
+                  borderColor: "var(--plot-card-border)",
+                }}
+              >
                 <PlotPanel
                   ref={plotPanelRef}
                   stats={stats}

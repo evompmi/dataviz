@@ -104,37 +104,39 @@ function toolIcon(name, size, opts) {
 // ── UI style constants ────────────────────────────────────────────────────────
 
 const inp = {
-  background: "#fff",
-  border: "1px solid #ccc",
+  background: "var(--surface)",
+  border: "1px solid var(--border-strong)",
   borderRadius: 4,
-  color: "#333",
+  color: "var(--text)",
   padding: "4px 8px",
   fontSize: 12,
 };
 const inpN = {
   width: 72,
-  background: "#fff",
-  border: "1px solid #ccc",
+  background: "var(--surface)",
+  border: "1px solid var(--border-strong)",
   borderRadius: 4,
-  color: "#333",
+  color: "var(--text)",
   padding: "4px 8px",
   fontSize: 13,
   textAlign: "center",
 };
 const sec = {
-  background: "#f8f8fa",
+  background: "var(--surface-subtle)",
   borderRadius: 10,
   padding: 16,
   marginBottom: 16,
-  border: "1px solid #ddd",
+  border: "1px solid var(--border)",
 };
-const lbl = { fontSize: 12, color: "#777", marginBottom: 2 };
+const lbl = { fontSize: 12, color: "var(--text-faint)", marginBottom: 2 };
+// Okabe-Ito hues: saturated enough to work on both light and dark chrome.
+// Only `ignore` becomes theme-aware since it was a neutral gray.
 const roleColors = {
   group: "#0072B2",
   value: "#009E73",
   filter: "#E69F00",
   text: "#CC79A7",
-  ignore: "#ccc",
+  ignore: "var(--border-strong)",
 };
 
 const btnPrimary = {
@@ -142,8 +144,8 @@ const btnPrimary = {
   borderRadius: 8,
   fontSize: 14,
   fontWeight: 700,
-  background: "#648FFF",
-  color: "#fff",
+  background: "var(--accent-primary)",
+  color: "var(--on-accent)",
   border: "none",
   cursor: "pointer",
   fontFamily: "inherit",
@@ -153,9 +155,9 @@ const btnSecondary = {
   borderRadius: 6,
   fontSize: 12,
   cursor: "pointer",
-  background: "#fff",
-  border: "1px solid #ccc",
-  color: "#555",
+  background: "var(--surface)",
+  border: "1px solid var(--border-strong)",
+  color: "var(--text-muted)",
   fontFamily: "inherit",
 };
 const btnDanger = {
@@ -163,9 +165,9 @@ const btnDanger = {
   borderRadius: 6,
   fontSize: 12,
   cursor: "pointer",
-  background: "#fef2f2",
-  border: "1px solid #fca5a5",
-  color: "#dc2626",
+  background: "var(--danger-bg)",
+  border: "1px solid var(--danger-border)",
+  color: "var(--danger-text)",
   fontFamily: "inherit",
   width: "100%",
 };
@@ -174,9 +176,9 @@ const btnDownload = {
   borderRadius: 6,
   fontSize: 12,
   cursor: "pointer",
-  background: "#16a34a",
+  background: "var(--accent-download)",
   border: "none",
-  color: "#fff",
+  color: "var(--on-accent)",
   fontFamily: "inherit",
   width: "100%",
   fontWeight: 600,
@@ -186,30 +188,30 @@ const btnPlot = {
   borderRadius: 8,
   fontSize: 14,
   fontWeight: 700,
-  background: "#2EC4B6",
-  color: "#fff",
+  background: "var(--accent-plot)",
+  color: "var(--on-accent)",
   border: "none",
   cursor: "pointer",
   fontFamily: "inherit",
 };
 const selStyle = {
-  background: "#fff",
-  border: "1px solid #ccc",
+  background: "var(--surface)",
+  border: "1px solid var(--border-strong)",
   borderRadius: 4,
   padding: "4px 8px",
   fontSize: 12,
   fontFamily: "inherit",
-  color: "#333",
+  color: "var(--text)",
   cursor: "pointer",
 };
 const sepSelect = {
-  background: "#fff",
-  border: "2px solid #648FFF",
+  background: "var(--surface)",
+  border: "2px solid var(--accent-primary)",
   borderRadius: 6,
   padding: "6px 12px",
   fontSize: 13,
   fontFamily: "inherit",
-  color: "#333",
+  color: "var(--text)",
   cursor: "pointer",
   fontWeight: 600,
 };

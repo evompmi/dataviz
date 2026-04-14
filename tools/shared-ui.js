@@ -22,7 +22,7 @@ function SliderControl(props) {
       "div",
       { style: { display: "flex", justifyContent: "space-between", marginBottom: 2 } },
       React.createElement("span", { style: lbl }, label),
-      React.createElement("span", { style: { fontSize: 10, color: "#999" } }, dv)
+      React.createElement("span", { style: { fontSize: 10, color: "var(--text-faint)" } }, dv)
     ),
     React.createElement("input", {
       type: "range",
@@ -33,7 +33,7 @@ function SliderControl(props) {
       onChange: function (e) {
         onChange(Number(e.target.value));
       },
-      style: { width: "100%", accentColor: "#648FFF" },
+      style: { width: "100%", accentColor: "var(--accent-primary)" },
     })
   );
 }
@@ -61,9 +61,20 @@ function StepNavBar(props) {
             borderRadius: 6,
             fontSize: 12,
             fontWeight: 600,
-            background: currentStep === s ? "#648FFF" : "#fff",
-            color: currentStep === s ? "#fff" : enabled ? "#888" : "#ccc",
-            border: "1px solid " + (currentStep === s ? "#648FFF" : enabled ? "#ccc" : "#eee"),
+            background: currentStep === s ? "var(--accent-primary)" : "var(--surface)",
+            color:
+              currentStep === s
+                ? "var(--on-accent)"
+                : enabled
+                  ? "var(--text-faint)"
+                  : "var(--border)",
+            border:
+              "1px solid " +
+              (currentStep === s
+                ? "var(--accent-primary)"
+                : enabled
+                  ? "var(--border-strong)"
+                  : "var(--border)"),
             cursor: enabled ? "pointer" : "default",
             fontFamily: "inherit",
             textTransform: "uppercase",
@@ -83,8 +94,8 @@ function CommaFixBanner(props) {
     "div",
     {
       style: Object.assign({}, sec, {
-        background: "#fffbeb",
-        borderColor: "#fbbf24",
+        background: "var(--warning-bg)",
+        borderColor: "var(--warning-border)",
         display: "flex",
         alignItems: "center",
         gap: 12,
@@ -97,12 +108,12 @@ function CommaFixBanner(props) {
       { style: { flex: 1 } },
       React.createElement(
         "p",
-        { style: { margin: 0, fontSize: 12, color: "#92400e", fontWeight: 600 } },
+        { style: { margin: 0, fontSize: 12, color: "var(--warning-text)", fontWeight: 600 } },
         "Decimal commas automatically converted to dots"
       ),
       React.createElement(
         "p",
-        { style: { margin: "2px 0 0", fontSize: 11, color: "#a16207" } },
+        { style: { margin: "2px 0 0", fontSize: 11, color: "var(--warning-text)", opacity: 0.85 } },
         props.commaFixCount +
           " value" +
           (props.commaFixCount > 1 ? "s" : "") +
@@ -122,8 +133,8 @@ function ParseErrorBanner(props) {
         marginBottom: 16,
         padding: "10px 14px",
         borderRadius: 8,
-        background: "#fef2f2",
-        border: "1px solid #fca5a5",
+        background: "var(--danger-bg)",
+        border: "1px solid var(--danger-border)",
         display: "flex",
         alignItems: "center",
         gap: 8,
@@ -132,30 +143,44 @@ function ParseErrorBanner(props) {
     React.createElement("span", { style: { fontSize: 16 } }, "\uD83D\uDEAB"),
     React.createElement(
       "span",
-      { style: { fontSize: 12, color: "#dc2626", fontWeight: 600 } },
+      { style: { fontSize: 12, color: "var(--danger-text)", fontWeight: 600 } },
       props.error
     )
   );
 }
 
-// Page header with tool icon
+// Page header with tool icon and a theme toggle in the top-right.
 function PageHeader(props) {
   return React.createElement(
     "div",
-    { style: { marginBottom: 28, borderBottom: "1px solid #ccc", paddingBottom: 16 } },
+    {
+      style: {
+        marginBottom: 28,
+        borderBottom: "1px solid var(--border-strong)",
+        paddingBottom: 16,
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+      },
+    },
     React.createElement(
-      "h1",
-      { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "#222" } },
-      toolIcon(props.toolName),
-      props.title
+      "div",
+      { style: { flex: 1, minWidth: 0 } },
+      React.createElement(
+        "h1",
+        { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
+        toolIcon(props.toolName),
+        props.title
+      ),
+      props.subtitle
+        ? React.createElement(
+            "p",
+            { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
+            props.subtitle
+          )
+        : null
     ),
-    props.subtitle
-      ? React.createElement(
-          "p",
-          { style: { margin: "4px 0 0", fontSize: 10, color: "#aaa" } },
-          props.subtitle
-        )
-      : null
+    React.createElement(ThemeToggle, null)
   );
 }
 
@@ -176,9 +201,9 @@ function UploadPanel(props) {
         style: {
           marginBottom: 12,
           padding: "12px 16px",
-          background: "#eef2ff",
+          background: "var(--info-bg)",
           borderRadius: 8,
-          border: "1.5px solid #b0c4ff",
+          border: "1.5px solid var(--info-border)",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -186,7 +211,7 @@ function UploadPanel(props) {
       },
       React.createElement(
         "span",
-        { style: { fontSize: 13, fontWeight: 600, color: "#648FFF" } },
+        { style: { fontSize: 13, fontWeight: 600, color: "var(--accent-primary)" } },
         "1. Choose your column separator:"
       ),
       React.createElement(
@@ -207,7 +232,7 @@ function UploadPanel(props) {
       !sepOverride
         ? React.createElement(
             "span",
-            { style: { fontSize: 11, color: "#e11d48", fontWeight: 600 } },
+            { style: { fontSize: 11, color: "var(--danger-text)", fontWeight: 600 } },
             "\u26A0 Required before loading a file"
           )
         : null
@@ -217,18 +242,18 @@ function UploadPanel(props) {
           "div",
           {
             style: {
-              border: "2px dashed #ccc",
+              border: "2px dashed var(--border-strong)",
               borderRadius: 12,
               padding: "48px 24px",
               textAlign: "center",
-              background: "#f5f5f5",
+              background: "var(--surface-sunken)",
               opacity: 0.5,
             },
           },
           React.createElement("div", { style: { fontSize: 40, marginBottom: 8 } }, "\uD83D\uDEAB"),
           React.createElement(
             "p",
-            { style: { margin: 0, fontSize: 15, color: "#999" } },
+            { style: { margin: 0, fontSize: 15, color: "var(--text-faint)" } },
             "Select a column separator above to enable file loading"
           )
         )
@@ -248,7 +273,7 @@ function UploadPanel(props) {
               justifyContent: "center",
               gap: 8,
               fontSize: 12,
-              color: "#666",
+              color: "var(--text-muted)",
             },
           },
           React.createElement("span", null, "No data handy?"),
@@ -260,7 +285,7 @@ function UploadPanel(props) {
                 background: "none",
                 border: "none",
                 padding: 0,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 fontWeight: 700,
                 fontSize: 12,
                 fontFamily: "monospace",
@@ -305,9 +330,9 @@ function ActionsPanel(props) {
             flashSaved(e.currentTarget);
           },
           style: Object.assign({}, btnDownload, {
-            background: "#e0f2fe",
-            borderColor: "#7dd3fc",
-            color: "#0369a1",
+            background: "var(--info-bg)",
+            borderColor: "var(--info-border)",
+            color: "var(--info-text)",
           }),
         },
         "\u2B07 Download PNG"
@@ -350,7 +375,7 @@ function ActionsPanel(props) {
           margin: "0 0 8px",
           fontSize: 11,
           fontWeight: 700,
-          color: "#555",
+          color: "var(--text-muted)",
           textTransform: "uppercase",
           letterSpacing: "0.8px",
         },

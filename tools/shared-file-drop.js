@@ -49,7 +49,7 @@ function FileDropZone({
         },
         onClick: () => inputRef.current.click(),
         style: {
-          border: `2px dashed ${drag ? "#648FFF" : sizeError ? "#ef4444" : "#aaa"}`,
+          border: `2px dashed ${drag ? "var(--accent-primary)" : sizeError ? "var(--danger-text)" : "var(--text-faint)"}`,
           borderRadius: 12,
           padding: "48px 24px",
           textAlign: "center",
@@ -75,10 +75,14 @@ function FileDropZone({
       React.createElement("div", { style: { fontSize: 40, marginBottom: 8 } }, "📂"),
       React.createElement(
         "p",
-        { style: { margin: 0, fontSize: 15, color: "#666" } },
+        { style: { margin: 0, fontSize: 15, color: "var(--text-muted)" } },
         "Drop your data file here, or click to browse"
       ),
-      React.createElement("p", { style: { margin: "4px 0 0", fontSize: 12, color: "#999" } }, hint)
+      React.createElement(
+        "p",
+        { style: { margin: "4px 0 0", fontSize: 12, color: "var(--text-faint)" } },
+        hint
+      )
     ),
     sizeError &&
       React.createElement(
@@ -88,8 +92,8 @@ function FileDropZone({
             marginTop: 10,
             padding: "10px 14px",
             borderRadius: 8,
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -98,7 +102,7 @@ function FileDropZone({
         React.createElement("span", { style: { fontSize: 16 } }, "🚫"),
         React.createElement(
           "span",
-          { style: { fontSize: 12, color: "#dc2626", fontWeight: 600 } },
+          { style: { fontSize: 12, color: "var(--danger-text)", fontWeight: 600 } },
           sizeError
         )
       ),
@@ -110,15 +114,19 @@ function FileDropZone({
             marginTop: 10,
             padding: "10px 14px",
             borderRadius: 8,
-            background: "#fffbeb",
-            border: "1px solid #fbbf24",
+            background: "var(--warning-bg)",
+            border: "1px solid var(--warning-border)",
             display: "flex",
             alignItems: "center",
             gap: 8,
           },
         },
         React.createElement("span", { style: { fontSize: 16 } }, "⚠️"),
-        React.createElement("span", { style: { fontSize: 12, color: "#92400e" } }, sizeWarn)
+        React.createElement(
+          "span",
+          { style: { fontSize: 12, color: "var(--warning-text)" } },
+          sizeWarn
+        )
       )
   );
 }

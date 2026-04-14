@@ -139,8 +139,23 @@ function buildContext() {
       getElementById: function () {
         return { style: {} };
       },
+      documentElement: {
+        setAttribute: function () {},
+        removeAttribute: function () {},
+        getAttribute: function () {
+          return null;
+        },
+      },
       body: { appendChild: function () {}, removeChild: function () {} },
     },
+    localStorage: {
+      getItem: function () {
+        return null;
+      },
+      setItem: function () {},
+      removeItem: function () {},
+    },
+    CustomEvent: function () {},
     URL: {
       createObjectURL: function () {
         return "";
@@ -157,7 +172,20 @@ function buildContext() {
       this.readAsText = function () {};
       this.onload = null;
     },
-    window: {},
+    window: {
+      addEventListener: function () {},
+      removeEventListener: function () {},
+      dispatchEvent: function () {},
+      matchMedia: function () {
+        return {
+          matches: false,
+          addEventListener: function () {},
+          removeEventListener: function () {},
+          addListener: function () {},
+          removeListener: function () {},
+        };
+      },
+    },
     React: React,
     ReactDOM: {
       createRoot: function () {
@@ -179,6 +207,7 @@ function buildContext() {
 
   // Load shared component files in dependency order
   const componentFiles = [
+    "theme.js",
     "shared-color-input.js",
     "shared-file-drop.js",
     "shared-svg-legend.js",
