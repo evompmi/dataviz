@@ -3137,37 +3137,47 @@ function App() {
                   columnEnabled={columnEnabled}
                   handleColumnToggle={handleColumnToggle}
                 />
-                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                <div
+                  role="group"
+                  aria-label="Plot view"
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex",
+                    border: "1px solid var(--accent-primary)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    background: "var(--surface)",
+                  }}
+                >
                   <button
                     onClick={() => updVis({ faceted: false })}
+                    aria-pressed={!vis.faceted}
                     style={{
-                      padding: "7px 16px",
-                      borderRadius: 8,
+                      padding: "6px 14px",
                       fontSize: 12,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      background: !vis.faceted ? "var(--accent-primary)" : "var(--info-bg)",
-                      color: !vis.faceted ? "var(--on-accent)" : "var(--info-text)",
-                      border: "2px solid var(--accent-primary)",
-                      boxShadow: "0 2px 10px rgba(37,99,235,0.25)",
+                      background: !vis.faceted ? "var(--accent-primary)" : "transparent",
+                      color: !vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      border: "none",
+                      borderRight: "1px solid var(--accent-primary)",
                     }}
                   >
                     Combined
                   </button>
                   <button
                     onClick={() => updVis({ faceted: true })}
+                    aria-pressed={vis.faceted}
                     style={{
-                      padding: "7px 16px",
-                      borderRadius: 8,
+                      padding: "6px 14px",
                       fontSize: 12,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      background: vis.faceted ? "var(--accent-primary)" : "var(--info-bg)",
-                      color: vis.faceted ? "var(--on-accent)" : "var(--info-text)",
-                      border: "2px solid var(--accent-primary)",
-                      boxShadow: "0 2px 10px rgba(37,99,235,0.25)",
+                      background: vis.faceted ? "var(--accent-primary)" : "transparent",
+                      color: vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      border: "none",
                     }}
                   >
                     Faceted
