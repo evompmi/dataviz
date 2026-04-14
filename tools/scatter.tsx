@@ -561,9 +561,24 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
 
 // Aesthetic box themes
 const aesTheme = {
-  color: { bg: "#eef2ff", border: "#b0c4ff", header: "#4f6bff", label: "Color" },
-  size: { bg: "#f0fdf4", border: "#86efac", header: "#16a34a", label: "Size" },
-  shape: { bg: "#faf5ff", border: "#d8b4fe", header: "#9333ea", label: "Shape" },
+  color: {
+    bg: "var(--aes-color-bg)",
+    border: "var(--aes-color-border)",
+    header: "var(--aes-color-header)",
+    label: "Color",
+  },
+  size: {
+    bg: "var(--aes-size-bg)",
+    border: "var(--aes-size-border)",
+    header: "var(--aes-size-header)",
+    label: "Size",
+  },
+  shape: {
+    bg: "var(--aes-shape-bg)",
+    border: "var(--aes-shape-border)",
+    header: "var(--aes-shape-header)",
+    label: "Shape",
+  },
 };
 
 function AesBox({ theme, children }) {

@@ -52,6 +52,17 @@
 
   /* Inverse-contrast text (e.g. text on an accent-filled button) */
   --on-accent: #ffffff;
+
+  /* Scatter aesthetic boxes — Color / Size / Shape selectors */
+  --aes-color-bg: #eef2ff;
+  --aes-color-border: #b0c4ff;
+  --aes-color-header: #4f6bff;
+  --aes-size-bg: #f0fdf4;
+  --aes-size-border: #86efac;
+  --aes-size-header: #16a34a;
+  --aes-shape-bg: #faf5ff;
+  --aes-shape-border: #d8b4fe;
+  --aes-shape-header: #9333ea;
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -87,6 +98,16 @@
   --neutral-text: #d1d5db;
   --subhead-bg: #334155;
   --subhead-text: #e8e8ef;
+
+  --aes-color-bg: #1a1f2e;
+  --aes-color-border: #2e3a5c;
+  --aes-color-header: #3a4a8a;
+  --aes-size-bg: #15241b;
+  --aes-size-border: #254a33;
+  --aes-size-header: #2d6a3f;
+  --aes-shape-bg: #221a2e;
+  --aes-shape-border: #3d2a55;
+  --aes-shape-header: #5e3a85;
 }
 
 /* OS-preference fallback applies only if the user hasn't made an explicit
@@ -124,6 +145,16 @@
     --neutral-text: #d1d5db;
     --subhead-bg: #334155;
     --subhead-text: #e8e8ef;
+
+    --aes-color-bg: #1a1f2e;
+    --aes-color-border: #2e3a5c;
+    --aes-color-header: #3a4a8a;
+    --aes-size-bg: #15241b;
+    --aes-size-border: #254a33;
+    --aes-size-header: #2d6a3f;
+    --aes-shape-bg: #221a2e;
+    --aes-shape-border: #3d2a55;
+    --aes-shape-header: #5e3a85;
   }
 }
 
