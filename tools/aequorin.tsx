@@ -969,6 +969,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const [statsAnnotations, setStatsAnnotations] = useState(null);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [chartOpen, setChartOpen] = useState(true);
+  const [replicateTableOpen, setReplicateTableOpen] = useState(false);
   const barRef = useRef();
 
   const statsGroups = useMemo(() => {
@@ -1189,11 +1190,27 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
               marginBottom: 8,
             }}
           >
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: modeColor }}>
-              Per replicate
-            </p>
+            <div
+              onClick={() => setReplicateTableOpen((o) => !o)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              <span
+                className={"dv-disclosure" + (replicateTableOpen ? " dv-disclosure-open" : "")}
+                aria-hidden="true"
+              />
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: modeColor }}>
+                Per replicate
+              </p>
+            </div>
             <button
               onClick={(e) => {
+                e.stopPropagation();
                 const rows = replicateSums.flatMap((rs) =>
                   rs.repSums.map((rep, ri) => [
                     rs.prefix,
@@ -1219,43 +1236,47 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
               ⬇ CSV
             </button>
           </div>
-          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: `2px solid ${modeBorder}` }}>
-                {["Condition", "Replicate", sumLabel].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: "3px 8px",
-                      textAlign: "left",
-                      color: modeColor,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {replicateSums.map((rs) =>
-                rs.repSums.map((rep, ri) => (
-                  <tr
-                    key={`${rs.prefix}-${ri}`}
-                    style={{ borderBottom: `1px solid ${modeBorder}` }}
-                  >
-                    <td style={{ padding: "3px 8px", color: "var(--text)", fontWeight: 600 }}>
-                      {rs.label}
-                    </td>
-                    <td style={{ padding: "3px 8px", color: "var(--text-muted)" }}>Rep {ri + 1}</td>
-                    <td style={{ padding: "3px 8px", color: modeColor, fontFamily: "monospace" }}>
-                      {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          {replicateTableOpen && (
+            <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${modeBorder}` }}>
+                  {["Condition", "Replicate", sumLabel].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        padding: "3px 8px",
+                        textAlign: "left",
+                        color: modeColor,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {replicateSums.map((rs) =>
+                  rs.repSums.map((rep, ri) => (
+                    <tr
+                      key={`${rs.prefix}-${ri}`}
+                      style={{ borderBottom: `1px solid ${modeBorder}` }}
+                    >
+                      <td style={{ padding: "3px 8px", color: "var(--text)", fontWeight: 600 }}>
+                        {rs.label}
+                      </td>
+                      <td style={{ padding: "3px 8px", color: "var(--text-muted)" }}>
+                        Rep {ri + 1}
+                      </td>
+                      <td style={{ padding: "3px 8px", color: modeColor, fontFamily: "monospace" }}>
+                        {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
