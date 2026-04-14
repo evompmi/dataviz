@@ -1722,7 +1722,7 @@ function PlotControls({
   return (
     <div
       style={{
-        width: 328,
+        width: 279,
         flexShrink: 0,
         position: "sticky",
         top: 24,

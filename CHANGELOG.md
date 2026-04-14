@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Plot-page control panels slimmed across every plotting tool to a shared 279 px** — Group Plot, Aequorin, Scatter and Power dropped from 328 px (−15%); Venn dropped from 300 px. Same sticky/scroll behaviour, more horizontal room for the plot area, and every plotting tool now shares the same left-panel width.
 - **Dark mode plot cards dim on-screen via `filter: brightness(0.85)`** to stop the white chart canvas from glowing against the dark UI. Exports are unaffected — `filter` is rendering-only and isn't serialized into SVG.
 - **Scatter Color/Size/Shape selectors dim in dark mode** — the three aesthetic boxes now read their backgrounds, borders, and header bands from themed CSS variables so the pastel tints are replaced with muted dark-surface equivalents instead of glowing against the dark UI.
 - **Plot frame exported as four named lines** — `plot-frame` is now a group containing `plot-frame-top`, `-right`, `-bottom`, `-left` so individual sides can be selected and deleted in Inkscape.

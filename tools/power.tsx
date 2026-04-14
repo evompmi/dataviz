@@ -830,7 +830,7 @@ function App() {
       <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
         {/* ── Left panel ── */}
         <div
-          style={{ width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}
+          style={{ width: 279, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}
         >
           {/* Effect size */}
           <div className="dv-panel" style={{ padding: 12 }}>
