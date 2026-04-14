@@ -1348,6 +1348,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             <div style={{ marginTop: 12 }}>
               <StatsTile
                 groups={statsGroups}
+                fileStem={`${baseName}_stats`}
                 onAnnotationsChange={setStatsAnnotations}
                 onStatsSummaryChange={setStatsSummary}
               />

@@ -393,7 +393,18 @@ function assignBracketLevels(pairs) {
   return placed.map(({ _orig: _o, _span: _s, ...rest }) => rest);
 }
 
-function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultOpen }) {
+function StatsTile({
+  groups,
+  onAnnotationsChange,
+  onStatsSummaryChange,
+  defaultOpen,
+  title,
+  compact,
+  renderLayout,
+  fileStem,
+}) {
+  const scale = compact ? 0.85 : 1;
+  const fs = (n) => Math.round(n * scale * 10) / 10;
   const validGroups = (groups || []).filter(
     (g) => g && Array.isArray(g.values) && g.values.length >= 2
   );
@@ -527,10 +538,9 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
 
   // ── Styles ────────────────────────────────────────────────────────────────
   // Override-only object — base panel look comes from className "dv-panel".
-  const wrap = {
-    marginTop: 12,
-    background: "var(--surface-subtle)",
-  };
+  const wrap = compact
+    ? { marginTop: 0, marginBottom: 0, background: "var(--surface-subtle)" }
+    : { marginTop: 12, background: "var(--surface-subtle)" };
   const header = {
     display: "flex",
     alignItems: "center",
@@ -540,15 +550,15 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   };
   const h3 = {
     margin: 0,
-    fontSize: 14,
+    fontSize: fs(14),
     fontWeight: 700,
     color: "var(--text)",
     letterSpacing: "0.2px",
   };
   const subhead = {
-    margin: "14px 0 8px",
-    padding: "5px 12px",
-    fontSize: 11,
+    margin: compact ? "10px 0 6px" : "14px 0 8px",
+    padding: compact ? "4px 10px" : "5px 12px",
+    fontSize: fs(11),
     fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.8px",
@@ -561,14 +571,14 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     display: "flex",
     alignItems: "center",
     gap: 10,
-    fontSize: 12,
+    fontSize: fs(12),
     color: "var(--text-muted)",
   };
   const pillOk = {
     display: "inline-block",
     padding: "2px 8px",
     borderRadius: 10,
-    fontSize: 10,
+    fontSize: fs(10),
     fontWeight: 700,
     background: "var(--success-bg)",
     color: "var(--success-text)",
@@ -578,18 +588,18 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const table = {
     width: "100%",
     borderCollapse: "collapse",
-    fontSize: 12,
+    fontSize: fs(12),
     marginTop: 4,
   };
   const th = {
     textAlign: "left",
-    padding: "4px 6px",
+    padding: compact ? "3px 5px" : "4px 6px",
     borderBottom: "1px solid var(--border)",
     color: "var(--text-muted)",
     fontWeight: 600,
   };
   const td = {
-    padding: "4px 6px",
+    padding: compact ? "3px 5px" : "4px 6px",
     borderBottom: "1px solid var(--border)",
     color: "var(--text)",
   };
@@ -611,7 +621,14 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
           postHocResult,
           powerResult,
         });
-        downloadText(txt, "stats_report.txt");
+        const safeStem =
+          typeof fileStem === "string" && fileStem.trim()
+            ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(
+                /^-+|-+$/g,
+                ""
+              )
+            : "stats_report";
+        downloadText(txt, `${safeStem || "stats_report"}.txt`);
         flashSaved(e.currentTarget);
       },
       className: "dv-btn dv-btn-dl",
@@ -638,7 +655,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
         className: "dv-disclosure" + (open ? " dv-disclosure-open" : ""),
         "aria-hidden": "true",
       }),
-      React.createElement("h3", { style: h3 }, "Statistics summary")
+      React.createElement("h3", { style: h3 }, title || "Statistics summary")
     ),
     downloadReportBtn
   );
@@ -732,13 +749,16 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     displayControls
   );
 
-  if (!open)
-    return React.createElement(
-      React.Fragment,
-      null,
-      displayTile,
-      React.createElement("div", { className: "dv-panel", style: wrap }, summaryHeaderEl)
+  if (!open) {
+    const displayEl = displayTile;
+    const summaryEl = React.createElement(
+      "div",
+      { className: "dv-panel", style: wrap },
+      summaryHeaderEl
     );
+    if (typeof renderLayout === "function") return renderLayout({ displayEl, summaryEl, open });
+    return React.createElement(React.Fragment, null, displayEl, summaryEl);
+  }
 
   // ── Assumptions section ───────────────────────────────────────────────────
   const norm = (recommendation && recommendation.normality) || [];
@@ -1026,29 +1046,27 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     );
   }
 
-  return React.createElement(
-    React.Fragment,
-    null,
-    displayTile,
+  const displayEl = displayTile;
+  const summaryEl = React.createElement(
+    "div",
+    { className: "dv-panel", style: wrap },
+    summaryHeaderEl,
     React.createElement(
       "div",
-      { className: "dv-panel", style: wrap },
-      summaryHeaderEl,
-      React.createElement(
-        "div",
-        { style: { marginTop: 10 } },
-        React.createElement("div", { style: subhead }, "Assumptions"),
-        normalityCaption,
-        normalityTable,
-        leveneCaption,
-        leveneLine,
-        React.createElement("div", { style: subhead }, "Test"),
-        testPicker,
-        reasonLine,
-        resultLine,
-        postHocBlock,
-        powerBlock
-      )
+      { style: { marginTop: 10 } },
+      React.createElement("div", { style: subhead }, "Assumptions"),
+      normalityCaption,
+      normalityTable,
+      leveneCaption,
+      leveneLine,
+      React.createElement("div", { style: subhead }, "Test"),
+      testPicker,
+      reasonLine,
+      resultLine,
+      postHocBlock,
+      powerBlock
     )
   );
+  if (typeof renderLayout === "function") return renderLayout({ displayEl, summaryEl });
+  return React.createElement(React.Fragment, null, displayEl, summaryEl);
 }

@@ -103,10 +103,14 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
   const vbW = Math.max(200, n * 100 * compact + M.left + M.right);
-  const vbH_chart = 504 + (absA > 0 ? absA * 0.8 : 0);
+  const vbH_base = 504 + (absA > 0 ? absA * 0.8 : 0);
   const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right, 88);
   const _statsH = statsSummaryHeight(statsSummary);
-  const vbH = vbH_chart + _legH + _statsH;
+  // Keep the overall viewBox height independent of the stats summary —
+  // shrink the chart area to make room instead, so the plot tile stays
+  // the same size when the summary is toggled on.
+  const vbH_chart = vbH_base - _statsH;
+  const vbH = vbH_base + _legH;
   const w = vbW - M.left - M.right;
   const h = vbH_chart - M.top - M.bottom;
 
@@ -625,10 +629,13 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
   const vbW = Math.max(200, n * 100 * compact + MChart.left + MChart.right);
-  const vbH_chart = 420 + Math.abs(angle) * 0.9;
+  const vbH_base = 420 + Math.abs(angle) * 0.9;
   const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
   const _statsH = statsSummaryHeight(statsSummary);
-  const vbH = vbH_chart + legendH + _statsH;
+  // Keep the overall viewBox height independent of the stats summary —
+  // shrink the chart area to make room instead.
+  const vbH_chart = vbH_base - _statsH;
+  const vbH = vbH_base + legendH;
   const w = vbW - MChart.left - MChart.right;
   const h = vbH_chart - MChart.top - MChart.bottom;
 
@@ -1458,15 +1465,13 @@ function FilterStep({
   renamedRows,
   activeColIdxs,
   valueRenames,
-  groupColIdx,
-  effectiveOrder,
+  orderableCols,
   applyRename,
   toggleFilter,
   toggleAllFilter,
   setRenameVal,
-  setGroupOrder,
-  dragIdx,
-  setDragIdx,
+  dragState,
+  setDragState,
   canPlot,
   setStep,
 }) {
@@ -1489,14 +1494,12 @@ function FilterStep({
           colRoles={colRoles}
           filters={filters}
           valueRenames={valueRenames}
-          groupColIdx={groupColIdx}
-          effectiveOrder={effectiveOrder}
+          orderableCols={orderableCols}
           applyRename={applyRename}
           onRenameVal={setRenameVal}
-          onReorder={setGroupOrder}
-          dragIdx={dragIdx}
-          onDragStart={setDragIdx}
-          onDragEnd={() => setDragIdx(null)}
+          dragState={dragState}
+          onDragStart={setDragState}
+          onDragEnd={() => setDragState(null)}
         />
       </div>
       <div
@@ -2107,6 +2110,7 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
   facetRefs,
   chartProps,
   categoryColors,
+  fillHeight,
 }: any) {
   const localRef = useRef();
   useEffect(() => {
@@ -2123,8 +2127,12 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
         borderRadius: 8,
         padding: 12,
         border: "1px solid var(--plot-card-border)",
-        flex: "0 1 auto",
+        flex: fillHeight ? "1 1 auto" : "0 1 auto",
         minWidth: 180,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -2172,9 +2180,11 @@ function PlotArea({
   yMaxVal,
   plotGroupRenames,
   boxplotColors,
-  statsAnnotations,
-  statsSummary,
+  facetStatsAnnotations,
+  facetStatsSummary,
 }) {
+  const globalAnnotations = facetStatsAnnotations["_global"] || null;
+  const globalSummary = facetStatsSummary["_global"] || null;
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2269,8 +2279,8 @@ function PlotArea({
               yMin={yMinVal}
               yMax={yMaxVal}
               catColors={categoryColors}
-              annotations={statsAnnotations}
-              statsSummary={statsSummary}
+              annotations={globalAnnotations}
+              statsSummary={globalSummary}
               svgLegend={
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2310,8 +2320,8 @@ function PlotArea({
               boxGap={vis.boxGap}
               showCompPie={vis.showCompPie}
               plotStyle={vis.plotStyle}
-              annotations={statsAnnotations}
-              statsSummary={statsSummary}
+              annotations={globalAnnotations}
+              statsSummary={globalSummary}
               svgLegend={
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2341,6 +2351,8 @@ function PlotArea({
             }));
             const chartProps = {
               groups: displayFdGroups,
+              annotations: facetStatsAnnotations[fd.category] || null,
+              statsSummary: facetStatsSummary[fd.category] || null,
               yLabel: vis.yLabel,
               plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
               plotBg: vis.plotBg,
@@ -2393,6 +2405,182 @@ function PlotArea({
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function FacetStatsRow({ fd, leftPlot, setAnnotationsFor, setSummaryFor, fileStem }: any) {
+  return (
+    <StatsTile
+      title={`Statistics — ${fd.category}`}
+      compact
+      defaultOpen={false}
+      groups={fd.groups.map((g) => ({ name: g.name, values: g.allValues }))}
+      fileStem={`${fileStem}_${fd.category}_stats`}
+      onAnnotationsChange={(a) => setAnnotationsFor(fd.category, a)}
+      onStatsSummaryChange={(s) => setSummaryFor(fd.category, s)}
+      renderLayout={({ displayEl, summaryEl, open }) => (
+        <div style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
+          <div
+            style={{
+              flex: "1 1 0",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {leftPlot}
+            {displayEl}
+          </div>
+          <div
+            style={{
+              width: 320,
+              flexShrink: 0,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+            }}
+            className={open ? "dv-facet-stats-scroll" : ""}
+          >
+            {summaryEl}
+          </div>
+        </div>
+      )}
+    />
+  );
+}
+
+function FacetPlotList({
+  facetedData,
+  facetRefs,
+  vis,
+  yMinVal,
+  yMaxVal,
+  plotGroupRenames,
+  boxplotColors,
+  categoryColors,
+  colorByCol,
+  colorByCategories,
+  colNames,
+  facetStatsAnnotations,
+  facetStatsSummary,
+  setAnnotationsFor,
+  setSummaryFor,
+  fileStem,
+}: any) {
+  if (!facetedData || facetedData.length === 0) return null;
+  const svgLegend =
+    colorByCol >= 0 && colorByCategories.length > 0
+      ? [
+          {
+            id: "legend-color",
+            title: `Points colored by: ${colNames[colorByCol]}`,
+            items: colorByCategories.map((c) => ({
+              label: c,
+              color: categoryColors[c] || "#999",
+              shape: "dot",
+            })),
+          },
+        ]
+      : null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {colorByCol >= 0 && colorByCategories.length > 0 && (
+        <div
+          style={{
+            background: "var(--surface-subtle)",
+            borderRadius: 8,
+            padding: "8px 14px",
+            border: "1px solid var(--border)",
+            display: "flex",
+            gap: 16,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            Points colored by: {colNames[colorByCol]}
+          </span>
+          {colorByCategories.map((cat) => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: categoryColors[cat] || "#999",
+                }}
+              />
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {facetedData.map((fd) => {
+        const displayFdGroups = fd.groups.map((g) => ({
+          ...g,
+          name: plotGroupRenames[g.name] ?? g.name,
+          color: boxplotColors[g.name] ?? g.color,
+        }));
+        const chartProps = {
+          groups: displayFdGroups,
+          annotations: facetStatsAnnotations[fd.category] || null,
+          statsSummary: facetStatsSummary[fd.category] || null,
+          yLabel: vis.yLabel,
+          plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
+          plotBg: vis.plotBg,
+          showGrid: vis.showGrid,
+          gridColor: vis.gridColor,
+          boxWidth: vis.boxWidth,
+          boxFillOpacity: vis.boxFillOpacity,
+          pointSize: vis.pointSize,
+          showPoints: vis.showPoints,
+          jitterWidth: vis.jitterWidth,
+          pointOpacity: vis.pointOpacity,
+          xLabelAngle: vis.xLabelAngle,
+          yMin: yMinVal,
+          yMax: yMaxVal,
+          categoryColors,
+          colorByCol,
+          boxGap: vis.boxGap,
+          showCompPie: vis.showCompPie,
+          plotStyle: vis.plotStyle,
+          barOpacity: vis.barOpacity,
+          errorType: vis.errorType,
+          errStrokeWidth: vis.errStrokeWidth,
+          showBarOutline: vis.showBarOutline,
+          barOutlineWidth: vis.barOutlineWidth,
+          barOutlineColor: vis.barOutlineColor,
+          svgLegend,
+        };
+        const leftPlot = (
+          <FacetBoxplotItem
+            fd={fd}
+            facetRefs={facetRefs}
+            chartProps={chartProps}
+            categoryColors={categoryColors}
+            fillHeight
+          />
+        );
+        if (fd.groups.length < 2) {
+          return (
+            <div key={fd.category} style={{ maxWidth: 720 }}>
+              {leftPlot}
+            </div>
+          );
+        }
+        return (
+          <FacetStatsRow
+            key={fd.category}
+            fd={fd}
+            leftPlot={leftPlot}
+            setAnnotationsFor={setAnnotationsFor}
+            setSummaryFor={setSummaryFor}
+            fileStem={fileStem}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -2454,13 +2642,32 @@ function App() {
   const [boxplotColors, setBoxplotColors] = useState({});
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
   const [disabledGroups, setDisabledGroups] = useState({});
-  const [groupOrder, setGroupOrder] = useState([]);
+  // Per-column ordering keyed by column index. Any column that can appear in
+  // the rename panel (group/filter role) gets its own order array here, so the
+  // user can reorder values during the filter step before ever picking a
+  // "Facet by" or "Color by" column in the plot step.
+  const [columnOrders, setColumnOrders] = useState({});
+  const setOrderForCol = (i, newOrder) => setColumnOrders((prev) => ({ ...prev, [i]: newOrder }));
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
-  const [dragIdx, setDragIdx] = useState(null);
+  const [dragState, setDragState] = useState(null);
   const [facetByCol, setFacetByCol] = useState(-1);
-  const [statsAnnotations, setStatsAnnotations] = useState(null);
-  const [statsSummary, setStatsSummary] = useState<string | null>(null);
+  // Stats annotations + summary are keyed by facet category so each facet
+  // subplot gets its own on-plot CLD/brackets and its own summary text.
+  // The non-facet path uses the literal key "_global" so the same maps drive
+  // both modes.
+  const [facetStatsAnnotations, setFacetStatsAnnotations] = useState<Record<string, any>>({});
+  const [facetStatsSummary, setFacetStatsSummary] = useState<Record<string, string | null>>({});
+  const setAnnotationsFor = (key, spec) =>
+    setFacetStatsAnnotations((prev) => {
+      if (prev[key] === spec) return prev;
+      return { ...prev, [key]: spec };
+    });
+  const setSummaryFor = (key, txt) =>
+    setFacetStatsSummary((prev) => {
+      if (prev[key] === txt) return prev;
+      return { ...prev, [key]: txt };
+    });
 
   const facetRefs = useRef({});
   const chartRef = useRef();
@@ -2470,10 +2677,12 @@ function App() {
     setBoxplotColors({});
     setPlotGroupRenames({});
     setDisabledGroups({});
-    setGroupOrder([]);
+    setColumnOrders({});
     setColorByCol(-1);
     setCategoryColors({});
     setFacetByCol(-1);
+    setFacetStatsAnnotations({});
+    setFacetStatsSummary({});
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
 
@@ -2518,7 +2727,23 @@ function App() {
       setParsedHeaders(headers);
       setParsedRows(rows);
       setHasHeader(hh);
-      setColRoles(headers.map((_, i) => guessColumnType(rows.map((r) => r[i] ?? ""))));
+      // guessColumnType is per-column, so it can hand back multiple "group"
+      // roles (e.g. two low-cardinality categorical columns). Group Plot only
+      // uses one x-axis grouping column — keep the first "group" guess and
+      // demote any later ones to "filter" so the configure step never starts
+      // in a state the user can't reach via the UI.
+      {
+        let seenGroup = false;
+        setColRoles(
+          headers.map((_, i) => {
+            const r = guessColumnType(rows.map((row) => row[i] ?? ""));
+            if (r !== "group") return r;
+            if (seenGroup) return "filter";
+            seenGroup = true;
+            return r;
+          })
+        );
+      }
       setColNames([...headers]);
       setFilters(buildFilters(headers, rows));
       resetDerived();
@@ -2610,13 +2835,14 @@ function App() {
   }, [renamedRows, groupColIdx, valueColIdx]);
 
   const effectiveOrder = useMemo(() => {
-    if (groupOrder.length > 0) {
-      const valid = groupOrder.filter((g) => naturalGroupOrder.includes(g));
-      const missing = naturalGroupOrder.filter((g) => !groupOrder.includes(g));
+    const stored = columnOrders[groupColIdx];
+    if (stored && stored.length > 0) {
+      const valid = stored.filter((g) => naturalGroupOrder.includes(g));
+      const missing = naturalGroupOrder.filter((g) => !stored.includes(g));
       return [...valid, ...missing];
     }
     return naturalGroupOrder;
-  }, [groupOrder, naturalGroupOrder]);
+  }, [columnOrders, groupColIdx, naturalGroupOrder]);
 
   const colorByCandidates = useMemo(
     () =>
@@ -2700,11 +2926,65 @@ function App() {
     [allDisplayGroups]
   );
 
-  // Facet column candidates (same pool as colorBy)
-  const facetByCategories = useMemo(() => {
+  // Facet column candidates (same pool as colorBy). The natural order is the
+  // first-seen order of unique values in the (renamed) data so it matches what
+  // the user sees in the rename panel.
+  const naturalFacetOrder = useMemo(() => {
     if (facetByCol < 0) return [];
-    return [...new Set(renamedRows.map((r) => r[facetByCol]))].sort();
+    const seen = new Set();
+    const order = [];
+    renamedRows.forEach((r) => {
+      const v = r[facetByCol];
+      if (!seen.has(v)) {
+        seen.add(v);
+        order.push(v);
+      }
+    });
+    return order;
   }, [facetByCol, renamedRows]);
+
+  const effectiveFacetOrder = useMemo(() => {
+    const stored = columnOrders[facetByCol];
+    if (stored && stored.length > 0) {
+      const valid = stored.filter((g) => naturalFacetOrder.includes(g));
+      const missing = naturalFacetOrder.filter((g) => !stored.includes(g));
+      return [...valid, ...missing];
+    }
+    return naturalFacetOrder;
+  }, [columnOrders, facetByCol, naturalFacetOrder]);
+
+  const facetByCategories = effectiveFacetOrder;
+
+  // Every group/filter column (except the numeric value column) is
+  // reorderable. Each column's natural order is first-seen in renamedRows,
+  // any user-drag override is merged on top. Computed here so that reordering
+  // works at the filter step — before the user has even chosen which column
+  // feeds "Facet by" or "Color by" in the plot step.
+  const orderableCols = useMemo(() => {
+    const m = {};
+    parsedHeaders.forEach((_, i) => {
+      if (i === valueColIdx) return;
+      if (colRoles[i] !== "group" && colRoles[i] !== "filter") return;
+      const seen = new Set();
+      const natural = [];
+      renamedRows.forEach((r) => {
+        const v = r[i];
+        if (!seen.has(v)) {
+          seen.add(v);
+          natural.push(v);
+        }
+      });
+      const stored = columnOrders[i];
+      let order = natural;
+      if (stored && stored.length > 0) {
+        const valid = stored.filter((g) => natural.includes(g));
+        const missing = natural.filter((g) => !stored.includes(g));
+        order = [...valid, ...missing];
+      }
+      m[i] = { order, onReorder: (newOrder) => setOrderForCol(i, newOrder) };
+    });
+    return m;
+  }, [parsedHeaders, colRoles, valueColIdx, renamedRows, columnOrders]);
 
   // Faceted groups: one boxplot per facet category
   const facetedData = useMemo(() => {
@@ -2793,7 +3073,18 @@ function App() {
       return r;
     });
 
-  const updateRole = (i, role) => setColRoles((p) => p.map((r, j) => (j === i ? role : r)));
+  // Group Plot has exactly one x-axis grouping column, so "group" is an
+  // exclusive role. Picking "group" on a new column demotes any previous
+  // group to "filter" instead of silently ending up with two columns whose
+  // role select says "group" but only the first one actually drives the plot.
+  const updateRole = (i, role) =>
+    setColRoles((p) =>
+      p.map((r, j) => {
+        if (j === i) return role;
+        if (role === "group" && r === "group") return "filter";
+        return r;
+      })
+    );
   const updateColName = (i, nm) => setColNames((p) => p.map((n, j) => (j === i ? nm : n)));
 
   const yMinVal = vis.yMinCustom !== "" ? Number(vis.yMinCustom) : null;
@@ -2896,15 +3187,13 @@ function App() {
           renamedRows={renamedRows}
           activeColIdxs={activeColIdxs}
           valueRenames={valueRenames}
-          groupColIdx={groupColIdx}
-          effectiveOrder={effectiveOrder}
+          orderableCols={orderableCols}
           applyRename={applyRename}
           toggleFilter={toggleFilter}
           toggleAllFilter={toggleAllFilter}
           setRenameVal={setRenameVal}
-          setGroupOrder={setGroupOrder}
-          dragIdx={dragIdx}
-          setDragIdx={setDragIdx}
+          dragState={dragState}
+          setDragState={setDragState}
           canPlot={canPlot}
           setStep={setStep}
         />
@@ -2954,32 +3243,56 @@ function App() {
             onDownloadPng={handleDownloadPng}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <PlotArea
-              colorByCol={colorByCol}
-              colorByCategories={colorByCategories}
-              colNames={colNames}
-              categoryColors={categoryColors}
-              facetByCol={facetByCol}
-              facetedData={facetedData}
-              facetRefs={facetRefs}
-              chartRef={chartRef}
-              displayBoxplotGroups={displayBoxplotGroups}
-              vis={vis}
-              yMinVal={yMinVal}
-              yMaxVal={yMaxVal}
-              plotGroupRenames={plotGroupRenames}
-              boxplotColors={boxplotColors}
-              statsAnnotations={facetByCol < 0 ? statsAnnotations : null}
-              statsSummary={statsSummary}
-            />
-            {facetByCol < 0 && displayBoxplotGroups.length >= 2 && (
-              <StatsTile
-                groups={displayBoxplotGroups.map((g) => ({
-                  name: g.name,
-                  values: g.allValues,
-                }))}
-                onAnnotationsChange={setStatsAnnotations}
-                onStatsSummaryChange={setStatsSummary}
+            {facetByCol < 0 ? (
+              <>
+                <PlotArea
+                  colorByCol={colorByCol}
+                  colorByCategories={colorByCategories}
+                  colNames={colNames}
+                  categoryColors={categoryColors}
+                  facetByCol={facetByCol}
+                  facetedData={facetedData}
+                  facetRefs={facetRefs}
+                  chartRef={chartRef}
+                  displayBoxplotGroups={displayBoxplotGroups}
+                  vis={vis}
+                  yMinVal={yMinVal}
+                  yMaxVal={yMaxVal}
+                  plotGroupRenames={plotGroupRenames}
+                  boxplotColors={boxplotColors}
+                  facetStatsAnnotations={facetStatsAnnotations}
+                  facetStatsSummary={facetStatsSummary}
+                />
+                {displayBoxplotGroups.length >= 2 && (
+                  <StatsTile
+                    groups={displayBoxplotGroups.map((g) => ({
+                      name: g.name,
+                      values: g.allValues,
+                    }))}
+                    fileStem={`${fileStem}_stats`}
+                    onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
+                    onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
+                  />
+                )}
+              </>
+            ) : (
+              <FacetPlotList
+                facetedData={facetedData}
+                facetRefs={facetRefs}
+                vis={vis}
+                yMinVal={yMinVal}
+                yMaxVal={yMaxVal}
+                plotGroupRenames={plotGroupRenames}
+                boxplotColors={boxplotColors}
+                categoryColors={categoryColors}
+                colorByCol={colorByCol}
+                colorByCategories={colorByCategories}
+                colNames={colNames}
+                facetStatsAnnotations={facetStatsAnnotations}
+                facetStatsSummary={facetStatsSummary}
+                setAnnotationsFor={setAnnotationsFor}
+                setSummaryFor={setSummaryFor}
+                fileStem={fileStem}
               />
             )}
           </div>
