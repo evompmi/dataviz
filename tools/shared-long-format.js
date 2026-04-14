@@ -18,8 +18,30 @@ function ColumnRoleEditor(props) {
     { className: "dv-panel" },
     React.createElement(
       "p",
-      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" } },
+      { style: { margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" } },
       "Column roles"
+    ),
+    React.createElement(
+      "p",
+      {
+        style: {
+          margin: "0 0 10px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          lineHeight: 1.4,
+        },
+      },
+      "Exactly one column can be the ",
+      React.createElement("span", { style: { color: roleColors.group, fontWeight: 600 } }, "group"),
+      " (x-axis). Picking ",
+      React.createElement("span", { style: { color: roleColors.group, fontWeight: 600 } }, "group"),
+      " on another column demotes the previous one to ",
+      React.createElement(
+        "span",
+        { style: { color: roleColors.filter, fontWeight: 600 } },
+        "filter"
+      ),
+      "."
     ),
     React.createElement(
       "div",

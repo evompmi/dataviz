@@ -2519,7 +2519,23 @@ function App() {
       setParsedHeaders(headers);
       setParsedRows(rows);
       setHasHeader(hh);
-      setColRoles(headers.map((_, i) => guessColumnType(rows.map((r) => r[i] ?? ""))));
+      // guessColumnType is per-column, so it can hand back multiple "group"
+      // roles (e.g. two low-cardinality categorical columns). Group Plot only
+      // uses one x-axis grouping column — keep the first "group" guess and
+      // demote any later ones to "filter" so the configure step never starts
+      // in a state the user can't reach via the UI.
+      {
+        let seenGroup = false;
+        setColRoles(
+          headers.map((_, i) => {
+            const r = guessColumnType(rows.map((row) => row[i] ?? ""));
+            if (r !== "group") return r;
+            if (seenGroup) return "filter";
+            seenGroup = true;
+            return r;
+          })
+        );
+      }
       setColNames([...headers]);
       setFilters(buildFilters(headers, rows));
       resetDerived();
@@ -2849,7 +2865,18 @@ function App() {
       return r;
     });
 
-  const updateRole = (i, role) => setColRoles((p) => p.map((r, j) => (j === i ? role : r)));
+  // Group Plot has exactly one x-axis grouping column, so "group" is an
+  // exclusive role. Picking "group" on a new column demotes any previous
+  // group to "filter" instead of silently ending up with two columns whose
+  // role select says "group" but only the first one actually drives the plot.
+  const updateRole = (i, role) =>
+    setColRoles((p) =>
+      p.map((r, j) => {
+        if (j === i) return role;
+        if (role === "group" && r === "group") return "filter";
+        return r;
+      })
+    );
   const updateColName = (i, nm) => setColNames((p) => p.map((n, j) => (j === i ? nm : n)));
 
   const yMinVal = vis.yMinCustom !== "" ? Number(vis.yMinCustom) : null;
