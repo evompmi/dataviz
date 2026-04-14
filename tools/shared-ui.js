@@ -343,17 +343,14 @@ function ActionsPanel(props) {
   }
   if (props.extraButtons) {
     props.extraButtons.forEach(function (b, i) {
-      children.push(
-        React.createElement(
-          "button",
-          {
-            key: "extra" + i,
-            onClick: b.onClick,
-            style: b.style || btnSecondary,
-          },
-          b.label
-        )
-      );
+      const btnProps = {
+        key: "extra" + i,
+        onClick: b.onClick,
+      };
+      if (b.className) btnProps.className = b.className;
+      if (b.style) btnProps.style = b.style;
+      if (!b.className && !b.style) btnProps.style = btnSecondary;
+      children.push(React.createElement("button", btnProps, b.label));
     });
   }
   children.push(

@@ -1361,7 +1361,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
 function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
   return (
     <div>
-      <div style={sec}>
+      <div className="dv-panel">
         <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
           <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
           × {parsedRows.length} rows
@@ -1372,7 +1372,7 @@ function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
         <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
       </div>
 
-      <button onClick={() => setStep("plot")} style={btnPrimary}>
+      <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
         Plot →
       </button>
     </div>
@@ -1492,8 +1492,8 @@ function ItemListPanel({ intersection, allSetNames }) {
               `venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
             );
           }}
+          className="dv-btn dv-btn-secondary"
           style={{
-            ...btnSecondary,
             background: "var(--success-bg)",
             border: "1px solid var(--success-border)",
             color: "var(--success-text)",
@@ -1583,8 +1583,8 @@ function PlotControls({
               downloadCsv(headers, rows, "venn_membership.csv");
               flashSaved(e.currentTarget);
             },
+            className: "dv-btn dv-btn-secondary",
             style: {
-              ...btnSecondary,
               background: "var(--success-bg)",
               border: "1px solid var(--success-border)",
               color: "var(--success-text)",
@@ -1595,7 +1595,7 @@ function PlotControls({
         ]}
       />
 
-      <div style={sec}>
+      <div className="dv-panel">
         <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Sets
         </p>
@@ -1681,13 +1681,13 @@ function PlotControls({
         </div>
       </div>
 
-      <div style={sec}>
+      <div className="dv-panel">
         <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Display
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={lbl}>Proportional areas</span>
+            <span className="dv-label">Proportional areas</span>
             <input
               type="checkbox"
               checked={proportional}
@@ -1707,11 +1707,12 @@ function PlotControls({
             />
           )}
           <div>
-            <div style={lbl}>Title</div>
+            <div className="dv-label">Title</div>
             <input
               value={vis.plotTitle}
               onChange={(e) => updVis({ plotTitle: e.target.value })}
-              style={{ ...inp, width: "100%" }}
+              className="dv-input"
+              style={{ width: "100%" }}
             />
           </div>
           <SliderControl
@@ -1731,7 +1732,7 @@ function PlotControls({
             onChange={sv("fontSize")}
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={lbl}>Background</span>
+            <span className="dv-label">Background</span>
             <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
           </div>
         </div>
@@ -1970,7 +1971,7 @@ function App() {
       {step === "plot" && activeSetNames.length >= 2 && (
         <div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-            <button onClick={() => setStep("configure")} style={btnSecondary}>
+            <button onClick={() => setStep("configure")} className="dv-btn dv-btn-secondary">
               ← Configure
             </button>
           </div>
@@ -1994,8 +1995,8 @@ function App() {
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
+                className="dv-panel"
                 style={{
-                  ...sec,
                   padding: 20,
                   background: "var(--plot-card-bg)",
                   borderColor: "var(--plot-card-border)",
@@ -2070,7 +2071,7 @@ function App() {
               })()}
 
               {/* Data extraction panel */}
-              <div style={{ ...sec, marginTop: 16 }}>
+              <div className="dv-panel" style={{ marginTop: 16 }}>
                 <p
                   style={{
                     margin: "0 0 10px",
@@ -2088,7 +2089,7 @@ function App() {
                   onSelect={setSelectedMask}
                 />
               </div>
-              <div style={{ ...sec, marginTop: 16 }}>
+              <div className="dv-panel" style={{ marginTop: 16 }}>
                 <p
                   style={{
                     margin: "0 0 10px",
