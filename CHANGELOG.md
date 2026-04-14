@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Dark mode** — full light/dark theme with a sun/moon toggle on the landing page and every tool's top bar. First visits follow `prefers-color-scheme`; choices persist in `localStorage` and sync across the landing page and all open tool iframes. Plot cards stay white in both themes so exported SVG/PNG always render on a white canvas.
+- **Dark mode** — full light/dark theme with a sun/moon toggle on the landing page and every tool's top bar. First visits to a tool follow `prefers-color-scheme`; the landing page defaults to light regardless of system preference so the gallery reads as a neutral entry point. Choices persist in `localStorage` and sync across the landing page and all open tool iframes. Plot cards stay white in both themes so exported SVG/PNG always render on a white canvas.
 - **Component CSS classes** — introduces `tools/components.css` with `dv-panel`, `dv-input`, `dv-label`, `dv-select`, `dv-btn-*`, and the `dv-num` stepper. Adds `:hover`, `:focus-visible`, `:active`, and `:disabled` states that inline styles couldn't express.
 - **−/+ numeric steppers** — all `<input type="number">` fields across the tools now render as a compact stepper with `−`/`+` buttons (click or press-and-hold to repeat) replacing the native browser arrows.
 - **Bar outline controls in Group Plot (bar style) and Aequorin inset barplot** — unified "Bar outline" checkbox + width slider + color picker across both tools.

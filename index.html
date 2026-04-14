@@ -4,10 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
+      // Landing page defaults to light theme (even on dark-preference systems)
+      // unless the user has explicitly chosen a theme. Tools still follow
+      // prefers-color-scheme on first visit.
       try {
         var t = localStorage.getItem("dataviz-theme");
-        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
-      } catch (e) {}
+        document.documentElement.setAttribute(
+          "data-theme",
+          t === "dark" || t === "light" ? t : "light"
+        );
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "light");
+      }
     </script>
     <title>Data Visualization Toolbox</title>
     <link
