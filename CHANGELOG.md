@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Duplicate theme toggle inside tools** — each tool was showing two sun/moon toggles: one in the landing page's top bar and a second one in the tool's own `PageHeader`. The `PageHeader` toggle has been removed so only the top-bar toggle remains, matching the landing page's single-toggle layout.
+
 ### Added
 
 - **Component CSS classes replace inline-style constants** — introduces `tools/components.css`, a stylesheet that mirrors the former inline-style constants from `tools/shared.js` (`sec`, `inp`, `inpN`, `lbl`, `selStyle`, `sepSelect`, `btnPrimary`, `btnPlot`, `btnDownload`, `btnSecondary`, `btnDanger`) as `dv-panel`, `dv-input`, `dv-input-num`, `dv-label`, `dv-select`, `dv-select-sep`, and the `dv-btn` family. Adds proper `:hover`, `:focus-visible`, `:active`, and `:disabled` states that inline styles cannot express — buttons lift with a colored box-shadow on hover and snap back on press, selects and inputs gain a keyboard focus ring. Wired into every HTML `<head>` alongside `theme.css`. All six tool `.tsx` files and every shared component file (`shared-ui.js`, `shared-core.js`, `shared-long-format.js`, `shared-stats-tile.js`) were migrated — former `style={sec}` / `style={{ ...inp, … }}` / `style={btnPrimary}` usages now read `className="dv-panel"` (plus a residual override-only `style={{}}` when a per-element tweak is needed). The legacy style constants have been deleted from `shared.js`; `roleColors` is the only chrome-related export that remains. `ActionsPanel.extraButtons` descriptors now accept a `className` field so callers can pass `dv-btn-*` classes directly.

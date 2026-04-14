@@ -150,7 +150,8 @@ function ParseErrorBanner(props) {
   );
 }
 
-// Page header with tool icon and a theme toggle in the top-right.
+// Page header with tool icon. The landing page owns the theme toggle in
+// its top bar — we don't render a second one here.
 function PageHeader(props) {
   return React.createElement(
     "div",
@@ -159,29 +160,21 @@ function PageHeader(props) {
         marginBottom: 28,
         borderBottom: "1px solid var(--border-strong)",
         paddingBottom: 16,
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
       },
     },
     React.createElement(
-      "div",
-      { style: { flex: 1, minWidth: 0 } },
-      React.createElement(
-        "h1",
-        { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
-        toolIcon(props.toolName),
-        props.title
-      ),
-      props.subtitle
-        ? React.createElement(
-            "p",
-            { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
-            props.subtitle
-          )
-        : null
+      "h1",
+      { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
+      toolIcon(props.toolName),
+      props.title
     ),
-    React.createElement(ThemeToggle, null)
+    props.subtitle
+      ? React.createElement(
+          "p",
+          { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
+          props.subtitle
+        )
+      : null
   );
 }
 
