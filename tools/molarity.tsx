@@ -78,8 +78,8 @@ function UnitInput({
       }}
     >
       <label
+        className="dv-label"
         style={{
-          ...lbl,
           width: compact ? "100%" : 150,
           flexShrink: 0,
           marginBottom: compact ? 2 : 0,
@@ -95,23 +95,22 @@ function UnitInput({
         onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder || ""}
+        className="dv-input"
         style={{
-          ...inp,
           width: compact ? 0 : 130,
           flex: compact ? 1 : undefined,
           minWidth: compact ? 80 : undefined,
           fontSize: 13,
           textAlign: "left",
-          background: disabled ? "var(--success-bg)" : "var(--surface)",
+          background: disabled ? "var(--success-bg)" : undefined,
           fontWeight: 400,
-          color: "var(--text)",
-          border: "1px solid #ccc",
         }}
       />
       <select
         value={unit}
         onChange={(e) => onUnitChange(e.target.value)}
-        style={{ ...selStyle, minWidth: 60 }}
+        className="dv-select"
+        style={{ minWidth: 60 }}
       >
         {units.map((u) => (
           <option key={u.label} value={u.label}>
@@ -212,8 +211,8 @@ function MolarityMode({ compact }: { compact?: boolean }) {
         }}
       >
         <div
+          className="dv-panel"
           style={{
-            ...sec,
             flex: compact ? undefined : "0 0 calc((100% - 20px) / 3)",
             marginBottom: 0,
             display: "flex",
@@ -265,7 +264,7 @@ function MolarityMode({ compact }: { compact?: boolean }) {
           </div>
         </div>
 
-        <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
+        <div className="dv-panel" style={{ flex: 1, marginBottom: 0 }}>
           <p
             style={{
               margin: "0 0 10px",
@@ -286,8 +285,8 @@ function MolarityMode({ compact }: { compact?: boolean }) {
             }}
           >
             <label
+              className="dv-label"
               style={{
-                ...lbl,
                 width: compact ? "100%" : 150,
                 flexShrink: 0,
                 marginBottom: compact ? 2 : 0,
@@ -303,14 +302,14 @@ function MolarityMode({ compact }: { compact?: boolean }) {
               onChange={(e) => setMw(e.target.value)}
               disabled={solveFor === "mw"}
               placeholder={solveFor === "mw" ? "calculated" : ""}
+              className="dv-input"
               style={{
-                ...inp,
                 width: compact ? 0 : 130,
                 flex: compact ? 1 : undefined,
                 minWidth: compact ? 80 : undefined,
                 fontSize: 13,
                 textAlign: "left",
-                background: solveFor === "mw" ? "var(--success-bg)" : "var(--surface)",
+                background: solveFor === "mw" ? "var(--success-bg)" : undefined,
                 fontWeight: 400,
               }}
             />
@@ -448,8 +447,8 @@ function DilutionMode({ compact }: { compact?: boolean }) {
         }}
       >
         <div
+          className="dv-panel"
           style={{
-            ...sec,
             flex: compact ? undefined : "0 0 calc((100% - 20px) / 3)",
             marginBottom: 0,
             display: "flex",
@@ -506,7 +505,7 @@ function DilutionMode({ compact }: { compact?: boolean }) {
           </div>
         </div>
 
-        <div style={{ ...sec, flex: 1, marginBottom: 0 }}>
+        <div className="dv-panel" style={{ flex: 1, marginBottom: 0 }}>
           <p
             style={{
               margin: "0 0 10px",
@@ -747,7 +746,7 @@ function BatchMode() {
 
   return (
     <div>
-      <div style={sec}>
+      <div className="dv-panel">
         <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Paste a table: Name, MW (g/mol), Concentration (with unit), Volume (with unit)
         </p>
@@ -762,7 +761,7 @@ function BatchMode() {
           <select
             value={sepOverride}
             onChange={(e) => setSepOverride(e.target.value)}
-            style={sepSelect}
+            className="dv-select-sep"
           >
             <option value="">Auto-detect</option>
             <option value=",">Comma (,)</option>
@@ -780,7 +779,7 @@ function BatchMode() {
             fontFamily: "monospace",
             fontSize: 12,
             padding: 10,
-            border: "1px solid #ccc",
+            border: "1px solid var(--border-strong)",
             borderRadius: 6,
             resize: "vertical",
             background: "var(--surface)",
@@ -788,10 +787,10 @@ function BatchMode() {
           }}
         />
         <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-          <button onClick={compute} style={btnPrimary}>
+          <button onClick={compute} className="dv-btn dv-btn-primary">
             Calculate
           </button>
-          <button onClick={() => setRaw(BATCH_EXAMPLE)} style={btnSecondary}>
+          <button onClick={() => setRaw(BATCH_EXAMPLE)} className="dv-btn dv-btn-secondary">
             Load example
           </button>
         </div>
@@ -804,7 +803,7 @@ function BatchMode() {
             padding: "10px 14px",
             borderRadius: 8,
             background: "var(--danger-bg)",
-            border: "1px solid #fca5a5",
+            border: "1px solid var(--danger-border)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -817,7 +816,7 @@ function BatchMode() {
       )}
 
       {results && results.length > 0 && (
-        <div style={sec}>
+        <div className="dv-panel">
           <div
             style={{
               display: "flex",
@@ -829,14 +828,14 @@ function BatchMode() {
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
               Prep Sheet
             </p>
-            <button onClick={csvExport} style={btnDownload}>
+            <button onClick={csvExport} className="dv-btn dv-btn-download">
               Download CSV
             </button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #ccc" }}>
+                <tr style={{ borderBottom: "2px solid var(--border-strong)" }}>
                   {["Name", "MW", "Concentration", "Volume", "Mass to weigh"].map((h) => (
                     <th
                       key={h}
@@ -925,8 +924,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
     return insertNg;
   }, [vectorBp, vectorNg, insertBp, ratioVector, ratioInsert]);
 
+  // Override-only style object — `dv-input` className supplies the base.
   const fieldStyle: React.CSSProperties = {
-    ...inp,
     width: 130,
     fontSize: 13,
     textAlign: "right",
@@ -934,7 +933,7 @@ function LigationMode({ compact }: { compact?: boolean }) {
 
   return (
     <div>
-      <div style={{ ...sec, marginBottom: 16 }}>
+      <div className="dv-panel">
         <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Ligation insert calculator
         </p>
@@ -951,53 +950,62 @@ function LigationMode({ compact }: { compact?: boolean }) {
           marginBottom: 16,
         }}
       >
-        <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
+        <div className="dv-panel" style={{ flex: 1, marginBottom: 0, padding: 12 }}>
           <p
             style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
           >
             Vector
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Length</label>
+            <label className="dv-label" style={{ marginBottom: 0, fontWeight: 600, fontSize: 11 }}>
+              Length
+            </label>
             <input
               type="number"
               value={vectorBp}
               onChange={(e) => setVectorBp(e.target.value)}
+              className="dv-input"
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-faint)" }}>bp</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Amount</label>
+            <label className="dv-label" style={{ marginBottom: 0, fontWeight: 600, fontSize: 11 }}>
+              Amount
+            </label>
             <input
               type="number"
               value={vectorNg}
               onChange={(e) => setVectorNg(e.target.value)}
+              className="dv-input"
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-faint)" }}>ng</span>
           </div>
         </div>
 
-        <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
+        <div className="dv-panel" style={{ flex: 1, marginBottom: 0, padding: 12 }}>
           <p
             style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
           >
             Insert
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <label style={{ ...lbl, marginBottom: 0, fontWeight: 600, fontSize: 11 }}>Length</label>
+            <label className="dv-label" style={{ marginBottom: 0, fontWeight: 600, fontSize: 11 }}>
+              Length
+            </label>
             <input
               type="number"
               value={insertBp}
               onChange={(e) => setInsertBp(e.target.value)}
+              className="dv-input"
               style={{ ...fieldStyle, width: 90, fontSize: 12 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-faint)" }}>bp</span>
           </div>
         </div>
 
-        <div style={{ ...sec, flex: 1, marginBottom: 0, padding: 12 }}>
+        <div className="dv-panel" style={{ flex: 1, marginBottom: 0, padding: 12 }}>
           <p
             style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 600, color: "var(--accent-dna)" }}
           >
@@ -1005,8 +1013,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <label
+              className="dv-label"
               style={{
-                ...lbl,
                 marginBottom: 0,
                 fontWeight: 600,
                 fontSize: 11,
@@ -1020,13 +1028,14 @@ function LigationMode({ compact }: { compact?: boolean }) {
               value={ratioVector}
               onChange={(e) => setRatioVector(e.target.value)}
               min="1"
+              className="dv-input"
               style={{ ...fieldStyle, width: 60, fontSize: 12 }}
             />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <label
+              className="dv-label"
               style={{
-                ...lbl,
                 marginBottom: 0,
                 fontWeight: 600,
                 fontSize: 11,
@@ -1040,6 +1049,7 @@ function LigationMode({ compact }: { compact?: boolean }) {
               value={ratioInsert}
               onChange={(e) => setRatioInsert(e.target.value)}
               min="1"
+              className="dv-input"
               style={{ ...fieldStyle, width: 60, fontSize: 12 }}
             />
           </div>
@@ -1048,8 +1058,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
 
       {result !== null && (
         <div
+          className="dv-panel"
           style={{
-            ...sec,
             background: "var(--success-bg)",
             borderColor: "var(--success-border)",
             padding: "16px 20px",

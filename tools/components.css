@@ -1,0 +1,201 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Component classes — replaces the inline-style constants in shared.js.
+   Each class mirrors one of the JS style objects so JSX can switch from
+   `style={sec}` to `className="dv-panel"`. New benefits unlocked here:
+   :hover / :focus-visible states, single source of truth for spacing,
+   future media queries.
+   Naming: `dv-` prefix to stay collision-free if another stylesheet
+   (e.g. a vendored chart lib) lands one day.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Section / panel — `sec` */
+.dv-panel {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Small label — `lbl` */
+.dv-label {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+/* Text input — `inp` */
+.dv-input {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.dv-input:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* Numeric input — `inpN` (compact, centered, fixed width) */
+.dv-input-num {
+  width: 72px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: center;
+  font-family: inherit;
+}
+.dv-input-num:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* Select dropdown — `selStyle` */
+.dv-select {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dv-select:hover {
+  border-color: var(--text-faint);
+}
+.dv-select:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* Separator selector — `sepSelect` (prominent accent border) */
+.dv-select-sep {
+  background: var(--surface);
+  border: 2px solid var(--accent-primary);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dv-select-sep:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.dv-btn {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition:
+    filter 120ms ease,
+    transform 60ms ease;
+}
+.dv-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.dv-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: none !important;
+  transform: none !important;
+}
+
+/* Primary CTA — `btnPrimary` */
+.dv-btn-primary {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--accent-primary);
+  color: var(--on-accent);
+}
+.dv-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.dv-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Plot CTA — `btnPlot` (teal accent) */
+.dv-btn-plot {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--accent-plot);
+  color: var(--on-accent);
+}
+.dv-btn-plot:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.dv-btn-plot:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Download CTA — `btnDownload` (green, full width) */
+.dv-btn-download {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent-download);
+  color: var(--on-accent);
+}
+.dv-btn-download:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.dv-btn-download:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Secondary / quiet button — `btnSecondary` */
+.dv-btn-secondary {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.dv-btn-secondary:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  border-color: var(--text-faint);
+  color: var(--text);
+}
+.dv-btn-secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Destructive button — `btnDanger` (full width) */
+.dv-btn-danger {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+}
+.dv-btn-danger:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.dv-btn-danger:active:not(:disabled) {
+  transform: translateY(1px);
+}
