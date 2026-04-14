@@ -2409,45 +2409,60 @@ function PlotArea({
   );
 }
 
+// Per-facet wrapper tile. Each facet gets its own outer container holding
+// the plot tile, the "Statistics display" tile and the collapsible
+// "Statistics summary" tile. Because every facet is enclosed in its own
+// frame, any height mismatch between the left stack (plot + display) and
+// the right column (summary) stays local to that facet and doesn't
+// visually misalign across the row of facets. Outer padding and inner gap
+// are both `FACET_WRAPPER_PAD` so the distance between any inner tile and
+// the wrapper edge matches the distance between two sibling inner tiles.
+const FACET_WRAPPER_PAD = 16;
 function FacetStatsRow({ fd, leftPlot, setAnnotationsFor, setSummaryFor, fileStem }: any) {
   return (
-    <StatsTile
-      title={`Statistics — ${fd.category}`}
-      compact
-      defaultOpen={false}
-      groups={fd.groups.map((g) => ({ name: g.name, values: g.allValues }))}
-      fileStem={`${fileStem}_${fd.category}_stats`}
-      onAnnotationsChange={(a) => setAnnotationsFor(fd.category, a)}
-      onStatsSummaryChange={(s) => setSummaryFor(fd.category, s)}
-      renderLayout={({ displayEl, summaryEl, open }) => (
-        <div style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
-          <div
-            style={{
-              flex: "1 1 0",
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {leftPlot}
-            {displayEl}
+    <div
+      style={{
+        background: "var(--surface-sunken)",
+        border: "1px solid var(--border)",
+        borderRadius: 12,
+        padding: FACET_WRAPPER_PAD,
+      }}
+    >
+      <StatsTile
+        title={`Statistics — ${fd.category}`}
+        compact
+        defaultOpen={false}
+        groups={fd.groups.map((g) => ({ name: g.name, values: g.allValues }))}
+        fileStem={`${fileStem}_${fd.category}_stats`}
+        onAnnotationsChange={(a) => setAnnotationsFor(fd.category, a)}
+        onStatsSummaryChange={(s) => setSummaryFor(fd.category, s)}
+        renderLayout={({ displayEl, summaryEl }) => (
+          // `alignItems: stretch` pulls the left column up to the row's tallest
+          // child (usually the Statistics summary). Inside the left column,
+          // `justifyContent: space-between` pins the plot to the top and the
+          // "Statistics display" tile to the bottom, so the display tile keeps
+          // a fixed `FACET_WRAPPER_PAD` gap to the wrapper's inner bottom edge
+          // while the extra vertical slack is absorbed above the display tile,
+          // not below it.
+          <div style={{ display: "flex", gap: FACET_WRAPPER_PAD, alignItems: "stretch" }}>
+            <div
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: FACET_WRAPPER_PAD,
+                justifyContent: "space-between",
+              }}
+            >
+              {leftPlot}
+              {displayEl}
+            </div>
+            <div style={{ width: 320, flexShrink: 0 }}>{summaryEl}</div>
           </div>
-          <div
-            style={{
-              width: 320,
-              flexShrink: 0,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-            className={open ? "dv-facet-stats-scroll" : ""}
-          >
-            {summaryEl}
-          </div>
-        </div>
-      )}
-    />
+        )}
+      />
+    </div>
   );
 }
 
@@ -2554,13 +2569,16 @@ function FacetPlotList({
           barOutlineColor: vis.barOutlineColor,
           svgLegend,
         };
+        // No `fillHeight`: the facet wrapper uses `justifyContent:
+        // space-between` on the left column to push the display tile to the
+        // bottom, so the plot tile must stay at its natural size instead of
+        // absorbing the extra slack via `flex: 1 1 auto`.
         const leftPlot = (
           <FacetBoxplotItem
             fd={fd}
             facetRefs={facetRefs}
             chartProps={chartProps}
             categoryColors={categoryColors}
-            fillHeight
           />
         );
         if (fd.groups.length < 2) {
