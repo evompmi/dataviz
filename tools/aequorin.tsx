@@ -1181,13 +1181,15 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
 
       {/* CSV table */}
       {replicateSums && replicateSums.length > 0 && (
-        <div style={{ marginTop: 12 }}>
+        <div
+          className="dv-panel"
+          style={{ marginTop: 12, background: "var(--surface-subtle)", marginBottom: 0 }}
+        >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: 8,
             }}
           >
             <div
@@ -1198,15 +1200,24 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 gap: 10,
                 cursor: "pointer",
                 userSelect: "none",
+                flex: 1,
               }}
             >
               <span
                 className={"dv-disclosure" + (replicateTableOpen ? " dv-disclosure-open" : "")}
                 aria-hidden="true"
               />
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: modeColor }}>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "var(--text)",
+                  letterSpacing: "0.2px",
+                }}
+              >
                 Per replicate
-              </p>
+              </h3>
             </div>
             <button
               onClick={(e) => {
@@ -1237,7 +1248,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             </button>
           </div>
           {replicateTableOpen && (
-            <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+            <table
+              style={{ borderCollapse: "collapse", fontSize: 11, width: "100%", marginTop: 10 }}
+            >
               <thead>
                 <tr style={{ borderBottom: `2px solid ${modeBorder}` }}>
                   {["Condition", "Replicate", sumLabel].map((h) => (
