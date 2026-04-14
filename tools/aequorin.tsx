@@ -161,31 +161,6 @@ function detectConditions(headers, poolReplicates = true, columnEnabled = null) 
   }
 }
 
-function computeCalStats(calData, headers, conditions) {
-  const nRows = calData.length;
-  return conditions.map((cond) => {
-    const idxs = cond.activeColIndices || cond.colIndices;
-    const means = [],
-      sds = [];
-    for (let r = 0; r < nRows; r++) {
-      const vals = idxs.map((i) => calData[r][i]).filter((v) => v != null);
-      if (vals.length === 0) {
-        means.push(null);
-        sds.push(null);
-        continue;
-      }
-      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
-      means.push(m);
-      sds.push(
-        vals.length < 2
-          ? 0
-          : Math.sqrt(vals.reduce((a, v) => a + (v - m) ** 2, 0) / (vals.length - 1))
-      );
-    }
-    return { ...cond, means, sds };
-  });
-}
-
 function smooth(arr, w) {
   if (w <= 0) return arr;
   return arr.map((_, i) => {
@@ -1026,7 +1001,16 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     activeStats.length,
     activeStats
       .map(
-        (s) => s.prefix + s.color + s.enabled + ":" + (s.activeColIndices || s.colIndices).join(":")
+        (s) =>
+          s.prefix +
+          "|" +
+          s.label +
+          "|" +
+          s.color +
+          "|" +
+          s.enabled +
+          ":" +
+          (s.activeColIndices || s.colIndices).join(":")
       )
       .join(","),
     xStart,
@@ -2590,7 +2574,12 @@ function SampleSelectionOverlay({
   colInfo,
   columnEnabled,
   handleColumnToggle,
+  conditions,
 }) {
+  const labelByPrefix = {};
+  (conditions || []).forEach((c) => {
+    if (c && c.prefix != null) labelByPrefix[c.prefix] = c.label ?? c.prefix;
+  });
   return (
     <div>
       <div style={{ position: "relative", display: "inline-block" }}>
@@ -2684,64 +2673,67 @@ function SampleSelectionOverlay({
                   }
                   seen[c.h].cols.push(c);
                 });
-                return groups.map((g) => (
-                  <div
-                    key={g.name}
-                    style={{
-                      background: "var(--surface-subtle)",
-                      borderRadius: 6,
-                      border: "1px solid var(--border)",
-                      padding: "5px 7px",
-                      minWidth: 0,
-                    }}
-                  >
+                return groups.map((g) => {
+                  const headerLabel = poolReplicates ? (labelByPrefix[g.name] ?? g.name) : g.name;
+                  return (
                     <div
+                      key={g.name}
                       style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "var(--text-muted)",
-                        marginBottom: 3,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        background: "var(--surface-subtle)",
+                        borderRadius: 6,
+                        border: "1px solid var(--border)",
+                        padding: "5px 7px",
+                        minWidth: 0,
                       }}
                     >
-                      {g.name}
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: "var(--text-muted)",
+                          marginBottom: 3,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {headerLabel}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                        {g.cols.map(({ h, i, rep }) => {
+                          const enabled = columnEnabled[i] !== false;
+                          const showRep = g.cols.length > 1 || !poolReplicates;
+                          return (
+                            <label
+                              key={i}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 3,
+                                padding: "2px 6px",
+                                background: enabled ? "var(--surface)" : "var(--surface-subtle)",
+                                borderRadius: 4,
+                                border: `1px solid ${enabled ? "var(--border-strong)" : "var(--border)"}`,
+                                opacity: enabled ? 1 : 0.45,
+                                fontSize: 10,
+                                cursor: "pointer",
+                                userSelect: "none",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={enabled}
+                                onChange={(e) => handleColumnToggle(i, e.target.checked)}
+                                style={{ accentColor: "#f59e0b", width: 12, height: 12 }}
+                              />
+                              {showRep ? `rep${rep}` : h}
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                      {g.cols.map(({ h, i, rep }) => {
-                        const enabled = columnEnabled[i] !== false;
-                        const showRep = g.cols.length > 1 || !poolReplicates;
-                        return (
-                          <label
-                            key={i}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 3,
-                              padding: "2px 6px",
-                              background: enabled ? "var(--surface)" : "var(--surface-subtle)",
-                              borderRadius: 4,
-                              border: `1px solid ${enabled ? "var(--border-strong)" : "var(--border)"}`,
-                              opacity: enabled ? 1 : 0.45,
-                              fontSize: 10,
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={enabled}
-                              onChange={(e) => handleColumnToggle(i, e.target.checked)}
-                              style={{ accentColor: "#f59e0b", width: 12, height: 12 }}
-                            />
-                            {showRep ? `rep${rep}` : h}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ));
+                  );
+                });
               })()}
             </div>
           </div>
@@ -2821,22 +2813,71 @@ function App() {
       return calibrateGeneralized(parsed.headers, parsed.data, Kr, Ktr, hillN);
     return calibrate(parsed.headers, parsed.data, Kr, Ktr);
   }, [parsed, formula, Kr, Ktr, Kd, hillN]);
+  // Signature of only the numerical inputs from `conditions` — i.e. which
+  // column indices belong to each condition. Editing a condition's label,
+  // color, or enabled flag doesn't change this string, so the heavy
+  // per-timepoint and per-replicate loops below are cached across those
+  // edits. Renames in particular become cheap: each keystroke on the label
+  // input only re-runs the light metadata merge, not the numerics.
+  const conditionsNumericKey = conditions
+    .map((c) => `${c.prefix}:${(c.activeColIndices || c.colIndices).join(",")}`)
+    .join("|");
+
+  // Heavy pass: per-timepoint mean + sd per condition. Keyed on the numeric
+  // signature so label/color edits skip it entirely.
+  const numericStatsByPrefix = useMemo(() => {
+    if (!calData || !parsed || conditions.length === 0) return {};
+    const nRows = calData.length;
+    const out = {};
+    for (const cond of conditions) {
+      const idxs = cond.activeColIndices || cond.colIndices;
+      const means = [];
+      const sds = [];
+      for (let r = 0; r < nRows; r++) {
+        const vals = idxs.map((i) => calData[r][i]).filter((v) => v != null);
+        if (vals.length === 0) {
+          means.push(null);
+          sds.push(null);
+          continue;
+        }
+        const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+        means.push(m);
+        sds.push(
+          vals.length < 2
+            ? 0
+            : Math.sqrt(vals.reduce((a, v) => a + (v - m) ** 2, 0) / (vals.length - 1))
+        );
+      }
+      out[cond.prefix] = { means, sds };
+    }
+    return out;
+    // `conditions` is intentionally read via the numeric-signature key so
+    // label/color edits don't invalidate this cache.
+  }, [calData, parsed, conditionsNumericKey]);
+
+  // Cheap pass: merge the per-condition metadata (label, color, enabled, …)
+  // with the cached numerics. Runs on every `conditions` change, but does
+  // not touch `calData` rows.
   const stats = useMemo(
     () =>
-      calData && parsed && conditions.length > 0
-        ? computeCalStats(calData, parsed.headers, conditions)
-        : [],
-    [calData, parsed, conditions]
+      conditions.map((cond) => ({
+        ...cond,
+        ...(numericStatsByPrefix[cond.prefix] || { means: [], sds: [] }),
+      })),
+    [conditions, numericStatsByPrefix]
   );
 
   // Per-replicate sums for the inset barplot — computed from calData directly so SD/SEM
   // reflect variability across biological replicates, not across time points.
-  const replicateSums = useMemo(() => {
-    if (!calData || !stats.length) return [];
+  // Split the same way as above: heavy loops are keyed on the numeric
+  // signature + x-window, the cheap merge attaches the current label.
+  const replicateSumsByPrefix = useMemo(() => {
+    if (!calData || conditions.length === 0) return {};
     const r0 = Math.max(0, Math.floor(vis.xStart));
     const r1 = Math.min(calData.length - 1, Math.ceil(vis.xEnd));
-    return stats.map((s) => {
-      const repSums = (s.activeColIndices || s.colIndices).map((ci) => {
+    const out = {};
+    for (const cond of conditions) {
+      const repSums = (cond.activeColIndices || cond.colIndices).map((ci) => {
         const vals = [];
         for (let r = r0; r <= r1; r++) {
           const v = calData[r] ? calData[r][ci] : null;
@@ -2847,9 +2888,20 @@ function App() {
         const corrSum = rawSum - vals.length * minVal;
         return { rawSum, corrSum };
       });
-      return { prefix: s.prefix, label: s.label, repSums };
-    });
-  }, [calData, stats, vis.xStart, vis.xEnd]);
+      out[cond.prefix] = repSums;
+    }
+    return out;
+  }, [calData, conditionsNumericKey, vis.xStart, vis.xEnd]);
+
+  const replicateSums = useMemo(
+    () =>
+      stats.map((s) => ({
+        prefix: s.prefix,
+        label: s.label,
+        repSums: replicateSumsByPrefix[s.prefix] || [],
+      })),
+    [stats, replicateSumsByPrefix]
+  );
 
   // Auto-rescale y-axis whenever formula, data, or visible x window changes
   React.useEffect(() => {
@@ -3235,6 +3287,7 @@ function App() {
                   colInfo={colInfo}
                   columnEnabled={columnEnabled}
                   handleColumnToggle={handleColumnToggle}
+                  conditions={conditions}
                 />
               </div>
               <PlotPanel

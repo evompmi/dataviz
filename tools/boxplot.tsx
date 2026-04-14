@@ -2466,6 +2466,110 @@ function FacetStatsRow({ fd, leftPlot, setAnnotationsFor, setSummaryFor, fileSte
   );
 }
 
+// Per-facet memoised wrapper. Holds the plot + (optionally) the stats-tile
+// row for a single facet. Memoising here is the key perf win for facet mode:
+// toggling "Show ns" or any other per-facet StatsTile control updates the
+// parent's `facetStatsAnnotations` / `facetStatsSummary` maps, which rebuilds
+// the entire `facetedData.map` in `FacetPlotList`. Before this wrapper, the
+// inline `chartProps` object was re-created for every facet on every App
+// render, so `FacetBoxplotItem`'s `React.memo` shallow-compare always failed
+// and every chart re-rendered — even unaffected siblings. By passing only
+// the per-facet `annotations` / `statsSummary` plus stable shared props,
+// facet B's memo succeeds when only facet A's stats changed, and `chartProps`
+// is `useMemo`'d inside so `FacetBoxplotItem`'s memo finally holds.
+const FacetTrio = memo(function FacetTrio({
+  fd,
+  annotations,
+  statsSummary,
+  vis,
+  yMinVal,
+  yMaxVal,
+  plotGroupRenames,
+  boxplotColors,
+  categoryColors,
+  colorByCol,
+  svgLegend,
+  facetRefs,
+  setAnnotationsFor,
+  setSummaryFor,
+  fileStem,
+}: any) {
+  const chartProps = useMemo(
+    () => ({
+      groups: fd.groups.map((g) => ({
+        ...g,
+        name: plotGroupRenames[g.name] ?? g.name,
+        color: boxplotColors[g.name] ?? g.color,
+      })),
+      annotations,
+      statsSummary,
+      yLabel: vis.yLabel,
+      plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
+      plotBg: vis.plotBg,
+      showGrid: vis.showGrid,
+      gridColor: vis.gridColor,
+      boxWidth: vis.boxWidth,
+      boxFillOpacity: vis.boxFillOpacity,
+      pointSize: vis.pointSize,
+      showPoints: vis.showPoints,
+      jitterWidth: vis.jitterWidth,
+      pointOpacity: vis.pointOpacity,
+      xLabelAngle: vis.xLabelAngle,
+      yMin: yMinVal,
+      yMax: yMaxVal,
+      categoryColors,
+      colorByCol,
+      boxGap: vis.boxGap,
+      showCompPie: vis.showCompPie,
+      plotStyle: vis.plotStyle,
+      barOpacity: vis.barOpacity,
+      errorType: vis.errorType,
+      errStrokeWidth: vis.errStrokeWidth,
+      showBarOutline: vis.showBarOutline,
+      barOutlineWidth: vis.barOutlineWidth,
+      barOutlineColor: vis.barOutlineColor,
+      svgLegend,
+    }),
+    [
+      fd,
+      annotations,
+      statsSummary,
+      vis,
+      yMinVal,
+      yMaxVal,
+      plotGroupRenames,
+      boxplotColors,
+      categoryColors,
+      colorByCol,
+      svgLegend,
+    ]
+  );
+  // No `fillHeight`: the facet wrapper uses `justifyContent: space-between`
+  // on the left column to push the display tile to the bottom, so the plot
+  // tile must stay at its natural size instead of absorbing the extra slack
+  // via `flex: 1 1 auto`.
+  const leftPlot = (
+    <FacetBoxplotItem
+      fd={fd}
+      facetRefs={facetRefs}
+      chartProps={chartProps}
+      categoryColors={categoryColors}
+    />
+  );
+  if (fd.groups.length < 2) {
+    return <div style={{ maxWidth: 720 }}>{leftPlot}</div>;
+  }
+  return (
+    <FacetStatsRow
+      fd={fd}
+      leftPlot={leftPlot}
+      setAnnotationsFor={setAnnotationsFor}
+      setSummaryFor={setSummaryFor}
+      fileStem={fileStem}
+    />
+  );
+});
+
 function FacetPlotList({
   facetedData,
   facetRefs,
@@ -2484,21 +2588,27 @@ function FacetPlotList({
   setSummaryFor,
   fileStem,
 }: any) {
+  // Stabilise svgLegend so FacetTrio's shallow-compare can hold across
+  // unrelated re-renders. Without this, it would be a fresh array literal
+  // on every render and every memoised trio would re-render.
+  const svgLegend = useMemo(
+    () =>
+      colorByCol >= 0 && colorByCategories.length > 0
+        ? [
+            {
+              id: "legend-color",
+              title: `Points colored by: ${colNames[colorByCol]}`,
+              items: colorByCategories.map((c) => ({
+                label: c,
+                color: categoryColors[c] || "#999",
+                shape: "dot",
+              })),
+            },
+          ]
+        : null,
+    [colorByCol, colorByCategories, colNames, categoryColors]
+  );
   if (!facetedData || facetedData.length === 0) return null;
-  const svgLegend =
-    colorByCol >= 0 && colorByCategories.length > 0
-      ? [
-          {
-            id: "legend-color",
-            title: `Points colored by: ${colNames[colorByCol]}`,
-            items: colorByCategories.map((c) => ({
-              label: c,
-              color: categoryColors[c] || "#999",
-              shape: "dot",
-            })),
-          },
-        ]
-      : null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {colorByCol >= 0 && colorByCategories.length > 0 && (
@@ -2532,73 +2642,26 @@ function FacetPlotList({
           ))}
         </div>
       )}
-      {facetedData.map((fd) => {
-        const displayFdGroups = fd.groups.map((g) => ({
-          ...g,
-          name: plotGroupRenames[g.name] ?? g.name,
-          color: boxplotColors[g.name] ?? g.color,
-        }));
-        const chartProps = {
-          groups: displayFdGroups,
-          annotations: facetStatsAnnotations[fd.category] || null,
-          statsSummary: facetStatsSummary[fd.category] || null,
-          yLabel: vis.yLabel,
-          plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
-          plotBg: vis.plotBg,
-          showGrid: vis.showGrid,
-          gridColor: vis.gridColor,
-          boxWidth: vis.boxWidth,
-          boxFillOpacity: vis.boxFillOpacity,
-          pointSize: vis.pointSize,
-          showPoints: vis.showPoints,
-          jitterWidth: vis.jitterWidth,
-          pointOpacity: vis.pointOpacity,
-          xLabelAngle: vis.xLabelAngle,
-          yMin: yMinVal,
-          yMax: yMaxVal,
-          categoryColors,
-          colorByCol,
-          boxGap: vis.boxGap,
-          showCompPie: vis.showCompPie,
-          plotStyle: vis.plotStyle,
-          barOpacity: vis.barOpacity,
-          errorType: vis.errorType,
-          errStrokeWidth: vis.errStrokeWidth,
-          showBarOutline: vis.showBarOutline,
-          barOutlineWidth: vis.barOutlineWidth,
-          barOutlineColor: vis.barOutlineColor,
-          svgLegend,
-        };
-        // No `fillHeight`: the facet wrapper uses `justifyContent:
-        // space-between` on the left column to push the display tile to the
-        // bottom, so the plot tile must stay at its natural size instead of
-        // absorbing the extra slack via `flex: 1 1 auto`.
-        const leftPlot = (
-          <FacetBoxplotItem
-            fd={fd}
-            facetRefs={facetRefs}
-            chartProps={chartProps}
-            categoryColors={categoryColors}
-          />
-        );
-        if (fd.groups.length < 2) {
-          return (
-            <div key={fd.category} style={{ maxWidth: 720 }}>
-              {leftPlot}
-            </div>
-          );
-        }
-        return (
-          <FacetStatsRow
-            key={fd.category}
-            fd={fd}
-            leftPlot={leftPlot}
-            setAnnotationsFor={setAnnotationsFor}
-            setSummaryFor={setSummaryFor}
-            fileStem={fileStem}
-          />
-        );
-      })}
+      {facetedData.map((fd) => (
+        <FacetTrio
+          key={fd.category}
+          fd={fd}
+          annotations={facetStatsAnnotations[fd.category] || null}
+          statsSummary={facetStatsSummary[fd.category] || null}
+          vis={vis}
+          yMinVal={yMinVal}
+          yMaxVal={yMaxVal}
+          plotGroupRenames={plotGroupRenames}
+          boxplotColors={boxplotColors}
+          categoryColors={categoryColors}
+          colorByCol={colorByCol}
+          svgLegend={svgLegend}
+          facetRefs={facetRefs}
+          setAnnotationsFor={setAnnotationsFor}
+          setSummaryFor={setSummaryFor}
+          fileStem={fileStem}
+        />
+      ))}
     </div>
   );
 }
@@ -2676,16 +2739,24 @@ function App() {
   // both modes.
   const [facetStatsAnnotations, setFacetStatsAnnotations] = useState<Record<string, any>>({});
   const [facetStatsSummary, setFacetStatsSummary] = useState<Record<string, string | null>>({});
-  const setAnnotationsFor = (key, spec) =>
-    setFacetStatsAnnotations((prev) => {
-      if (prev[key] === spec) return prev;
-      return { ...prev, [key]: spec };
-    });
-  const setSummaryFor = (key, txt) =>
-    setFacetStatsSummary((prev) => {
-      if (prev[key] === txt) return prev;
-      return { ...prev, [key]: txt };
-    });
+  // Stable references so `FacetTrio`'s shallow-compare memo can skip
+  // re-rendering unaffected facets when one facet's stats map entry updates.
+  const setAnnotationsFor = useCallback(
+    (key, spec) =>
+      setFacetStatsAnnotations((prev) => {
+        if (prev[key] === spec) return prev;
+        return { ...prev, [key]: spec };
+      }),
+    []
+  );
+  const setSummaryFor = useCallback(
+    (key, txt) =>
+      setFacetStatsSummary((prev) => {
+        if (prev[key] === txt) return prev;
+        return { ...prev, [key]: txt };
+      }),
+    []
+  );
 
   const facetRefs = useRef({});
   const chartRef = useRef();
