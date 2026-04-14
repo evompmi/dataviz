@@ -156,6 +156,7 @@ declare global {
   const ColorInput: FC<any>;
   const FileDropZone: FC<any>;
   const DataPreview: FC<any>;
+  const NumberInput: FC<any>;
   const SliderControl: FC<any>;
   const StepNavBar: FC<any>;
   const PageHeader: FC<any>;

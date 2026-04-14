@@ -12,6 +12,7 @@ const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 
 // Component files in load order (dependencies must come before dependents)
 const componentFiles = [
+  "theme.js",
   "shared-color-input.js",
   "shared-file-drop.js",
   "shared-svg-legend.js",
@@ -33,7 +34,30 @@ const ctx = {
   console,
   // Stub out DOM APIs so shared.js loads without crashing
   setTimeout: () => {},
-  document: { createElement: () => ({}), body: { appendChild: () => {}, removeChild: () => {} } },
+  document: {
+    createElement: () => ({}),
+    documentElement: {
+      setAttribute: () => {},
+      removeAttribute: () => {},
+      getAttribute: () => null,
+    },
+    body: { appendChild: () => {}, removeChild: () => {} },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    visibilityState: "visible",
+  },
+  window: {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    matchMedia: () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }),
+    dispatchEvent: () => {},
+  },
+  localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+  CustomEvent: function () {},
   URL: { createObjectURL: () => "", revokeObjectURL: () => {} },
   Blob: function () {},
   XMLSerializer: function () {

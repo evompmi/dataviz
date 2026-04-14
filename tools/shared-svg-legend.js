@@ -80,7 +80,7 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
     blockOffsets.push(off);
   }
 
-  return blocks.map(function (block, bi) {
+  const blockGroups = blocks.map(function (block, bi) {
     const bIW = typeof iw === "function" ? iw(block) : iw;
     const blockY = startY + blockOffsets[bi];
     const itemsPerRow = Math.max(1, Math.floor(usableW / bIW));
@@ -252,6 +252,20 @@ function renderSvgLegend(blocks, startY, leftX, usableW, itemWidth, truncateLabe
       );
     }
 
-    return h("g", { key: bi, transform: "translate(" + leftX + ", " + blockY + ")" }, children);
+    const blockId =
+      block.id ||
+      (block.title && typeof svgSafeId === "function"
+        ? "legend-" + svgSafeId(block.title)
+        : "legend-block-" + bi);
+    return h(
+      "g",
+      {
+        key: bi,
+        id: blockId,
+        transform: "translate(" + leftX + ", " + blockY + ")",
+      },
+      children
+    );
   });
+  return h("g", { id: "legend" }, blockGroups);
 }

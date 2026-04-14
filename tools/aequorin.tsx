@@ -386,16 +386,36 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
             ) : null
           )}
         </g>
-        <rect
-          id="plot-frame"
-          x={MARGIN.left}
-          y={MARGIN.top}
-          width={w}
-          height={h}
-          fill="none"
-          stroke="#333"
-          strokeWidth="1"
-        />
+        <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+          <line
+            id="plot-frame-top"
+            x1={MARGIN.left}
+            y1={MARGIN.top}
+            x2={MARGIN.left + w}
+            y2={MARGIN.top}
+          />
+          <line
+            id="plot-frame-right"
+            x1={MARGIN.left + w}
+            y1={MARGIN.top}
+            x2={MARGIN.left + w}
+            y2={MARGIN.top + h}
+          />
+          <line
+            id="plot-frame-bottom"
+            x1={MARGIN.left}
+            y1={MARGIN.top + h}
+            x2={MARGIN.left + w}
+            y2={MARGIN.top + h}
+          />
+          <line
+            id="plot-frame-left"
+            x1={MARGIN.left}
+            y1={MARGIN.top}
+            x2={MARGIN.left}
+            y2={MARGIN.top + h}
+          />
+        </g>
         <g id="axis-x">
           {xTicks.map((t) => (
             <g key={t}>
@@ -788,16 +808,12 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
             );
           })}
         </g>
-        <rect
-          id="plot-frame"
-          x={M.left}
-          y={M.top}
-          width={w}
-          height={h}
-          fill="none"
-          stroke="#333"
-          strokeWidth="0.5"
-        />
+        <g id="plot-frame" fill="none" stroke="#333" strokeWidth="0.5">
+          <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+          <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+          <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+          <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+        </g>
         {annotations && annotations.kind === "cld" && annotations.letters && (
           <g id="cld-annotations">
             {annotations.letters.map((letter, i) => {
@@ -811,7 +827,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="700"
-                  fill="#333"
+                  fill="#222"
                   fontFamily="sans-serif"
                 >
                   {letter}
@@ -835,7 +851,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                 <g key={`br-${pi}`}>
                   <path
                     d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                    stroke="#333"
+                    stroke="#222"
                     strokeWidth="1"
                     fill="none"
                   />
@@ -845,7 +861,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                     textAnchor="middle"
                     fontSize="10"
                     fontWeight="700"
-                    fill={p >= 0.05 ? "#999" : "#333"}
+                    fill="#222"
                     fontFamily="sans-serif"
                   >
                     {label}
@@ -896,10 +912,18 @@ const FacetChartItem = memo(function FacetChartItem({ s, facetRefs, chartProps }
     };
   }, [s.prefix, facetRefs]);
   return (
-    <div style={{ background: "#fafafa", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
+    <div
+      className="dv-plot-card"
+      style={{
+        background: "var(--plot-card-bg)",
+        borderRadius: 8,
+        padding: 12,
+        border: "1px solid var(--plot-card-border)",
+      }}
+    >
       <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: s.color }}>
         {s.label}{" "}
-        <span style={{ fontSize: 11, fontWeight: 400, color: "#999" }}>
+        <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-faint)" }}>
           number of repeats used = {s.n}
         </span>
       </p>
@@ -962,6 +986,11 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const [statsAnnotations, setStatsAnnotations] = useState(null);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [chartOpen, setChartOpen] = useState(true);
+  const [replicateTableOpen, setReplicateTableOpen] = useState(false);
+  const [insetOpen, setInsetOpen] = useState(true);
+  useEffect(() => {
+    if (showInset) setInsetOpen(true);
+  }, [showInset]);
   const barRef = useRef();
 
   const statsGroups = useMemo(() => {
@@ -1053,7 +1082,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
 
   if (activeStats.length === 0)
     return (
-      <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+      <div
+        style={{
+          padding: "60px 20px",
+          textAlign: "center",
+          color: "var(--text-faint)",
+          fontSize: 14,
+        }}
+      >
         No conditions or samples selected. Enable at least one to display the plot.
       </div>
     );
@@ -1083,169 +1119,240 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   };
 
   const isCorrected = statsDataMode === "corrected";
-  const modeColor = isCorrected ? "#0f766e" : "#1d4ed8";
-  const modeBg = isCorrected ? "#f0fdfa" : "#eff6ff";
-  const modeBorder = isCorrected ? "#99f6e4" : "#bfdbfe";
   const sumKey = isCorrected ? "corrSum" : "rawSum";
   const sumLabel = isCorrected ? "Corrected Sum" : "Raw Sum";
   const csvFileName = isCorrected ? `corrected_sums_${baseName}.csv` : `raw_sums_${baseName}.csv`;
 
   const IntegralTile = showInset ? (
     <div
+      className="dv-plot-card"
       style={{
         marginTop: 16,
         borderRadius: 10,
-        padding: 16,
-        border: `1px solid ${modeBorder}`,
-        background: modeBg,
+        border: "1px solid var(--plot-card-border)",
+        background: "var(--plot-card-bg)",
+        overflow: "hidden",
       }}
     >
-      {/* Toggle */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Integral:</span>
-        <button
-          onClick={() => setStatsDataMode("raw")}
+      <button
+        onClick={() => setInsetOpen((o) => !o)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <span
           style={{
-            padding: "5px 14px",
-            borderRadius: 6,
-            fontSize: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
             fontWeight: 600,
-            background: statsDataMode === "raw" ? "#1d4ed8" : "#fff",
-            color: statsDataMode === "raw" ? "#fff" : "#888",
-            border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "#ccc"}`,
-            cursor: "pointer",
-            fontFamily: "inherit",
+            color: "var(--text-muted)",
           }}
         >
-          Σ Raw
-        </button>
-        <button
-          onClick={() => setStatsDataMode("corrected")}
-          style={{
-            padding: "5px 14px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 600,
-            background: statsDataMode === "corrected" ? "#0f766e" : "#fff",
-            color: statsDataMode === "corrected" ? "#fff" : "#888",
-            border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "#ccc"}`,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Σ Baseline-corrected
-        </button>
-      </div>
-
-      {/* Bar plot */}
-      <div style={{ background: "#fff", borderRadius: 8, padding: 12, border: "1px solid #ddd" }}>
-        <InsetBarplot
-          ref={barRef}
-          {...insetBarProps}
-          insetW={Math.max(200, series.length * 100 + 86)}
-          insetH={420}
-          insetYMin={insetYMin}
-          insetYMax={insetYMax}
-          corrected={isCorrected}
-          annotations={statsAnnotations}
-          statsSummary={statsSummary}
-          insetXFontSize={12}
-          insetYFontSize={11}
-          showPoints={insetShowPoints}
-          pointSize={insetPointSize}
-          pointColor={insetPointColor}
-        />
-      </div>
-
-      {/* CSV table */}
-      {replicateSums && replicateSums.length > 0 && (
-        <div style={{ marginTop: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: modeColor }}>
-              Per replicate
-            </p>
+          <span
+            className={"dv-disclosure" + (insetOpen ? " dv-disclosure-open" : "")}
+            aria-hidden="true"
+          />
+          Barplot (Σ of plotted values)
+        </span>
+      </button>
+      {insetOpen && (
+        <div style={{ padding: "0 16px 16px" }}>
+          {/* Toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+              Integral:
+            </span>
             <button
-              onClick={(e) => {
-                const rows = replicateSums.flatMap((rs) =>
-                  rs.repSums.map((rep, ri) => [
-                    rs.prefix,
-                    `Rep ${ri + 1}`,
-                    rep[sumKey] != null ? rep[sumKey].toFixed(6) : "",
-                  ])
-                );
-                downloadCsv(["Condition", "Replicate", sumLabel], rows, csvFileName);
-                flashSaved(e.currentTarget);
-              }}
+              onClick={() => setStatsDataMode("raw")}
               style={{
-                padding: "5px 10px",
+                padding: "5px 14px",
                 borderRadius: 6,
-                fontSize: 11,
-                cursor: "pointer",
-                background: "#16a34a",
-                border: "none",
-                color: "#fff",
-                fontFamily: "inherit",
+                fontSize: 12,
                 fontWeight: 600,
+                background: statsDataMode === "raw" ? "#1d4ed8" : "var(--surface)",
+                color: statsDataMode === "raw" ? "#fff" : "var(--text-faint)",
+                border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "var(--border-strong)"}`,
+                cursor: "pointer",
+                fontFamily: "inherit",
               }}
             >
-              ⬇ CSV
+              Σ Raw
+            </button>
+            <button
+              onClick={() => setStatsDataMode("corrected")}
+              style={{
+                padding: "5px 14px",
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                background: statsDataMode === "corrected" ? "#0f766e" : "var(--surface)",
+                color: statsDataMode === "corrected" ? "#fff" : "var(--text-faint)",
+                border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "var(--border-strong)"}`,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Σ Baseline-corrected
             </button>
           </div>
-          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: `2px solid ${modeBorder}` }}>
-                {["Condition", "Replicate", sumLabel].map((h) => (
-                  <th
-                    key={h}
+
+          {/* Bar plot */}
+          <div
+            style={{
+              background: "var(--plot-card-bg)",
+              borderRadius: 8,
+              padding: 12,
+              border: "1px solid var(--plot-card-border)",
+            }}
+          >
+            <InsetBarplot
+              ref={barRef}
+              {...insetBarProps}
+              insetW={Math.max(200, series.length * 100 + 86)}
+              insetH={420}
+              insetYMin={insetYMin}
+              insetYMax={insetYMax}
+              corrected={isCorrected}
+              annotations={statsAnnotations}
+              statsSummary={statsSummary}
+              insetXFontSize={12}
+              insetYFontSize={11}
+              showPoints={insetShowPoints}
+              pointSize={insetPointSize}
+              pointColor={insetPointColor}
+            />
+          </div>
+
+          {/* CSV table */}
+          {replicateSums && replicateSums.length > 0 && (
+            <div
+              className="dv-panel"
+              style={{ marginTop: 12, background: "var(--surface-subtle)", marginBottom: 0 }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  onClick={() => setReplicateTableOpen((o) => !o)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    cursor: "pointer",
+                    userSelect: "none",
+                    flex: 1,
+                  }}
+                >
+                  <span
+                    className={"dv-disclosure" + (replicateTableOpen ? " dv-disclosure-open" : "")}
+                    aria-hidden="true"
+                  />
+                  <h3
                     style={{
-                      padding: "3px 8px",
-                      textAlign: "left",
-                      color: modeColor,
+                      margin: 0,
+                      fontSize: 14,
                       fontWeight: 700,
+                      color: "var(--text)",
+                      letterSpacing: "0.2px",
                     }}
                   >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {replicateSums.map((rs) =>
-                rs.repSums.map((rep, ri) => (
-                  <tr
-                    key={`${rs.prefix}-${ri}`}
-                    style={{ borderBottom: `1px solid ${modeBorder}` }}
-                  >
-                    <td style={{ padding: "3px 8px", color: "#334155", fontWeight: 600 }}>
-                      {rs.label}
-                    </td>
-                    <td style={{ padding: "3px 8px", color: "#64748b" }}>Rep {ri + 1}</td>
-                    <td style={{ padding: "3px 8px", color: modeColor, fontFamily: "monospace" }}>
-                      {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
-                    </td>
-                  </tr>
-                ))
+                    Per replicate
+                  </h3>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const rows = replicateSums.flatMap((rs) =>
+                      rs.repSums.map((rep, ri) => [
+                        rs.prefix,
+                        `Rep ${ri + 1}`,
+                        rep[sumKey] != null ? rep[sumKey].toFixed(6) : "",
+                      ])
+                    );
+                    downloadCsv(["Condition", "Replicate", sumLabel], rows, csvFileName);
+                    flashSaved(e.currentTarget);
+                  }}
+                  className="dv-btn dv-btn-dl"
+                >
+                  ⬇ CSV
+                </button>
+              </div>
+              {replicateTableOpen && (
+                <table
+                  style={{ borderCollapse: "collapse", fontSize: 11, width: "100%", marginTop: 10 }}
+                >
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--border-strong)" }}>
+                      {["Condition", "Replicate", sumLabel].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "3px 8px",
+                            textAlign: "left",
+                            color: "var(--text-muted)",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {replicateSums.map((rs) =>
+                      rs.repSums.map((rep, ri) => (
+                        <tr
+                          key={`${rs.prefix}-${ri}`}
+                          style={{ borderBottom: "1px solid var(--border)" }}
+                        >
+                          <td style={{ padding: "3px 8px", color: "var(--text)", fontWeight: 600 }}>
+                            {rs.label}
+                          </td>
+                          <td style={{ padding: "3px 8px", color: "var(--text-muted)" }}>
+                            Rep {ri + 1}
+                          </td>
+                          <td
+                            style={{
+                              padding: "3px 8px",
+                              color: "var(--text)",
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {rep[sumKey] != null ? rep[sumKey].toFixed(4) : "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               )}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* StatsTile */}
-      {statsGroups && (
-        <div style={{ marginTop: 12 }}>
-          <StatsTile
-            groups={statsGroups}
-            onAnnotationsChange={setStatsAnnotations}
-            onStatsSummaryChange={setStatsSummary}
-          />
+          {/* StatsTile */}
+          {statsGroups && (
+            <div style={{ marginTop: 12 }}>
+              <StatsTile
+                groups={statsGroups}
+                onAnnotationsChange={setStatsAnnotations}
+                onStatsSummaryChange={setStatsSummary}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1254,10 +1361,11 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   // ── Collapsible time-course chart tile ──
   const ChartTile = (chartContent) => (
     <div
+      className="dv-plot-card"
       style={{
         borderRadius: 10,
-        border: "1px solid #ddd",
-        background: "#fafafa",
+        border: "1px solid var(--plot-card-border)",
+        background: "var(--plot-card-bg)",
         overflow: "hidden",
       }}
     >
@@ -1275,8 +1383,22 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
           fontFamily: "inherit",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#555" }}>Time-course plot</span>
-        <span style={{ fontSize: 11, color: "#999" }}>{chartOpen ? "▲ collapse" : "▼ expand"}</span>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--text-muted)",
+          }}
+        >
+          <span
+            className={"dv-disclosure" + (chartOpen ? " dv-disclosure-open" : "")}
+            aria-hidden="true"
+          />
+          Time-course plot
+        </span>
       </button>
       {chartOpen && <div style={{ padding: "0 12px 12px" }}>{chartContent}</div>}
     </div>
@@ -1354,6 +1476,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             plotSubtitle={subtitle || null}
             svgLegend={[
               {
+                id: "legend-samples",
                 title: null,
                 items: displaySeries.map((s) => ({
                   label: `${s.label} (n=${s.n})`,
@@ -1381,11 +1504,12 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                   alignItems: "center",
                   gap: 6,
                   fontSize: 12,
-                  color: "#444",
+                  color: "var(--text-muted)",
                 }}
               >
                 <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
-                {s.label} <span style={{ color: "#999" }}>number of repeats used = {s.n}</span>
+                {s.label}{" "}
+                <span style={{ color: "var(--text-faint)" }}>number of repeats used = {s.n}</span>
               </div>
             ))}
           </div>
@@ -1415,9 +1539,9 @@ function ConditionEditor({ conditions, onChange }) {
             padding: "4px 8px",
             borderRadius: 6,
             fontSize: 12,
-            background: c.enabled ? "#f0f0f5" : "#fafafa",
+            background: c.enabled ? "var(--surface-sunken)" : "var(--surface-subtle)",
             opacity: c.enabled ? 1 : 0.4,
-            border: "1px solid #ccc",
+            border: "1px solid var(--border-strong)",
           }}
         >
           <input
@@ -1433,16 +1557,16 @@ function ConditionEditor({ conditions, onChange }) {
             style={{
               flex: 1,
               minWidth: 0,
-              background: "#fff",
-              border: "1px solid #ccc",
+              background: "var(--surface)",
+              border: "1px solid var(--border-strong)",
               borderRadius: 4,
-              color: "#333",
+              color: "var(--text)",
               padding: "2px 5px",
               fontSize: 12,
               fontFamily: "inherit",
             }}
           />
-          <span style={{ color: "#999", fontSize: 10, flexShrink: 0 }}>
+          <span style={{ color: "var(--text-faint)", fontSize: 10, flexShrink: 0 }}>
             ({c.colIndices.length})
           </span>
         </div>
@@ -1460,7 +1584,7 @@ function HowToSection() {
         marginTop: 24,
         borderRadius: 14,
         overflow: "hidden",
-        border: "2px solid #648FFF",
+        border: "2px solid var(--accent-primary)",
         boxShadow: "0 4px 20px rgba(100,143,255,0.12)",
       }}
     >
@@ -1475,7 +1599,7 @@ function HowToSection() {
       >
         {toolIcon("aequorin", 24, { circle: true })}
         <div>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+          <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
             Aequorin Ca²⁺ Calibration — How to use
           </div>
           <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
@@ -1485,7 +1609,7 @@ function HowToSection() {
       </div>
       <div
         style={{
-          background: "#eef2ff",
+          background: "var(--info-bg)",
           padding: "20px 24px",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -1494,10 +1618,10 @@ function HowToSection() {
       >
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
             gridColumn: "1/-1",
           }}
         >
@@ -1505,7 +1629,7 @@ function HowToSection() {
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 8,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1513,7 +1637,7 @@ function HowToSection() {
           >
             Purpose
           </div>
-          <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
+          <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
             Plots aequorin luminescence time-courses — either as raw RLU values or converted to
             [Ca²⁺] using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes
             mean ± SD across replicates and generates Σ barplots (raw and baseline-corrected) for
@@ -1522,17 +1646,17 @@ function HowToSection() {
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 8,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1540,20 +1664,20 @@ function HowToSection() {
           >
             Data layout — wide format
           </div>
-          <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}>
             Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one
             time-point. First row = header names.
           </p>
           <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
             <thead>
-              <tr style={{ background: "#dbeafe" }}>
+              <tr style={{ background: "var(--info-bg)" }}>
                 {["WT", "WT", "WT", "KO", "KO", "KO"].map((h, i) => (
                   <th
                     key={i}
                     style={{
                       padding: "4px 8px",
-                      border: "1px solid #b0c4ff",
-                      color: "#648FFF",
+                      border: "1px solid var(--info-border)",
+                      color: "var(--accent-primary)",
                       fontWeight: 700,
                     }}
                   >
@@ -1568,11 +1692,18 @@ function HowToSection() {
                 [1350, 1400, 1310, 850, 870, 840],
                 [980, 1010, 990, 620, 600, 640],
               ].map((r, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#f0f4ff" : "#fff" }}>
+                <tr
+                  key={i}
+                  style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+                >
                   {r.map((v, j) => (
                     <td
                       key={j}
-                      style={{ padding: "4px 8px", border: "1px solid #d0dbff", color: "#333" }}
+                      style={{
+                        padding: "4px 8px",
+                        border: "1px solid var(--info-border)",
+                        color: "var(--text)",
+                      }}
                     >
                       {v}
                     </td>
@@ -1584,17 +1715,17 @@ function HowToSection() {
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1621,23 +1752,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1664,23 +1797,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            background: "#fff",
+            background: "var(--surface)",
             borderRadius: 10,
             padding: "14px 18px",
-            border: "1.5px solid #b0c4ff",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
-              color: "#648FFF",
+              color: "var(--accent-primary)",
               marginBottom: 10,
               textTransform: "uppercase",
               letterSpacing: "1px",
@@ -1711,23 +1846,25 @@ function HowToSection() {
               style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                {text}
+              </span>
             </div>
           ))}
         </div>
         <div
           style={{
-            borderLeft: "4px solid #648FFF",
-            background: "#dbeafe",
+            borderLeft: "4px solid var(--accent-primary)",
+            background: "var(--info-bg)",
             padding: "10px 14px",
             borderRadius: "0 8px 8px 0",
             gridColumn: "1/-1",
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#3b6cf7" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-primary)" }}>
             💡 Replicate grouping —{" "}
           </span>
-          <span style={{ fontSize: 11, color: "#444" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed
             across them at each time-point. In Individual mode, each column is its own condition
             (labelled name_rep1, name_rep2…) and plotted separately.
@@ -1746,9 +1883,9 @@ function HowToSection() {
                 fontSize: 10,
                 padding: "3px 10px",
                 borderRadius: 20,
-                background: "#fff",
-                border: "1px solid #b0c4ff",
-                color: "#555",
+                background: "var(--surface)",
+                border: "1px solid var(--info-border)",
+                color: "var(--text-muted)",
               }}
             >
               {t}
@@ -1780,7 +1917,14 @@ function UploadStep({
         onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point"
       />
-      <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
         ⚠ Max file size: 2 MB
       </p>
       <HowToSection />
@@ -1811,14 +1955,20 @@ function ConfigureStep({
   return (
     <div>
       <div style={{ display: "flex", gap: 16, marginBottom: 16, alignItems: "stretch" }}>
-        <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <div className="dv-panel" style={{ flex: "1 1 0", marginBottom: 0 }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Calibration formula
           </p>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div>
-              <div style={lbl}>Formula</div>
-              <select value={formula} onChange={(e) => setFormula(e.target.value)} style={selStyle}>
+              <div className="dv-label">Formula</div>
+              <select
+                value={formula}
+                onChange={(e) => setFormula(e.target.value)}
+                className="dv-select"
+              >
                 <option value="none">None (raw data)</option>
                 <option value="allen-blinks">Allen &amp; Blinks (1978)</option>
                 <option value="hill">Hill equilibrium</option>
@@ -1827,36 +1977,30 @@ function ConfigureStep({
             </div>
             {(formula === "allen-blinks" || formula === "generalized") && (
               <div>
-                <div style={lbl}>Kr</div>
-                <input
-                  type="number"
+                <div className="dv-label">Kr</div>
+                <NumberInput
                   value={Kr}
                   onChange={(e) => setKr(Number(e.target.value))}
-                  style={inpN}
                   step="0.1"
                 />
               </div>
             )}
             {(formula === "allen-blinks" || formula === "generalized") && (
               <div>
-                <div style={lbl}>Ktr</div>
-                <input
-                  type="number"
+                <div className="dv-label">Ktr</div>
+                <NumberInput
                   value={Ktr}
                   onChange={(e) => setKtr(Number(e.target.value))}
-                  style={inpN}
                   step="1"
                 />
               </div>
             )}
             {formula === "hill" && (
               <div>
-                <div style={lbl}>Kd (µM)</div>
-                <input
-                  type="number"
+                <div className="dv-label">Kd (µM)</div>
+                <NumberInput
                   value={Kd}
                   onChange={(e) => setKd(Number(e.target.value))}
-                  style={inpN}
                   step="0.5"
                   min="0.1"
                 />
@@ -1864,12 +2008,10 @@ function ConfigureStep({
             )}
             {formula === "generalized" && (
               <div>
-                <div style={lbl}>n (Hill exp.)</div>
-                <input
-                  type="number"
+                <div className="dv-label">n (Hill exp.)</div>
+                <NumberInput
                   value={hillN}
                   onChange={(e) => setHillN(Number(e.target.value))}
-                  style={inpN}
                   step="0.5"
                   min="1"
                 />
@@ -1877,28 +2019,29 @@ function ConfigureStep({
             )}
           </div>
         </div>
-        <div style={{ ...sec, flex: "1 1 0", marginBottom: 0 }}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <div className="dv-panel" style={{ flex: "1 1 0", marginBottom: 0 }}>
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Time axis
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
             <div>
-              <div style={lbl}>Time step (per row)</div>
-              <input
-                type="number"
+              <div className="dv-label">Time step (per row)</div>
+              <NumberInput
                 value={vis.timeStep}
                 onChange={(e) => updVis({ timeStep: Number(e.target.value) || 1 })}
-                style={{ ...inpN, width: 88 }}
+                style={{ width: 132 }}
                 min="0.001"
                 step="any"
               />
             </div>
             <div>
-              <div style={lbl}>Base unit</div>
+              <div className="dv-label">Base unit</div>
               <select
                 value={vis.baseUnit}
                 onChange={(e) => updVis({ baseUnit: e.target.value })}
-                style={selStyle}
+                className="dv-select"
               >
                 {TIME_UNITS.map((u) => (
                   <option key={u.key} value={u.key}>
@@ -1908,14 +2051,14 @@ function ConfigureStep({
               </select>
             </div>
             {parsed && (
-              <div style={{ fontSize: 12, color: "#888", paddingBottom: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--text-faint)", paddingBottom: 4 }}>
                 Range: 0 – {(parsed.data.length * vis.timeStep).toFixed(3)} {vis.baseUnit}
               </div>
             )}
           </div>
         </div>
       </div>
-      <div style={sec}>
+      <div className="dv-panel">
         <div
           style={{
             display: "flex",
@@ -1924,28 +2067,18 @@ function ConfigureStep({
             marginBottom: 8,
           }}
         >
-          <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
-            Loaded <strong style={{ color: "#333" }}>{fileName}</strong> — {parsed.headers.length}{" "}
-            samples × {parsed.data.length} time-points
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+            Loaded <strong style={{ color: "var(--text)" }}>{fileName}</strong> —{" "}
+            {parsed.headers.length} samples × {parsed.data.length} time-points
           </p>
           <button
             onClick={(e) => {
               downloadCalibrated();
               flashSaved(e.currentTarget);
             }}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              fontSize: 12,
-              cursor: "pointer",
-              background: "#dcfce7",
-              border: "1px solid #86efac",
-              color: "#166534",
-              fontFamily: "inherit",
-              fontWeight: 600,
-            }}
+            className="dv-btn dv-btn-dl"
           >
-            ⬇ Download CSV
+            ⬇ CSV
           </button>
         </div>
         {calData &&
@@ -1954,7 +2087,14 @@ function ConfigureStep({
             const ei = parsed.headers.map((_, i) => i).filter((i) => columnEnabled[i] !== false);
             return (
               <div style={{ marginTop: 8 }}>
-                <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: "#555" }}>
+                <p
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Preview — {formula === "none" ? "raw data" : "calibrated data"} · {ei.length} of{" "}
                   {parsed.headers.length} columns (first 15 rows):
                 </p>
@@ -1967,7 +2107,7 @@ function ConfigureStep({
             );
           })()}
       </div>
-      <button onClick={() => setStep("plot")} style={btnPrimary}>
+      <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
         Plot →
       </button>
     </div>
@@ -2010,39 +2150,28 @@ function PlotControls({
           plotPanelRef.current?.downloadMainPng();
         }}
         onReset={resetAll}
-        extraButtons={[
+        extraDownloads={[
           {
-            label: "⬇ Download CSV",
-            onClick: (e) => {
-              downloadCalibrated();
-              flashSaved(e.currentTarget);
-            },
-            style: {
-              ...btnSecondary,
-              background: "#dcfce7",
-              border: "1px solid #86efac",
-              color: "#166534",
-              width: "100%",
-              fontWeight: 600,
-            },
+            label: "CSV",
+            onClick: () => downloadCalibrated(),
           },
         ]}
       />
 
       {/* Conditions */}
-      <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Conditions
         </p>
         <ConditionEditor conditions={conditions} onChange={setConditions} />
-        <details style={{ marginTop: 8, fontSize: 11, color: "#999" }}>
+        <details style={{ marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
           <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
           <pre
             style={{
               whiteSpace: "pre-wrap",
               marginTop: 4,
               fontSize: 10,
-              background: "#eee",
+              background: "var(--surface-sunken)",
               padding: 8,
               borderRadius: 4,
             }}
@@ -2057,47 +2186,43 @@ function PlotControls({
         </details>
       </div>
 
-      {/* Plot parameters */}
-      <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
-          Plot parameters
+      {/* Time-course parameters */}
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Time-course parameters
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div>
-            <div style={lbl}>X start</div>
-            <input
-              type="number"
+            <div className="dv-label">X start</div>
+            <NumberInput
               value={vis.xStart}
               onChange={(e) => updVis({ xStart: Number(e.target.value) })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              style={{ width: "100%" }}
             />
           </div>
           <div>
-            <div style={lbl}>X end</div>
-            <input
-              type="number"
+            <div className="dv-label">X end</div>
+            <NumberInput
               value={vis.xEnd}
               onChange={(e) => updVis({ xEnd: Number(e.target.value) })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              style={{ width: "100%" }}
             />
           </div>
           <div>
-            <div style={lbl}>Y min</div>
-            <input
-              type="number"
+            <div className="dv-label">Y min</div>
+            <NumberInput
               value={vis.yMin}
               onChange={(e) => updVis({ yMin: Number(e.target.value) })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              style={{ width: "100%" }}
               step="0.1"
             />
           </div>
           <div>
-            <div style={lbl}>Y max</div>
-            <input
-              type="number"
+            <div className="dv-label">Y max</div>
+            <NumberInput
               value={vis.yMax}
               onChange={(e) => updVis({ yMax: Number(e.target.value) })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              style={{ width: "100%" }}
               step="0.1"
             />
           </div>
@@ -2110,27 +2235,31 @@ function PlotControls({
             onChange={sv("smoothWidth")}
           />
           <div>
-            <div style={lbl}>Title</div>
+            <div className="dv-label">Title</div>
             <input
               value={vis.plotTitle}
               onChange={(e) => updVis({ plotTitle: e.target.value })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              className="dv-input-num"
+              style={{ width: "100%", textAlign: "left" }}
             />
           </div>
           <div>
-            <div style={lbl}>Subtitle</div>
+            <div className="dv-label">Subtitle</div>
             <input
               value={vis.plotSubtitle}
               onChange={(e) => updVis({ plotSubtitle: e.target.value })}
-              style={{ ...inpN, width: "100%", textAlign: "left" }}
+              className="dv-input-num"
+              style={{ width: "100%", textAlign: "left" }}
             />
           </div>
         </div>
       </div>
 
       {/* Style controls */}
-      <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Style</p>
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Style
+        </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <BaseStyleControls
             plotBg={vis.plotBg}
@@ -2158,11 +2287,12 @@ function PlotControls({
             onChange={sv("ribbonOpacity")}
           />
           <div>
-            <div style={lbl}>Display unit</div>
+            <div className="dv-label">Display unit</div>
             <select
               value={vis.displayUnit}
               onChange={(e) => updVis({ displayUnit: e.target.value })}
-              style={{ width: "100%", ...selStyle }}
+              className="dv-select"
+              style={{ width: "100%" }}
             >
               {TIME_UNITS.map((u) => (
                 <option key={u.key} value={u.key}>
@@ -2175,17 +2305,19 @@ function PlotControls({
       </div>
 
       {/* Barplot controls */}
-      <div style={sec}>
-        <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+      <div className="dv-panel">
+        <p
+          style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+        >
           Barplot (Σ of plotted values)
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          <span style={lbl}>Show</span>
+          <span className="dv-label">Show</span>
           <input
             type="checkbox"
             checked={vis.showInset}
             onChange={(e) => updVis({ showInset: e.target.checked })}
-            style={{ accentColor: "#648FFF" }}
+            style={{ accentColor: "var(--accent-primary)" }}
           />
         </div>
 
@@ -2197,7 +2329,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2206,35 +2338,37 @@ function PlotControls({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               <div>
-                <div style={lbl}>Y min (auto)</div>
+                <div className="dv-label">Y min (auto)</div>
                 <input
                   value={vis.insetYMinCustom}
                   onChange={(e) => updVis({ insetYMinCustom: e.target.value })}
-                  style={{ ...inpN, width: "100%", textAlign: "left" }}
+                  className="dv-input-num"
+                  style={{ width: "100%", textAlign: "left" }}
                   placeholder="auto"
                 />
               </div>
               <div>
-                <div style={lbl}>Y max (auto)</div>
+                <div className="dv-label">Y max (auto)</div>
                 <input
                   value={vis.insetYMaxCustom}
                   onChange={(e) => updVis({ insetYMaxCustom: e.target.value })}
-                  style={{ ...inpN, width: "100%", textAlign: "left" }}
+                  className="dv-input-num"
+                  style={{ width: "100%", textAlign: "left" }}
                   placeholder="auto"
                 />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Grid</span>
+                <span className="dv-label">Grid</span>
                 <input
                   type="checkbox"
                   checked={vis.insetShowGrid}
                   onChange={(e) => updVis({ insetShowGrid: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
               </div>
               {vis.insetShowGrid && (
                 <div>
-                  <div style={lbl}>Grid color</div>
+                  <div className="dv-label">Grid color</div>
                   <ColorInput
                     value={vis.insetGridColor}
                     onChange={sv("insetGridColor")}
@@ -2281,12 +2415,12 @@ function PlotControls({
               onChange={sv("insetFillOpacity")}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lbl}>Bar outline</span>
+              <span className="dv-label">Bar outline</span>
               <input
                 type="checkbox"
                 checked={vis.insetShowBarOutline}
                 onChange={(e) => updVis({ insetShowBarOutline: e.target.checked })}
-                style={{ accentColor: "#648FFF" }}
+                style={{ accentColor: "var(--accent-primary)" }}
               />
             </div>
             {vis.insetShowBarOutline && (
@@ -2301,7 +2435,7 @@ function PlotControls({
                   onChange={sv("insetBarStrokeWidth")}
                 />
                 <div>
-                  <div style={lbl}>Outline color</div>
+                  <div className="dv-label">Outline color</div>
                   <ColorInput
                     value={vis.insetBarOutlineColor}
                     onChange={sv("insetBarOutlineColor")}
@@ -2317,7 +2451,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2326,11 +2460,12 @@ function PlotControls({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               <div>
-                <div style={lbl}>Type</div>
+                <div className="dv-label">Type</div>
                 <select
                   value={vis.insetErrorType}
                   onChange={(e) => updVis({ insetErrorType: e.target.value })}
-                  style={{ width: "100%", ...selStyle }}
+                  className="dv-select"
+                  style={{ width: "100%" }}
                 >
                   <option value="none">None</option>
                   <option value="sem">SEM</option>
@@ -2355,7 +2490,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2364,18 +2499,18 @@ function PlotControls({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={lbl}>Show</span>
+                <span className="dv-label">Show</span>
                 <input
                   type="checkbox"
                   checked={vis.insetShowPoints}
                   onChange={(e) => updVis({ insetShowPoints: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
               </div>
               {vis.insetShowPoints && (
                 <>
                   <div>
-                    <div style={lbl}>Color</div>
+                    <div className="dv-label">Color</div>
                     <ColorInput
                       value={vis.insetPointColor}
                       onChange={sv("insetPointColor")}
@@ -2401,7 +2536,7 @@ function PlotControls({
                 margin: "0 0 6px",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "#999",
+                color: "var(--text-faint)",
                 textTransform: "uppercase",
                 letterSpacing: 1,
               }}
@@ -2416,12 +2551,19 @@ function PlotControls({
                     key={s.prefix}
                     style={{
                       padding: "6px 8px",
-                      background: "#f0f0f5",
+                      background: "var(--surface-sunken)",
                       borderRadius: 5,
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border)",
                     }}
                   >
-                    <div style={{ fontSize: 11, color: "#555", fontWeight: 600, marginBottom: 6 }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-muted)",
+                        fontWeight: 600,
+                        marginBottom: 6,
+                      }}
+                    >
                       {s.label}
                     </div>
                     <ColorInput
@@ -2449,7 +2591,7 @@ function SampleSelectionOverlay({
   handleColumnToggle,
 }) {
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 20, marginBottom: 10 }}>
+    <div>
       <div style={{ position: "relative", display: "inline-block" }}>
         <button
           onClick={() => setShowColumnOverlay(!showColumnOverlay)}
@@ -2460,8 +2602,8 @@ function SampleSelectionOverlay({
             fontWeight: 700,
             fontFamily: "inherit",
             cursor: "pointer",
-            background: showColumnOverlay ? "#f59e0b" : "#fffbeb",
-            color: showColumnOverlay ? "#fff" : "#92400e",
+            background: showColumnOverlay ? "#f59e0b" : "var(--warning-bg)",
+            color: showColumnOverlay ? "#fff" : "var(--warning-text)",
             border: "2px solid #f59e0b",
             boxShadow: "0 2px 10px rgba(245,158,11,0.3)",
           }}
@@ -2476,7 +2618,7 @@ function SampleSelectionOverlay({
               left: 0,
               marginTop: 6,
               width: 420,
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               border: "2px solid #f59e0b",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
@@ -2493,7 +2635,7 @@ function SampleSelectionOverlay({
                 marginBottom: 10,
               }}
             >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#555" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
                 Column grouping
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -2511,9 +2653,9 @@ function SampleSelectionOverlay({
                       fontWeight: 600,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: poolReplicates === val ? "#f59e0b" : "#fff",
-                      color: poolReplicates === val ? "#fff" : "#888",
-                      border: `1px solid ${poolReplicates === val ? "#f59e0b" : "#ccc"}`,
+                      background: poolReplicates === val ? "#f59e0b" : "var(--surface)",
+                      color: poolReplicates === val ? "#fff" : "var(--text-faint)",
+                      border: `1px solid ${poolReplicates === val ? "#f59e0b" : "var(--border-strong)"}`,
                     }}
                   >
                     {label}
@@ -2545,9 +2687,9 @@ function SampleSelectionOverlay({
                   <div
                     key={g.name}
                     style={{
-                      background: "#f4f4f8",
+                      background: "var(--surface-subtle)",
                       borderRadius: 6,
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--border)",
                       padding: "5px 7px",
                       minWidth: 0,
                     }}
@@ -2556,7 +2698,7 @@ function SampleSelectionOverlay({
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: "#555",
+                        color: "var(--text-muted)",
                         marginBottom: 3,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -2577,9 +2719,9 @@ function SampleSelectionOverlay({
                               alignItems: "center",
                               gap: 3,
                               padding: "2px 6px",
-                              background: enabled ? "#fff" : "#fafafa",
+                              background: enabled ? "var(--surface)" : "var(--surface-subtle)",
                               borderRadius: 4,
-                              border: `1px solid ${enabled ? "#bbb" : "#e0e0e0"}`,
+                              border: `1px solid ${enabled ? "var(--border-strong)" : "var(--border)"}`,
                               opacity: enabled ? 1 : 0.45,
                               fontSize: 10,
                               cursor: "pointer",
@@ -2642,7 +2784,7 @@ function App() {
     timeStep: 1,
     baseUnit: "s",
     displayUnit: "s",
-    showInset: true,
+    showInset: false,
     insetFillOpacity: 0.7,
     insetBarWidth: 70,
     insetBarGap: 0,
@@ -2909,7 +3051,12 @@ function App() {
 
   return (
     <div
-      style={{ minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }}
+      style={{
+        minHeight: "100vh",
+        color: "var(--text)",
+        fontFamily: "monospace",
+        padding: "24px 32px",
+      }}
     >
       <PageHeader
         toolName="aequorin"
@@ -2988,47 +3135,6 @@ function App() {
 
       {step === "plot" && parsed && calData && (
         <div>
-          <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-            <button
-              onClick={() => updVis({ faceted: false })}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                background: !vis.faceted ? "#648FFF" : "#fff",
-                color: !vis.faceted ? "#fff" : "#888",
-                border: `1px solid ${!vis.faceted ? "#648FFF" : "#ccc"}`,
-                cursor: "pointer",
-              }}
-            >
-              Combined
-            </button>
-            <button
-              onClick={() => updVis({ faceted: true })}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                background: vis.faceted ? "#648FFF" : "#fff",
-                color: vis.faceted ? "#fff" : "#888",
-                border: `1px solid ${vis.faceted ? "#648FFF" : "#ccc"}`,
-                cursor: "pointer",
-              }}
-            >
-              Faceted
-            </button>
-            <button
-              onClick={() => setStep("configure")}
-              style={{ ...btnSecondary, marginLeft: "auto" }}
-            >
-              ← Calibration
-            </button>
-          </div>
-
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
             {/* LEFT: controls panel */}
             <PlotControls
@@ -3046,63 +3152,119 @@ function App() {
 
             {/* RIGHT: chart area */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Sample selection — sticky so it follows scroll */}
-              <SampleSelectionOverlay
-                showColumnOverlay={vis.showColumnOverlay}
-                setShowColumnOverlay={(v) => updVis({ showColumnOverlay: v })}
-                poolReplicates={poolReplicates}
-                handlePoolChange={handlePoolChange}
-                colInfo={colInfo}
-                columnEnabled={columnEnabled}
-                handleColumnToggle={handleColumnToggle}
-              />
-              <div style={{ ...sec, padding: 20, background: "#fff" }}>
-                <PlotPanel
-                  ref={plotPanelRef}
-                  stats={stats}
-                  xStart={vis.xStart}
-                  xEnd={vis.xEnd}
-                  yMin={vis.yMin}
-                  yMax={vis.yMax}
-                  faceted={vis.faceted}
-                  title={vis.plotTitle}
-                  subtitle={vis.plotSubtitle}
-                  smoothWidth={vis.smoothWidth}
-                  formula={formula}
-                  replicateSums={replicateSums}
-                  fileName={fileName}
-                  plotBg={vis.plotBg}
-                  showGrid={vis.showGrid}
-                  lineWidth={vis.lineWidth}
-                  ribbonOpacity={vis.ribbonOpacity}
-                  gridColor={vis.gridColor}
-                  timeStep={vis.timeStep}
-                  baseUnit={vis.baseUnit}
-                  displayUnit={vis.displayUnit}
-                  showInset={vis.showInset}
-                  insetColors={insetColors}
-                  insetFillOpacity={vis.insetFillOpacity}
-                  insetBarWidth={vis.insetBarWidth}
-                  insetBarGap={vis.insetBarGap}
-                  insetYMin={vis.insetYMinCustom !== "" ? Number(vis.insetYMinCustom) : null}
-                  insetYMax={vis.insetYMaxCustom !== "" ? Number(vis.insetYMaxCustom) : null}
-                  insetW={vis.insetW}
-                  insetH={vis.insetH}
-                  insetErrorType={vis.insetErrorType}
-                  insetShowBarOutline={vis.insetShowBarOutline}
-                  insetBarOutlineColor={vis.insetBarOutlineColor}
-                  insetBarStrokeWidth={vis.insetBarStrokeWidth}
-                  insetShowGrid={vis.insetShowGrid}
-                  insetGridColor={vis.insetGridColor}
-                  insetErrorStrokeWidth={vis.insetErrorStrokeWidth}
-                  insetXFontSize={vis.insetXFontSize}
-                  insetYFontSize={vis.insetYFontSize}
-                  insetXLabelAngle={vis.insetXLabelAngle}
-                  insetShowPoints={vis.insetShowPoints}
-                  insetPointSize={vis.insetPointSize}
-                  insetPointColor={vis.insetPointColor}
+              {/* Sticky row: Sample selection (left) + Combined/Faceted (right) */}
+              <div
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 20,
+                  marginBottom: 10,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
+                }}
+              >
+                <SampleSelectionOverlay
+                  showColumnOverlay={vis.showColumnOverlay}
+                  setShowColumnOverlay={(v) => updVis({ showColumnOverlay: v })}
+                  poolReplicates={poolReplicates}
+                  handlePoolChange={handlePoolChange}
+                  colInfo={colInfo}
+                  columnEnabled={columnEnabled}
+                  handleColumnToggle={handleColumnToggle}
                 />
+                <div
+                  role="group"
+                  aria-label="Plot view"
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex",
+                    border: "1px solid var(--accent-primary)",
+                    borderRadius: 8,
+                    overflow: "hidden",
+                    background: "var(--surface)",
+                  }}
+                >
+                  <button
+                    onClick={() => updVis({ faceted: false })}
+                    aria-pressed={!vis.faceted}
+                    style={{
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      background: !vis.faceted ? "var(--accent-primary)" : "transparent",
+                      color: !vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      border: "none",
+                      borderRight: "1px solid var(--accent-primary)",
+                    }}
+                  >
+                    Combined
+                  </button>
+                  <button
+                    onClick={() => updVis({ faceted: true })}
+                    aria-pressed={vis.faceted}
+                    style={{
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      background: vis.faceted ? "var(--accent-primary)" : "transparent",
+                      color: vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      border: "none",
+                    }}
+                  >
+                    Faceted
+                  </button>
+                </div>
               </div>
+              <PlotPanel
+                ref={plotPanelRef}
+                stats={stats}
+                xStart={vis.xStart}
+                xEnd={vis.xEnd}
+                yMin={vis.yMin}
+                yMax={vis.yMax}
+                faceted={vis.faceted}
+                title={vis.plotTitle}
+                subtitle={vis.plotSubtitle}
+                smoothWidth={vis.smoothWidth}
+                formula={formula}
+                replicateSums={replicateSums}
+                fileName={fileName}
+                plotBg={vis.plotBg}
+                showGrid={vis.showGrid}
+                lineWidth={vis.lineWidth}
+                ribbonOpacity={vis.ribbonOpacity}
+                gridColor={vis.gridColor}
+                timeStep={vis.timeStep}
+                baseUnit={vis.baseUnit}
+                displayUnit={vis.displayUnit}
+                showInset={vis.showInset}
+                insetColors={insetColors}
+                insetFillOpacity={vis.insetFillOpacity}
+                insetBarWidth={vis.insetBarWidth}
+                insetBarGap={vis.insetBarGap}
+                insetYMin={vis.insetYMinCustom !== "" ? Number(vis.insetYMinCustom) : null}
+                insetYMax={vis.insetYMaxCustom !== "" ? Number(vis.insetYMaxCustom) : null}
+                insetW={vis.insetW}
+                insetH={vis.insetH}
+                insetErrorType={vis.insetErrorType}
+                insetShowBarOutline={vis.insetShowBarOutline}
+                insetBarOutlineColor={vis.insetBarOutlineColor}
+                insetBarStrokeWidth={vis.insetBarStrokeWidth}
+                insetShowGrid={vis.insetShowGrid}
+                insetGridColor={vis.insetGridColor}
+                insetErrorStrokeWidth={vis.insetErrorStrokeWidth}
+                insetXFontSize={vis.insetXFontSize}
+                insetYFontSize={vis.insetYFontSize}
+                insetXLabelAngle={vis.insetXLabelAngle}
+                insetShowPoints={vis.insetShowPoints}
+                insetPointSize={vis.insetPointSize}
+                insetPointColor={vis.insetPointColor}
+              />
             </div>
           </div>
         </div>

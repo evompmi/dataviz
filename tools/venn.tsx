@@ -1086,7 +1086,7 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
               style={{ cursor: "pointer" }}
               onClick={() => onRegionClick && onRegionClick(isSelected ? null : inter.mask)}
             >
-              <circle cx={c.x} cy={c.y} r={hitR} fill="transparent" />
+              <circle cx={c.x} cy={c.y} r={hitR} fill="none" pointerEvents="all" />
               <text
                 x={c.x}
                 y={c.y}
@@ -1148,7 +1148,14 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         exampleLabel="Arabidopsis abiotic stress genes (Drought / Heat / Salt)"
         hint="CSV · TSV · TXT — one column per set (2–3), items listed in rows"
       />
-      <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
         ⚠ Max file size: 2 MB
       </p>
       <div
@@ -1171,7 +1178,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         >
           {toolIcon("venn", 24, { circle: true })}
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+            <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
               Venn Diagram — How to use
             </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
@@ -1181,7 +1188,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         </div>
         <div
           style={{
-            background: "#eef2ff",
+            background: "var(--info-bg)",
             padding: "20px 24px",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -1190,10 +1197,10 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
               gridColumn: "1/-1",
             }}
           >
@@ -1201,7 +1208,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1209,22 +1216,29 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
             >
               Data layout (wide format)
             </div>
-            <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: "0 0 10px" }}>
+            <p
+              style={{
+                fontSize: 12,
+                lineHeight: 1.75,
+                color: "var(--text-muted)",
+                margin: "0 0 10px",
+              }}
+            >
               Each <strong>column</strong> = one set (2 to 3 columns). Each <strong>row</strong>{" "}
               lists one item per set. Columns can have different lengths — empty cells are ignored.
             </p>
             <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
               <thead>
-                <tr style={{ background: "#e8eeff" }}>
+                <tr style={{ background: "var(--info-bg)" }}>
                   {["Set A", "Set B", "Set C"].map((h) => (
                     <th
                       key={h}
                       style={{
                         padding: "4px 10px",
                         textAlign: "left",
-                        color: "#648FFF",
+                        color: "var(--accent-primary)",
                         fontWeight: 700,
-                        borderBottom: "1.5px solid #b0c4ff",
+                        borderBottom: "1.5px solid var(--info-border)",
                       }}
                     >
                       {h}
@@ -1239,13 +1253,16 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
                   ["gene5", "gene1", "gene6"],
                   ["gene7", "", ""],
                 ].map((r, i) => (
-                  <tr key={i} style={{ background: i % 2 === 0 ? "#f0f4ff" : "#fff" }}>
+                  <tr
+                    key={i}
+                    style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+                  >
                     {r.map((v, j) => (
                       <td
                         key={j}
                         style={{
                           padding: "3px 10px",
-                          color: v ? "#333" : "#ccc",
+                          color: v ? "var(--text)" : "var(--border-strong)",
                           fontFamily: "monospace",
                         }}
                       >
@@ -1260,17 +1277,17 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
 
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1278,7 +1295,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
             >
               Features
             </div>
-            <p style={{ fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
               Equal-size circles by default, with optional area-proportional mode. Click any region
               count to highlight it and view its items. Rename sets, adjust colors and opacity from
               the plot controls.
@@ -1287,17 +1304,17 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
 
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1305,7 +1322,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
             >
               Export
             </div>
-            <p style={{ fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
               Download the diagram as <strong>SVG</strong> or <strong>PNG</strong>. Export item
               lists per region or a full membership matrix as <strong>CSV</strong>.
             </p>
@@ -1326,9 +1343,9 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
                   fontSize: 10,
                   padding: "3px 10px",
                   borderRadius: 20,
-                  background: "#fff",
-                  border: "1px solid #b0c4ff",
-                  color: "#555",
+                  background: "var(--surface)",
+                  border: "1px solid var(--info-border)",
+                  color: "var(--text-muted)",
                 }}
               >
                 {t}
@@ -1344,16 +1361,18 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
 function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
   return (
     <div>
-      <div style={sec}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#666" }}>
-          <strong style={{ color: "#333" }}>{fileName}</strong> — {parsedHeaders.length} cols ×{" "}
-          {parsedRows.length} rows
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
+          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
+          × {parsedRows.length} rows
         </p>
-        <p style={{ fontSize: 11, color: "#999", marginBottom: 10 }}>Preview (first 8 rows):</p>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
+          Preview (first 8 rows):
+        </p>
         <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
       </div>
 
-      <button onClick={() => setStep("plot")} style={btnPrimary}>
+      <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
         Plot →
       </button>
     </div>
@@ -1366,15 +1385,34 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
       <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
         <thead>
           <tr style={{ borderBottom: "2px solid #ddd" }}>
-            <th style={{ padding: "6px 10px", textAlign: "left", color: "#555", fontWeight: 700 }}>
+            <th
+              style={{
+                padding: "6px 10px",
+                textAlign: "left",
+                color: "var(--text-muted)",
+                fontWeight: 700,
+              }}
+            >
               Region
             </th>
             <th
-              style={{ padding: "6px 10px", textAlign: "center", color: "#555", fontWeight: 700 }}
+              style={{
+                padding: "6px 10px",
+                textAlign: "center",
+                color: "var(--text-muted)",
+                fontWeight: 700,
+              }}
             >
               Degree
             </th>
-            <th style={{ padding: "6px 10px", textAlign: "right", color: "#555", fontWeight: 700 }}>
+            <th
+              style={{
+                padding: "6px 10px",
+                textAlign: "right",
+                color: "var(--text-muted)",
+                fontWeight: 700,
+              }}
+            >
               Count
             </th>
           </tr>
@@ -1385,22 +1423,22 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
               key={inter.mask}
               onClick={() => onSelect(inter.mask)}
               style={{
-                borderBottom: "1px solid #eee",
+                borderBottom: "1px solid var(--border)",
                 cursor: "pointer",
-                background: selectedMask === inter.mask ? "#e8f0fe" : "transparent",
+                background: selectedMask === inter.mask ? "var(--info-bg)" : "transparent",
               }}
             >
-              <td style={{ padding: "6px 10px", color: "#333", fontWeight: 500 }}>
+              <td style={{ padding: "6px 10px", color: "var(--text)", fontWeight: 500 }}>
                 {regionLabel(inter.setNames, inter.mask, allSetNames)}
               </td>
-              <td style={{ padding: "6px 10px", textAlign: "center", color: "#888" }}>
+              <td style={{ padding: "6px 10px", textAlign: "center", color: "var(--text-faint)" }}>
                 {inter.degree}
               </td>
               <td
                 style={{
                   padding: "6px 10px",
                   textAlign: "right",
-                  color: "#648FFF",
+                  color: "var(--accent-primary)",
                   fontWeight: 700,
                   fontFamily: "monospace",
                 }}
@@ -1418,7 +1456,14 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
 function ItemListPanel({ intersection, allSetNames }) {
   if (!intersection)
     return (
-      <div style={{ padding: "30px 20px", textAlign: "center", color: "#aaa", fontSize: 13 }}>
+      <div
+        style={{
+          padding: "30px 20px",
+          textAlign: "center",
+          color: "var(--text-faint)",
+          fontSize: 13,
+        }}
+      >
         Click a region in the Venn diagram or a row in the table to view items.
       </div>
     );
@@ -1433,9 +1478,11 @@ function ItemListPanel({ intersection, allSetNames }) {
           marginBottom: 8,
         }}
       >
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#333" }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
           {label}{" "}
-          <span style={{ color: "#888", fontWeight: 400 }}>({intersection.size} items)</span>
+          <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>
+            ({intersection.size} items)
+          </span>
         </p>
         <button
           onClick={() => {
@@ -1445,11 +1492,11 @@ function ItemListPanel({ intersection, allSetNames }) {
               `venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
             );
           }}
+          className="dv-btn dv-btn-secondary"
           style={{
-            ...btnSecondary,
-            background: "#dcfce7",
-            border: "1px solid #86efac",
-            color: "#166534",
+            background: "var(--success-bg)",
+            border: "1px solid var(--success-border)",
+            color: "var(--success-text)",
             fontWeight: 600,
             fontSize: 11,
           }}
@@ -1461,9 +1508,9 @@ function ItemListPanel({ intersection, allSetNames }) {
         style={{
           maxHeight: 240,
           overflowY: "auto",
-          border: "1px solid #e0e0e0",
+          border: "1px solid var(--border)",
           borderRadius: 6,
-          background: "#fafafa",
+          background: "var(--surface-subtle)",
         }}
       >
         {intersection.items.map((item, i) => (
@@ -1472,8 +1519,8 @@ function ItemListPanel({ intersection, allSetNames }) {
             style={{
               padding: "3px 10px",
               fontSize: 12,
-              color: "#333",
-              borderBottom: "1px solid #f0f0f0",
+              color: "var(--text)",
+              borderBottom: "1px solid var(--border)",
               fontFamily: "monospace",
             }}
           >
@@ -1520,10 +1567,10 @@ function PlotControls({
         onDownloadSvg={() => downloadSvg(chartRef.current, "venn.svg")}
         onDownloadPng={() => downloadPng(chartRef.current, "venn.png", 2)}
         onReset={resetAll}
-        extraButtons={[
+        extraDownloads={[
           {
-            label: "⬇ All items CSV",
-            onClick: (e) => {
+            label: "CSV",
+            onClick: () => {
               const allItems = new Set();
               for (const n of activeSetNames) for (const item of allSets.get(n)) allItems.add(item);
               const headers = ["Item", ...activeSetNames];
@@ -1534,22 +1581,15 @@ function PlotControls({
                   ...activeSetNames.map((n) => (allSets.get(n).has(item) ? "1" : "0")),
                 ]);
               downloadCsv(headers, rows, "venn_membership.csv");
-              flashSaved(e.currentTarget);
-            },
-            style: {
-              ...btnSecondary,
-              background: "#dcfce7",
-              border: "1px solid #86efac",
-              color: "#166534",
-              width: "100%",
-              fontWeight: 600,
             },
           },
         ]}
       />
 
-      <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Sets</p>
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Sets
+        </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {allSetNames.map((name, i) => {
             const active = activeSets.has(name);
@@ -1564,8 +1604,8 @@ function PlotControls({
                   padding: "5px 8px",
                   borderRadius: 6,
                   fontSize: 12,
-                  background: active ? "#f0f0f5" : "#fafafa",
-                  border: active ? "1px solid #ccc" : "1px solid #e8e8e8",
+                  background: active ? "var(--surface-sunken)" : "var(--surface-subtle)",
+                  border: active ? "1px solid var(--border-strong)" : "1px solid var(--border)",
                   opacity: active ? 1 : 0.5,
                 }}
               >
@@ -1591,9 +1631,9 @@ function PlotControls({
                     flex: 1,
                     minWidth: 0,
                     fontWeight: 600,
-                    color: active ? "#333" : "#999",
-                    border: "1px solid #ccc",
-                    background: "#fff",
+                    color: active ? "var(--text)" : "var(--text-faint)",
+                    border: "1px solid var(--border-strong)",
+                    background: "var(--surface)",
                     fontFamily: "monospace",
                     fontSize: 12,
                     padding: "2px 6px",
@@ -1601,11 +1641,11 @@ function PlotControls({
                     outline: "none",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "#648FFF";
+                    e.target.style.borderColor = "var(--accent-primary)";
                     e.target.style.boxShadow = "0 0 0 2px rgba(100,143,255,0.2)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = "#ccc";
+                    e.target.style.borderColor = "var(--border-strong)";
                     e.target.style.boxShadow = "none";
                     const nv = e.target.value.trim();
                     if (nv && nv !== name) {
@@ -1616,7 +1656,14 @@ function PlotControls({
                     if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                   }}
                 />
-                <span style={{ color: "#999", fontSize: 11, whiteSpace: "nowrap", flexShrink: 0 }}>
+                <span
+                  style={{
+                    color: "var(--text-faint)",
+                    fontSize: 11,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
                   ({allSets.get(name).size})
                 </span>
               </div>
@@ -1625,16 +1672,18 @@ function PlotControls({
         </div>
       </div>
 
-      <div style={sec}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>Display</p>
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+          Display
+        </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={lbl}>Proportional areas</span>
+            <span className="dv-label">Proportional areas</span>
             <input
               type="checkbox"
               checked={proportional}
               onChange={(e) => onProportionalChange(e.target.checked)}
-              style={{ accentColor: "#648FFF" }}
+              style={{ accentColor: "var(--accent-primary)" }}
             />
           </div>
           {proportional && (
@@ -1649,11 +1698,12 @@ function PlotControls({
             />
           )}
           <div>
-            <div style={lbl}>Title</div>
+            <div className="dv-label">Title</div>
             <input
               value={vis.plotTitle}
               onChange={(e) => updVis({ plotTitle: e.target.value })}
-              style={{ ...inp, width: "100%" }}
+              className="dv-input"
+              style={{ width: "100%" }}
             />
           </div>
           <SliderControl
@@ -1673,7 +1723,7 @@ function PlotControls({
             onChange={sv("fontSize")}
           />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={lbl}>Background</span>
+            <span className="dv-label">Background</span>
             <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
           </div>
         </div>
@@ -1849,7 +1899,7 @@ function App() {
   const selectedIntersection = intersections.find((g) => g.mask === selectedMask) || null;
 
   return (
-    <div style={{ padding: "20px 40px", maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ padding: "24px 32px", maxWidth: 1200 }}>
       <PageHeader
         toolName="venn"
         title="Venn Diagram"
@@ -1870,15 +1920,22 @@ function App() {
             marginBottom: 16,
             padding: "10px 14px",
             borderRadius: 8,
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
             display: "flex",
             alignItems: "flex-start",
             gap: 8,
           }}
         >
           <span style={{ fontSize: 16 }}>🚫</span>
-          <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600, whiteSpace: "pre-line" }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: "var(--danger-text)",
+              fontWeight: 600,
+              whiteSpace: "pre-line",
+            }}
+          >
             {parseError}
           </span>
         </div>
@@ -1905,7 +1962,7 @@ function App() {
       {step === "plot" && activeSetNames.length >= 2 && (
         <div>
           <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-            <button onClick={() => setStep("configure")} style={btnSecondary}>
+            <button onClick={() => setStep("configure")} className="dv-btn dv-btn-secondary">
               ← Configure
             </button>
           </div>
@@ -1928,7 +1985,14 @@ function App() {
             />
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ ...sec, padding: 20, background: "#fff" }}>
+              <div
+                className="dv-panel dv-plot-card"
+                style={{
+                  padding: 20,
+                  background: "var(--plot-card-bg)",
+                  borderColor: "var(--plot-card-border)",
+                }}
+              >
                 <VennChart
                   ref={chartRef}
                   setNames={activeSetNames}
@@ -1953,9 +2017,21 @@ function App() {
                 const pctMean = (layoutInfo.meanError * 100).toFixed(1);
                 const exact = layoutInfo.warnings.length === 0 && layoutInfo.maxError < 0.005;
                 const hasWarnings = layoutInfo.warnings.length > 0;
-                const bg = exact ? "#f0fdf4" : hasWarnings ? "#fffbeb" : "#eff6ff";
-                const border = exact ? "#86efac" : hasWarnings ? "#fcd34d" : "#93c5fd";
-                const color = exact ? "#166534" : hasWarnings ? "#92400e" : "#1d4ed8";
+                const bg = exact
+                  ? "var(--success-bg)"
+                  : hasWarnings
+                    ? "var(--warning-bg)"
+                    : "var(--info-bg)";
+                const border = exact
+                  ? "var(--success-border)"
+                  : hasWarnings
+                    ? "var(--warning-border)"
+                    : "var(--info-border)";
+                const color = exact
+                  ? "var(--success-text)"
+                  : hasWarnings
+                    ? "var(--warning-text)"
+                    : "var(--info-text)";
                 return (
                   <div
                     style={{
@@ -1986,8 +2062,15 @@ function App() {
               })()}
 
               {/* Data extraction panel */}
-              <div style={{ ...sec, marginTop: 16 }}>
-                <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+              <div className="dv-panel" style={{ marginTop: 16 }}>
+                <p
+                  style={{
+                    margin: "0 0 10px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Intersections
                 </p>
                 <IntersectionTable
@@ -1997,8 +2080,15 @@ function App() {
                   onSelect={setSelectedMask}
                 />
               </div>
-              <div style={{ ...sec, marginTop: 16 }}>
-                <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+              <div className="dv-panel" style={{ marginTop: 16 }}>
+                <p
+                  style={{
+                    margin: "0 0 10px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--text-muted)",
+                  }}
+                >
                   Items
                 </p>
                 <ItemListPanel intersection={selectedIntersection} allSetNames={activeSetNames} />

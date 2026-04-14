@@ -100,9 +100,9 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
   const [observedStr, setObservedStr] = useState("");
   // correlation — no helper needed, r is intuitive
 
-  const inputStyle: React.CSSProperties = { ...inpN, width: "100%", textAlign: "left" };
-  const smallLabel = { fontSize: 11, color: "#666", marginBottom: 2 };
-  const note = { fontSize: 10, color: "#999", marginTop: 2 };
+  const inputStyle: React.CSSProperties = { width: "100%" };
+  const smallLabel = { fontSize: 11, color: "var(--text-muted)", marginBottom: 2 };
+  const note = { fontSize: 10, color: "var(--text-faint)", marginTop: 2 };
 
   // Parse ratio string like "3:1" or "0.75,0.25" into normalized proportions
   function parseProportions(str) {
@@ -209,7 +209,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
         ? "#E69F00"
         : sizeLabel === "large"
           ? "#D55E00"
-          : "#999";
+          : "var(--text-faint)";
 
   // Correlation uses direct input only (r is intuitive)
   if (testKey === "correlation") {
@@ -244,8 +244,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
             borderRadius: 4,
             fontSize: 11,
             cursor: "pointer",
-            background: mode === "helper" ? "#648FFF" : "#eee",
-            color: mode === "helper" ? "#fff" : "#666",
+            background: mode === "helper" ? "var(--accent-primary)" : "var(--surface-sunken)",
+            color: mode === "helper" ? "var(--on-accent)" : "var(--text-muted)",
             fontWeight: mode === "helper" ? 700 : 400,
             flex: 1,
             textAlign: "center",
@@ -261,8 +261,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
             borderRadius: 4,
             fontSize: 11,
             cursor: "pointer",
-            background: mode === "direct" ? "#648FFF" : "#eee",
-            color: mode === "direct" ? "#fff" : "#666",
+            background: mode === "direct" ? "var(--accent-primary)" : "var(--surface-sunken)",
+            color: mode === "direct" ? "var(--on-accent)" : "var(--text-muted)",
             fontWeight: mode === "direct" ? 700 : 400,
             flex: 1,
             textAlign: "center",
@@ -278,8 +278,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <div>
             <div style={smallLabel}>Expected mean — group 1</div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               value={mean1}
               onChange={(e) => setMean1(e.target.value)}
@@ -290,8 +289,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           </div>
           <div>
             <div style={smallLabel}>Expected mean — group 2</div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               value={mean2}
               onChange={(e) => setMean2(e.target.value)}
@@ -302,8 +300,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           </div>
           <div>
             <div style={smallLabel}>Common standard deviation</div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               min="0"
               value={sd}
@@ -316,7 +313,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           <button
             onClick={computeFromHelper}
             disabled={disabled}
-            style={{ ...btnPrimary, fontSize: 12, padding: "5px 10px" }}
+            className="dv-btn dv-btn-primary"
+            style={{ fontSize: 12, padding: "5px 10px" }}
           >
             Compute effect size
           </button>
@@ -334,8 +332,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
                 ? "Expected mean difference"
                 : "Expected deviation from reference"}
             </div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               value={diffMean}
               onChange={(e) => setDiffMean(e.target.value)}
@@ -348,8 +345,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
             <div style={smallLabel}>
               {testKey === "t-paired" ? "SD of paired differences" : "Standard deviation"}
             </div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               min="0"
               value={diffSd}
@@ -362,7 +358,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           <button
             onClick={computeFromHelper}
             disabled={disabled}
-            style={{ ...btnPrimary, fontSize: 12, padding: "5px 10px" }}
+            className="dv-btn dv-btn-primary"
+            style={{ fontSize: 12, padding: "5px 10px" }}
           >
             Compute effect size
           </button>
@@ -378,14 +375,14 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
               value={groupMeansStr}
               onChange={(e) => setGroupMeansStr(e.target.value)}
               disabled={disabled}
+              className="dv-input-num"
               style={inputStyle}
               placeholder="e.g. 10, 12, 15"
             />
           </div>
           <div>
             <div style={smallLabel}>Within-group standard deviation</div>
-            <input
-              type="number"
+            <NumberInput
               step="any"
               min="0"
               value={withinSd}
@@ -398,7 +395,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           <button
             onClick={computeFromHelper}
             disabled={disabled}
-            style={{ ...btnPrimary, fontSize: 12, padding: "5px 10px" }}
+            className="dv-btn dv-btn-primary"
+            style={{ fontSize: 12, padding: "5px 10px" }}
           >
             Compute effect size
           </button>
@@ -418,6 +416,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
               value={expectedStr}
               onChange={(e) => setExpectedStr(e.target.value)}
               disabled={disabled}
+              className="dv-input-num"
               style={inputStyle}
               placeholder="e.g. 3:1 or 0.75, 0.25"
             />
@@ -429,6 +428,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
               value={observedStr}
               onChange={(e) => setObservedStr(e.target.value)}
               disabled={disabled}
+              className="dv-input-num"
               style={inputStyle}
               placeholder="e.g. 2:1 or 0.67, 0.33"
             />
@@ -436,7 +436,8 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           <button
             onClick={computeFromHelper}
             disabled={disabled}
-            style={{ ...btnPrimary, fontSize: 12, padding: "5px 10px" }}
+            className="dv-btn dv-btn-primary"
+            style={{ fontSize: 12, padding: "5px 10px" }}
           >
             Compute effect size
           </button>
@@ -480,15 +481,15 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
           style={{
             marginTop: 6,
             padding: "6px 10px",
-            background: "#f0f7ff",
+            background: "var(--info-bg)",
             borderRadius: 6,
-            border: "1px solid #d0e0f0",
+            border: "1px solid var(--info-border)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
           }}
         >
-          <span style={{ fontSize: 12, color: "#333" }}>
+          <span style={{ fontSize: 12, color: "var(--text)" }}>
             Effect size = <b>{parseFloat(effectSize).toFixed(3)}</b>
           </span>
           {sizeLabel && (
@@ -558,6 +559,7 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
     >
       <title>Power curve</title>
       <desc>Statistical power as a function of sample size</desc>
+      <rect id="background" x={0} y={0} width={VBW} height={VBH} fill="#ffffff" />
       <rect id="plot-area-background" x={M.left} y={M.top} width={w} height={h} fill="#fafafa" />
       <g id="grid">
         {yTicks.map((t) => (
@@ -617,16 +619,12 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
           />
         </g>
       )}
-      <rect
-        id="plot-frame"
-        x={M.left}
-        y={M.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+        <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+      </g>
       <g id="axis-y">
         {yTicks.map((t) => (
           <text
@@ -762,16 +760,16 @@ function App() {
     if (key === "anova" || key === "chi2") setTails(2);
   }, []);
 
-  const inputStyle = { ...inpN, width: "100%" };
+  const inputStyle = { width: "100%" };
   const chipStyle = (active: boolean): React.CSSProperties => ({
     padding: "4px 8px",
     borderRadius: 4,
     fontSize: 12,
     cursor: "pointer",
-    border: active ? "1px solid #648FFF" : "1px solid #ccc",
-    background: active ? "#648FFF" : "#fff",
+    border: active ? "1px solid var(--accent-primary)" : "1px solid var(--border-strong)",
+    background: active ? "var(--accent-primary)" : "var(--surface)",
     fontWeight: active ? 600 : 400,
-    color: active ? "#fff" : "#333",
+    color: active ? "var(--on-accent)" : "var(--text)",
     fontFamily: "inherit",
     flex: 1,
     textAlign: "center",
@@ -779,7 +777,7 @@ function App() {
   });
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px" }}>
+    <div style={{ maxWidth: 960, padding: "24px 32px" }}>
       <PageHeader
         title="Power Analysis"
         icon={toolIcon("power")}
@@ -788,19 +786,21 @@ function App() {
 
       {/* Question banner */}
       <div
-        style={{ ...sec, padding: "12px 16px", marginBottom: 16, borderLeft: "4px solid #0072B2" }}
+        className="dv-panel"
+        style={{ padding: "12px 16px", marginBottom: 16, borderLeft: "4px solid #0072B2" }}
       >
-        <div style={{ fontSize: 13, color: "#333", lineHeight: 1.5 }}>{test.question}</div>
+        <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5 }}>{test.question}</div>
       </div>
 
       {/* ── Top row: test type + solve for ── */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 6, flexWrap: "wrap" }}>
-        <div style={{ ...sec, padding: 12, flex: 1, minWidth: 200 }}>
-          <div style={lbl}>Statistical test</div>
+      <div style={{ display: "flex", gap: 20, marginBottom: 6 }}>
+        <div className="dv-panel" style={{ padding: 12, flex: 1, minWidth: 200 }}>
+          <div className="dv-label">Statistical test</div>
           <select
             value={testKey}
             onChange={handleTestChange}
-            style={{ ...selStyle, width: "100%" }}
+            className="dv-select"
+            style={{ width: "100%" }}
           >
             {Object.entries(TESTS).map(([key, t]) => (
               <option key={key} value={key}>
@@ -809,8 +809,10 @@ function App() {
             ))}
           </select>
         </div>
-        <div style={{ ...sec, padding: 12, flex: 1, minWidth: 200 }}>
-          <div style={{ ...lbl, marginBottom: 6 }}>What do you need to find?</div>
+        <div className="dv-panel" style={{ padding: 12, flex: 1, minWidth: 200 }}>
+          <div className="dv-label" style={{ marginBottom: 6 }}>
+            What do you need to find?
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {[
               ["n", "Sample size"],
@@ -825,14 +827,16 @@ function App() {
       </div>
 
       {/* ── Main row: controls (left) + plot/result (right) ── */}
-      <div style={{ display: "flex", gap: 20, alignItems: "stretch", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
         {/* ── Left panel ── */}
         <div
           style={{ width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}
         >
           {/* Effect size */}
-          <div style={{ ...sec, padding: 12 }}>
-            <div style={{ ...lbl, marginBottom: 6 }}>Expected effect size</div>
+          <div className="dv-panel" style={{ padding: 12 }}>
+            <div className="dv-label" style={{ marginBottom: 6 }}>
+              Expected effect size
+            </div>
             <EffectSizePanel
               testKey={testKey}
               effectSize={effectSize}
@@ -843,8 +847,8 @@ function App() {
 
           {/* Other parameters */}
           <div
+            className="dv-panel"
             style={{
-              ...sec,
               padding: 12,
               display: "flex",
               flexDirection: "column",
@@ -854,9 +858,8 @@ function App() {
           >
             {/* Sample size */}
             <div style={{ opacity: solveFor === "n" ? 0.4 : 1 }}>
-              <div style={lbl}>{test.nLabel}</div>
-              <input
-                type="number"
+              <div className="dv-label">{test.nLabel}</div>
+              <NumberInput
                 min="2"
                 step="1"
                 value={nInput}
@@ -868,11 +871,12 @@ function App() {
 
             {/* Significance */}
             <div>
-              <div style={lbl}>Significance level (α)</div>
+              <div className="dv-label">Significance level (α)</div>
               <select
                 value={alphaInput}
                 onChange={(e) => setAlphaInput(e.target.value)}
-                style={{ ...selStyle, width: "100%" }}
+                className="dv-select"
+                style={{ width: "100%" }}
               >
                 <option value="0.10">0.10</option>
                 <option value="0.05">0.05</option>
@@ -883,12 +887,13 @@ function App() {
 
             {/* Power */}
             <div style={{ opacity: solveFor === "power" ? 0.4 : 1 }}>
-              <div style={lbl}>Desired power (1 − β)</div>
+              <div className="dv-label">Desired power (1 − β)</div>
               <select
                 value={powerInput}
                 onChange={(e) => setPowerInput(e.target.value)}
                 disabled={solveFor === "power"}
-                style={{ ...selStyle, width: "100%" }}
+                className="dv-select"
+                style={{ width: "100%" }}
               >
                 <option value="0.70">0.70</option>
                 <option value="0.80">0.80 (standard)</option>
@@ -900,7 +905,7 @@ function App() {
             {/* Tails */}
             {testKey !== "anova" && testKey !== "chi2" && (
               <div>
-                <div style={lbl}>Direction of the test</div>
+                <div className="dv-label">Direction of the test</div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {(
                     [
@@ -913,7 +918,7 @@ function App() {
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: 10, color: "#999", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 4 }}>
                   Two-sided: the difference could go either way. One-sided: you expect a specific
                   direction.
                 </div>
@@ -923,9 +928,8 @@ function App() {
             {/* ANOVA groups */}
             {test.hasGroups && (
               <div>
-                <div style={lbl}>Number of groups</div>
-                <input
-                  type="number"
+                <div className="dv-label">Number of groups</div>
+                <NumberInput
                   min="2"
                   max="20"
                   step="1"
@@ -939,9 +943,8 @@ function App() {
             {/* Chi-square df */}
             {test.hasDf && (
               <div>
-                <div style={lbl}>Degrees of freedom</div>
-                <input
-                  type="number"
+                <div className="dv-label">Degrees of freedom</div>
+                <NumberInput
                   min="1"
                   max="100"
                   step="1"
@@ -949,7 +952,7 @@ function App() {
                   onChange={(e) => setDfInput(e.target.value)}
                   style={inputStyle}
                 />
-                <div style={{ fontSize: 10, color: "#999", marginTop: 2 }}>
+                <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
                   Goodness-of-fit: categories − 1.
                   <br />
                   Independence: (rows−1)(cols−1).
@@ -962,7 +965,16 @@ function App() {
         {/* ── Right panel ── */}
         <div style={{ flex: 1, minWidth: 360, display: "flex", flexDirection: "column", gap: 6 }}>
           {/* Power curve */}
-          <div style={{ ...sec, padding: 12, flex: 1 }}>
+          <div
+            className="dv-plot-card"
+            style={{
+              background: "var(--plot-card-bg)",
+              border: "1px solid var(--plot-card-border)",
+              borderRadius: 10,
+              padding: 12,
+              flex: 1,
+            }}
+          >
             <PowerCurve
               testKey={testKey}
               powerFn={test.power}
@@ -974,27 +986,29 @@ function App() {
 
           {/* Result */}
           <div
+            className="dv-panel"
             style={{
-              ...sec,
               padding: 16,
               textAlign: "center",
-              background: resultFlash ? "#d4edda" : sec.background || "#fff",
+              background: resultFlash ? "var(--success-bg)" : undefined,
               transition: "background 0.3s ease",
             }}
           >
-            <div style={{ fontSize: 12, color: "#777", marginBottom: 4 }}>{resultLabel}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+              {resultLabel}
+            </div>
             <div
               style={{
                 fontSize: 36,
                 fontWeight: 700,
-                color: result != null ? "#0072B2" : "#ccc",
+                color: result != null ? "#0072B2" : "var(--border-strong)",
                 fontFamily: "monospace",
               }}
             >
               {resultText}
             </div>
             {solveFor === "n" && result != null && test.totalLabel && (
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>
                 {test.totalLabel(result, k)}
               </div>
             )}
@@ -1003,12 +1017,12 @@ function App() {
       </div>
 
       {/* Explainer — full width */}
-      <div style={{ ...sec, padding: 12, marginTop: 10 }}>
+      <div className="dv-panel" style={{ padding: 12, marginTop: 10 }}>
         <div
           style={{
             fontSize: 11,
             fontWeight: 700,
-            color: "#555",
+            color: "var(--text-muted)",
             marginBottom: 6,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
@@ -1016,7 +1030,7 @@ function App() {
         >
           What do these numbers mean?
         </div>
-        <div style={{ fontSize: 12, color: "#555", lineHeight: 1.7 }}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.7 }}>
           <b>Power</b> is the probability that you will correctly reject the null hypothesis (i.e.
           to claim a result is significant). A power of 0.80 (the dashed line) means an 80% chance
           of success — this is the standard minimum. Higher is better but costs more subjects.

@@ -13,7 +13,7 @@ function renderStatsSummary(summary: string | null, y: number, x: number) {
   if (!summary) return null;
   const lines = summary.split("\n");
   return (
-    <g>
+    <g id="stats-summary">
       {lines.map((line, i) => (
         <text
           key={i}
@@ -395,16 +395,12 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
         })}
       </g>
 
-      <rect
-        id="plot-frame"
-        x={M.left}
-        y={M.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+        <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+      </g>
 
       <g id="axis-x">
         {groups.map((g, gi) => {
@@ -792,16 +788,36 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         })}
       </g>
 
-      <rect
-        id="plot-frame"
-        x={MChart.left}
-        y={MChart.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line
+          id="plot-frame-top"
+          x1={MChart.left}
+          y1={MChart.top}
+          x2={MChart.left + w}
+          y2={MChart.top}
+        />
+        <line
+          id="plot-frame-right"
+          x1={MChart.left + w}
+          y1={MChart.top}
+          x2={MChart.left + w}
+          y2={MChart.top + h}
+        />
+        <line
+          id="plot-frame-bottom"
+          x1={MChart.left}
+          y1={MChart.top + h}
+          x2={MChart.left + w}
+          y2={MChart.top + h}
+        />
+        <line
+          id="plot-frame-left"
+          x1={MChart.left}
+          y1={MChart.top}
+          x2={MChart.left}
+          y2={MChart.top + h}
+        />
+      </g>
 
       {annotations && annotations.kind === "cld" && (
         <g id="cld-annotations">
@@ -960,7 +976,14 @@ function UploadStep({
         onLoadExample={onLoadExample}
         hint="CSV · TSV · TXT · DAT"
       />
-      <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
         ⚠ Max file size: 2 MB
       </p>
       <div
@@ -983,7 +1006,7 @@ function UploadStep({
         >
           {toolIcon("boxplot", 24, { circle: true })}
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+            <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
               Group Plot — How to use
             </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
@@ -993,7 +1016,7 @@ function UploadStep({
         </div>
         <div
           style={{
-            background: "#eef2ff",
+            background: "var(--info-bg)",
             padding: "20px 24px",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -1002,10 +1025,10 @@ function UploadStep({
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
               gridColumn: "1/-1",
             }}
           >
@@ -1013,7 +1036,7 @@ function UploadStep({
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1021,7 +1044,7 @@ function UploadStep({
             >
               Purpose
             </div>
-            <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
+            <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
               An all-in-one group comparison tool that accepts{" "}
               <strong>both long and wide formats</strong>. Switch between box, violin, raincloud,
               and bar chart (mean ± SEM/SD) styles from the plot controls. Wide data is
@@ -1031,17 +1054,17 @@ function UploadStep({
           </div>
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1049,7 +1072,9 @@ function UploadStep({
             >
               Long format
             </div>
-            <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+            <p
+              style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}
+            >
               Each <strong>row</strong> = one observation. Columns mix categorical labels and
               numeric values.
             </p>
@@ -1061,11 +1086,18 @@ function UploadStep({
                   ["lyka-1", "0", "NM", "6wpi"],
                   ["lykb-1", "0.285", "M", "6wpi"],
                 ].map((r, i) => (
-                  <tr key={i} style={{ background: i % 2 === 0 ? "#f0f4ff" : "#fff" }}>
+                  <tr
+                    key={i}
+                    style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+                  >
                     {r.map((v, j) => (
                       <td
                         key={j}
-                        style={{ padding: "3px 8px", border: "1px solid #d0dbff", color: "#333" }}
+                        style={{
+                          padding: "3px 8px",
+                          border: "1px solid var(--info-border)",
+                          color: "var(--text)",
+                        }}
                       >
                         {v}
                       </td>
@@ -1077,10 +1109,10 @@ function UploadStep({
           </div>
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
@@ -1095,20 +1127,22 @@ function UploadStep({
             >
               Wide format → auto-detected!
             </div>
-            <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+            <p
+              style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}
+            >
               One <strong>column</strong> per condition. All values numeric. Headers = group names.{" "}
               <strong>Goes straight to plot.</strong>
             </p>
             <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
               <thead>
-                <tr style={{ background: "#d1fae5" }}>
+                <tr style={{ background: "var(--success-bg)" }}>
                   {["WT", "WT", "mutA", "mutB"].map((h, i) => (
                     <th
                       key={i}
                       style={{
                         padding: "3px 8px",
-                        border: "1px solid #a7f3d0",
-                        color: "#065f46",
+                        border: "1px solid var(--success-border)",
+                        color: "var(--success-text)",
                         fontWeight: 700,
                       }}
                     >
@@ -1123,11 +1157,18 @@ function UploadStep({
                   [0.48, 0.51, 0.08, 0.28],
                   [0.41, 0.49, 0.15, 0.35],
                 ].map((r, i) => (
-                  <tr key={i} style={{ background: i % 2 === 0 ? "#f0fdf4" : "#fff" }}>
+                  <tr
+                    key={i}
+                    style={{ background: i % 2 === 0 ? "var(--success-bg)" : "var(--surface)" }}
+                  >
                     {r.map((v, j) => (
                       <td
                         key={j}
-                        style={{ padding: "3px 8px", border: "1px solid #bbf7d0", color: "#333" }}
+                        style={{
+                          padding: "3px 8px",
+                          border: "1px solid var(--success-border)",
+                          color: "var(--text)",
+                        }}
                       >
                         {v}
                       </td>
@@ -1139,17 +1180,17 @@ function UploadStep({
           </div>
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1178,16 +1219,18 @@ function UploadStep({
                 style={{ display: "flex", gap: 10, marginBottom: 7, alignItems: "flex-start" }}
               >
                 <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-                <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                  {text}
+                </span>
               </div>
             ))}
           </div>
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
@@ -1202,7 +1245,9 @@ function UploadStep({
             >
               🥧 Composition Pies
             </div>
-            <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+            <p
+              style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}
+            >
               When <strong>Color by</strong> is active, a <strong>Composition pies</strong> checkbox
               appears. Enable it to display a small pie chart beneath each boxplot group showing the
               proportion of each color-by category within that group.
@@ -1217,17 +1262,19 @@ function UploadStep({
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#E07B39", flexShrink: 0 }}>
                     {step}
                   </span>
-                  <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                    {text}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
               gridColumn: "1/-1",
             }}
           >
@@ -1243,7 +1290,9 @@ function UploadStep({
             >
               🎻 Plot Styles
             </div>
-            <p style={{ fontSize: 11, color: "#555", marginBottom: 8, lineHeight: 1.6 }}>
+            <p
+              style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}
+            >
               Use the <strong>Plot style</strong> dropdown in the style controls to switch between
               three visualization modes:
             </p>
@@ -1279,14 +1328,16 @@ function UploadStep({
                   >
                     {step}
                   </span>
-                  <span style={{ fontSize: 11, color: "#444", lineHeight: 1.55 }}>{text}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                    {text}
+                  </span>
                 </div>
               ))}
             </div>
             <p
               style={{
                 fontSize: 10,
-                color: "#888",
+                color: "var(--text-faint)",
                 marginTop: 8,
                 marginBottom: 0,
                 lineHeight: 1.5,
@@ -1298,15 +1349,17 @@ function UploadStep({
           </div>
           <div
             style={{
-              borderLeft: "4px solid #648FFF",
-              background: "#dbeafe",
+              borderLeft: "4px solid var(--accent-primary)",
+              background: "var(--info-bg)",
               padding: "10px 14px",
               borderRadius: "0 8px 8px 0",
               gridColumn: "1/-1",
             }}
           >
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#3b6cf7" }}>💡 Tip — </span>
-            <span style={{ fontSize: 11, color: "#444" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-primary)" }}>
+              💡 Tip —{" "}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
               Wide-format files (all-numeric columns, headers = group names) are auto-detected and
               go straight to plot. For long-format, you can facet by one column while coloring
               points by another.
@@ -1324,9 +1377,9 @@ function UploadStep({
                   fontSize: 10,
                   padding: "3px 10px",
                   borderRadius: 20,
-                  background: "#fff",
-                  border: "1px solid #b0c4ff",
-                  color: "#555",
+                  background: "var(--surface)",
+                  border: "1px solid var(--info-border)",
+                  color: "var(--text-muted)",
                 }}
               >
                 {t}
@@ -1354,12 +1407,14 @@ function ConfigureStep({
 }) {
   return (
     <div>
-      <div style={sec}>
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "#666" }}>
-          <strong style={{ color: "#333" }}>{fileName}</strong> — {parsedHeaders.length} cols ×{" "}
-          {parsedRows.length} rows{hasHeader ? "" : " (no header)"}
+      <div className="dv-panel">
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
+          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
+          × {parsedRows.length} rows{hasHeader ? "" : " (no header)"}
         </p>
-        <p style={{ fontSize: 11, color: "#999", marginBottom: 10 }}>Preview (first 8 rows):</p>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
+          Preview (first 8 rows):
+        </p>
         <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
       </div>
       <ColumnRoleEditor
@@ -1371,15 +1426,22 @@ function ConfigureStep({
         onNameChange={onNameChange}
       />
       {valueColIdx >= 0 && !valueColIsNumeric && (
-        <div style={{ ...sec, background: "#fef2f2", borderColor: "#fca5a5", marginBottom: 12 }}>
-          <p style={{ fontSize: 12, color: "#dc2626" }}>
+        <div
+          className="dv-panel"
+          style={{
+            background: "var(--danger-bg)",
+            borderColor: "var(--danger-border)",
+            marginBottom: 12,
+          }}
+        >
+          <p style={{ fontSize: 12, color: "var(--danger-text)" }}>
             ⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as{" "}
             <strong>value</strong> but appears to be non-numeric — the plot will be empty. Please
             assign a numeric column as value.
           </p>
         </div>
       )}
-      <button onClick={() => setStep("filter")} style={btnPrimary}>
+      <button onClick={() => setStep("filter")} className="dv-btn dv-btn-primary">
         Filter & Rename →
       </button>
     </div>
@@ -1442,11 +1504,13 @@ function FilterStep({
           borderRadius: 10,
           padding: 16,
           marginBottom: 16,
-          border: "1px solid #99f6e4",
-          background: "#f0fdfa",
+          border: "1px solid var(--success-border)",
+          background: "var(--success-bg)",
         }}
       >
-        <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "#0f766e" }}>
+        <p
+          style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "var(--success-text)" }}
+        >
           Preview ({renamedRows.length} rows):
         </p>
         <DataPreview
@@ -1456,11 +1520,11 @@ function FilterStep({
         />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setStep("output")} style={btnPrimary}>
+        <button onClick={() => setStep("output")} className="dv-btn dv-btn-primary">
           Output →
         </button>
         {canPlot && (
-          <button onClick={() => setStep("plot")} style={btnPlot}>
+          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-plot">
             Plot →
           </button>
         )}
@@ -1487,7 +1551,7 @@ function OutputStep({
       {groupColIdx >= 0 && valueColIdx >= 0 && stats.length > 0 && (
         <StatsTable stats={stats} groupLabel={colNames[groupColIdx]} />
       )}
-      <div style={sec}>
+      <div className="dv-panel">
         <div
           style={{
             display: "flex",
@@ -1496,7 +1560,7 @@ function OutputStep({
             marginBottom: 8,
           }}
         >
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
             Filtered data (long)
           </p>
           <button
@@ -1513,9 +1577,9 @@ function OutputStep({
               borderRadius: 6,
               fontSize: 12,
               cursor: "pointer",
-              background: "#dcfce7",
+              background: "var(--success-bg)",
               border: "1px solid #86efac",
-              color: "#166534",
+              color: "var(--success-text)",
               fontFamily: "inherit",
               fontWeight: 600,
             }}
@@ -1530,7 +1594,7 @@ function OutputStep({
         />
       </div>
       {wideData && (
-        <div style={sec}>
+        <div className="dv-panel">
           <div
             style={{
               display: "flex",
@@ -1539,7 +1603,7 @@ function OutputStep({
               marginBottom: 8,
             }}
           >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
               Reshaped (wide)
             </p>
             <button
@@ -1556,9 +1620,9 @@ function OutputStep({
                 borderRadius: 6,
                 fontSize: 12,
                 cursor: "pointer",
-                background: "#dcfce7",
+                background: "var(--success-bg)",
                 border: "1px solid #86efac",
-                color: "#166534",
+                color: "var(--success-text)",
                 fontFamily: "inherit",
                 fontWeight: 600,
               }}
@@ -1570,16 +1634,22 @@ function OutputStep({
         </div>
       )}
       {(groupColIdx < 0 || valueColIdx < 0) && (
-        <div style={{ ...sec, background: "#fff8e8", borderColor: "#f0d060" }}>
-          <p style={{ fontSize: 12, color: "#886600" }}>
+        <div
+          className="dv-panel"
+          style={{ background: "var(--warning-bg)", borderColor: "var(--warning-border)" }}
+        >
+          <p style={{ fontSize: 12, color: "var(--warning-text)" }}>
             ⚠ Assign <strong>group</strong> + <strong>value</strong> columns to enable reshaping &
             stats.
           </p>
         </div>
       )}
       {valueColIdx >= 0 && !valueColIsNumeric && (
-        <div style={{ ...sec, background: "#fef2f2", borderColor: "#fca5a5" }}>
-          <p style={{ fontSize: 12, color: "#dc2626" }}>
+        <div
+          className="dv-panel"
+          style={{ background: "var(--danger-bg)", borderColor: "var(--danger-border)" }}
+        >
+          <p style={{ fontSize: 12, color: "var(--danger-text)" }}>
             ⚠ Column <strong>"{colNames[valueColIdx]}"</strong> is assigned as{" "}
             <strong>value</strong> but appears to be non-numeric — the plot will be empty. Go back
             to Configure and assign a numeric column as value.
@@ -1587,11 +1657,11 @@ function OutputStep({
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <button onClick={() => setStep("filter")} style={btnSecondary}>
+        <button onClick={() => setStep("filter")} className="dv-btn dv-btn-secondary">
           ← Filter
         </button>
         {canPlot && (
-          <button onClick={() => setStep("plot")} style={btnPlot}>
+          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-plot">
             Plot →
           </button>
         )}
@@ -1663,17 +1733,17 @@ function PlotControls({
       {/* Wide format banner */}
       {dataFormat === "wide" && (
         <div
+          className="dv-panel"
           style={{
-            ...sec,
-            background: "#ecfdf5",
-            borderColor: "#6ee7b7",
+            background: "var(--success-bg)",
+            borderColor: "var(--success-border)",
             padding: "10px 12px",
             marginBottom: 0,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             <span style={{ fontSize: 15 }}>⚡</span>
-            <p style={{ margin: 0, fontSize: 11, color: "#065f46", fontWeight: 600 }}>
+            <p style={{ margin: 0, fontSize: 11, color: "var(--success-text)", fontWeight: 600 }}>
               Wide format auto-detected
             </p>
           </div>
@@ -1685,9 +1755,9 @@ function PlotControls({
             style={{
               fontSize: 10,
               cursor: "pointer",
-              background: "#fff",
-              border: "1px solid #6ee7b7",
-              color: "#065f46",
+              background: "var(--surface)",
+              border: "1px solid var(--success-border)",
+              color: "var(--success-text)",
               fontFamily: "inherit",
               fontWeight: 600,
               borderRadius: 4,
@@ -1704,27 +1774,15 @@ function PlotControls({
       <ActionsPanel
         onDownloadSvg={onDownloadSvg}
         onDownloadPng={onDownloadPng}
-        extraButtons={[
-          {
-            label: "← Output",
-            onClick: () => setStep("output"),
-            style: { ...btnSecondary, width: "100%" },
-          },
-          {
-            label: "← Filter",
-            onClick: () => setStep("filter"),
-            style: { ...btnSecondary, width: "100%" },
-          },
-        ]}
         onReset={resetAll}
       />
 
       {/* Conditions / group color editor */}
-      <div style={{ ...sec, marginBottom: 0 }}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+      <div className="dv-panel" style={{ marginBottom: 0 }}>
+        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
           Conditions
         </p>
-        <p style={{ margin: "0 0 6px", fontSize: 11, color: "#888" }}>
+        <p style={{ margin: "0 0 6px", fontSize: 11, color: "var(--text-faint)" }}>
           {allDisplayGroups.filter((g) => g.enabled).length} of {allDisplayGroups.length} selected ·{" "}
           {renamedRows.length} obs
         </p>
@@ -1738,8 +1796,8 @@ function PlotControls({
 
       {/* Style controls */}
       <div
+        className="dv-panel"
         style={{
-          ...sec,
           padding: 12,
           marginBottom: 0,
           display: "flex",
@@ -1748,11 +1806,12 @@ function PlotControls({
         }}
       >
         <div>
-          <div style={lbl}>Plot style</div>
+          <div className="dv-label">Plot style</div>
           <select
             value={vis.plotStyle}
             onChange={(e) => updVis({ plotStyle: e.target.value })}
-            style={{ ...inp, cursor: "pointer", fontSize: 11, width: "100%" }}
+            className="dv-input"
+            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
           >
             <option value="box">Box plot</option>
             <option value="violin">Violin plot</option>
@@ -1800,19 +1859,19 @@ function PlotControls({
               onChange={sv("barOpacity")}
             />
             <div>
-              <span style={lbl}>Error bars</span>
+              <span className="dv-label">Error bars</span>
               <select
                 value={vis.errorType}
                 onChange={(e) => updVis({ errorType: e.target.value })}
                 style={{
                   width: "100%",
-                  background: "#fff",
-                  border: "1px solid #ccc",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 4,
                   padding: "4px 8px",
                   fontSize: 12,
                   fontFamily: "inherit",
-                  color: "#333",
+                  color: "var(--text)",
                   cursor: "pointer",
                   marginTop: 2,
                 }}
@@ -1831,12 +1890,12 @@ function PlotControls({
               onChange={sv("errStrokeWidth")}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={lbl}>Bar outline</span>
+              <span className="dv-label">Bar outline</span>
               <input
                 type="checkbox"
                 checked={vis.showBarOutline}
                 onChange={(e) => updVis({ showBarOutline: e.target.checked })}
-                style={{ accentColor: "#648FFF" }}
+                style={{ accentColor: "var(--accent-primary)" }}
               />
             </div>
             {vis.showBarOutline && (
@@ -1851,7 +1910,7 @@ function PlotControls({
                   onChange={sv("barOutlineWidth")}
                 />
                 <div>
-                  <div style={lbl}>Outline color</div>
+                  <div className="dv-label">Outline color</div>
                   <ColorInput
                     value={vis.barOutlineColor}
                     onChange={sv("barOutlineColor")}
@@ -1873,22 +1932,23 @@ function PlotControls({
           />
         )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={lbl}>Points</span>
+          <span className="dv-label">Points</span>
           <input
             type="checkbox"
             checked={vis.showPoints}
             onChange={(e) => updVis({ showPoints: e.target.checked })}
-            style={{ accentColor: "#648FFF" }}
+            style={{ accentColor: "var(--accent-primary)" }}
           />
         </div>
         {vis.showPoints && (
           <>
             <div>
-              <div style={lbl}>Color by</div>
+              <div className="dv-label">Color by</div>
               <select
                 value={colorByCol}
                 onChange={handleColorByChange}
-                style={{ ...inp, cursor: "pointer", fontSize: 11, width: "100%" }}
+                className="dv-input"
+                style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
               >
                 <option value={-1}>— none —</option>
                 {colorByCandidates.map((ci) => (
@@ -1913,7 +1973,7 @@ function PlotControls({
                   checked={vis.showCompPie}
                   onChange={(e) => updVis({ showCompPie: e.target.checked })}
                 />
-                <span style={{ fontSize: 10, color: "#555" }}>Composition pies</span>
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Composition pies</span>
               </label>
             )}
             {colorByCol >= 0 &&
@@ -1927,7 +1987,7 @@ function PlotControls({
                     onChange={(c) => setCategoryColors((p) => ({ ...p, [cat]: c }))}
                     size={16}
                   />
-                  <span style={{ fontSize: 10, color: "#555" }}>{cat}</span>
+                  <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{cat}</span>
                 </div>
               ))}
             <SliderControl
@@ -1969,11 +2029,12 @@ function PlotControls({
           onChange={sv("xLabelAngle")}
         />
         <div>
-          <div style={lbl}>Facet by</div>
+          <div className="dv-label">Facet by</div>
           <select
             value={facetByCol}
             onChange={(e) => setFacetByCol(Number(e.target.value))}
-            style={{ ...inp, cursor: "pointer", fontSize: 11, width: "100%" }}
+            className="dv-input"
+            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
           >
             <option value={-1}>— none —</option>
             {colorByCandidates.map((ci) => (
@@ -1987,8 +2048,8 @@ function PlotControls({
 
       {/* Plot params */}
       <div
+        className="dv-panel"
         style={{
-          ...sec,
           padding: 12,
           marginBottom: 0,
           display: "flex",
@@ -1997,37 +2058,41 @@ function PlotControls({
         }}
       >
         <div>
-          <div style={lbl}>Title</div>
+          <div className="dv-label">Title</div>
           <input
             value={vis.plotTitle}
             onChange={(e) => updVis({ plotTitle: e.target.value })}
-            style={{ ...inp, width: "100%", fontSize: 11 }}
+            className="dv-input"
+            style={{ width: "100%", fontSize: 11 }}
           />
         </div>
         <div>
-          <div style={lbl}>Y label</div>
+          <div className="dv-label">Y label</div>
           <input
             value={vis.yLabel}
             onChange={(e) => updVis({ yLabel: e.target.value })}
-            style={{ ...inp, width: "100%", fontSize: 11 }}
+            className="dv-input"
+            style={{ width: "100%", fontSize: 11 }}
           />
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1 }}>
-            <div style={lbl}>Y min</div>
+            <div className="dv-label">Y min</div>
             <input
               value={vis.yMinCustom}
               onChange={(e) => updVis({ yMinCustom: e.target.value })}
-              style={{ ...inp, width: "100%", fontSize: 11 }}
+              className="dv-input"
+              style={{ width: "100%", fontSize: 11 }}
               placeholder="auto"
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={lbl}>Y max</div>
+            <div className="dv-label">Y max</div>
             <input
               value={vis.yMaxCustom}
               onChange={(e) => updVis({ yMaxCustom: e.target.value })}
-              style={{ ...inp, width: "100%", fontSize: 11 }}
+              className="dv-input"
+              style={{ width: "100%", fontSize: 11 }}
               placeholder="auto"
             />
           </div>
@@ -2052,11 +2117,12 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
   }, [fd.category, facetRefs]);
   return (
     <div
+      className="dv-plot-card"
       style={{
-        background: "#fff",
+        background: "var(--plot-card-bg)",
         borderRadius: 8,
         padding: 12,
-        border: "1px solid #ddd",
+        border: "1px solid var(--plot-card-border)",
         flex: "0 1 auto",
         minWidth: 180,
       }}
@@ -2070,8 +2136,10 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
             background: categoryColors[fd.category] || "#999",
           }}
         />
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#333" }}>{fd.category}</p>
-        <span style={{ fontSize: 11, color: "#999" }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+          {fd.category}
+        </p>
+        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>
           ({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)
         </span>
       </div>
@@ -2110,8 +2178,22 @@ function PlotArea({
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...sec, padding: 20, background: "#fff" }}>
-          <div style={{ padding: "60px 20px", textAlign: "center", color: "#999", fontSize: 14 }}>
+        <div
+          className="dv-panel dv-plot-card"
+          style={{
+            padding: 20,
+            background: "var(--plot-card-bg)",
+            borderColor: "var(--plot-card-border)",
+          }}
+        >
+          <div
+            style={{
+              padding: "60px 20px",
+              textAlign: "center",
+              color: "var(--text-faint)",
+              fontSize: 14,
+            }}
+          >
             No conditions selected. Enable at least one to display the plot.
           </div>
         </div>
@@ -2124,17 +2206,17 @@ function PlotArea({
         <div
           style={{
             marginBottom: 12,
-            background: "#f8f8fa",
+            background: "var(--surface-subtle)",
             borderRadius: 8,
             padding: "8px 14px",
-            border: "1px solid #ddd",
+            border: "1px solid var(--border)",
             display: "flex",
             gap: 16,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: 11, color: "#777" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             Points colored by: {colNames[colorByCol]}
           </span>
           {colorByCategories.map((cat) => (
@@ -2147,14 +2229,20 @@ function PlotArea({
                   background: categoryColors[cat] || "#999",
                 }}
               />
-              <span style={{ fontSize: 11, color: "#444" }}>{cat}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{cat}</span>
             </div>
           ))}
         </div>
       )}
       {facetByCol < 0 && (
         <div
-          style={{ background: "#fff", borderRadius: 10, padding: 20, border: "1px solid #ddd" }}
+          className="dv-plot-card"
+          style={{
+            background: "var(--plot-card-bg)",
+            borderRadius: 10,
+            padding: 20,
+            border: "1px solid var(--plot-card-border)",
+          }}
         >
           {vis.plotStyle === "bar" ? (
             <BarChart
@@ -2187,6 +2275,7 @@ function PlotArea({
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
                       {
+                        id: "legend-color",
                         title: `Points colored by: ${colNames[colorByCol]}`,
                         items: colorByCategories.map((c) => ({
                           label: c,
@@ -2227,6 +2316,7 @@ function PlotArea({
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
                       {
+                        id: "legend-color",
                         title: `Points colored by: ${colNames[colorByCol]}`,
                         items: colorByCategories.map((c) => ({
                           label: c,
@@ -2280,6 +2370,7 @@ function PlotArea({
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
                       {
+                        id: "legend-color",
                         title: `Points colored by: ${colNames[colorByCol]}`,
                         items: colorByCategories.map((c) => ({
                           label: c,
@@ -2744,7 +2835,12 @@ function App() {
 
   return (
     <div
-      style={{ minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }}
+      style={{
+        minHeight: "100vh",
+        color: "var(--text)",
+        fontFamily: "monospace",
+        padding: "24px 32px",
+      }}
     >
       <PageHeader
         toolName="boxplot"
@@ -2891,12 +2987,19 @@ function App() {
       )}
 
       {step === "plot" && !canPlot && (
-        <div style={{ ...sec, background: "#fff8e8", borderColor: "#f0d060" }}>
-          <p style={{ fontSize: 12, color: "#886600" }}>
+        <div
+          className="dv-panel"
+          style={{ background: "var(--warning-bg)", borderColor: "var(--warning-border)" }}
+        >
+          <p style={{ fontSize: 12, color: "var(--warning-text)" }}>
             ⚠ Assign <strong>group</strong> + <strong>value</strong> columns and ensure filters keep
             data.
           </p>
-          <button onClick={() => setStep("configure")} style={{ marginTop: 8, ...btnSecondary }}>
+          <button
+            onClick={() => setStep("configure")}
+            className="dv-btn dv-btn-secondary"
+            style={{ marginTop: 8 }}
+          >
             ← Configure
           </button>
         </div>

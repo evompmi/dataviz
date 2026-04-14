@@ -447,16 +447,36 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
           );
         })()}
 
-      <rect
-        id="plot-frame"
-        x={MARGIN.left}
-        y={MARGIN.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line
+          id="plot-frame-top"
+          x1={MARGIN.left}
+          y1={MARGIN.top}
+          x2={MARGIN.left + w}
+          y2={MARGIN.top}
+        />
+        <line
+          id="plot-frame-right"
+          x1={MARGIN.left + w}
+          y1={MARGIN.top}
+          x2={MARGIN.left + w}
+          y2={MARGIN.top + h}
+        />
+        <line
+          id="plot-frame-bottom"
+          x1={MARGIN.left}
+          y1={MARGIN.top + h}
+          x2={MARGIN.left + w}
+          y2={MARGIN.top + h}
+        />
+        <line
+          id="plot-frame-left"
+          x1={MARGIN.left}
+          y1={MARGIN.top}
+          x2={MARGIN.left}
+          y2={MARGIN.top + h}
+        />
+      </g>
 
       <g id="axis-x">
         {xTicks.map((t) => (
@@ -560,43 +580,29 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
   );
 });
 
-// Style constants
-const scInp: React.CSSProperties = {
-  width: 80,
-  background: "#fff",
-  border: "1px solid #ccc",
-  borderRadius: 4,
-  color: "#333",
-  padding: "4px 8px",
-  fontSize: 13,
-  textAlign: "center",
-};
-const dlBtn = {
-  padding: "6px 14px",
-  borderRadius: 6,
-  fontSize: 12,
-  cursor: "pointer",
-  background: "#fff",
-  border: "1px solid #ccc",
-  color: "#555",
-  fontFamily: "inherit",
-};
-const selSt = {
-  background: "#fff",
-  border: "1px solid #ccc",
-  borderRadius: 4,
-  padding: "4px 8px",
-  fontSize: 12,
-  fontFamily: "inherit",
-  color: "#333",
-  cursor: "pointer",
-};
+// Local style constants retired — chrome elements now use the dv-* CSS
+// classes (dv-input-num, dv-btn-secondary, dv-select) from components.css.
 
 // Aesthetic box themes
 const aesTheme = {
-  color: { bg: "#eef2ff", border: "#b0c4ff", header: "#4f6bff", label: "Color" },
-  size: { bg: "#f0fdf4", border: "#86efac", header: "#16a34a", label: "Size" },
-  shape: { bg: "#faf5ff", border: "#d8b4fe", header: "#9333ea", label: "Shape" },
+  color: {
+    bg: "var(--aes-color-bg)",
+    border: "var(--aes-color-border)",
+    header: "var(--aes-color-header)",
+    label: "Color",
+  },
+  size: {
+    bg: "var(--aes-size-bg)",
+    border: "var(--aes-size-border)",
+    header: "var(--aes-size-header)",
+    label: "Size",
+  },
+  shape: {
+    bg: "var(--aes-shape-bg)",
+    border: "var(--aes-shape-border)",
+    header: "var(--aes-shape-header)",
+    label: "Shape",
+  },
 };
 
 function AesBox({ theme, children }) {
@@ -644,7 +650,14 @@ function UploadStep({
         exampleLabel="Fisher's Iris dataset (150 rows, 3 species)"
         hint="CSV · TSV · TXT — one column per variable, one row per data point"
       />
-      <p style={{ margin: "4px 0 12px", fontSize: 11, color: "#aaa", textAlign: "right" }}>
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
         Max file size: 2 MB
       </p>
       <div
@@ -652,7 +665,7 @@ function UploadStep({
           marginTop: 24,
           borderRadius: 14,
           overflow: "hidden",
-          border: "2px solid #648FFF",
+          border: "2px solid var(--accent-primary)",
           boxShadow: "0 4px 20px rgba(100,143,255,0.12)",
         }}
       >
@@ -677,7 +690,7 @@ function UploadStep({
         </div>
         <div
           style={{
-            background: "#eef2ff",
+            background: "var(--info-bg)",
             padding: "20px 24px",
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -686,10 +699,10 @@ function UploadStep({
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
               gridColumn: "1/-1",
             }}
           >
@@ -697,7 +710,7 @@ function UploadStep({
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -705,7 +718,7 @@ function UploadStep({
             >
               Data layout
             </div>
-            <p style={{ fontSize: 12, lineHeight: 1.75, color: "#444", margin: 0 }}>
+            <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
               One <strong>row</strong> = one data point. One <strong>column</strong> = one variable.
               Any number of columns, any mix of numeric and text.
             </p>
@@ -713,17 +726,17 @@ function UploadStep({
 
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -731,7 +744,7 @@ function UploadStep({
             >
               X & Y selection
             </div>
-            <p style={{ fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
               After upload, pick any <strong>numeric</strong> column for <strong>X</strong> and{" "}
               <strong>Y</strong> via dropdowns. The plot updates instantly.
             </p>
@@ -739,17 +752,17 @@ function UploadStep({
 
           <div
             style={{
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 10,
               padding: "14px 18px",
-              border: "1.5px solid #b0c4ff",
+              border: "1.5px solid var(--info-border)",
             }}
           >
             <div
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#648FFF",
+                color: "var(--accent-primary)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -757,7 +770,7 @@ function UploadStep({
             >
               Aesthetics
             </div>
-            <p style={{ fontSize: 12, color: "#444", margin: 0, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
               Map any column to <strong>color</strong>, <strong>size</strong>, or{" "}
               <strong>shape</strong>. Numeric columns get continuous scales; categorical columns get
               discrete legends.
@@ -778,9 +791,9 @@ function UploadStep({
                   fontSize: 10,
                   padding: "3px 10px",
                   borderRadius: 20,
-                  background: "#fff",
-                  border: "1px solid #b0c4ff",
-                  color: "#555",
+                  background: "var(--surface)",
+                  border: "1px solid var(--info-border)",
+                  color: "var(--text-muted)",
                 }}
               >
                 {t}
@@ -897,10 +910,10 @@ function PlotStep({
         }}
       >
         {/* File info */}
-        <div style={{ ...sec, padding: "10px 12px" }}>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
-            <strong style={{ color: "#333" }}>{fileName}</strong>
-            <span style={{ color: "#999", marginLeft: 6 }}>
+        <div className="dv-panel" style={{ padding: "10px 12px" }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+            <strong style={{ color: "var(--text)" }}>{fileName}</strong>
+            <span style={{ color: "var(--text-faint)", marginLeft: 6 }}>
               {parsed.data.length} rows · {parsed.headers.length} cols
             </span>
           </div>
@@ -915,45 +928,34 @@ function PlotStep({
             downloadPng(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.png`)
           }
           onReset={resetAll}
-          extraButtons={[
+          extraDownloads={[
             {
-              label: "Download CSV",
-              onClick: (e) => {
+              label: "CSV",
+              onClick: () =>
                 downloadCsv(
                   activeColIdxs.map((i) => parsed.headers[i]),
                   filteredRawRows.map((r) => activeColIdxs.map((i) => r[i])),
                   `scatter_${fileName.replace(/\.[^.]+$/, "")}.csv`
-                );
-                flashSaved(e.currentTarget);
-              },
-              style: {
-                padding: "8px 14px",
-                borderRadius: 6,
-                fontSize: 12,
-                cursor: "pointer",
-                background: "#dcfce7",
-                border: "1px solid #86efac",
-                color: "#166534",
-                fontFamily: "inherit",
-                width: "100%",
-                fontWeight: 600,
-              },
+                ),
             },
           ]}
         />
 
         {/* X / Y selection */}
-        <div style={sec}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <div className="dv-panel">
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Variables
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div>
-              <div style={lbl}>X axis</div>
+              <div className="dv-label">X axis</div>
               <select
                 value={xCol}
                 onChange={(e) => setXCol(parseInt(e.target.value))}
-                style={{ ...selSt, width: "100%" }}
+                className="dv-select"
+                style={{ width: "100%" }}
               >
                 {numericCols.map((i) => (
                   <option key={i} value={i}>
@@ -963,11 +965,12 @@ function PlotStep({
               </select>
             </div>
             <div>
-              <div style={lbl}>Y axis</div>
+              <div className="dv-label">Y axis</div>
               <select
                 value={yCol}
                 onChange={(e) => setYCol(parseInt(e.target.value))}
-                style={{ ...selSt, width: "100%" }}
+                className="dv-select"
+                style={{ width: "100%" }}
               >
                 {numericCols.map((i) => (
                   <option key={i} value={i}>
@@ -980,13 +983,15 @@ function PlotStep({
         </div>
 
         {/* Point defaults */}
-        <div style={sec}>
-          <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#555" }}>
+        <div className="dv-panel">
+          <p
+            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
             Point style
           </p>
           {!hasColorMap && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 11, color: "#777" }}>Color</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Color</span>
               <ColorInput value={pointColor} onChange={setPointColor} size={22} />
             </div>
           )}
@@ -1010,7 +1015,7 @@ function PlotStep({
             onChange={setPointOpacity}
           />
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: "#777" }}>Stroke</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Stroke</span>
             <ColorInput value={strokeColor} onChange={setStrokeColor} size={20} />
           </div>
           <SliderControl
@@ -1024,7 +1029,7 @@ function PlotStep({
         </div>
 
         {/* Regression / trend line */}
-        <div style={sec}>
+        <div className="dv-panel">
           <div
             style={{
               display: "flex",
@@ -1033,7 +1038,7 @@ function PlotStep({
               marginBottom: regression.on ? 10 : 0,
             }}
           >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
               Regression line
             </p>
             <label
@@ -1042,7 +1047,7 @@ function PlotStep({
                 alignItems: "center",
                 gap: 6,
                 fontSize: 11,
-                color: "#777",
+                color: "var(--text-muted)",
                 cursor: "pointer",
               }}
             >
@@ -1050,7 +1055,7 @@ function PlotStep({
                 type="checkbox"
                 checked={regression.on}
                 onChange={(e) => updRegression({ on: e.target.checked })}
-                style={{ accentColor: "#648FFF" }}
+                style={{ accentColor: "var(--accent-primary)" }}
               />
               show
             </label>
@@ -1058,7 +1063,7 @@ function PlotStep({
           {regression.on && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {!regressionStats.valid && (
-                <div style={{ fontSize: 11, color: "#dc2626" }}>
+                <div style={{ fontSize: 11, color: "var(--danger-text)" }}>
                   Need ≥ 2 points with variation in X.
                 </div>
               )}
@@ -1066,10 +1071,10 @@ function PlotStep({
                 <div
                   style={{
                     fontSize: 11,
-                    color: "#666",
+                    color: "var(--text-muted)",
                     lineHeight: 1.5,
                     padding: "6px 8px",
-                    background: "#fafafa",
+                    background: "var(--surface-subtle)",
                     borderRadius: 4,
                     border: "1px solid #eee",
                   }}
@@ -1087,7 +1092,7 @@ function PlotStep({
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: "#777" }}>Color</span>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Color</span>
                 <ColorInput
                   value={regression.color}
                   onChange={(v) => updRegression({ color: v })}
@@ -1108,7 +1113,7 @@ function PlotStep({
                   alignItems: "center",
                   gap: 6,
                   fontSize: 11,
-                  color: "#777",
+                  color: "var(--text-muted)",
                   cursor: "pointer",
                 }}
               >
@@ -1116,7 +1121,7 @@ function PlotStep({
                   type="checkbox"
                   checked={regression.dashed}
                   onChange={(e) => updRegression({ dashed: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
                 Dashed
               </label>
@@ -1126,7 +1131,7 @@ function PlotStep({
                   alignItems: "center",
                   gap: 6,
                   fontSize: 11,
-                  color: "#777",
+                  color: "var(--text-muted)",
                   cursor: "pointer",
                 }}
               >
@@ -1134,17 +1139,18 @@ function PlotStep({
                   type="checkbox"
                   checked={regression.showStats}
                   onChange={(e) => updRegression({ showStats: e.target.checked })}
-                  style={{ accentColor: "#648FFF" }}
+                  style={{ accentColor: "var(--accent-primary)" }}
                 />
                 Show equation &amp; R² on plot
               </label>
               {regression.showStats && (
                 <div>
-                  <div style={lbl}>Label position</div>
+                  <div className="dv-label">Label position</div>
                   <select
                     value={regression.position}
                     onChange={(e) => updRegression({ position: e.target.value })}
-                    style={{ ...selSt, width: "100%", fontSize: 11 }}
+                    className="dv-select"
+                    style={{ width: "100%", fontSize: 11 }}
                   >
                     <option value="tl">top-left</option>
                     <option value="tr">top-right</option>
@@ -1164,7 +1170,8 @@ function PlotStep({
             onChange={(e) =>
               setColorMapCol(e.target.value === "" ? null : parseInt(e.target.value))
             }
-            style={{ ...selSt, width: "100%", marginBottom: hasColorMap ? 8 : 0 }}
+            className="dv-select"
+            style={{ width: "100%", marginBottom: hasColorMap ? 8 : 0 }}
           >
             <option value="">— None —</option>
             {mappableCols
@@ -1178,7 +1185,7 @@ function PlotStep({
 
           {hasColorMap && colorMapType && (
             <>
-              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 6 }}>
                 Detected:{" "}
                 <strong style={{ color: colorMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
                   {colorMapType === "continuous"
@@ -1192,7 +1199,8 @@ function PlotStep({
                   <select
                     value={colorMapPalette}
                     onChange={(e) => setColorMapPalette(e.target.value)}
-                    style={{ ...selSt, width: "100%", fontSize: 11 }}
+                    className="dv-select"
+                    style={{ width: "100%", fontSize: 11 }}
                   >
                     {Object.keys(COLOR_PALETTES).map((p) => (
                       <option key={p} value={p}>
@@ -1201,7 +1209,7 @@ function PlotStep({
                     ))}
                   </select>
                   <PaletteStrip palette={colorMapPalette} />
-                  <span style={{ fontSize: 10, color: "#aaa" }}>
+                  <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
                     range: {fmtTick(colorMapRange[0])} → {fmtTick(colorMapRange[1])}
                   </span>
                 </div>
@@ -1224,7 +1232,7 @@ function PlotStep({
                         onChange={(v) => setColorMapDiscrete((prev) => ({ ...prev, [cat]: v }))}
                         size={18}
                       />
-                      <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
+                      <span style={{ fontSize: 12, color: "var(--text)" }}>{cat}</span>
                     </div>
                   ))}
                 </div>
@@ -1238,7 +1246,8 @@ function PlotStep({
           <select
             value={sizeMapCol == null ? "" : sizeMapCol}
             onChange={(e) => setSizeMapCol(e.target.value === "" ? null : parseInt(e.target.value))}
-            style={{ ...selSt, width: "100%", marginBottom: hasSizeMap ? 8 : 0 }}
+            className="dv-select"
+            style={{ width: "100%", marginBottom: hasSizeMap ? 8 : 0 }}
           >
             <option value="">— None —</option>
             {mappableCols
@@ -1252,7 +1261,7 @@ function PlotStep({
 
           {hasSizeMap && sizeMapType && (
             <>
-              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 6 }}>
                 Detected:{" "}
                 <strong style={{ color: sizeMapType === "continuous" ? "#7c3aed" : "#0369a1" }}>
                   {sizeMapType === "continuous"
@@ -1279,7 +1288,7 @@ function PlotStep({
                     step={0.5}
                     onChange={setSizeMapMax}
                   />
-                  <span style={{ fontSize: 10, color: "#aaa" }}>
+                  <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
                     range: {fmtTick(sizeMapRange[0])} → {fmtTick(sizeMapRange[1])}
                   </span>
                 </div>
@@ -1322,7 +1331,8 @@ function PlotStep({
             onChange={(e) =>
               setShapeMapCol(e.target.value === "" ? null : parseInt(e.target.value))
             }
-            style={{ ...selSt, width: "100%", marginBottom: hasShapeMap ? 8 : 0 }}
+            className="dv-select"
+            style={{ width: "100%", marginBottom: hasShapeMap ? 8 : 0 }}
           >
             <option value="">— None —</option>
             {mappableCols
@@ -1341,12 +1351,12 @@ function PlotStep({
                   style={{
                     padding: "6px 10px",
                     borderRadius: 6,
-                    background: "#fef2f2",
+                    background: "var(--danger-bg)",
                     border: "1px solid #fca5a5",
                     marginBottom: 6,
                   }}
                 >
-                  <span style={{ fontSize: 11, color: "#dc2626" }}>{shapeWarning}</span>
+                  <span style={{ fontSize: 11, color: "var(--danger-text)" }}>{shapeWarning}</span>
                 </div>
               )}
               <div
@@ -1365,7 +1375,8 @@ function PlotStep({
                       onChange={(e) =>
                         setShapeMapDiscrete((prev) => ({ ...prev, [cat]: e.target.value }))
                       }
-                      style={{ ...selSt, fontSize: 11, width: 90 }}
+                      className="dv-select"
+                      style={{ fontSize: 11, width: 90 }}
                     >
                       {SHAPES.map((s) => (
                         <option key={s} value={s}>
@@ -1377,7 +1388,7 @@ function PlotStep({
                       shape={shapeMapDiscrete[cat] || SHAPES[ci % SHAPES.length]}
                       color="#666"
                     />
-                    <span style={{ fontSize: 12, color: "#333" }}>{cat}</span>
+                    <span style={{ fontSize: 12, color: "var(--text)" }}>{cat}</span>
                   </div>
                 ))}
               </div>
@@ -1386,12 +1397,21 @@ function PlotStep({
         </AesBox>
 
         {/* Axes */}
-        <div style={sec}>
-          <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" }}>Axes</p>
+        <div className="dv-panel">
+          <p
+            style={{
+              margin: "0 0 10px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--text-muted)",
+            }}
+          >
+            Axes
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={lbl}>X min</div>
+                <div className="dv-label">X min</div>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1401,11 +1421,12 @@ function PlotStep({
                     const v = e.target.value.trim();
                     updVis({ xMin: v === "" ? null : Number(v) });
                   }}
-                  style={{ ...scInp, width: "100%" }}
+                  className="dv-input-num"
+                  style={{ width: "100%" }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={lbl}>X max</div>
+                <div className="dv-label">X max</div>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1415,13 +1436,14 @@ function PlotStep({
                     const v = e.target.value.trim();
                     updVis({ xMax: v === "" ? null : Number(v) });
                   }}
-                  style={{ ...scInp, width: "100%" }}
+                  className="dv-input-num"
+                  style={{ width: "100%" }}
                 />
               </div>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
-                <div style={lbl}>Y min</div>
+                <div className="dv-label">Y min</div>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1431,11 +1453,12 @@ function PlotStep({
                     const v = e.target.value.trim();
                     updVis({ yMin: v === "" ? null : Number(v) });
                   }}
-                  style={{ ...scInp, width: "100%" }}
+                  className="dv-input-num"
+                  style={{ width: "100%" }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={lbl}>Y max</div>
+                <div className="dv-label">Y max</div>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -1445,40 +1468,51 @@ function PlotStep({
                     const v = e.target.value.trim();
                     updVis({ yMax: v === "" ? null : Number(v) });
                   }}
-                  style={{ ...scInp, width: "100%" }}
+                  className="dv-input-num"
+                  style={{ width: "100%" }}
                 />
               </div>
             </div>
             <div>
-              <div style={lbl}>X label</div>
+              <div className="dv-label">X label</div>
               <input
                 value={vis.xLabel}
                 onChange={(e) => updVis({ xLabel: e.target.value })}
-                style={{ ...scInp, width: "100%", textAlign: "left" }}
+                className="dv-input-num"
+                style={{ width: "100%", textAlign: "left" }}
               />
             </div>
             <div>
-              <div style={lbl}>Y label</div>
+              <div className="dv-label">Y label</div>
               <input
                 value={vis.yLabel}
                 onChange={(e) => updVis({ yLabel: e.target.value })}
-                style={{ ...scInp, width: "100%", textAlign: "left" }}
+                className="dv-input-num"
+                style={{ width: "100%", textAlign: "left" }}
               />
             </div>
             <div>
-              <div style={lbl}>Title</div>
+              <div className="dv-label">Title</div>
               <input
                 value={vis.plotTitle}
                 onChange={(e) => updVis({ plotTitle: e.target.value })}
-                style={{ ...scInp, width: "100%", textAlign: "left" }}
+                className="dv-input-num"
+                style={{ width: "100%", textAlign: "left" }}
               />
             </div>
           </div>
         </div>
 
         {/* Style */}
-        <div style={{ ...sec, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "#555" }}>Style</p>
+        <div
+          className="dv-panel"
+          style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}
+        >
+          <p
+            style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
+          >
+            Style
+          </p>
           <BaseStyleControls
             plotBg={vis.plotBg}
             onPlotBgChange={(v) => updVis({ plotBg: v })}
@@ -1490,7 +1524,7 @@ function PlotStep({
         </div>
 
         {/* Reference lines */}
-        <div style={sec}>
+        <div className="dv-panel">
           <div
             style={{
               display: "flex",
@@ -1500,22 +1534,26 @@ function PlotStep({
               flexWrap: "wrap",
             }}
           >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>Ref lines</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+              Ref lines
+            </p>
             <button
               onClick={() => addRefLine("h")}
-              style={{ ...dlBtn, fontSize: 11, padding: "4px 10px" }}
+              className="dv-btn dv-btn-secondary"
+              style={{ fontSize: 11, padding: "4px 10px" }}
             >
               + H
             </button>
             <button
               onClick={() => addRefLine("v")}
-              style={{ ...dlBtn, fontSize: 11, padding: "4px 10px" }}
+              className="dv-btn dv-btn-secondary"
+              style={{ fontSize: 11, padding: "4px 10px" }}
             >
               + V
             </button>
           </div>
           {refLines.length === 0 && (
-            <p style={{ fontSize: 12, color: "#aaa" }}>No reference lines.</p>
+            <p style={{ fontSize: 12, color: "var(--text-faint)" }}>No reference lines.</p>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {refLines.map((rl) => (
@@ -1526,9 +1564,9 @@ function PlotStep({
                   flexDirection: "column",
                   gap: 6,
                   padding: "8px 10px",
-                  background: "#fafafa",
+                  background: "var(--surface-subtle)",
                   borderRadius: 8,
-                  border: "1px solid #ddd",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1538,18 +1576,17 @@ function PlotStep({
                       fontWeight: 700,
                       padding: "2px 7px",
                       borderRadius: 4,
-                      background: rl.dir === "h" ? "#dbeafe" : "#fce7f3",
-                      color: rl.dir === "h" ? "#1d4ed8" : "#9d174d",
+                      background: "var(--info-bg)",
+                      color: "var(--info-text)",
                     }}
                   >
                     {rl.dir === "h" ? "Y =" : "X ="}
                   </span>
-                  <input
-                    type="number"
+                  <NumberInput
                     value={rl.value}
                     step="any"
                     onChange={(e) => updateRefLine(rl.id, "value", Number(e.target.value))}
-                    style={{ ...scInp, flex: 1 }}
+                    style={{ flex: 1 }}
                   />
                   <button
                     onClick={() => removeRefLine(rl.id)}
@@ -1558,9 +1595,9 @@ function PlotStep({
                       borderRadius: 5,
                       fontSize: 12,
                       cursor: "pointer",
-                      background: "#fff",
-                      border: "1px solid #fca5a5",
-                      color: "#dc2626",
+                      background: "var(--surface)",
+                      border: "1px solid var(--danger-border)",
+                      color: "var(--danger-text)",
                       fontFamily: "inherit",
                     }}
                   >
@@ -1581,19 +1618,20 @@ function PlotStep({
                   onChange={(v) => updateRefLine(rl.id, "strokeWidth", v)}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, color: "#777" }}>Dashed</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Dashed</span>
                   <input
                     type="checkbox"
                     checked={rl.dashed}
                     onChange={(e) => updateRefLine(rl.id, "dashed", e.target.checked)}
-                    style={{ accentColor: "#648FFF" }}
+                    style={{ accentColor: "var(--accent-primary)" }}
                   />
                 </div>
                 {rl.dashed && (
                   <select
                     value={rl.dashArray}
                     onChange={(e) => updateRefLine(rl.id, "dashArray", e.target.value)}
-                    style={{ ...selSt, fontSize: 11, width: "100%" }}
+                    className="dv-select"
+                    style={{ fontSize: 11, width: "100%" }}
                   >
                     <option value="7,4">— — —</option>
                     <option value="3,3">· · · ·</option>
@@ -1606,13 +1644,15 @@ function PlotStep({
                   value={rl.label}
                   placeholder="label"
                   onChange={(e) => updateRefLine(rl.id, "label", e.target.value)}
-                  style={{ ...scInp, width: "100%", textAlign: "left" }}
+                  className="dv-input-num"
+                  style={{ width: "100%", textAlign: "left" }}
                 />
                 {rl.label && (
                   <select
                     value={rl.labelSide}
                     onChange={(e) => updateRefLine(rl.id, "labelSide", e.target.value)}
-                    style={{ ...selSt, fontSize: 11, width: "100%" }}
+                    className="dv-select"
+                    style={{ fontSize: 11, width: "100%" }}
                   >
                     {rl.dir === "h" ? (
                       <>
@@ -1634,15 +1674,19 @@ function PlotStep({
 
         {/* Filters (collapsible) */}
         {filterableCols.length > 0 && (
-          <div style={sec}>
+          <div className="dv-panel">
             <div
-              style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#555" }}>
-                Filters {filtersOpen ? "▾" : "▸"}
+              <span
+                className={"dv-disclosure" + (filtersOpen ? " dv-disclosure-open" : "")}
+                aria-hidden="true"
+              />
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+                Filters
               </p>
-              <span style={{ fontSize: 10, color: "#aaa" }}>
+              <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
                 {filteredData.length} of {parsed.data.length} rows
               </span>
             </div>
@@ -1667,7 +1711,7 @@ function PlotStep({
                       <div
                         style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}
                       >
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "#555" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)" }}>
                           {parsed.headers[ci]}
                         </span>
                         <button
@@ -1678,8 +1722,8 @@ function PlotStep({
                             borderRadius: 4,
                             cursor: "pointer",
                             border: "1px solid #ccc",
-                            background: "#f5f5f5",
-                            color: "#666",
+                            background: "var(--surface-sunken)",
+                            color: "var(--text-muted)",
                             fontFamily: "inherit",
                           }}
                         >
@@ -1699,17 +1743,17 @@ function PlotStep({
                                 fontSize: 11,
                                 padding: "2px 6px",
                                 borderRadius: 4,
-                                background: checked ? "#e0e7ff" : "#f8f8f8",
-                                border: `1px solid ${checked ? "#a5b4fc" : "#e5e5e5"}`,
+                                background: checked ? "var(--info-bg)" : "var(--surface-subtle)",
+                                border: `1px solid ${checked ? "var(--info-border)" : "var(--border)"}`,
                                 cursor: "pointer",
-                                color: checked ? "#3730a3" : "#999",
+                                color: checked ? "var(--info-text)" : "var(--text-faint)",
                               }}
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
                                 onChange={(e) => handleFilterToggle(ci, v, vals, e.target.checked)}
-                                style={{ accentColor: "#648FFF", margin: 0 }}
+                                style={{ accentColor: "var(--accent-primary)", margin: 0 }}
                               />
                               {v}
                             </label>
@@ -1727,7 +1771,14 @@ function PlotStep({
 
       {/* RIGHT: chart area */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...sec, padding: 20, background: "#fff" }}>
+        <div
+          className="dv-panel dv-plot-card"
+          style={{
+            padding: 20,
+            background: "var(--plot-card-bg)",
+            borderColor: "var(--plot-card-border)",
+          }}
+        >
           <ScatterChart
             ref={svgRef}
             data={filteredData}
@@ -1823,7 +1874,7 @@ function App() {
     yLabel: "",
     plotTitle: "",
     plotBg: "#ffffff",
-    showGrid: true,
+    showGrid: false,
     gridColor: "#e0e0e0",
   };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
@@ -1833,7 +1884,7 @@ function App() {
   // Regression line
   const [regression, setRegression] = useState({
     on: false,
-    color: "#dc2626",
+    color: "var(--danger-text)",
     strokeWidth: 1.5,
     dashed: false,
     showStats: true,
@@ -2093,11 +2144,13 @@ function App() {
     if (hasColorMap && colorMapType === "continuous") {
       const stops = COLOR_PALETTES[colorMapPalette] || COLOR_PALETTES.viridis;
       items.push({
+        id: "legend-color",
         title: parsed.headers[colorMapCol],
         gradient: { stops, min: colorMapRange[0].toFixed(2), max: colorMapRange[1].toFixed(2) },
       });
     } else if (hasColorMap && colorMapType === "discrete") {
       items.push({
+        id: "legend-color",
         title: parsed.headers[colorMapCol],
         items: colorMapCategories.map((c) => ({
           label: c,
@@ -2109,6 +2162,7 @@ function App() {
 
     if (hasSizeMap && sizeMapType === "discrete") {
       items.push({
+        id: "legend-size",
         title: parsed.headers[sizeMapCol],
         sizeItems: sizeMapCategories.map((c) => ({
           label: c,
@@ -2123,15 +2177,16 @@ function App() {
           r: sizeMapMin + t * (sizeMapMax - sizeMapMin),
         };
       });
-      items.push({ title: parsed.headers[sizeMapCol], sizeItems });
+      items.push({ id: "legend-size", title: parsed.headers[sizeMapCol], sizeItems });
     }
 
     if (hasShapeMap) {
       items.push({
+        id: "legend-shape",
         title: parsed.headers[shapeMapCol],
         items: shapeMapCategories.map((c) => ({
           label: c,
-          color: "#666",
+          color: "var(--text-muted)",
           shape: shapeMapDiscrete[c] || "circle",
         })),
       });
@@ -2194,7 +2249,7 @@ function App() {
     setRefLines([]);
     setRegression({
       on: false,
-      color: "#dc2626",
+      color: "var(--danger-text)",
       strokeWidth: 1.5,
       dashed: false,
       showStats: true,
@@ -2238,7 +2293,7 @@ function App() {
         id: ++refLineCounter,
         dir,
         value: 0,
-        color: "#e11d48",
+        color: "var(--danger-text)",
         strokeWidth: 1.5,
         dashed: true,
         dashArray: "7,4",
@@ -2258,7 +2313,12 @@ function App() {
 
   return (
     <div
-      style={{ minHeight: "100vh", color: "#333", fontFamily: "monospace", padding: "24px 32px" }}
+      style={{
+        minHeight: "100vh",
+        color: "var(--text)",
+        fontFamily: "monospace",
+        padding: "24px 32px",
+      }}
     >
       <PageHeader
         toolName="scatter"

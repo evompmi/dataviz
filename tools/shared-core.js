@@ -1,5 +1,5 @@
 // shared-core.js — plain JS, no JSX
-// Requires React and shared.js (btnPrimary, btnSecondary) to be loaded
+// Requires React, shared.js, and components.css (dv-btn classes) to be loaded
 // globally before this script.
 
 // ── Data Preview Table ──────────────────────────────────────────────────────
@@ -9,7 +9,14 @@ function DataPreview({ headers, rows, maxRows }) {
   const d = rows.slice(0, limit);
   return React.createElement(
     "div",
-    { style: { overflowX: "auto", fontSize: 11, border: "1px solid #ddd", borderRadius: 6 } },
+    {
+      style: {
+        overflowX: "auto",
+        fontSize: 11,
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+      },
+    },
     React.createElement(
       "table",
       { style: { borderCollapse: "collapse", width: "100%", minWidth: 400 } },
@@ -18,11 +25,16 @@ function DataPreview({ headers, rows, maxRows }) {
         null,
         React.createElement(
           "tr",
-          { style: { background: "#f0f0f5" } },
+          { style: { background: "var(--surface-sunken)" } },
           React.createElement(
             "th",
             {
-              style: { padding: "5px 8px", border: "1px solid #ddd", color: "#999", fontSize: 10 },
+              style: {
+                padding: "5px 8px",
+                border: "1px solid var(--border)",
+                color: "var(--text-faint)",
+                fontSize: 10,
+              },
             },
             "#"
           ),
@@ -33,8 +45,8 @@ function DataPreview({ headers, rows, maxRows }) {
                 key: i,
                 style: {
                   padding: "5px 8px",
-                  border: "1px solid #ddd",
-                  color: "#333",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
                   fontWeight: 600,
                 },
               },
@@ -55,8 +67,8 @@ function DataPreview({ headers, rows, maxRows }) {
               {
                 style: {
                   padding: "3px 8px",
-                  border: "1px solid #eee",
-                  color: "#bbb",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-faint)",
                   fontSize: 10,
                 },
               },
@@ -65,7 +77,14 @@ function DataPreview({ headers, rows, maxRows }) {
             ...r.map((v, ci) =>
               React.createElement(
                 "td",
-                { key: ci, style: { padding: "3px 8px", border: "1px solid #eee", color: "#444" } },
+                {
+                  key: ci,
+                  style: {
+                    padding: "3px 8px",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-muted)",
+                  },
+                },
                 v
               )
             )
@@ -76,7 +95,14 @@ function DataPreview({ headers, rows, maxRows }) {
     rows.length > limit
       ? React.createElement(
           "p",
-          { style: { padding: 6, fontSize: 11, color: "#999", textAlign: "center" } },
+          {
+            style: {
+              padding: 6,
+              fontSize: 11,
+              color: "var(--text-faint)",
+              textAlign: "center",
+            },
+          },
           `… ${rows.length - limit} more (${rows.length} total)`
         )
       : null
@@ -125,12 +151,12 @@ class ErrorBoundary extends React.Component {
           margin: "40px auto",
           padding: 24,
           fontFamily: "system-ui, -apple-system, sans-serif",
-          color: "#333",
+          color: "var(--text)",
         },
       },
       React.createElement(
         "h2",
-        { style: { marginTop: 0, color: "#b00020", fontSize: 20 } },
+        { style: { marginTop: 0, color: "var(--danger-text)", fontSize: 20 } },
         "Something went wrong"
       ),
       React.createElement(
@@ -143,12 +169,12 @@ class ErrorBoundary extends React.Component {
         "pre",
         {
           style: {
-            background: "#fff4f4",
-            border: "1px solid #f3c7c7",
+            background: "var(--danger-bg)",
+            border: "1px solid var(--danger-border)",
             borderRadius: 6,
             padding: 12,
             fontSize: 12,
-            color: "#7a0016",
+            color: "var(--danger-text)",
             overflow: "auto",
             maxHeight: 200,
             whiteSpace: "pre-wrap",
@@ -162,19 +188,19 @@ class ErrorBoundary extends React.Component {
         { style: { marginBottom: 16 } },
         React.createElement(
           "summary",
-          { style: { cursor: "pointer", fontSize: 13, color: "#666" } },
+          { style: { cursor: "pointer", fontSize: 13, color: "var(--text-muted)" } },
           "Technical details"
         ),
         React.createElement(
           "pre",
           {
             style: {
-              background: "#f7f7f7",
-              border: "1px solid #eee",
+              background: "var(--surface-subtle)",
+              border: "1px solid var(--border)",
               borderRadius: 6,
               padding: 12,
               fontSize: 11,
-              color: "#555",
+              color: "var(--text-muted)",
               overflow: "auto",
               maxHeight: 300,
               whiteSpace: "pre-wrap",
@@ -190,12 +216,12 @@ class ErrorBoundary extends React.Component {
         { style: { display: "flex", gap: 10, flexWrap: "wrap" } },
         React.createElement(
           "button",
-          { type: "button", onClick: reload, style: btnPrimary },
+          { type: "button", onClick: reload, className: "dv-btn dv-btn-primary" },
           "Reload tool"
         ),
         React.createElement(
           "button",
-          { type: "button", onClick: copy, style: btnSecondary },
+          { type: "button", onClick: copy, className: "dv-btn dv-btn-secondary" },
           "Copy error details"
         )
       )

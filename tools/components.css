@@ -1,0 +1,350 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Component classes — replaces the inline-style constants in shared.js.
+   Each class mirrors one of the JS style objects so JSX can switch from
+   `style={sec}` to `className="dv-panel"`. New benefits unlocked here:
+   :hover / :focus-visible states, single source of truth for spacing,
+   future media queries.
+   Naming: `dv-` prefix to stay collision-free if another stylesheet
+   (e.g. a vendored chart lib) lands one day.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Section / panel — `sec` */
+.dv-panel {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Small label — `lbl` */
+.dv-label {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+/* Text input — `inp` */
+.dv-input {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.dv-input:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* Numeric input — `inpN` (compact, centered, fixed width).
+   Used both by the NumberInput component (real number entry) and as a
+   generic compact-text-input class on <input type="text"> sites (axis
+   min/max, titles, labels) where the value is freeform. */
+.dv-input-num {
+  width: 72px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: center;
+  font-family: inherit;
+}
+.dv-input-num:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* ── NumberInput component ─────────────────────────────────────────────
+   Replaces the native stacked up/down spinner with −/+ buttons on the
+   left and right of the input. `.dv-num` is the flex wrapper,
+   `.dv-num-input` the bare input (no border, spinners hidden), and
+   `.dv-num-btn` the shared button look. */
+.dv-num {
+  display: inline-flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 26px;
+  box-sizing: border-box;
+}
+.dv-num:focus-within {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+.dv-num.dv-num-disabled {
+  opacity: 0.55;
+}
+.dv-num-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: center;
+  padding: 0 4px;
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.dv-num-input::-webkit-outer-spin-button,
+.dv-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.dv-num-btn {
+  border: none;
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  width: 22px;
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.dv-num-btn:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: var(--on-accent);
+}
+.dv-num-btn:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+.dv-num-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.dv-num-btn-minus {
+  border-right: 1px solid var(--border);
+}
+.dv-num-btn-plus {
+  border-left: 1px solid var(--border);
+}
+:root[data-theme="dark"] .dv-num-btn {
+  background: var(--surface-sunken);
+}
+
+/* ── Disclosure indicator ──────────────────────────────────────────────
+   Prominent collapsible marker used by StatsTile, Scatter's Filters
+   panel, and Aequorin's chart collapse button. A solid accent-colored
+   circle with a bold ">" glyph that rotates 90° when the section is
+   open — deliberately loud so it reads from across the panel. Meant
+   to be dropped in anywhere an old "▸"/"▾" unicode caret used to live. */
+.dv-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: var(--on-accent);
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  transition: transform 180ms ease;
+}
+.dv-disclosure::before {
+  content: ">";
+  display: block;
+  /* Optical centering: the character's baseline sits a hair below center. */
+  transform: translate(0.5px, -0.5px);
+}
+.dv-disclosure.dv-disclosure-open {
+  transform: rotate(90deg);
+}
+
+/* Select dropdown — `selStyle` */
+.dv-select {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dv-select:hover {
+  border-color: var(--text-faint);
+}
+.dv-select:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+  border-color: var(--accent-primary);
+}
+
+/* Separator selector — `sepSelect` (prominent accent border) */
+.dv-select-sep {
+  background: var(--surface);
+  border: 2px solid var(--accent-primary);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.dv-select-sep:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.dv-btn {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition:
+    filter 140ms ease,
+    transform 100ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+.dv-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.dv-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Primary CTA — `btnPrimary` */
+.dv-btn-primary {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--accent-primary);
+  color: var(--on-accent);
+}
+.dv-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.15) saturate(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgb(100 143 255 / 0.45);
+}
+.dv-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.96);
+  box-shadow: none;
+}
+
+/* Plot CTA — `btnPlot` (teal accent) */
+.dv-btn-plot {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--accent-plot);
+  color: var(--on-accent);
+}
+.dv-btn-plot:hover:not(:disabled) {
+  filter: brightness(1.15) saturate(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgb(46 196 182 / 0.5);
+}
+.dv-btn-plot:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.96);
+  box-shadow: none;
+}
+
+/* Secondary / quiet button — `btnSecondary` */
+.dv-btn-secondary {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+}
+.dv-btn-secondary:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  border-color: var(--accent-primary);
+  color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px -3px rgb(0 0 0 / 0.18);
+}
+.dv-btn-secondary:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Unified download chip — icon + short filetype label (SVG / PNG / CSV / TXT).
+   Used in ActionsPanel and standalone (per-replicate CSV, stats report TXT,
+   molarity prep sheet). Ghost style off the shared `--success-*` triplet so it
+   themes cleanly in dark mode (pale mint chip in light mode → deep-green chip
+   with mint text in dark mode) instead of a neon-green fill. */
+.dv-btn-dl {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
+  white-space: nowrap;
+  min-width: 78px;
+}
+.dv-btn-dl:hover:not(:disabled) {
+  filter: brightness(0.96);
+  border-color: var(--success-text);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px -3px rgb(22 101 52 / 0.4);
+}
+.dv-btn-dl:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* Destructive button — `btnDanger` (full width) */
+.dv-btn-danger {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+}
+.dv-btn-danger:hover:not(:disabled) {
+  filter: brightness(0.94);
+  border-color: var(--danger-text);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px -3px rgb(220 38 38 / 0.4);
+}
+.dv-btn-danger:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}

@@ -3,11 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        var t = localStorage.getItem("dataviz-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
     <title>Data Visualization Toolbox</title>
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='8' cy='22' r='3.5' fill='%23648FFF'/><circle cx='14' cy='12' r='2.5' fill='%23648FFF'/><circle cx='22' cy='18' r='4' fill='%23648FFF'/><circle cx='26' cy='8' r='2.5' fill='%23648FFF'/></svg>"
     />
+    <link rel="stylesheet" href="tools/theme.css" />
+    <link rel="stylesheet" href="tools/components.css" />
     <style>
       * {
         box-sizing: border-box;
@@ -16,10 +24,10 @@
       }
       body {
         font-family: monospace;
-        background: #f0f0f4;
-        background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px);
+        background: var(--page-bg);
+        background-image: radial-gradient(circle, var(--page-bg-dot) 0.8px, transparent 0.8px);
         background-size: 20px 20px;
-        color: #333;
+        color: var(--text);
         height: 100vh;
         display: flex;
         flex-direction: column;
@@ -39,26 +47,26 @@
       .landing-header h1 {
         font-size: 26px;
         font-weight: 700;
-        color: #222;
+        color: var(--text);
         letter-spacing: 0.5px;
       }
       .landing-header .version {
         font-size: 11px;
         font-weight: 400;
-        color: #aaa;
+        color: var(--text-faint);
         vertical-align: super;
         margin-left: 4px;
       }
       .landing-header .tagline {
         margin-top: 8px;
         font-size: 13px;
-        color: #888;
+        color: var(--text-faint);
         font-style: italic;
       }
       .landing-header p {
         margin-top: 6px;
         font-size: 11px;
-        color: #888;
+        color: var(--text-faint);
       }
       .tile-groups {
         display: flex;
@@ -69,7 +77,7 @@
       .tile-group-label {
         font-size: 11px;
         font-weight: 600;
-        color: #aaa;
+        color: var(--text-faint);
         text-transform: uppercase;
         letter-spacing: 1.5px;
         margin-bottom: -8px;
@@ -83,8 +91,8 @@
       .tile {
         width: 150px;
         height: 130px;
-        background: #fff;
-        border: 1px solid #ddd;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 12px;
         display: flex;
         flex-direction: column;
@@ -98,7 +106,7 @@
         font-family: inherit;
       }
       .tile:hover {
-        border-color: #648fff;
+        border-color: var(--accent-primary);
         box-shadow: 0 6px 20px rgba(100, 143, 255, 0.15);
         transform: translateY(-4px);
       }
@@ -115,11 +123,11 @@
       .tile-label {
         font-size: 12px;
         font-weight: 600;
-        color: #333;
+        color: var(--text);
       }
       .tile-desc {
         font-size: 10px;
-        color: #999;
+        color: var(--text-faint);
         text-align: center;
         padding: 0 10px;
         line-height: 1.4;
@@ -135,7 +143,7 @@
       }
       .tile.help-tile .tile-label {
         font-size: 11px;
-        color: #888;
+        color: var(--text-faint);
       }
 
       .prefetch-bar {
@@ -143,27 +151,27 @@
         align-items: center;
         gap: 10px;
         font-size: 11px;
-        color: #999;
+        color: var(--text-faint);
         margin-top: 10px;
       }
       .prefetch-bar .pf-track {
         width: 120px;
         height: 5px;
-        background: #e0e0e0;
+        background: var(--surface-sunken);
         border-radius: 3px;
         overflow: hidden;
       }
       .prefetch-bar .pf-fill {
         height: 100%;
-        background: #648fff;
+        background: var(--accent-primary);
         border-radius: 3px;
         transition: width 0.3s ease;
       }
       .prefetch-bar.ready {
-        color: #16a34a;
+        color: var(--success-text);
       }
       .prefetch-bar.ready .pf-fill {
-        background: #16a34a;
+        background: var(--success-text);
       }
 
       .tool-view {
@@ -177,40 +185,77 @@
       .tool-topbar {
         display: flex;
         align-items: center;
-        padding: 0 20px;
-        background: #fff;
-        border-bottom: 1px solid #ddd;
+        /* 27px aligns the first icon button's glyph center with the tool's
+           PageHeader icon beneath it (which sits at viewport x=43 via the
+           tool's 32px outer padding + 22px icon). */
+        padding: 0 16px 0 27px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
         flex-shrink: 0;
         height: 46px;
-        gap: 16px;
-      }
-      .back-btn {
-        display: flex;
-        align-items: center;
         gap: 6px;
-        background: none;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 5px 14px;
-        font-family: inherit;
-        font-size: 12px;
-        color: #555;
+      }
+      .tb-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text-muted);
         cursor: pointer;
-        transition: all 0.15s;
+        line-height: 0;
+        transition:
+          border-color 0.15s,
+          color 0.15s,
+          background 0.15s;
       }
-      .back-btn:hover {
-        border-color: #648fff;
-        color: #648fff;
+      .tb-icon-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+        background: var(--surface-subtle);
       }
-      .tool-name {
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
+      .tb-icon-btn svg {
+        width: 18px;
+        height: 18px;
+        display: block;
+      }
+      .tb-sep {
+        width: 1px;
+        height: 22px;
+        background: var(--border);
+        margin: 0 4px;
+        flex-shrink: 0;
       }
       .tool-view iframe {
         flex: 1;
         width: 100%;
         border: none;
+      }
+
+      .theme-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        cursor: pointer;
+        line-height: 0;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .theme-toggle-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
       }
 
       .help-content {
@@ -224,10 +269,10 @@
       .help-content h2 {
         font-size: 18px;
         font-weight: 700;
-        color: #222;
+        color: var(--text);
         margin: 32px 0 12px;
         padding-bottom: 6px;
-        border-bottom: 2px solid #648fff;
+        border-bottom: 2px solid var(--accent-primary);
       }
       .help-content h2:first-child {
         margin-top: 0;
@@ -235,23 +280,23 @@
       .help-content h3 {
         font-size: 14px;
         font-weight: 600;
-        color: #555;
+        color: var(--text-muted);
         margin: 18px 0 8px;
       }
       .help-content p {
         font-size: 13px;
         line-height: 1.7;
-        color: #444;
+        color: var(--text-muted);
         margin: 0 0 10px;
       }
       .help-content .note {
-        background: #eef2ff;
-        border-left: 3px solid #648fff;
+        background: var(--info-bg);
+        border-left: 3px solid var(--accent-primary);
         padding: 10px 14px;
         border-radius: 0 6px 6px 0;
         margin: 12px 0;
         font-size: 12px;
-        color: #444;
+        color: var(--text-muted);
       }
       .help-content table {
         border-collapse: collapse;
@@ -260,20 +305,20 @@
         font-size: 12px;
       }
       .help-content th {
-        background: #f0f0f5;
+        background: var(--surface-sunken);
         text-align: left;
         padding: 6px 12px;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border);
         font-weight: 600;
-        color: #555;
+        color: var(--text-muted);
       }
       .help-content td {
         padding: 5px 12px;
-        border: 1px solid #ddd;
-        color: #444;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
       }
       .help-content code {
-        background: #f0f0f5;
+        background: var(--surface-sunken);
         padding: 1px 5px;
         border-radius: 3px;
         font-size: 12px;
@@ -282,6 +327,12 @@
     </style>
   </head>
   <body>
+    <button
+      class="theme-toggle-btn"
+      data-theme-toggle
+      id="landing-theme-toggle"
+      style="position: fixed; top: 16px; right: calc(50% - 157px); z-index: 10"
+    ></button>
     <div class="landing" id="landing">
       <div class="landing-header">
         <h1>Toolbox<span class="version" id="app-version">dev</span></h1>
@@ -431,146 +482,33 @@
         <p>
           485 internal tests<br />
           285 cross-checks vs R 4.5<br />
-          <a href="benchmark.html">view benchmark →</a>
+          <a href="benchmark.html" data-benchmark-link>view benchmark →</a>
         </p>
       </div>
     </div>
 
     <div class="tool-view" id="view-boxplot">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="none"
-            stroke="#648FFF"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <line x1="22" y1="4" x2="22" y2="12" />
-            <rect x="14" y="12" width="16" height="18" rx="2" />
-            <line x1="14" y1="22" x2="30" y2="22" />
-            <line x1="22" y1="30" x2="22" y2="40" /></svg
-          >Group Plot</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="boxplot"></div>
       <iframe id="frame-boxplot" src="tools/boxplot.html"></iframe>
     </div>
     <div class="tool-view" id="view-aequorin">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="none"
-            stroke="#648FFF"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <path
-              d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"
-            /></svg
-          >Aequorin Ca&#xB2;&#x207A; Calibration</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="aequorin"></div>
       <iframe id="frame-aequorin" src="tools/aequorin.html"></iframe>
     </div>
     <div class="tool-view" id="view-scatter">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="#648FFF"
-            stroke="none"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <circle cx="10" cy="30" r="3" />
-            <circle cx="16" cy="22" r="2.5" />
-            <circle cx="24" cy="26" r="3.5" />
-            <circle cx="20" cy="14" r="2" />
-            <circle cx="32" cy="18" r="3" />
-            <circle cx="36" cy="10" r="2.5" />
-            <circle cx="28" cy="32" r="2" /></svg
-          >Scatter Plot</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="scatter"></div>
       <iframe id="frame-scatter" src="tools/scatter.html"></iframe>
     </div>
     <div class="tool-view" id="view-venn">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="none"
-            stroke-width="1.5"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <circle cx="16" cy="20" r="12" stroke="#648FFF" fill="rgba(100,143,255,0.12)" />
-            <circle cx="28" cy="20" r="12" stroke="#785EF0" fill="rgba(120,94,240,0.12)" /></svg
-          >Venn Diagram</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="venn"></div>
       <iframe id="frame-venn" src="tools/venn.html"></iframe>
     </div>
     <div class="tool-view" id="view-molarity">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="none"
-            stroke="#648FFF"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <line x1="8" y1="10" x2="18" y2="10" />
-            <line x1="13" y1="5" x2="13" y2="15" />
-            <line x1="26" y1="10" x2="36" y2="10" />
-            <line x1="8" y1="30" x2="18" y2="30" />
-            <circle cx="13" cy="25" r="1.5" fill="#648FFF" stroke="none" />
-            <circle cx="13" cy="35" r="1.5" fill="#648FFF" stroke="none" />
-            <line x1="28" y1="27" x2="34" y2="33" />
-            <line x1="34" y1="27" x2="28" y2="33" /></svg
-          >Calculator</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="molarity"></div>
       <iframe id="frame-molarity" src="tools/molarity.html"></iframe>
     </div>
     <div class="tool-view" id="view-power">
-      <div class="tool-topbar">
-        <button class="back-btn" data-back>&larr; Back</button>
-        <span class="tool-name"
-          ><svg
-            viewBox="0 0 44 44"
-            fill="none"
-            stroke="#648FFF"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px"
-          >
-            <line x1="6" y1="38" x2="6" y2="6" />
-            <line x1="6" y1="38" x2="38" y2="38" />
-            <path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5" />
-            <line
-              x1="6"
-              y1="14"
-              x2="38"
-              y2="14"
-              stroke-dasharray="3,3"
-              stroke-width="1"
-              opacity="0.5"
-            /></svg
-          >Power Analysis</span
-        >
-      </div>
+      <div class="tool-topbar" data-topbar-for="power"></div>
       <iframe id="frame-power" src="tools/power.html"></iframe>
     </div>
 
@@ -642,8 +580,86 @@
         });
       })();
 
+      // ── Tool top-bar builder ──
+      // Each tool view gets a fixed top bar, laid out left-to-right:
+      //   theme-toggle │ home │ <other tool icons…>
+      // The left-most button is positioned so its glyph center aligns with
+      // the tool icon in the PageHeader directly beneath it (see
+      // .tool-topbar padding). The current tool's own icon is omitted so
+      // users always see where they are by the absence of an icon. All
+      // SVGs use currentColor so they inherit the button text color.
+      (function () {
+        var HOME_SVG =
+          '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 L10 3 L17 10"/><path d="M5 9 V17 H15 V9"/></svg>';
+        var TOOL_META = {
+          boxplot: {
+            label: "Group Plot",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="4" x2="22" y2="12"/><rect x="14" y="12" width="16" height="18" rx="2"/><line x1="14" y1="22" x2="30" y2="22"/><line x1="22" y1="30" x2="22" y2="40"/></svg>',
+          },
+          scatter: {
+            label: "Scatter Plot",
+            svg: '<svg viewBox="0 0 44 44" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="10" cy="30" r="3"/><circle cx="16" cy="22" r="2.5"/><circle cx="24" cy="26" r="3.5"/><circle cx="20" cy="14" r="2"/><circle cx="32" cy="18" r="3"/><circle cx="36" cy="10" r="2.5"/><circle cx="28" cy="32" r="2"/></svg>',
+          },
+          venn: {
+            label: "Venn Diagram",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="16" cy="20" r="12"/><circle cx="28" cy="20" r="12"/></svg>',
+          },
+          aequorin: {
+            label: "Aequorin Ca\u00B2\u207A",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
+          },
+          power: {
+            label: "Power Analysis",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.6"/></svg>',
+          },
+          molarity: {
+            label: "Calculator",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="10" x2="18" y2="10"/><line x1="13" y1="5" x2="13" y2="15"/><line x1="26" y1="10" x2="36" y2="10"/><line x1="8" y1="30" x2="18" y2="30"/><circle cx="13" cy="25" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="35" r="1.5" fill="currentColor" stroke="none"/><line x1="28" y1="27" x2="34" y2="33"/><line x1="34" y1="27" x2="28" y2="33"/></svg>',
+          },
+        };
+        // Display order in the topbar (plots first, then stats/calc).
+        var TOOL_ORDER = ["boxplot", "scatter", "venn", "aequorin", "power", "molarity"];
+
+        function buildTopbar(current) {
+          var parts = [];
+          // Theme toggle — first, so its glyph aligns with the tool icon
+          // underneath. The theme.js wiring targets [data-theme-toggle], not
+          // a class, so reusing .tb-icon-btn here gives it the same square
+          // look as the other buttons without duplicating CSS.
+          parts.push('<button class="tb-icon-btn" data-theme-toggle type="button"></button>');
+          parts.push('<div class="tb-sep"></div>');
+          parts.push(
+            '<button class="tb-icon-btn" data-back type="button" title="Home" aria-label="Home">' +
+              HOME_SVG +
+              "</button>"
+          );
+          parts.push('<div class="tb-sep"></div>');
+          TOOL_ORDER.forEach(function (id) {
+            if (id === current) return;
+            var meta = TOOL_META[id];
+            parts.push(
+              '<button class="tb-icon-btn" data-tool="' +
+                id +
+                '" type="button" title="' +
+                meta.label +
+                '" aria-label="' +
+                meta.label +
+                '">' +
+                meta.svg +
+                "</button>"
+            );
+          });
+          return parts.join("");
+        }
+
+        document.querySelectorAll(".tool-topbar[data-topbar-for]").forEach(function (bar) {
+          bar.innerHTML = buildTopbar(bar.dataset.topbarFor);
+        });
+      })();
+
       function openTool(name) {
         document.getElementById("landing").style.display = "none";
+        document.getElementById("landing-theme-toggle").style.display = "none";
         document.querySelectorAll(".tool-view").forEach(function (v) {
           v.classList.remove("active");
         });
@@ -655,6 +671,7 @@
           v.classList.remove("active");
         });
         document.getElementById("landing").style.display = "";
+        document.getElementById("landing-theme-toggle").style.display = "";
       }
 
       document.querySelectorAll(".tile[data-tool]").forEach(function (btn) {
@@ -662,9 +679,137 @@
           openTool(btn.dataset.tool);
         });
       });
+      document.querySelectorAll(".tool-topbar [data-tool]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          openTool(btn.dataset.tool);
+        });
+      });
       document.querySelectorAll("[data-back]").forEach(function (btn) {
         btn.addEventListener("click", goBack);
       });
+
+      // ── Theme toggle wiring ──
+      (function () {
+        var SUN =
+          '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="3.2"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>';
+        var MOON =
+          '<svg viewBox="0 0 20 20" fill="currentColor" stroke="none" width="16" height="16" aria-hidden="true"><path d="M16.5 12.8A6.5 6.5 0 0 1 7.2 3.5a.6.6 0 0 0-.8-.78 8 8 0 1 0 10.86 10.86.6.6 0 0 0-.78-.78z"/></svg>';
+
+        // BroadcastChannel is the reliable cross-tab delivery mechanism —
+        // `storage` events are coalesced, partitioned, or dropped in several
+        // common situations (bfcache, private mode, file:// origins). The
+        // matching listener lives in tools/theme.js which every tool and the
+        // benchmark page load.
+        var themeChannel = null;
+        try {
+          if (typeof BroadcastChannel === "function") {
+            themeChannel = new BroadcastChannel("dataviz-theme");
+          }
+        } catch (e) {
+          themeChannel = null;
+        }
+
+        function resolved() {
+          var explicit = document.documentElement.getAttribute("data-theme");
+          if (explicit === "dark" || explicit === "light") return explicit;
+          if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            return "dark";
+          }
+          return "light";
+        }
+        function render() {
+          var mode = resolved();
+          var title = mode === "dark" ? "Switch to light mode" : "Switch to dark mode";
+          document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+            btn.innerHTML = mode === "dark" ? SUN : MOON;
+            btn.title = title;
+            btn.setAttribute("aria-label", title);
+          });
+        }
+        function applyAttr(root, mode) {
+          if (mode === "dark" || mode === "light") {
+            root.setAttribute("data-theme", mode);
+          } else {
+            root.removeAttribute("data-theme");
+          }
+        }
+        function setTheme(mode) {
+          try {
+            if (mode === "dark" || mode === "light") {
+              localStorage.setItem("dataviz-theme", mode);
+            } else {
+              localStorage.removeItem("dataviz-theme");
+            }
+          } catch (e) {}
+          applyAttr(document.documentElement, mode);
+          // Fan out to every other same-origin tab (benchmark, open tools in
+          // separate windows). theme.js in each of those listens on the same
+          // channel and re-applies the attribute.
+          try {
+            if (themeChannel) themeChannel.postMessage({ type: "theme", theme: mode });
+          } catch (e) {}
+          // Propagate into every tool iframe. We try a direct DOM write first
+          // (works when the iframe is same-origin and already loaded), and
+          // always postMessage as a backstop — the cross-frame `storage` event
+          // does not fire in the window that initiated the write, and file://
+          // origins can block direct contentDocument access.
+          document.querySelectorAll(".tool-view iframe").forEach(function (f) {
+            try {
+              var d = f.contentDocument;
+              if (d && d.documentElement) applyAttr(d.documentElement, mode);
+            } catch (e) {}
+            try {
+              if (f.contentWindow) {
+                f.contentWindow.postMessage({ type: "dataviz-theme-set", theme: mode }, "*");
+              }
+            } catch (e) {}
+          });
+          render();
+        }
+        document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            setTheme(resolved() === "dark" ? "light" : "dark");
+          });
+        });
+        // Cross-origin theme push for links that navigate away from this
+        // document (benchmark.html). On file:// origins Chrome partitions
+        // localStorage per-file, so the target page cannot read our stored
+        // theme — we smuggle it through a ?theme= query param, which the
+        // target's no-FOUC snippet reads and persists locally.
+        document.querySelectorAll("[data-benchmark-link]").forEach(function (a) {
+          a.addEventListener("click", function () {
+            var base = a.getAttribute("href").split("?")[0].split("#")[0];
+            a.setAttribute("href", base + "?theme=" + resolved());
+          });
+        });
+        // Inbound channel messages — another tab (tool, benchmark) toggled,
+        // update our own <html> attribute and re-render the icon.
+        if (themeChannel) {
+          themeChannel.addEventListener("message", function (e) {
+            var data = e && e.data;
+            if (!data || data.type !== "theme") return;
+            var v = data.theme === "dark" || data.theme === "light" ? data.theme : null;
+            applyAttr(document.documentElement, v);
+            render();
+          });
+        }
+        window.addEventListener("storage", function (e) {
+          if (e.key !== "dataviz-theme") return;
+          var v = e.newValue === "dark" || e.newValue === "light" ? e.newValue : null;
+          if (v) document.documentElement.setAttribute("data-theme", v);
+          else document.documentElement.removeAttribute("data-theme");
+          render();
+        });
+        var mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+        if (mq) {
+          var onMq = function () {
+            render();
+          };
+          if (mq.addEventListener) mq.addEventListener("change", onMq);
+          else if (mq.addListener) mq.addListener(onMq);
+        }
+        render();
+      })();
     </script>
   </body>
 </html>

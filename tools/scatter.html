@@ -3,11 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        var t = localStorage.getItem("dataviz-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
     <title>Scatter Plot</title>
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='8' cy='22' r='3.5' fill='%23648FFF'/><circle cx='14' cy='12' r='2.5' fill='%23648FFF'/><circle cx='22' cy='18' r='4' fill='%23648FFF'/><circle cx='26' cy='8' r='2.5' fill='%23648FFF'/></svg>"
     />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="components.css" />
     <script src="../vendor/react.production.min.js"></script>
     <script src="../vendor/react-dom.production.min.js"></script>
     <style>
@@ -18,12 +26,14 @@
       }
       body {
         font-family: monospace;
-        background: #f0f0f4;
-        background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px);
+        background: var(--page-bg);
+        background-image: radial-gradient(circle, var(--page-bg-dot) 0.8px, transparent 0.8px);
         background-size: 20px 20px;
         min-width: 1100px;
+        color: var(--text);
       }
     </style>
+    <script src="theme.js"></script>
     <script src="shared.js"></script>
     <script src="shared-color-input.js"></script>
     <script src="shared-file-drop.js"></script>

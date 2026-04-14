@@ -1,6 +1,7 @@
 // shared-long-format.js — plain JS, no JSX
-// Requires React, shared.js (sec, inp, lbl, roleColors, isNumericValue, PALETTE),
-// and shared-color-input.js (ColorInput) to be loaded globally before this script.
+// Requires React, shared.js (roleColors, isNumericValue, PALETTE),
+// components.css (dv-* classes), and shared-color-input.js (ColorInput) to
+// be loaded globally before this script.
 
 // ── Long-format Pipeline Components ─────────────────────────────────────────
 
@@ -14,10 +15,10 @@ function ColumnRoleEditor(props) {
     onNameChange = props.onNameChange;
   return React.createElement(
     "div",
-    { style: sec },
+    { className: "dv-panel" },
     React.createElement(
       "p",
-      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } },
+      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" } },
       "Column roles"
     ),
     React.createElement(
@@ -35,7 +36,7 @@ function ColumnRoleEditor(props) {
               padding: "2px 8px",
               borderRadius: 4,
               background: c,
-              color: r === "ignore" ? "#666" : "#fff",
+              color: r === "ignore" ? "var(--text-muted)" : "#fff",
               fontWeight: 600,
             },
           },
@@ -66,14 +67,14 @@ function ColumnRoleEditor(props) {
               gap: 10,
               alignItems: "center",
               padding: "8px 12px",
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 6,
-              border: "2px solid " + (roleColors[colRoles[i]] || "#ccc"),
+              border: "2px solid " + (roleColors[colRoles[i]] || "var(--border-strong)"),
             },
           },
           React.createElement(
             "span",
-            { style: { fontWeight: 700, color: "#333", minWidth: 20, fontSize: 12 } },
+            { style: { fontWeight: 700, color: "var(--text)", minWidth: 20, fontSize: 12 } },
             "#" + (i + 1)
           ),
           React.createElement("input", {
@@ -81,7 +82,8 @@ function ColumnRoleEditor(props) {
             onChange: function (e) {
               onNameChange(i, e.target.value);
             },
-            style: Object.assign({}, inp, { width: 120, fontWeight: 600 }),
+            className: "dv-input",
+            style: { width: 120, fontWeight: 600 },
           }),
           React.createElement(
             "select",
@@ -90,11 +92,12 @@ function ColumnRoleEditor(props) {
               onChange: function (e) {
                 onRoleChange(i, e.target.value);
               },
-              style: Object.assign({}, inp, {
+              className: "dv-input",
+              style: {
                 cursor: "pointer",
                 fontWeight: 600,
                 color: roleColors[colRoles[i]],
-              }),
+              },
             },
             React.createElement("option", { value: "group" }, "group"),
             React.createElement("option", { value: "value" }, "value"),
@@ -107,7 +110,7 @@ function ColumnRoleEditor(props) {
             {
               style: {
                 fontSize: 10,
-                color: "#999",
+                color: "var(--text-faint)",
                 flex: 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -139,15 +142,15 @@ function FilterCheckboxPanel(props) {
         flex: 1,
         borderRadius: 10,
         padding: 16,
-        border: "1px solid #bfdbfe",
-        background: "#eff6ff",
+        border: "1px solid var(--info-border)",
+        background: "var(--info-bg)",
         display: "flex",
         flexDirection: "column",
       },
     },
     React.createElement(
       "p",
-      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#1d4ed8" } },
+      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--info-text)" } },
       "Filter rows (" + filteredCount + "/" + totalCount + ")"
     ),
     React.createElement(
@@ -171,9 +174,9 @@ function FilterCheckboxPanel(props) {
               style: {
                 minWidth: 140,
                 flex: 1,
-                background: "#fff",
+                background: "var(--surface)",
                 borderRadius: 6,
-                border: "1px solid #ddd",
+                border: "1px solid var(--border)",
                 padding: 10,
               },
             },
@@ -182,7 +185,7 @@ function FilterCheckboxPanel(props) {
               { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" } },
               React.createElement(
                 "p",
-                { style: { fontSize: 11, fontWeight: 600, color: "#333", margin: 0 } },
+                { style: { fontSize: 11, fontWeight: 600, color: "var(--text)", margin: 0 } },
                 colNames[i]
               ),
               React.createElement(
@@ -194,11 +197,12 @@ function FilterCheckboxPanel(props) {
                   style: {
                     fontSize: 9,
                     padding: "2px 6px",
-                    background: "#eee",
-                    border: "1px solid #ccc",
+                    background: "var(--surface-sunken)",
+                    border: "1px solid var(--border-strong)",
                     borderRadius: 3,
                     cursor: "pointer",
                     fontFamily: "inherit",
+                    color: "var(--text-muted)",
                   },
                 },
                 "All"
@@ -206,7 +210,14 @@ function FilterCheckboxPanel(props) {
             ),
             React.createElement(
               "p",
-              { style: { fontSize: 10, color: "#999", margin: "4px 0 0", fontStyle: "italic" } },
+              {
+                style: {
+                  fontSize: 10,
+                  color: "var(--text-faint)",
+                  margin: "4px 0 0",
+                  fontStyle: "italic",
+                },
+              },
               "numeric \u2014 use axis range in plot"
             )
           );
@@ -218,15 +229,15 @@ function FilterCheckboxPanel(props) {
             style: {
               minWidth: 140,
               flex: 1,
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 6,
-              border: "1px solid #ddd",
+              border: "1px solid var(--border)",
               padding: 10,
             },
           },
           React.createElement(
             "p",
-            { style: { fontSize: 11, fontWeight: 600, color: "#333", marginBottom: 4 } },
+            { style: { fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 4 } },
             colNames[i]
           ),
           React.createElement(
@@ -241,11 +252,12 @@ function FilterCheckboxPanel(props) {
                 style: {
                   fontSize: 9,
                   padding: "2px 6px",
-                  background: "#eee",
-                  border: "1px solid #ccc",
+                  background: "var(--surface-sunken)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 3,
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  color: "var(--text-muted)",
                 },
               },
               "All"
@@ -259,11 +271,12 @@ function FilterCheckboxPanel(props) {
                 style: {
                   fontSize: 9,
                   padding: "2px 6px",
-                  background: "#eee",
-                  border: "1px solid #ccc",
+                  background: "var(--surface-sunken)",
+                  border: "1px solid var(--border-strong)",
                   borderRadius: 3,
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  color: "var(--text-muted)",
                 },
               },
               "None"
@@ -280,7 +293,7 @@ function FilterCheckboxPanel(props) {
                   alignItems: "center",
                   gap: 4,
                   fontSize: 11,
-                  color: "#444",
+                  color: "var(--text-muted)",
                   cursor: "pointer",
                   marginBottom: 2,
                 },
@@ -291,9 +304,9 @@ function FilterCheckboxPanel(props) {
                 onChange: function () {
                   onToggle(i, v);
                 },
-                style: { accentColor: "#648FFF" },
+                style: { accentColor: "var(--accent-primary)" },
               }),
-              v || React.createElement("em", { style: { color: "#bbb" } }, "(empty)")
+              v || React.createElement("em", { style: { color: "var(--text-faint)" } }, "(empty)")
             );
           })
         );
@@ -324,17 +337,17 @@ function RenameReorderPanel(props) {
         flex: 1,
         borderRadius: 10,
         padding: 16,
-        border: "1px solid #ddd6fe",
-        background: "#f5f3ff",
+        border: "1px solid var(--border)",
+        background: "var(--surface-subtle)",
       },
     },
     React.createElement(
       "p",
-      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#6d28d9" } },
+      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" } },
       "Rename values & reorder groups ",
       React.createElement(
         "span",
-        { style: { fontSize: 10, color: "#a78bfa", fontWeight: 400 } },
+        { style: { fontSize: 10, color: "var(--text-faint)", fontWeight: 400 } },
         "(drag \u2630 to reorder groups on plot)"
       )
     ),
@@ -367,15 +380,15 @@ function RenameReorderPanel(props) {
             key: "col-" + i,
             style: {
               minWidth: 200,
-              background: "#fff",
+              background: "var(--surface)",
               borderRadius: 6,
-              border: "1px solid #ddd",
+              border: "1px solid var(--border)",
               padding: 10,
             },
           },
           React.createElement(
             "p",
-            { style: { fontSize: 11, fontWeight: 600, color: "#333", marginBottom: 6 } },
+            { style: { fontSize: 11, fontWeight: 600, color: "var(--text)", marginBottom: 6 } },
             colNames[i]
           ),
           displayList.map(function (item, vi) {
@@ -415,15 +428,15 @@ function RenameReorderPanel(props) {
                   marginBottom: 3,
                   padding: "3px 4px",
                   borderRadius: 4,
-                  background: isGrp && dragIdx === vi ? "#e0eaff" : "transparent",
+                  background: isGrp && dragIdx === vi ? "var(--info-bg)" : "transparent",
                   cursor: isGrp ? "grab" : "default",
-                  borderLeft: isGrp ? "3px solid #648FFF" : "3px solid transparent",
+                  borderLeft: isGrp ? "3px solid var(--accent-primary)" : "3px solid transparent",
                 },
               },
               isGrp
                 ? React.createElement(
                     "span",
-                    { style: { fontSize: 11, color: "#bbb", cursor: "grab" } },
+                    { style: { fontSize: 11, color: "var(--text-faint)", cursor: "grab" } },
                     "\u2630"
                   )
                 : null,
@@ -432,7 +445,7 @@ function RenameReorderPanel(props) {
                 {
                   style: {
                     fontSize: 10,
-                    color: "#888",
+                    color: "var(--text-muted)",
                     minWidth: 55,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -441,13 +454,18 @@ function RenameReorderPanel(props) {
                 },
                 v || "(empty)"
               ),
-              React.createElement("span", { style: { fontSize: 10, color: "#bbb" } }, "\u2192"),
+              React.createElement(
+                "span",
+                { style: { fontSize: 10, color: "var(--text-faint)" } },
+                "\u2192"
+              ),
               React.createElement("input", {
                 value: valueRenames[i] && valueRenames[i][v] != null ? valueRenames[i][v] : v,
                 onChange: function (e) {
                   onRenameVal(i, v, e.target.value);
                 },
-                style: Object.assign({}, inp, { width: 100, fontSize: 11 }),
+                className: "dv-input",
+                style: { width: 100, fontSize: 11 },
               })
             );
           })
@@ -465,10 +483,10 @@ function StatsTable(props) {
   const headers = ["Group", "n", "Mean", "Median", "SD", "SEM", "Min", "Max"];
   return React.createElement(
     "div",
-    { style: sec },
+    { className: "dv-panel" },
     React.createElement(
       "p",
-      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#555" } },
+      { style: { margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" } },
       'Summary \u2014 grouped by "' + groupLabel + '"'
     ),
     React.createElement(
@@ -482,13 +500,18 @@ function StatsTable(props) {
           null,
           React.createElement(
             "tr",
-            { style: { borderBottom: "2px solid #ccc" } },
+            { style: { borderBottom: "2px solid var(--border-strong)" } },
             headers.map(function (h) {
               return React.createElement(
                 "th",
                 {
                   key: h,
-                  style: { padding: "4px 10px", textAlign: "left", color: "#666", fontWeight: 600 },
+                  style: {
+                    padding: "4px 10px",
+                    textAlign: "left",
+                    color: "var(--text-muted)",
+                    fontWeight: 600,
+                  },
                 },
                 h
               );
@@ -501,7 +524,7 @@ function StatsTable(props) {
           stats.map(function (s, i) {
             return React.createElement(
               "tr",
-              { key: s.name, style: { borderBottom: "1px solid #eee" } },
+              { key: s.name, style: { borderBottom: "1px solid var(--border)" } },
               React.createElement(
                 "td",
                 {
@@ -597,10 +620,10 @@ function GroupColorEditor(props) {
           style: {
             flex: 1,
             minWidth: 0,
-            background: "#fff",
-            border: "1px solid #ccc",
+            background: "var(--surface)",
+            border: "1px solid var(--border-strong)",
             borderRadius: 4,
-            color: "#333",
+            color: "var(--text)",
             padding: "2px 4px",
             fontSize: 11,
             fontFamily: "inherit",
@@ -610,7 +633,7 @@ function GroupColorEditor(props) {
       children.push(
         React.createElement(
           "span",
-          { key: "n", style: { color: "#999", fontSize: 10, flexShrink: 0 } },
+          { key: "n", style: { color: "var(--text-faint)", fontSize: 10, flexShrink: 0 } },
           "n=" + (g.stats ? g.stats.n : 0)
         )
       );
@@ -625,9 +648,9 @@ function GroupColorEditor(props) {
             padding: "3px 8px",
             borderRadius: 6,
             fontSize: 12,
-            background: enabled ? "#f0f0f5" : "#fafafa",
+            background: enabled ? "var(--surface-sunken)" : "var(--surface-subtle)",
             opacity: enabled ? 1 : 0.4,
-            border: "1px solid #ccc",
+            border: "1px solid var(--border-strong)",
           },
         },
         children
@@ -651,7 +674,7 @@ function BaseStyleControls(props) {
         key: "bg",
         style: { display: "flex", alignItems: "center", justifyContent: "space-between" },
       },
-      React.createElement("span", { style: lbl }, "Background"),
+      React.createElement("span", { className: "dv-label" }, "Background"),
       React.createElement(ColorInput, { value: plotBg, onChange: onPlotBgChange, size: 24 })
     ),
     React.createElement(
@@ -660,14 +683,14 @@ function BaseStyleControls(props) {
         key: "grid",
         style: { display: "flex", alignItems: "center", justifyContent: "space-between" },
       },
-      React.createElement("span", { style: lbl }, "Grid"),
+      React.createElement("span", { className: "dv-label" }, "Grid"),
       React.createElement("input", {
         type: "checkbox",
         checked: showGrid,
         onChange: function (e) {
           onShowGridChange(e.target.checked);
         },
-        style: { accentColor: "#648FFF" },
+        style: { accentColor: "var(--accent-primary)" },
       })
     ),
   ];
@@ -679,7 +702,7 @@ function BaseStyleControls(props) {
           key: "gc",
           style: { display: "flex", alignItems: "center", justifyContent: "space-between" },
         },
-        React.createElement("span", { style: lbl }, "Grid color"),
+        React.createElement("span", { className: "dv-label" }, "Grid color"),
         React.createElement(ColorInput, { value: gridColor, onChange: onGridColorChange, size: 24 })
       )
     );

@@ -9,23 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Bar outline controls in Group Plot (bar style) and Aequorin inset barplot** — both tools now expose a "Bar outline" checkbox with an "Outline width" slider (0.2/0.5 – 4 px) and an "Outline color" picker that take effect when the toggle is on. Previously, Group Plot's bar style only had a fixed-group-color outline with a width slider, and the aequorin inset had dead state (`insetStrokeColors`, `insetStrokeOpacity`) that was never wired to any UI and rendered invisibly. The dead state was removed and replaced with the unified toggle/width/color trio so both tools share the same outline UX.
+- **Dark mode** — full light/dark theme with a sun/moon toggle on the landing page and every tool's top bar. First visits follow `prefers-color-scheme`; choices persist in `localStorage` and sync across the landing page and all open tool iframes. Plot cards stay white in both themes so exported SVG/PNG always render on a white canvas.
+- **Component CSS classes** — introduces `tools/components.css` with `dv-panel`, `dv-input`, `dv-label`, `dv-select`, `dv-btn-*`, and the `dv-num` stepper. Adds `:hover`, `:focus-visible`, `:active`, and `:disabled` states that inline styles couldn't express.
+- **−/+ numeric steppers** — all `<input type="number">` fields across the tools now render as a compact stepper with `−`/`+` buttons (click or press-and-hold to repeat) replacing the native browser arrows.
+- **Bar outline controls in Group Plot (bar style) and Aequorin inset barplot** — unified "Bar outline" checkbox + width slider + color picker across both tools.
+- **Named SVG group ids for Inkscape** — every chart export wraps its elements in `<g id="…">` groups with human-readable ids (`background`, `grid`, `axis-x`, `axis-y`, `data-points`, `plot-frame`, `legend`, `cld-annotations`, `significance-brackets`, …) plus per-series ids. Inkscape surfaces these in its Objects panel so users can select and edit grouped elements by name. The shared SVG legend renderer now wraps the whole block in `<g id="legend">` and gives each sub-block its own id — scatter emits `legend-color` / `legend-size` / `legend-shape`, and boxplot/aequorin derive ids from block titles so the individual pieces can be selected independently in Inkscape. `stats-summary` is also now a named group in boxplot exports.
 
 ### Changed
 
-- **"Show ns" off by default in StatsTile** — the "Show ns" toggle in the Group Plot and Aequorin inset-barplot statistics tile now starts unchecked, so on-plot annotations (compact letter displays and significance brackets) hide non-significant comparisons unless the user opts in. Previously it defaulted to on, which cluttered plots with "ns" labels for every non-significant pair — the common case where users want to highlight only the meaningful differences.
+- **Dark mode plot cards dim on-screen via `filter: brightness(0.85)`** to stop the white chart canvas from glowing against the dark UI. Exports are unaffected — `filter` is rendering-only and isn't serialized into SVG.
+- **Scatter Color/Size/Shape selectors dim in dark mode** — the three aesthetic boxes now read their backgrounds, borders, and header bands from themed CSS variables so the pastel tints are replaced with muted dark-surface equivalents instead of glowing against the dark UI.
+- **Plot frame exported as four named lines** — `plot-frame` is now a group containing `plot-frame-top`, `-right`, `-bottom`, `-left` so individual sides can be selected and deleted in Inkscape.
+- **Venn diagram refinement** — area-proportional 2- and 3-set layouts now iteratively refine circle positions to minimise region-area error. A "Readability" slider blends between strict proportionality and a visually balanced layout.
+- **Tool top bar redesigned as an icon strip** (`theme-toggle │ home │ <other tools>`) so users can jump directly between tools; the current tool's icon is omitted as the "you are here" marker.
+- **Unified download buttons** — every downloadable artefact across every tool now uses a single green `⬇ SVG / PNG / CSV / TXT` chip style with consistent hover/press behaviour. Per-tool ad-hoc download buttons have been retired.
+- **Prominent disclosure indicator** — collapsible panels (Statistics Summary, Scatter Filters, time-course chart, Per replicate, inset barplot) now show an accent-coloured circular `>` toggle on the left of the header instead of thin unicode carets.
+- **"Show ns" off by default** in on-plot statistics annotations so compact-letter displays and significance brackets only label the meaningful comparisons unless the user opts in.
+- **Power tool layout** no longer rearranges its tiles on narrow viewports — the body scrolls horizontally when the window is truly too narrow instead of dropping the plot below the controls.
+- **Aequorin inset barplot tile** now has a three-state model: hidden (sidebar "Show" unchecked, default), mounted-and-expanded, or mounted-and-minimised via a disclosure toggle in the tile header. Expand/collapse is cheap — the bar plot, stats, and StatsTile stay mounted across toggles. Toggling the sidebar "Show" checkbox back on always re-opens the tile expanded so users don't have to click twice. Also dropped its raw/corrected colour tint in favour of neutral chrome; the `Σ Raw` / `Σ Baseline-corrected` buttons still carry the mode signal.
+- **Aequorin Combined/Faceted toggle** moved into the sticky chart header next to Sample selection so it follows scroll, rendered as a quiet segmented toggle (single bordered container, shared divider, active segment filled accent-blue) so it doesn't compete with Sample selection's emphasised pill for attention.
+- **Aequorin "Per replicate" table** now a dedicated tile with a disclosure toggle; collapsed by default to keep the plot step compact.
+- **Scatter grid off by default** — new plots no longer draw grid lines unless the user enables them.
+- **Aequorin plot-step heading** "Plot parameters" → "Time-course parameters" (the panel only controls the time-course chart, not the inset barplot).
+- **StatsTile disclosure and report download** are now anchored to the header: the disclosure toggle sits on the left and the `⬇ TXT` button stays visible even when the summary is collapsed.
+- **Landing-page theme toggle** aligned with the rightmost tile of the centred grid instead of floating at the page's right edge.
+- **Aequorin plot step** no longer wraps its content in a redundant outer tile.
+- **Shared `ActionsPanel` tile title** no longer rendered in all-caps — now matches the shared 13 / 600 heading style used by every other left-sidebar tile.
+
+### Removed
+
+- **"← Calibration" back button** above the aequorin plot area (redundant with the top step navigation).
+- **Duplicate theme toggle** inside tool `PageHeader`s — the top-bar toggle is now the single source of truth.
 
 ### Fixed
 
-- **Group Plot bar style — point colors under "Color by"** — when the bar chart style was selected with a color-by column, jittered points were shaded by source index (`getPointColors(groupColor)[si]`) instead of the category color. The per-point lookup read `src.categories?.[vi]` (plural, never set), so the `catColors[cat]` branch was dead code and points always fell through to the group-shade fallback. Changed to `src.category` to match the Box/Violin/Raincloud path and restore proper category coloring.
-
-### Added
-
-- **Named SVG group ids for Inkscape** — all chart SVG exports (venn, scatter, boxplot/bar, aequorin time-course + inset barplot, power) now wrap their elements in `<g id="...">` groups with human-readable ids: `background`, `grid`, `axis-x`, `axis-y`, `data-points` / `groups` / `bars` / `traces` / `ribbons`, `regression-line`, `regression-stats`, `reference-lines`, `reference-line-labels`, `selected-region`, `region-counts`, `cld-annotations`, `significance-brackets`, `plot-frame`, `legend`, `title`, `subtitle`, `x-axis-label`, `y-axis-label`, `stats-summary`, `marker`, `power-curve`, `reference-line`. Per-series/per-group elements also get individual ids (e.g. `set-<name>`, `group-<name>`, `bar-<prefix>`, `trace-<prefix>`, `ribbon-<prefix>`, `count-<names>`, `legend-<name>`) via a new `svgSafeId()` helper in `shared.js` that sanitizes arbitrary strings into valid SVG NCNames. Inkscape shows these ids in its Objects panel and XML editor, so opening an exported SVG lets users select and edit grouped elements by name without hunting through the DOM.
-
-### Changed
-
-- **Venn diagram refinement** — area-proportional layouts for 2- and 3-set diagrams now iteratively refine circle positions to minimize region-area error against the computed intersection sizes. A "Readability" slider blends between strict proportionality and a visually balanced layout when the raw subset counts would collapse regions. Analytic area helpers (`triangleArea`, `chordSegmentArea`, `tripleIntersectionArea`, `computeAllRegionAreas`, `computeLayoutError`) drive the refinement and are cross-validated against Monte Carlo reference values.
+- **Aequorin on-plot annotation ink** — CLD letters, significance-bracket strokes, and "ns" labels now match boxplot's `#222` so both tools render identical on-plot statistics.
+- **Group Plot bar style — point colours under "Color by"** — jittered points on the bar chart now pick up the correct category colour instead of falling through to the group shade.
+- **Benchmark page theme** now stays in sync with the rest of the app across tabs, `file://` origins, and bfcache restores.
+- **Power tool premature horizontal scrollbar** — removed the inherited `min-width: 1100px` that Power's narrower layout didn't need.
+- **Venn and Power horizontal offset** — both tools' content wrappers normalised to match the other plot tools so `PageHeader` icons line up with the top-bar strip.
+- **Top-bar theme toggle not reaching the iframe** — toggle now `postMessage`s the theme into every tool iframe instead of relying on the unreliable same-window `storage` event.
+- **Venn exports rendered as black blobs in Inkscape** — the per-region click-hit circles used `fill="transparent"`, which is HTML/CSS-only and not a valid SVG 1.1 paint. Inkscape fell back to the default black fill, covering the diagram. Swapped to `fill="none" pointer-events="all"` so the regions stay clickable in the browser and invisible in Inkscape and other SVG readers.
+- **Aequorin faceted time-course over-dimmed in dark mode** — each facet is wrapped in a `dv-plot-card` nested inside the outer chart-tile `dv-plot-card`, so the `filter: brightness(0.85)` rule compounded (≈0.72) and made the faceted plots noticeably darker than the combined view. Added a `.dv-plot-card .dv-plot-card { filter: none }` override so the dim applies only to the outermost plot card.
 
 ## [2.1.1] - 2026-04-13
 

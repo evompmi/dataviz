@@ -142,12 +142,13 @@ test("renders with download and reset", function () {
   assert(el, "should return an element");
 });
 
-test("renders with extra buttons", function () {
+test("renders with extra downloads", function () {
   resetSC();
   var el = sc.ActionsPanel({
     onDownloadSvg: noop,
+    onDownloadPng: noop,
     onReset: noop,
-    extraButtons: [{ label: "Download CSV", onClick: noop }],
+    extraDownloads: [{ label: "CSV", onClick: noop }],
   });
   assert(el, "should return an element");
 });

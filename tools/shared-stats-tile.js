@@ -1,6 +1,7 @@
 // shared-stats-tile.js — plain JS, no JSX
-// Requires React, shared.js (sec, selStyle, btnSecondary, downloadText, flashSaved,
-// fFromGroupMeans, powerTwoSample, powerAnova), and stats.js (tTest, mannWhitneyU,
+// Requires React, shared.js (downloadText, flashSaved, fFromGroupMeans,
+// powerTwoSample, powerAnova), components.css (dv-* classes), and stats.js
+// (tTest, mannWhitneyU,
 // oneWayANOVA, welchANOVA, kruskalWallis, tukeyHSD, gamesHowell, dunnTest,
 // compactLetterDisplay, selectTest, pStars, formatP, sampleMean, sampleSD)
 // to be loaded globally before this script.
@@ -525,15 +526,15 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   if (k < 2) return null;
 
   // ── Styles ────────────────────────────────────────────────────────────────
+  // Override-only object — base panel look comes from className "dv-panel".
   const wrap = {
-    ...sec,
     marginTop: 12,
-    background: "#f8f8fa",
+    background: "var(--surface-subtle)",
   };
   const header = {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
     cursor: "pointer",
     userSelect: "none",
   };
@@ -541,7 +542,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     margin: 0,
     fontSize: 14,
     fontWeight: 700,
-    color: "#333",
+    color: "var(--text)",
     letterSpacing: "0.2px",
   };
   const subhead = {
@@ -551,23 +552,29 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.8px",
-    color: "#fff",
-    background: "#475569",
+    color: "var(--subhead-text)",
+    background: "var(--subhead-bg)",
     borderRadius: 4,
     display: "block",
   };
-  const row = { display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "#444" };
+  const row = {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 12,
+    color: "var(--text-muted)",
+  };
   const pillOk = {
     display: "inline-block",
     padding: "2px 8px",
     borderRadius: 10,
     fontSize: 10,
     fontWeight: 700,
-    background: "#dcfce7",
-    color: "#166534",
+    background: "var(--success-bg)",
+    color: "var(--success-text)",
   };
-  const pillBad = { ...pillOk, background: "#fee2e2", color: "#991b1b" };
-  const pillNeutral = { ...pillOk, background: "#e5e7eb", color: "#374151" };
+  const pillBad = { ...pillOk, background: "var(--danger-bg)", color: "var(--danger-text)" };
+  const pillNeutral = { ...pillOk, background: "var(--neutral-bg)", color: "var(--neutral-text)" };
   const table = {
     width: "100%",
     borderCollapse: "collapse",
@@ -577,19 +584,63 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const th = {
     textAlign: "left",
     padding: "4px 6px",
-    borderBottom: "1px solid #ddd",
-    color: "#555",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text-muted)",
     fontWeight: 600,
   };
-  const td = { padding: "4px 6px", borderBottom: "1px solid #eee", color: "#333" };
+  const td = {
+    padding: "4px 6px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+  };
 
   // ── Header rows ───────────────────────────────────────────────────────────
   const displayTileHeader = React.createElement("h3", { style: h3 }, "Statistics display");
+  const downloadReportBtn = React.createElement(
+    "button",
+    {
+      onClick: (e) => {
+        e.stopPropagation();
+        const txt = _buildStatsReport({
+          names,
+          values,
+          recommendation,
+          chosenTest,
+          testResult,
+          postHocName,
+          postHocResult,
+          powerResult,
+        });
+        downloadText(txt, "stats_report.txt");
+        flashSaved(e.currentTarget);
+      },
+      className: "dv-btn dv-btn-dl",
+    },
+    "\u2B07 TXT"
+  );
   const summaryHeaderEl = React.createElement(
     "div",
-    { style: header, onClick: () => setOpen((o) => !o) },
-    React.createElement("h3", { style: h3 }, "Statistics summary"),
-    React.createElement("span", { style: { fontSize: 12, color: "#888" } }, open ? "▾" : "▸")
+    {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        justifyContent: "space-between",
+      },
+    },
+    React.createElement(
+      "div",
+      {
+        style: header,
+        onClick: () => setOpen((o) => !o),
+      },
+      React.createElement("span", {
+        className: "dv-disclosure" + (open ? " dv-disclosure-open" : ""),
+        "aria-hidden": "true",
+      }),
+      React.createElement("h3", { style: h3 }, "Statistics summary")
+    ),
+    downloadReportBtn
   );
 
   // ── Display-on-plot controls ──────────────────────────────────────────────
@@ -612,7 +663,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
           alignItems: "center",
           gap: 6,
           fontSize: 12,
-          color: "#333",
+          color: "var(--text)",
           cursor: "pointer",
         },
       },
@@ -627,7 +678,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       ? React.createElement(
           "div",
           { style: { display: "flex", alignItems: "center", gap: 10, fontSize: 12 } },
-          React.createElement("span", { style: { color: "#666" } }, "Style:"),
+          React.createElement("span", { style: { color: "var(--text-muted)" } }, "Style:"),
           React.createElement(
             "label",
             { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
@@ -676,7 +727,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
 
   const displayTile = React.createElement(
     "div",
-    { style: wrap },
+    { className: "dv-panel", style: wrap },
     displayTileHeader,
     displayControls
   );
@@ -686,7 +737,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       React.Fragment,
       null,
       displayTile,
-      React.createElement("div", { style: wrap }, summaryHeaderEl)
+      React.createElement("div", { className: "dv-panel", style: wrap }, summaryHeaderEl)
     );
 
   // ── Assumptions section ───────────────────────────────────────────────────
@@ -717,7 +768,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       style: {
         fontSize: 11,
         fontWeight: 600,
-        color: "#555",
+        color: "var(--text-muted)",
         marginTop: 4,
       },
     },
@@ -748,7 +799,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       style: {
         fontSize: 11,
         fontWeight: 600,
-        color: "#555",
+        color: "var(--text-muted)",
         marginTop: 12,
         marginBottom: 2,
       },
@@ -759,7 +810,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     "div",
     { style: row },
     lev.error
-      ? React.createElement("span", { style: { color: "#b91c1c" } }, lev.error)
+      ? React.createElement("span", { style: { color: "var(--danger-text)" } }, lev.error)
       : React.createElement(
           React.Fragment,
           null,
@@ -793,7 +844,8 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       {
         value: chosenTest || "",
         onChange: (e) => setOverrideTest(e.target.value === recTest ? null : e.target.value),
-        style: { ...selStyle, minWidth: 180 },
+        className: "dv-select",
+        style: { minWidth: 180 },
       },
       testOptions.map((t) =>
         React.createElement(
@@ -808,8 +860,8 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
           "button",
           {
             onClick: () => setOverrideTest(null),
+            className: "dv-btn dv-btn-secondary",
             style: {
-              ...btnSecondary,
               padding: "4px 10px",
               fontSize: 11,
             },
@@ -822,7 +874,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const reasonLine = recReason
     ? React.createElement(
         "div",
-        { style: { fontSize: 11, color: "#666", marginTop: 4, fontStyle: "italic" } },
+        { style: { fontSize: 11, color: "var(--text-muted)", marginTop: 4, fontStyle: "italic" } },
         recReason
       )
     : null;
@@ -833,12 +885,12 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       style: {
         marginTop: 8,
         padding: "8px 10px",
-        background: "#fff",
-        border: "1px solid #ddd",
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
         borderRadius: 6,
         fontFamily: "ui-monospace, Menlo, monospace",
         fontSize: 12,
-        color: "#111",
+        color: "var(--text)",
       },
     },
     _formatTestLine(chosenTest, testResult)
@@ -861,7 +913,13 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
         React.createElement("td", { style: td }, formatP(pVal)),
         React.createElement(
           "td",
-          { style: { ...td, fontWeight: 700, color: pVal < 0.05 ? "#166534" : "#777" } },
+          {
+            style: {
+              ...td,
+              fontWeight: 700,
+              color: pVal < 0.05 ? "var(--success-text)" : "var(--text-faint)",
+            },
+          },
           pStars(pVal)
         )
       );
@@ -941,7 +999,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
                   style: {
                     ...td,
                     fontWeight: 700,
-                    color: row.achieved >= 0.8 ? "#166534" : "#b45309",
+                    color: row.achieved >= 0.8 ? "var(--success-text)" : "var(--warning-text)",
                   },
                 },
                 fmtPct(row.achieved)
@@ -954,49 +1012,19 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
       powerResult.approximate
         ? React.createElement(
             "div",
-            { style: { fontSize: 11, color: "#888", fontStyle: "italic", marginTop: 4 } },
+            {
+              style: {
+                fontSize: 11,
+                color: "var(--text-faint)",
+                fontStyle: "italic",
+                marginTop: 4,
+              },
+            },
             "Approximation — rank-based test power estimated from its parametric analog."
           )
         : null
     );
   }
-
-  // ── Download report ───────────────────────────────────────────────────────
-  const downloadReportBtn = React.createElement(
-    "div",
-    { style: { marginTop: 12, display: "flex", justifyContent: "flex-end" } },
-    React.createElement(
-      "button",
-      {
-        onClick: (e) => {
-          const txt = _buildStatsReport({
-            names,
-            values,
-            recommendation,
-            chosenTest,
-            testResult,
-            postHocName,
-            postHocResult,
-            powerResult,
-          });
-          downloadText(txt, "stats_report.txt");
-          flashSaved(e.currentTarget);
-        },
-        style: {
-          padding: "8px 14px",
-          borderRadius: 6,
-          fontSize: 12,
-          cursor: "pointer",
-          background: "#dcfce7",
-          border: "1px solid #86efac",
-          color: "#166534",
-          fontFamily: "inherit",
-          fontWeight: 600,
-        },
-      },
-      "\u2B07 Download report (.txt)"
-    )
-  );
 
   return React.createElement(
     React.Fragment,
@@ -1004,7 +1032,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     displayTile,
     React.createElement(
       "div",
-      { style: wrap },
+      { className: "dv-panel", style: wrap },
       summaryHeaderEl,
       React.createElement(
         "div",
@@ -1019,8 +1047,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
         reasonLine,
         resultLine,
         postHocBlock,
-        powerBlock,
-        downloadReportBtn
+        powerBlock
       )
     )
   );

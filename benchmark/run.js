@@ -308,44 +308,66 @@ const html = `<!doctype html>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>
+  // file:// origins partition localStorage per-file, so the landing page's
+  // stored theme can't be read here directly. We accept a ?theme=dark|light
+  // query param as a cross-origin push from the landing page link and persist
+  // it to our own localStorage so reloads keep working.
+  try {
+    var p = (location.search.match(/[?&]theme=(dark|light)/) || [])[1];
+    var t = p || localStorage.getItem("dataviz-theme");
+    if (t === "dark" || t === "light") {
+      document.documentElement.setAttribute("data-theme", t);
+      if (p) {
+        try { localStorage.setItem("dataviz-theme", t); } catch (e) {}
+        // Strip the query param so the URL stays clean on reload / share.
+        try {
+          history.replaceState(null, "", location.pathname + location.hash);
+        } catch (e) {}
+      }
+    }
+  } catch (e) {}
+</script>
 <title>dataviz · statistical benchmark vs R</title>
+<link rel="stylesheet" href="tools/theme.css" />
+<script src="tools/theme.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: monospace;
-    background: #f0f0f4;
-    background-image: radial-gradient(circle, #d0d0d8 0.8px, transparent 0.8px);
+    background: var(--page-bg);
+    background-image: radial-gradient(circle, var(--page-bg-dot) 0.8px, transparent 0.8px);
     background-size: 20px 20px;
-    color: #1a1a1a;
+    color: var(--text);
     padding: 2rem 1rem 4rem;
     line-height: 1.45;
   }
   .container { max-width: 1100px; margin: 0 auto; }
   header { margin-bottom: 1.5rem; }
   h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
-  .lede { color: #444; margin-bottom: 1rem; padding-left: 1.4rem; line-height: 1.7; }
+  .lede { color: var(--text-muted); margin-bottom: 1rem; padding-left: 1.4rem; line-height: 1.7; }
   .lede li { margin-bottom: 0.2rem; }
-  .lede a { color: #0048a8; }
+  .lede a { color: var(--accent-primary); }
   .summary {
     padding: 1rem 1.25rem;
-    border: 2px solid #1a1a1a;
-    background: #fff;
+    border: 2px solid var(--text);
+    background: var(--surface);
     margin-bottom: 1.5rem;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
   }
-  .summary-pass { border-color: #2a7a2a; }
-  .summary-mixed { border-color: #c47a00; }
+  .summary-pass { border-color: var(--success-border); }
+  .summary-mixed { border-color: var(--warning-border); }
   .summary div { display: flex; flex-direction: column; }
-  .summary .k { font-size: 0.75rem; text-transform: uppercase; color: #666; }
+  .summary .k { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
   .summary .v { font-size: 1.4rem; font-weight: bold; }
-  .v-pass { color: #2a7a2a; }
-  .v-fail { color: #b22222; }
+  .v-pass { color: var(--success-text); }
+  .v-fail { color: var(--danger-text); }
   .category {
     margin-bottom: 1.5rem;
-    background: #fff;
-    border: 1px solid #c0c0c8;
+    background: var(--surface);
+    border: 1px solid var(--border);
     padding: 1rem 1.25rem;
   }
   .category h2 {
@@ -361,8 +383,8 @@ const html = `<!doctype html>
     border-radius: 3px;
     font-weight: normal;
   }
-  .badge-pass { background: #d4f0d4; color: #1a5a1a; }
-  .badge-fail { background: #f5d4d4; color: #8a1a1a; }
+  .badge-pass { background: var(--success-bg); color: var(--success-text); }
+  .badge-fail { background: var(--danger-bg); color: var(--danger-text); }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -378,30 +400,51 @@ const html = `<!doctype html>
   col.c-delta   { width: 110px; }
   col.c-ok      { width: 40px; }
   td.ok-cell { text-align: center; font-size: 1.2rem; line-height: 1; }
-  td.ok-pass { color: #2a7a2a; font-weight: bold; }
-  td.ok-fail { color: #b22222; font-weight: bold; }
+  td.ok-pass { color: var(--success-text); font-weight: bold; }
+  td.ok-fail { color: var(--danger-text); font-weight: bold; }
   th, td {
     padding: 0.3rem 0.5rem;
     text-align: left;
-    border-bottom: 1px solid #e0e0e6;
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   th.num, td.num { text-align: right; }
-  th { background: #f4f4f8; font-weight: normal; color: #555; }
+  th { background: var(--surface-subtle); font-weight: normal; color: var(--text-muted); }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .row-pass td { background: #fff; }
-  .row-fail td { background: #fbe8e8; color: #6a0a0a; }
+  .row-pass td { background: var(--surface); }
+  .row-fail td { background: var(--danger-bg); color: var(--danger-text); }
   footer {
     margin-top: 2rem;
-    color: #666;
+    color: var(--text-muted);
     font-size: 0.75rem;
     text-align: center;
   }
+  .theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    line-height: 0;
+    font-family: inherit;
+    z-index: 10;
+  }
+  .theme-toggle:hover { border-color: var(--accent-primary); }
 </style>
 </head>
 <body>
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle theme"></button>
 <div class="container">
   <header>
     <h1>statistical cross-validation vs R ${escapeHtml(data.meta.r_version.replace(/^R version /, ""))}</h1>
@@ -429,6 +472,37 @@ const html = `<!doctype html>
     Tolerance ${TOL}. Tool source: <code>tools/stats.js</code>.
   </footer>
 </div>
+<script>
+  // Theme toggle — uses setTheme / getTheme from tools/theme.js (loaded above).
+  // The same-origin storage event in theme.js keeps benchmark in lockstep with
+  // the landing page when it is toggled in another tab.
+  (function () {
+    var SUN =
+      '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="3.2"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>';
+    var MOON =
+      '<svg viewBox="0 0 20 20" fill="currentColor" stroke="none" width="16" height="16" aria-hidden="true"><path d="M16.5 12.8A6.5 6.5 0 0 1 7.2 3.5a.6.6 0 0 0-.8-.78 8 8 0 1 0 10.86 10.86.6.6 0 0 0-.78-.78z"/></svg>';
+    function render() {
+      var dark = typeof getTheme === "function" ? getTheme() === "dark" : false;
+      document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+        btn.innerHTML = dark ? SUN : MOON;
+        btn.title = dark ? "Switch to light mode" : "Switch to dark mode";
+      });
+    }
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (typeof setTheme === "function" && typeof getTheme === "function") {
+          setTheme(getTheme() === "dark" ? "light" : "dark");
+        }
+        render();
+      });
+    });
+    window.addEventListener("dataviz-theme-change", render);
+    window.addEventListener("storage", function (e) {
+      if (e.key === "dataviz-theme") render();
+    });
+    render();
+  })();
+</script>
 </body>
 </html>
 `;

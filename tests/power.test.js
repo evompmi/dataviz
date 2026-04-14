@@ -34,12 +34,6 @@ const ctx = {
   },
   ReactDOM: { render: () => {}, createRoot: () => ({ render: () => {} }) },
   document: { getElementById: () => ({}) },
-  sec: {},
-  lbl: {},
-  inpN: {},
-  selStyle: {},
-  btnDownload: {},
-  btnPrimary: {},
   toolIcon: () => null,
   makeTicks: (min, max, n) => {
     const step = (max - min) / n;
