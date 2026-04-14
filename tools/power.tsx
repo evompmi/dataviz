@@ -795,7 +795,7 @@ function App() {
   });
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 24px" }}>
+    <div style={{ maxWidth: 960, padding: "24px 32px" }}>
       <PageHeader
         title="Power Analysis"
         icon={toolIcon("power")}
@@ -811,7 +811,7 @@ function App() {
       </div>
 
       {/* ── Top row: test type + solve for ── */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 6, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 20, marginBottom: 6 }}>
         <div className="dv-panel" style={{ padding: 12, flex: 1, minWidth: 200 }}>
           <div className="dv-label">Statistical test</div>
           <select
@@ -845,7 +845,7 @@ function App() {
       </div>
 
       {/* ── Main row: controls (left) + plot/result (right) ── */}
-      <div style={{ display: "flex", gap: 20, alignItems: "stretch", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
         {/* ── Left panel ── */}
         <div
           style={{ width: 328, flexShrink: 0, display: "flex", flexDirection: "column", gap: 6 }}

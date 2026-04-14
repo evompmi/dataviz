@@ -80,6 +80,22 @@ window.addEventListener("storage", (e) => {
   }
 });
 
+// Parent-to-iframe sync: the landing page's top-bar toggle posts a message to
+// every tool iframe because the `storage` event doesn't fire in the window
+// that wrote the key, and file:// origins can block direct contentDocument
+// access from the parent. Accept only our own message shape.
+window.addEventListener("message", (e) => {
+  const data = e && e.data;
+  if (!data || data.type !== "dataviz-theme-set") return;
+  const v = data.theme === "dark" || data.theme === "light" ? data.theme : null;
+  _applyThemeAttr(v);
+  try {
+    window.dispatchEvent(new CustomEvent("dataviz-theme-change", { detail: { theme: v } }));
+  } catch (err) {
+    // ignore
+  }
+});
+
 // React hook-style helper: components call this to re-render on theme change.
 function useThemeMode() {
   const [mode, setMode] = React.useState(() => getTheme());

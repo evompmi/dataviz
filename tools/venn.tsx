@@ -1908,7 +1908,7 @@ function App() {
   const selectedIntersection = intersections.find((g) => g.mask === selectedMask) || null;
 
   return (
-    <div style={{ padding: "20px 40px", maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ padding: "24px 32px", maxWidth: 1200 }}>
       <PageHeader
         toolName="venn"
         title="Venn Diagram"
