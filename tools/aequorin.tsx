@@ -928,7 +928,6 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     baseUnit,
     displayUnit,
     showInset,
-    setShowInset,
     insetColors,
     insetFillOpacity,
     insetBarWidth,
@@ -964,6 +963,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
   const [chartOpen, setChartOpen] = useState(true);
   const [replicateTableOpen, setReplicateTableOpen] = useState(false);
+  const [insetOpen, setInsetOpen] = useState(true);
   const barRef = useRef();
 
   const statsGroups = useMemo(() => {
@@ -1096,7 +1096,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const sumLabel = isCorrected ? "Corrected Sum" : "Raw Sum";
   const csvFileName = isCorrected ? `corrected_sums_${baseName}.csv` : `raw_sums_${baseName}.csv`;
 
-  const IntegralTile = (
+  const IntegralTile = showInset ? (
     <div
       className="dv-plot-card"
       style={{
@@ -1108,7 +1108,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
       }}
     >
       <button
-        onClick={() => setShowInset && setShowInset(!showInset)}
+        onClick={() => setInsetOpen((o) => !o)}
         style={{
           width: "100%",
           display: "flex",
@@ -1132,13 +1132,13 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
           }}
         >
           <span
-            className={"dv-disclosure" + (showInset ? " dv-disclosure-open" : "")}
+            className={"dv-disclosure" + (insetOpen ? " dv-disclosure-open" : "")}
             aria-hidden="true"
           />
           Barplot (Σ of plotted values)
         </span>
       </button>
-      {showInset && (
+      {insetOpen && (
       <div style={{ padding: "0 16px 16px" }}>
       {/* Toggle */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -1321,7 +1321,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
       </div>
       )}
     </div>
-  );
+  ) : null;
 
   // ── Collapsible time-course chart tile ──
   const ChartTile = (chartContent) => (
@@ -3197,7 +3197,6 @@ function App() {
                 baseUnit={vis.baseUnit}
                 displayUnit={vis.displayUnit}
                 showInset={vis.showInset}
-                setShowInset={(v) => updVis({ showInset: v })}
                 insetColors={insetColors}
                 insetFillOpacity={vis.insetFillOpacity}
                 insetBarWidth={vis.insetBarWidth}
