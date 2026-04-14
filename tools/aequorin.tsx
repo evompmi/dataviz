@@ -3152,33 +3152,23 @@ function App() {
             />
 
             {/* RIGHT: chart area */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Sticky row: Sample selection (left) + Combined/Faceted (right) */}
+            <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+              {/* Non-sticky Combined / Faceted toggle — absolutely positioned
+                  at the top-right so on landing it shares a row with the
+                  sticky Sample-selection pill, but scrolls away normally
+                  while Sample selection alone continues to stick. */}
               <div
                 style={{
-                  position: "sticky",
+                  position: "absolute",
                   top: 0,
-                  zIndex: 20,
-                  marginBottom: 10,
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 12,
+                  right: 0,
+                  zIndex: 19,
                 }}
               >
-                <SampleSelectionOverlay
-                  showColumnOverlay={vis.showColumnOverlay}
-                  setShowColumnOverlay={(v) => updVis({ showColumnOverlay: v })}
-                  poolReplicates={poolReplicates}
-                  handlePoolChange={handlePoolChange}
-                  colInfo={colInfo}
-                  columnEnabled={columnEnabled}
-                  handleColumnToggle={handleColumnToggle}
-                />
                 <div
                   role="group"
                   aria-label="Plot view"
                   style={{
-                    marginLeft: "auto",
                     display: "inline-flex",
                     border: "1px solid var(--accent-primary)",
                     borderRadius: 8,
@@ -3220,6 +3210,28 @@ function App() {
                     Faceted
                   </button>
                 </div>
+              </div>
+              {/* Sticky row: Sample selection */}
+              <div
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 20,
+                  marginBottom: 10,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 12,
+                }}
+              >
+                <SampleSelectionOverlay
+                  showColumnOverlay={vis.showColumnOverlay}
+                  setShowColumnOverlay={(v) => updVis({ showColumnOverlay: v })}
+                  poolReplicates={poolReplicates}
+                  handlePoolChange={handlePoolChange}
+                  colInfo={colInfo}
+                  columnEnabled={columnEnabled}
+                  handleColumnToggle={handleColumnToggle}
+                />
               </div>
               <PlotPanel
                 ref={plotPanelRef}
