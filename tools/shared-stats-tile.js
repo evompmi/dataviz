@@ -402,7 +402,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const [overrideTest, setOverrideTest] = React.useState(null);
   const [showOnPlot, setShowOnPlot] = React.useState(false);
   const [annotKind, setAnnotKind] = React.useState("cld"); // only used when k>2
-  const [showNs, setShowNs] = React.useState(true);
+  const [showNs, setShowNs] = React.useState(false);
 
   const values = React.useMemo(() => validGroups.map((g) => g.values.slice()), [validGroups]);
   const names = React.useMemo(() => validGroups.map((g) => g.name), [validGroups]);

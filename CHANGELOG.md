@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Bar outline controls in Group Plot (bar style) and Aequorin inset barplot** — both tools now expose a "Bar outline" checkbox with an "Outline width" slider (0.2/0.5 – 4 px) and an "Outline color" picker that take effect when the toggle is on. Previously, Group Plot's bar style only had a fixed-group-color outline with a width slider, and the aequorin inset had dead state (`insetStrokeColors`, `insetStrokeOpacity`) that was never wired to any UI and rendered invisibly. The dead state was removed and replaced with the unified toggle/width/color trio so both tools share the same outline UX.
 
+### Changed
+
+- **"Show ns" off by default in StatsTile** — the "Show ns" toggle in the Group Plot and Aequorin inset-barplot statistics tile now starts unchecked, so on-plot annotations (compact letter displays and significance brackets) hide non-significant comparisons unless the user opts in. Previously it defaulted to on, which cluttered plots with "ns" labels for every non-significant pair — the common case where users want to highlight only the meaningful differences.
+
 ### Fixed
 
 - **Group Plot bar style — point colors under "Color by"** — when the bar chart style was selected with a color-by column, jittered points were shaded by source index (`getPointColors(groupColor)[si]`) instead of the category color. The per-point lookup read `src.categories?.[vi]` (plural, never set), so the `catColors[cat]` branch was dead code and points always fell through to the group-shade fallback. Changed to `src.category` to match the Box/Violin/Raincloud path and restore proper category coloring.
