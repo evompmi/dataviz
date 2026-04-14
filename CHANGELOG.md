@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Venn region click target matches the contoured region** — clicking anywhere inside a region's outline now selects it. Previously the hit zone was a small ~20px circle around the count label, forcing pixel-accurate clicks on the number. The click target is now the full region `<path>` (the same path used to draw the dashed selection contour), with `fill="none" pointer-events="all"` so it stays invisible in SVG exports and in Inkscape.
 - **Aequorin on-plot annotation ink** — CLD letters, significance-bracket strokes, and "ns" labels now match boxplot's `#222` so both tools render identical on-plot statistics.
 - **Group Plot bar style — point colours under "Color by"** — jittered points on the bar chart now pick up the correct category colour instead of falling through to the group shade.
 - **Benchmark page theme** now stays in sync with the rest of the app across tabs, `file://` origins, and bfcache restores.

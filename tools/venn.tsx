@@ -1077,7 +1077,7 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
           const c = centroids[inter.mask];
           if (!c) return null;
           const isSelected = selectedMask === inter.mask;
-          const hitR = Math.max(fSize * 1.5, 20);
+          const regionPath = regionPaths[inter.mask];
           const labelId = inter.setNames.map((n) => svgSafeId(n)).join("-") || `mask-${inter.mask}`;
           return (
             <g
@@ -1086,7 +1086,17 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
               style={{ cursor: "pointer" }}
               onClick={() => onRegionClick && onRegionClick(isSelected ? null : inter.mask)}
             >
-              <circle cx={c.x} cy={c.y} r={hitR} fill="none" pointerEvents="all" />
+              {regionPath ? (
+                <path d={regionPath} fill="none" pointerEvents="all" />
+              ) : (
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={Math.max(fSize * 1.5, 20)}
+                  fill="transparent"
+                  pointerEvents="all"
+                />
+              )}
               <text
                 x={c.x}
                 y={c.y}
@@ -1096,6 +1106,7 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
                 fontWeight="700"
                 fill="#333"
                 fontFamily="sans-serif"
+                pointerEvents="none"
               >
                 {inter.size}
               </text>
