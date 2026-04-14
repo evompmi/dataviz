@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Aequorin inset-barplot "ns" bracket label was rendered in grey** — when the significance-bracket annotation mode was active on the inset barplot, non-significant comparisons ("ns") drew their text in `#999` while significant labels (`*`/`**`/`***`/`****`) used `#333`, producing a washed-out label that read as disabled/placeholder rather than a real result. Boxplot doesn't do this — it draws every bracket label uniformly in `#222`. Dropped the conditional `fill={p >= 0.05 ? "#999" : "#333"}` on `aequorin.tsx:848` and hard-set `fill="#333"` to match the bracket stroke, so "ns" now reads with the same weight/contrast as the asterisks.
+- **Aequorin inset-barplot annotations now match boxplot's ink color** — when the significance-bracket annotation mode was active on the inset barplot, non-significant comparisons ("ns") drew their text in `#999` while significant labels (`*`/`**`/`***`/`****`) used `#333`, producing a washed-out label that read as disabled/placeholder rather than a real result. Beyond fixing the ns dimming, the aequorin chart was also using `#333` for CLD letters and bracket strokes/labels while `boxplot.tsx` has been on `#222` throughout for both CLD and brackets. Unified aequorin's `cld-annotations` text fill, `significance-brackets` path stroke, and bracket label fill to `#222` so both tools render their on-plot statistics with identical ink. `aequorin.tsx` lines 814, 838, 848 in the `Chart` component all changed together in one pass.
 
 ### Changed
 

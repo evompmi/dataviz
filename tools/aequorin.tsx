@@ -811,7 +811,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="700"
-                  fill="#333"
+                  fill="#222"
                   fontFamily="sans-serif"
                 >
                   {letter}
@@ -835,7 +835,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                 <g key={`br-${pi}`}>
                   <path
                     d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                    stroke="#333"
+                    stroke="#222"
                     strokeWidth="1"
                     fill="none"
                   />
@@ -845,7 +845,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                     textAnchor="middle"
                     fontSize="10"
                     fontWeight="700"
-                    fill="#333"
+                    fill="#222"
                     fontFamily="sans-serif"
                   >
                     {label}
