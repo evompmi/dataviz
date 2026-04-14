@@ -534,7 +534,7 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const header = {
     display: "flex",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
     cursor: "pointer",
     userSelect: "none",
   };
@@ -599,11 +599,11 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
   const summaryHeaderEl = React.createElement(
     "div",
     { style: header, onClick: () => setOpen((o) => !o) },
-    React.createElement("h3", { style: h3 }, "Statistics summary"),
     React.createElement("span", {
       className: "dv-disclosure" + (open ? " dv-disclosure-open" : ""),
       "aria-hidden": "true",
-    })
+    }),
+    React.createElement("h3", { style: h3 }, "Statistics summary")
   );
 
   // ── Display-on-plot controls ──────────────────────────────────────────────
