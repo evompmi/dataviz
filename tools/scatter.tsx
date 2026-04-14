@@ -1655,11 +1655,15 @@ function PlotStep({
         {filterableCols.length > 0 && (
           <div className="dv-panel">
             <div
-              style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
+              <span
+                className={"dv-disclosure" + (filtersOpen ? " dv-disclosure-open" : "")}
+                aria-hidden="true"
+              />
               <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-                Filters {filtersOpen ? "▾" : "▸"}
+                Filters
               </p>
               <span style={{ fontSize: 10, color: "var(--text-faint)" }}>
                 {filteredData.length} of {parsed.data.length} rows

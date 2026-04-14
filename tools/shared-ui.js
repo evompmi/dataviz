@@ -11,6 +11,12 @@
 // plus `min`, `max`, `step`, `disabled`, `placeholder`, `className`, `style`,
 // `inputStyle`. The −/+ buttons fire a synthetic event with the next value
 // as a string so existing `(e) => setX(e.target.value)` handlers keep working.
+//
+// Press-and-hold: the button repeats at an accelerating cadence for as long
+// as the pointer is held (first bump immediate, 400 ms before repeat kicks
+// in, then 80 ms for a handful of ticks, then 40 ms). Release anywhere on
+// the page stops the hold via a window-level pointerup listener, so the user
+// can drag off the button mid-hold without breaking the gesture.
 function NumberInput(props) {
   const value = props.value != null ? props.value : "";
   const onChange = props.onChange;
@@ -22,26 +28,103 @@ function NumberInput(props) {
   const placeholder = props.placeholder;
   const className = "dv-num" + (disabled ? " dv-num-disabled" : "");
 
+  // Hold state lives in a ref so setTimeout chains survive React re-renders
+  // triggered by each fireChange. `holdRef.current` is an object per gesture:
+  // { dir, next, timerId, onUp } — comparing identity in the tick lets us
+  // bail out if a new hold has replaced the old one, or if stopRepeat cleared
+  // it.
+  const holdRef = React.useRef(null);
+
   const fireChange = function (newValueStr) {
     if (!onChange) return;
     onChange({ target: { value: newValueStr } });
   };
 
-  const bump = function (dir) {
-    const current = Number(value);
-    const seed = isNaN(current) ? (min != null ? min : 0) : current;
-    let next = seed + dir * step;
-    if (min != null && next < min) next = min;
-    if (max != null && next > max) next = max;
+  const clamp = function (n) {
+    if (min != null && n < min) n = min;
+    if (max != null && n > max) n = max;
     // Round to the step's decimal precision to avoid 0.1+0.2 float noise.
     const decimals = (String(step).split(".")[1] || "").length;
-    const fixed = decimals ? Number(next.toFixed(decimals)) : next;
-    fireChange(String(fixed));
+    return decimals ? Number(n.toFixed(decimals)) : n;
   };
 
   const numericValue = Number(value);
   const minusDisabled = disabled || (min != null && !isNaN(numericValue) && numericValue <= min);
   const plusDisabled = disabled || (max != null && !isNaN(numericValue) && numericValue >= max);
+
+  const stopRepeat = function () {
+    const state = holdRef.current;
+    if (!state) return;
+    if (state.timerId) clearTimeout(state.timerId);
+    if (state.onUp && typeof window !== "undefined") {
+      window.removeEventListener("pointerup", state.onUp);
+      window.removeEventListener("pointercancel", state.onUp);
+    }
+    holdRef.current = null;
+  };
+
+  const startRepeat = function (dir) {
+    if ((dir < 0 && minusDisabled) || (dir > 0 && plusDisabled)) return;
+    // Seed from the current prop value; every subsequent tick walks our own
+    // ref so we stay correct even if React hasn't flushed the re-render yet.
+    const seed = isNaN(Number(value)) ? (min != null ? min : 0) : Number(value);
+    const state = { dir: dir, next: seed, timerId: null, onUp: null };
+    holdRef.current = state;
+
+    const doStep = function () {
+      if (holdRef.current !== state) return;
+      const n = clamp(state.next + dir * step);
+      state.next = n;
+      fireChange(String(n));
+      if ((dir < 0 && min != null && n <= min) || (dir > 0 && max != null && n >= max)) {
+        stopRepeat();
+      }
+    };
+
+    // First step fires immediately so a quick click still bumps once.
+    doStep();
+    if (holdRef.current !== state) return;
+
+    let ticks = 0;
+    const tick = function () {
+      if (holdRef.current !== state) return;
+      doStep();
+      if (holdRef.current !== state) return;
+      ticks += 1;
+      const delay = ticks > 8 ? 40 : 80;
+      state.timerId = setTimeout(tick, delay);
+    };
+    // 400 ms dwell before the repeat kicks in (standard stepper feel).
+    state.timerId = setTimeout(tick, 400);
+
+    // Release anywhere on the page ends the hold — survives the user
+    // dragging off the button mid-gesture.
+    state.onUp = function () {
+      stopRepeat();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("pointerup", state.onUp);
+      window.addEventListener("pointercancel", state.onUp);
+    }
+  };
+
+  // Clean up if the component unmounts during a hold.
+  React.useEffect(function () {
+    return function () {
+      stopRepeat();
+    };
+  }, []);
+
+  const onMinusDown = function (e) {
+    if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
+    startRepeat(-1);
+  };
+  const onPlusDown = function (e) {
+    if (e.button != null && e.button !== 0) return;
+    e.preventDefault();
+    startRepeat(1);
+  };
 
   return React.createElement(
     "div",
@@ -51,9 +134,7 @@ function NumberInput(props) {
       {
         type: "button",
         className: "dv-num-btn dv-num-btn-minus",
-        onClick: function () {
-          bump(-1);
-        },
+        onPointerDown: onMinusDown,
         disabled: minusDisabled,
         tabIndex: -1,
         "aria-label": "Decrement",
@@ -79,9 +160,7 @@ function NumberInput(props) {
       {
         type: "button",
         className: "dv-num-btn dv-num-btn-plus",
-        onClick: function () {
-          bump(1);
-        },
+        onPointerDown: onPlusDown,
         disabled: plusDisabled,
         tabIndex: -1,
         "aria-label": "Increment",

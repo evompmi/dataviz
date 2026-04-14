@@ -145,6 +145,38 @@
   background: var(--surface-sunken);
 }
 
+/* ── Disclosure indicator ──────────────────────────────────────────────
+   Prominent collapsible marker used by StatsTile, Scatter's Filters
+   panel, and Aequorin's chart collapse button. A solid accent-colored
+   circle with a bold ">" glyph that rotates 90° when the section is
+   open — deliberately loud so it reads from across the panel. Meant
+   to be dropped in anywhere an old "▸"/"▾" unicode caret used to live. */
+.dv-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  color: var(--on-accent);
+  font-weight: 900;
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  transition: transform 180ms ease;
+}
+.dv-disclosure::before {
+  content: ">";
+  display: block;
+  /* Optical centering: the character's baseline sits a hair below center. */
+  transform: translate(0.5px, -0.5px);
+}
+.dv-disclosure.dv-disclosure-open {
+  transform: rotate(90deg);
+}
+
 /* Select dropdown — `selStyle` */
 .dv-select {
   background: var(--surface);

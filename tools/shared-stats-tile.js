@@ -600,11 +600,10 @@ function StatsTile({ groups, onAnnotationsChange, onStatsSummaryChange, defaultO
     "div",
     { style: header, onClick: () => setOpen((o) => !o) },
     React.createElement("h3", { style: h3 }, "Statistics summary"),
-    React.createElement(
-      "span",
-      { style: { fontSize: 12, color: "var(--text-faint)" } },
-      open ? "▾" : "▸"
-    )
+    React.createElement("span", {
+      className: "dv-disclosure" + (open ? " dv-disclosure-open" : ""),
+      "aria-hidden": "true",
+    })
   );
 
   // ── Display-on-plot controls ──────────────────────────────────────────────

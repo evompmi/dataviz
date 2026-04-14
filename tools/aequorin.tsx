@@ -1296,11 +1296,21 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
           fontFamily: "inherit",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--text-muted)",
+          }}
+        >
+          <span
+            className={"dv-disclosure" + (chartOpen ? " dv-disclosure-open" : "")}
+            aria-hidden="true"
+          />
           Time-course plot
-        </span>
-        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>
-          {chartOpen ? "▲ collapse" : "▼ expand"}
         </span>
       </button>
       {chartOpen && <div style={{ padding: "0 12px 12px" }}>{chartContent}</div>}
