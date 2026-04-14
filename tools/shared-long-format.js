@@ -322,12 +322,17 @@ function RenameReorderPanel(props) {
     colRoles = props.colRoles,
     filters = props.filters,
     valueRenames = props.valueRenames,
-    groupColIdx = props.groupColIdx,
-    effectiveOrder = props.effectiveOrder,
+    // Map { [colIdx]: { order: string[], onReorder: (newOrder) => void } }.
+    // Every column whose index appears here gets a drag handle and per-column
+    // independent reorder state. Columns absent from the map are rendered as
+    // rename-only (no drag handle, no accent border).
+    orderableCols = props.orderableCols || {},
     applyRename = props.applyRename,
     onRenameVal = props.onRenameVal,
-    onReorder = props.onReorder,
-    dragIdx = props.dragIdx,
+    // Drag state is scoped per column so dragging on one column doesn't
+    // highlight a row in a neighbouring column with the same positional index.
+    // Shape: { col: number, idx: number } | null
+    dragState = props.dragState,
     onDragStart = props.onDragStart,
     onDragEnd = props.onDragEnd;
   return React.createElement(
@@ -359,13 +364,14 @@ function RenameReorderPanel(props) {
         const u = (filters[i] ? filters[i].unique : []).filter(function (v) {
           return filters[i] && filters[i].included && filters[i].included.has(v);
         });
-        const isGrp = i === groupColIdx;
+        const colOrder = orderableCols[i];
+        const isOrderable = !!colOrder;
         const renamedU = u.map(function (v) {
           return { orig: v, renamed: applyRename(i, v) };
         });
         const orderedU =
-          isGrp && effectiveOrder
-            ? effectiveOrder
+          isOrderable && colOrder.order
+            ? colOrder.order
                 .map(function (g) {
                   return renamedU.find(function (x) {
                     return x.renamed === g;
@@ -374,6 +380,7 @@ function RenameReorderPanel(props) {
                 .filter(Boolean)
             : renamedU;
         const displayList = orderedU.length > 0 ? orderedU : renamedU;
+        const dragIdxForCol = dragState && dragState.col === i ? dragState.idx : null;
         return React.createElement(
           "div",
           {
@@ -397,25 +404,25 @@ function RenameReorderPanel(props) {
               "div",
               {
                 key: v,
-                draggable: isGrp,
+                draggable: isOrderable,
                 onDragStart: function () {
-                  onDragStart(vi);
+                  onDragStart({ col: i, idx: vi });
                 },
                 onDragOver: function (e) {
                   e.preventDefault();
                 },
                 onDrop: function () {
-                  if (!isGrp || dragIdx === null || dragIdx === vi) {
+                  if (!isOrderable || dragIdxForCol === null || dragIdxForCol === vi) {
                     onDragEnd();
                     return;
                   }
                   const cur = displayList.map(function (x) {
                     return x.renamed;
                   });
-                  const moved = cur[dragIdx];
-                  cur.splice(dragIdx, 1);
+                  const moved = cur[dragIdxForCol];
+                  cur.splice(dragIdxForCol, 1);
                   cur.splice(vi, 0, moved);
-                  onReorder(cur);
+                  colOrder.onReorder(cur);
                   onDragEnd();
                 },
                 onDragEnd: function () {
@@ -428,12 +435,14 @@ function RenameReorderPanel(props) {
                   marginBottom: 3,
                   padding: "3px 4px",
                   borderRadius: 4,
-                  background: isGrp && dragIdx === vi ? "var(--info-bg)" : "transparent",
-                  cursor: isGrp ? "grab" : "default",
-                  borderLeft: isGrp ? "3px solid var(--accent-primary)" : "3px solid transparent",
+                  background: dragIdxForCol === vi ? "var(--info-bg)" : "transparent",
+                  cursor: isOrderable ? "grab" : "default",
+                  borderLeft: isOrderable
+                    ? "3px solid var(--accent-primary)"
+                    : "3px solid transparent",
                 },
               },
-              isGrp
+              isOrderable
                 ? React.createElement(
                     "span",
                     { style: { fontSize: 11, color: "var(--text-faint)", cursor: "grab" } },

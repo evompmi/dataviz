@@ -196,19 +196,23 @@ suite("RenameReorderPanel");
 test("renders rename inputs and drag handles", function () {
   resetSC();
   var el = sc.RenameReorderPanel({
-    headers: ["Grp"],
-    colNames: ["Group"],
-    colRoles: ["group"],
-    filters: { 0: { unique: ["A", "B"], included: new Set(["A", "B"]) } },
+    headers: ["Grp", "Facet"],
+    colNames: ["Group", "Facet"],
+    colRoles: ["group", "filter"],
+    filters: {
+      0: { unique: ["A", "B"], included: new Set(["A", "B"]) },
+      1: { unique: ["X", "Y"], included: new Set(["X", "Y"]) },
+    },
     valueRenames: {},
-    groupColIdx: 0,
-    effectiveOrder: ["A", "B"],
+    orderableCols: {
+      0: { order: ["A", "B"], onReorder: noop },
+      1: { order: ["X", "Y"], onReorder: noop },
+    },
     applyRename: function (i, v) {
       return v;
     },
     onRenameVal: noop,
-    onReorder: noop,
-    dragIdx: null,
+    dragState: null,
     onDragStart: noop,
     onDragEnd: noop,
   });

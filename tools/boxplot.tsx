@@ -1458,15 +1458,13 @@ function FilterStep({
   renamedRows,
   activeColIdxs,
   valueRenames,
-  groupColIdx,
-  effectiveOrder,
+  orderableCols,
   applyRename,
   toggleFilter,
   toggleAllFilter,
   setRenameVal,
-  setGroupOrder,
-  dragIdx,
-  setDragIdx,
+  dragState,
+  setDragState,
   canPlot,
   setStep,
 }) {
@@ -1489,14 +1487,12 @@ function FilterStep({
           colRoles={colRoles}
           filters={filters}
           valueRenames={valueRenames}
-          groupColIdx={groupColIdx}
-          effectiveOrder={effectiveOrder}
+          orderableCols={orderableCols}
           applyRename={applyRename}
           onRenameVal={setRenameVal}
-          onReorder={setGroupOrder}
-          dragIdx={dragIdx}
-          onDragStart={setDragIdx}
-          onDragEnd={() => setDragIdx(null)}
+          dragState={dragState}
+          onDragStart={setDragState}
+          onDragEnd={() => setDragState(null)}
         />
       </div>
       <div
@@ -2454,10 +2450,15 @@ function App() {
   const [boxplotColors, setBoxplotColors] = useState({});
   const [plotGroupRenames, setPlotGroupRenames] = useState({});
   const [disabledGroups, setDisabledGroups] = useState({});
-  const [groupOrder, setGroupOrder] = useState([]);
+  // Per-column ordering keyed by column index. Any column that can appear in
+  // the rename panel (group/filter role) gets its own order array here, so the
+  // user can reorder values during the filter step before ever picking a
+  // "Facet by" or "Color by" column in the plot step.
+  const [columnOrders, setColumnOrders] = useState({});
+  const setOrderForCol = (i, newOrder) => setColumnOrders((prev) => ({ ...prev, [i]: newOrder }));
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
-  const [dragIdx, setDragIdx] = useState(null);
+  const [dragState, setDragState] = useState(null);
   const [facetByCol, setFacetByCol] = useState(-1);
   const [statsAnnotations, setStatsAnnotations] = useState(null);
   const [statsSummary, setStatsSummary] = useState<string | null>(null);
@@ -2470,7 +2471,7 @@ function App() {
     setBoxplotColors({});
     setPlotGroupRenames({});
     setDisabledGroups({});
-    setGroupOrder([]);
+    setColumnOrders({});
     setColorByCol(-1);
     setCategoryColors({});
     setFacetByCol(-1);
@@ -2610,13 +2611,14 @@ function App() {
   }, [renamedRows, groupColIdx, valueColIdx]);
 
   const effectiveOrder = useMemo(() => {
-    if (groupOrder.length > 0) {
-      const valid = groupOrder.filter((g) => naturalGroupOrder.includes(g));
-      const missing = naturalGroupOrder.filter((g) => !groupOrder.includes(g));
+    const stored = columnOrders[groupColIdx];
+    if (stored && stored.length > 0) {
+      const valid = stored.filter((g) => naturalGroupOrder.includes(g));
+      const missing = naturalGroupOrder.filter((g) => !stored.includes(g));
       return [...valid, ...missing];
     }
     return naturalGroupOrder;
-  }, [groupOrder, naturalGroupOrder]);
+  }, [columnOrders, groupColIdx, naturalGroupOrder]);
 
   const colorByCandidates = useMemo(
     () =>
@@ -2700,11 +2702,65 @@ function App() {
     [allDisplayGroups]
   );
 
-  // Facet column candidates (same pool as colorBy)
-  const facetByCategories = useMemo(() => {
+  // Facet column candidates (same pool as colorBy). The natural order is the
+  // first-seen order of unique values in the (renamed) data so it matches what
+  // the user sees in the rename panel.
+  const naturalFacetOrder = useMemo(() => {
     if (facetByCol < 0) return [];
-    return [...new Set(renamedRows.map((r) => r[facetByCol]))].sort();
+    const seen = new Set();
+    const order = [];
+    renamedRows.forEach((r) => {
+      const v = r[facetByCol];
+      if (!seen.has(v)) {
+        seen.add(v);
+        order.push(v);
+      }
+    });
+    return order;
   }, [facetByCol, renamedRows]);
+
+  const effectiveFacetOrder = useMemo(() => {
+    const stored = columnOrders[facetByCol];
+    if (stored && stored.length > 0) {
+      const valid = stored.filter((g) => naturalFacetOrder.includes(g));
+      const missing = naturalFacetOrder.filter((g) => !stored.includes(g));
+      return [...valid, ...missing];
+    }
+    return naturalFacetOrder;
+  }, [columnOrders, facetByCol, naturalFacetOrder]);
+
+  const facetByCategories = effectiveFacetOrder;
+
+  // Every group/filter column (except the numeric value column) is
+  // reorderable. Each column's natural order is first-seen in renamedRows,
+  // any user-drag override is merged on top. Computed here so that reordering
+  // works at the filter step — before the user has even chosen which column
+  // feeds "Facet by" or "Color by" in the plot step.
+  const orderableCols = useMemo(() => {
+    const m = {};
+    parsedHeaders.forEach((_, i) => {
+      if (i === valueColIdx) return;
+      if (colRoles[i] !== "group" && colRoles[i] !== "filter") return;
+      const seen = new Set();
+      const natural = [];
+      renamedRows.forEach((r) => {
+        const v = r[i];
+        if (!seen.has(v)) {
+          seen.add(v);
+          natural.push(v);
+        }
+      });
+      const stored = columnOrders[i];
+      let order = natural;
+      if (stored && stored.length > 0) {
+        const valid = stored.filter((g) => natural.includes(g));
+        const missing = natural.filter((g) => !stored.includes(g));
+        order = [...valid, ...missing];
+      }
+      m[i] = { order, onReorder: (newOrder) => setOrderForCol(i, newOrder) };
+    });
+    return m;
+  }, [parsedHeaders, colRoles, valueColIdx, renamedRows, columnOrders]);
 
   // Faceted groups: one boxplot per facet category
   const facetedData = useMemo(() => {
@@ -2896,15 +2952,13 @@ function App() {
           renamedRows={renamedRows}
           activeColIdxs={activeColIdxs}
           valueRenames={valueRenames}
-          groupColIdx={groupColIdx}
-          effectiveOrder={effectiveOrder}
+          orderableCols={orderableCols}
           applyRename={applyRename}
           toggleFilter={toggleFilter}
           toggleAllFilter={toggleAllFilter}
           setRenameVal={setRenameVal}
-          setGroupOrder={setGroupOrder}
-          dragIdx={dragIdx}
-          setDragIdx={setDragIdx}
+          dragState={dragState}
+          setDragState={setDragState}
           canPlot={canPlot}
           setStep={setStep}
         />
