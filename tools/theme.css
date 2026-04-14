@@ -132,5 +132,5 @@
    but on-screen we soften the tile so it doesn't glow against the dark UI.
    `filter` is a CSS property and is NOT serialized into exported SVGs. */
 [data-theme="dark"] .dv-plot-card {
-  filter: brightness(0.75);
+  filter: brightness(0.85);
 }
