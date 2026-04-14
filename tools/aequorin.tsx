@@ -2898,8 +2898,12 @@ function App() {
     const allConds = detectConditions(parsed.headers, pool, null).map((c) => {
       const activeCols = c.colIndices.filter((ci) => ce[ci] !== false);
       const prev = prevMap[c.prefix];
-      // If no active columns, force disabled. Otherwise preserve previous toggle state.
-      const enabled = activeCols.length > 0 && (prev ? prev.enabled : true);
+      // If the previous condition had no active columns, its `enabled=false` was
+      // forced by the sample selector rather than a user toggle on the control
+      // panel — so re-checking a replicate should bring the whole condition back.
+      const prevWasForcedOff =
+        prev && (prev.activeColIndices ? prev.activeColIndices.length === 0 : false);
+      const enabled = activeCols.length > 0 && (prev && !prevWasForcedOff ? prev.enabled : true);
       return {
         ...c,
         activeColIndices: activeCols,
