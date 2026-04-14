@@ -415,6 +415,11 @@ function StatsTile({
   const [showOnPlot, setShowOnPlot] = React.useState(false);
   const [annotKind, setAnnotKind] = React.useState("cld"); // only used when k>2
   const [showNs, setShowNs] = React.useState(false);
+  // Unique name for the annotation-kind radio group so multiple StatsTiles
+  // (one per facet in Group Plot) don't collapse into a single HTML radio
+  // group, which would cause the browser to clear checked state across tiles
+  // and make the radios flicker on unrelated re-renders.
+  const annotKindName = "stats-annot-kind-" + React.useId();
 
   const values = React.useMemo(() => validGroups.map((g) => g.values.slice()), [validGroups]);
   const names = React.useMemo(() => validGroups.map((g) => g.name), [validGroups]);
@@ -701,7 +706,7 @@ function StatsTile({
             { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
             React.createElement("input", {
               type: "radio",
-              name: "stats-annot-kind",
+              name: annotKindName,
               checked: annotKind === "cld",
               onChange: () => setAnnotKind("cld"),
             }),
@@ -712,7 +717,7 @@ function StatsTile({
             { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
             React.createElement("input", {
               type: "radio",
-              name: "stats-annot-kind",
+              name: annotKindName,
               checked: annotKind === "brackets",
               onChange: () => setAnnotKind("brackets"),
             }),

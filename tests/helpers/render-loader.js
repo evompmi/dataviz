@@ -63,6 +63,11 @@ function createReactMock() {
       return { current: init !== undefined ? init : null };
     },
     useEffect() {},
+    useId() {
+      const idx = stateIdx++;
+      if (states[idx] === undefined) states[idx] = ":r" + idx + ":";
+      return states[idx];
+    },
     memo(fn) {
       return fn;
     },

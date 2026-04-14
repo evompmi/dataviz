@@ -68,6 +68,7 @@ const ctx = {
     useState: () => [null, () => {}],
     useEffect: () => {},
     useRef: () => ({ current: null }),
+    useId: () => ":r0:",
     createElement: () => null,
     Component: class {
       constructor(props) {
