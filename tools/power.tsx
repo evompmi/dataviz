@@ -619,16 +619,12 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
           />
         </g>
       )}
-      <rect
-        id="plot-frame"
-        x={M.left}
-        y={M.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+        <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+      </g>
       <g id="axis-y">
         {yTicks.map((t) => (
           <text

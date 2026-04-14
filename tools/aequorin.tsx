@@ -386,16 +386,12 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
             ) : null
           )}
         </g>
-        <rect
-          id="plot-frame"
-          x={MARGIN.left}
-          y={MARGIN.top}
-          width={w}
-          height={h}
-          fill="none"
-          stroke="#333"
-          strokeWidth="1"
-        />
+        <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+          <line id="plot-frame-top" x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left + w} y2={MARGIN.top} />
+          <line id="plot-frame-right" x1={MARGIN.left + w} y1={MARGIN.top} x2={MARGIN.left + w} y2={MARGIN.top + h} />
+          <line id="plot-frame-bottom" x1={MARGIN.left} y1={MARGIN.top + h} x2={MARGIN.left + w} y2={MARGIN.top + h} />
+          <line id="plot-frame-left" x1={MARGIN.left} y1={MARGIN.top} x2={MARGIN.left} y2={MARGIN.top + h} />
+        </g>
         <g id="axis-x">
           {xTicks.map((t) => (
             <g key={t}>
@@ -788,16 +784,12 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
             );
           })}
         </g>
-        <rect
-          id="plot-frame"
-          x={M.left}
-          y={M.top}
-          width={w}
-          height={h}
-          fill="none"
-          stroke="#333"
-          strokeWidth="0.5"
-        />
+        <g id="plot-frame" fill="none" stroke="#333" strokeWidth="0.5">
+          <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+          <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+          <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+          <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+        </g>
         {annotations && annotations.kind === "cld" && annotations.letters && (
           <g id="cld-annotations">
             {annotations.letters.map((letter, i) => {

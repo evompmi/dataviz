@@ -395,16 +395,12 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
         })}
       </g>
 
-      <rect
-        id="plot-frame"
-        x={M.left}
-        y={M.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line id="plot-frame-top" x1={M.left} y1={M.top} x2={M.left + w} y2={M.top} />
+        <line id="plot-frame-right" x1={M.left + w} y1={M.top} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
+        <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
+      </g>
 
       <g id="axis-x">
         {groups.map((g, gi) => {
@@ -792,16 +788,12 @@ const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
         })}
       </g>
 
-      <rect
-        id="plot-frame"
-        x={MChart.left}
-        y={MChart.top}
-        width={w}
-        height={h}
-        fill="none"
-        stroke="#333"
-        strokeWidth="1"
-      />
+      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
+        <line id="plot-frame-top" x1={MChart.left} y1={MChart.top} x2={MChart.left + w} y2={MChart.top} />
+        <line id="plot-frame-right" x1={MChart.left + w} y1={MChart.top} x2={MChart.left + w} y2={MChart.top + h} />
+        <line id="plot-frame-bottom" x1={MChart.left} y1={MChart.top + h} x2={MChart.left + w} y2={MChart.top + h} />
+        <line id="plot-frame-left" x1={MChart.left} y1={MChart.top} x2={MChart.left} y2={MChart.top + h} />
+      </g>
 
       {annotations && annotations.kind === "cld" && (
         <g id="cld-annotations">
