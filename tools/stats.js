@@ -1030,6 +1030,22 @@ function kruskalWallis(groups) {
   }
   const N = all.length;
   if (N <= k) return { H: NaN, df: 0, p: NaN, error: "Not enough observations" };
+  // All values identical → ranks are all (N+1)/2, H computes to 0/0, and the
+  // tie-correction denominator C = 1 − (N³−N)/(N³−N) = 0. The naive code path
+  // skipped the divide and reported H=0, p=1 — a "no difference detected"
+  // answer that masks the fact that the test is undefined. Match R's
+  // kruskal.test behavior (it warns and returns NaN) by detecting the
+  // all-tied case explicitly and surfacing an error the stats tile picks up.
+  let allTied = true;
+  for (let i = 1; i < N; i++) {
+    if (all[i] !== all[0]) {
+      allTied = false;
+      break;
+    }
+  }
+  if (allTied) {
+    return { H: NaN, df: k - 1, p: NaN, error: "Data are essentially constant" };
+  }
   const { ranks, tieCorrection } = rankWithTies(all);
   // Sum of ranks per group.
   const R = new Array(k).fill(0);
@@ -1344,7 +1360,13 @@ function compactLetterDisplay(pairs, k, alpha = 0.05) {
   let letters = [new Set(Array.from({ length: k }, (_, i) => i))];
   for (const pr of pairs) {
     const p = pr.pAdj != null ? pr.pAdj : pr.p;
-    if (p >= alpha) continue;
+    // Guard NaN explicitly: `NaN >= alpha` is false, so without this the loop
+    // would treat any unresolved pair as "significant" and start splitting
+    // letters on noise — corrupting the entire CLD silently. NaN p-values
+    // arise when an upstream test (tTest, Tukey, etc.) returns an error; we
+    // skip them rather than guess, matching R's multcompView::multcompLetters
+    // which also requires non-NA inputs.
+    if (!Number.isFinite(p) || p >= alpha) continue;
     const { i, j } = pr;
     const newLetters = [];
     for (const L of letters) {

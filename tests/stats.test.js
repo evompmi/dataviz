@@ -594,6 +594,39 @@ test("InsectSprays — H=54.691 df=5", () => {
   assert(r.p < 1e-8, "p tiny");
 });
 
+test("kruskalWallis: all values tied → error (matches R warning + NaN)", () => {
+  // Ranks are all (N+1)/2, H is 0/0, the tie correction denominator is also
+  // 0. Old code skipped the divide and reported H=0, p=1 — implying "no
+  // significant difference detected" when really the test is undefined.
+  // Now matches R kruskal.test which warns and returns NaN.
+  const r = kruskalWallis([
+    [5, 5],
+    [5, 5],
+    [5, 5],
+  ]);
+  assert(r.error, `expected error, got ${JSON.stringify(r)}`);
+  assert(Number.isNaN(r.H), "H must be NaN");
+  assert(Number.isNaN(r.p), "p must be NaN");
+});
+
+test("kruskalWallis: all-tied across uneven groups also flagged", () => {
+  const r = kruskalWallis([[5], [5, 5], [5, 5, 5]]);
+  assert(r.error, `expected error, got ${JSON.stringify(r)}`);
+});
+
+test("kruskalWallis: partial ties still compute (only all-tied is rejected)", () => {
+  // Three groups with internal ties but distinct group medians — must
+  // still produce a finite H and p. This guards against the all-tied
+  // detection accidentally firing on routine tied data.
+  const r = kruskalWallis([
+    [1, 1, 2],
+    [3, 3, 4],
+    [5, 5, 6],
+  ]);
+  assert(!r.error, `unexpected error: ${r.error}`);
+  assert(Number.isFinite(r.H) && r.H > 0, `expected positive H, got ${r.H}`);
+});
+
 // ── k-sample effect sizes vs R ─────────────────────────────────────────────
 
 suite("stats.js — η² and ε² vs R");
@@ -1094,6 +1127,35 @@ test("CLD: prefers pAdj over p when available", () => {
   ];
   const cld = compactLetterDisplay(pairs, 3);
   assert(cld[0] === cld[1] && cld[1] === cld[2], "all same under pAdj");
+});
+
+test("CLD: NaN p-values are treated as non-significant (not silent splits)", () => {
+  // Without the NaN guard, `NaN >= alpha` is false so the loop would try to
+  // split letters on the NaN pair, producing arbitrary garbage labels. The
+  // guard treats unresolvable pairs as "no evidence of difference", so all
+  // groups share a letter when every pair is NaN.
+  const allNaN = [
+    { i: 0, j: 1, p: NaN },
+    { i: 0, j: 2, p: NaN },
+    { i: 1, j: 2, p: NaN },
+  ];
+  const cld = compactLetterDisplay(allNaN, 3);
+  assert(cld[0] === "a" && cld[1] === "a" && cld[2] === "a", `expected aaa, got ${cld}`);
+});
+
+test("CLD: mixed NaN + significant pairs only act on the resolved pairs", () => {
+  // Pair (0,2) is genuinely significant; (0,1) and (1,2) are NaN. The
+  // function should produce a correct two-letter split based on (0,2)
+  // alone — group 1 ends up grouped with both because no NaN pair tells
+  // us otherwise.
+  const mixed = [
+    { i: 0, j: 1, p: NaN },
+    { i: 0, j: 2, p: 0.001 },
+    { i: 1, j: 2, p: NaN },
+  ];
+  const cld = compactLetterDisplay(mixed, 3);
+  assert(cld[0] !== cld[2], `expected 0 and 2 distinct, got ${cld}`);
+  assert(cld[1].includes(cld[0]) || cld[1].includes(cld[2]), `1 must overlap, got ${cld}`);
 });
 
 // ── Automatic test selection ───────────────────────────────────────────────
