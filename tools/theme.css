@@ -69,6 +69,10 @@
   --howto-header-from: #4a6cf7;
   --howto-header-to: #648fff;
   --howto-shadow: 0 4px 20px rgba(100, 143, 255, 0.12);
+
+  /* Active step-nav pill (Upload / Configure / Filter / Output / Plot) */
+  --step-active-bg: #648fff;
+  --step-active-border: #648fff;
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -119,6 +123,9 @@
   --howto-header-from: #1f2a4a;
   --howto-header-to: #2e3a5c;
   --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+  --step-active-bg: #3b4680;
+  --step-active-border: #4a5a9a;
 }
 
 /* OS-preference fallback applies only if the user hasn't made an explicit
@@ -171,6 +178,9 @@
     --howto-header-from: #1f2a4a;
     --howto-header-to: #2e3a5c;
     --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+    --step-active-bg: #3b4680;
+    --step-active-border: #4a5a9a;
   }
 }
 
