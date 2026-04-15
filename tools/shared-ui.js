@@ -226,7 +226,7 @@ function StepNavBar(props) {
             borderRadius: 6,
             fontSize: 12,
             fontWeight: 600,
-            background: currentStep === s ? "var(--accent-primary)" : "var(--surface)",
+            background: currentStep === s ? "var(--step-active-bg)" : "var(--surface)",
             color:
               currentStep === s
                 ? "var(--on-accent)"
@@ -236,7 +236,7 @@ function StepNavBar(props) {
             border:
               "1px solid " +
               (currentStep === s
-                ? "var(--accent-primary)"
+                ? "var(--step-active-border)"
                 : enabled
                   ? "var(--border-strong)"
                   : "var(--border)"),
