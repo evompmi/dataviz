@@ -413,6 +413,7 @@ function StatsTile({
   const [open, setOpen] = React.useState(!!defaultOpen);
   const [overrideTest, setOverrideTest] = React.useState(null);
   const [showOnPlot, setShowOnPlot] = React.useState(false);
+  const [showSummaryOnPlot, setShowSummaryOnPlot] = React.useState(false);
   const [annotKind, setAnnotKind] = React.useState("cld"); // only used when k>2
   const [showNs, setShowNs] = React.useState(false);
   // Unique name for the annotation-kind radio group so multiple StatsTiles
@@ -480,7 +481,7 @@ function StatsTile({
   // Build a plain-text stats summary for display below the plot.
   const statsSummary = React.useMemo(
     function () {
-      if (!showOnPlot || !chosenTest || !testResult || testResult.error) return null;
+      if (!showSummaryOnPlot || !chosenTest || !testResult || testResult.error) return null;
       const parts = [];
       parts.push(
         (STATS_LABELS[chosenTest] || chosenTest) + ": " + _formatTestLine(chosenTest, testResult)
@@ -510,7 +511,17 @@ function StatsTile({
       );
       return parts.join("\n");
     },
-    [showOnPlot, chosenTest, testResult, k, postHocResult, postHocName, names, powerResult, values]
+    [
+      showSummaryOnPlot,
+      chosenTest,
+      testResult,
+      k,
+      postHocResult,
+      postHocName,
+      names,
+      powerResult,
+      values,
+    ]
   );
 
   // Emit annotations to the parent. We hold the latest spec in a ref and
@@ -696,6 +707,25 @@ function StatsTile({
       }),
       "Display on plot"
     ),
+    React.createElement(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12,
+          color: "var(--text)",
+          cursor: "pointer",
+        },
+      },
+      React.createElement("input", {
+        type: "checkbox",
+        checked: showSummaryOnPlot,
+        onChange: (e) => setShowSummaryOnPlot(e.target.checked),
+      }),
+      "Print summary below plot"
+    ),
     k > 2
       ? React.createElement(
           "div",
@@ -725,26 +755,24 @@ function StatsTile({
           )
         )
       : null,
-    showOnPlot && (k === 2 || annotKind === "brackets")
-      ? React.createElement(
-          "label",
-          {
-            style: {
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontSize: 12,
-              cursor: "pointer",
-            },
-          },
-          React.createElement("input", {
-            type: "checkbox",
-            checked: showNs,
-            onChange: (e) => setShowNs(e.target.checked),
-          }),
-          "Show ns"
-        )
-      : null
+    React.createElement(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          fontSize: 12,
+          cursor: "pointer",
+        },
+      },
+      React.createElement("input", {
+        type: "checkbox",
+        checked: showNs,
+        onChange: (e) => setShowNs(e.target.checked),
+      }),
+      "Show ns"
+    )
   );
 
   const displayTile = React.createElement(

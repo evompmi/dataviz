@@ -1109,12 +1109,11 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
 
   const IntegralTile = showInset ? (
     <div
-      className="dv-plot-card"
       style={{
         marginTop: 16,
         borderRadius: 10,
-        border: "1px solid var(--plot-card-border)",
-        background: "var(--plot-card-bg)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface)",
         overflow: "hidden",
       }}
     >
@@ -1190,8 +1189,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             </button>
           </div>
 
-          {/* Bar plot */}
+          {/* Bar plot canvas — this is the actual .dv-plot-card that hosts
+              the SVG, so it stays white (for export consistency) and gets
+              dimmed via `filter: brightness(0.85)` in dark mode. The outer
+              IntegralTile uses themed surface colors instead so the chrome
+              (header, toggle, CSV table, StatsTile) goes dark in dark mode
+              rather than sitting on a second nested white card. */}
           <div
+            className="dv-plot-card"
             style={{
               background: "var(--plot-card-bg)",
               borderRadius: 8,
