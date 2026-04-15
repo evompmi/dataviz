@@ -3267,7 +3267,11 @@ function App() {
                   </button>
                 </div>
               </div>
-              {/* Sticky row: Sample selection */}
+              {/* Sticky row: Sample selection. `width: fit-content` keeps
+                  the wrapper from stretching across the column — otherwise
+                  its empty right half (higher zIndex) sits on top of the
+                  absolutely-positioned Combined/Faceted toggle and blocks
+                  clicks. */}
               <div
                 style={{
                   position: "sticky",
@@ -3277,6 +3281,7 @@ function App() {
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 12,
+                  width: "fit-content",
                 }}
               >
                 <SampleSelectionOverlay
