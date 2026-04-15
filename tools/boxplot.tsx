@@ -2817,18 +2817,27 @@ function App() {
       setParsedRows(rows);
       setHasHeader(hh);
       // guessColumnType is per-column, so it can hand back multiple "group"
-      // roles (e.g. two low-cardinality categorical columns). Group Plot only
-      // uses one x-axis grouping column — keep the first "group" guess and
-      // demote any later ones to "filter" so the configure step never starts
-      // in a state the user can't reach via the UI.
+      // or "value" roles (e.g. two low-cardinality categorical columns or two
+      // numeric columns). Group Plot only uses one x-axis grouping column and
+      // one numeric value column — keep the first guess of each and demote
+      // any later ones to "filter" so the configure step never starts in a
+      // state the user can't reach via the UI.
       {
         let seenGroup = false;
+        let seenValue = false;
         setColRoles(
           headers.map((_, i) => {
             const r = guessColumnType(rows.map((row) => row[i] ?? ""));
-            if (r !== "group") return r;
-            if (seenGroup) return "filter";
-            seenGroup = true;
+            if (r === "group") {
+              if (seenGroup) return "filter";
+              seenGroup = true;
+              return r;
+            }
+            if (r === "value") {
+              if (seenValue) return "filter";
+              seenValue = true;
+              return r;
+            }
             return r;
           })
         );
@@ -3162,15 +3171,17 @@ function App() {
       return r;
     });
 
-  // Group Plot has exactly one x-axis grouping column, so "group" is an
-  // exclusive role. Picking "group" on a new column demotes any previous
-  // group to "filter" instead of silently ending up with two columns whose
-  // role select says "group" but only the first one actually drives the plot.
+  // Group Plot has exactly one x-axis grouping column and one numeric value
+  // column, so "group" and "value" are exclusive roles. Picking either on a
+  // new column demotes any previous column with the same role to "filter"
+  // instead of silently ending up with two columns whose role select says
+  // the same thing but only the first one actually drives the plot
+  // (valueColIdx / groupColIdx are both `colRoles.indexOf(...)`).
   const updateRole = (i, role) =>
     setColRoles((p) =>
       p.map((r, j) => {
         if (j === i) return role;
-        if (role === "group" && r === "group") return "filter";
+        if ((role === "group" || role === "value") && r === role) return "filter";
         return r;
       })
     );

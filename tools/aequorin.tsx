@@ -1162,9 +1162,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: statsDataMode === "raw" ? "var(--accent-primary)" : "var(--surface)",
+                background: statsDataMode === "raw" ? "var(--cta-primary-bg)" : "var(--surface)",
                 color: statsDataMode === "raw" ? "var(--on-accent)" : "var(--text-faint)",
-                border: `1px solid ${statsDataMode === "raw" ? "var(--accent-primary)" : "var(--border-strong)"}`,
+                border: `1px solid ${statsDataMode === "raw" ? "var(--cta-primary-bg)" : "var(--border-strong)"}`,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -1178,9 +1178,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: statsDataMode === "corrected" ? "var(--accent-plot)" : "var(--surface)",
+                background: statsDataMode === "corrected" ? "var(--cta-plot-bg)" : "var(--surface)",
                 color: statsDataMode === "corrected" ? "var(--on-accent)" : "var(--text-faint)",
-                border: `1px solid ${statsDataMode === "corrected" ? "var(--accent-plot)" : "var(--border-strong)"}`,
+                border: `1px solid ${statsDataMode === "corrected" ? "var(--cta-plot-bg)" : "var(--border-strong)"}`,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
