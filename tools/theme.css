@@ -82,6 +82,11 @@
      reads as "press me", just without the neon glow of the raw accent. */
   --cta-primary-bg: #648fff;
   --cta-primary-shadow: 0 4px 12px -2px rgba(100, 143, 255, 0.45);
+
+  /* Toggle-pill teal (aequorin Σ Baseline-corrected). Mirrors the
+     --cta-primary-bg pattern: same as --accent-plot in light mode, dimmed in
+     dark so the "on" pill doesn't glow against the dark chrome. */
+  --cta-plot-bg: #2ec4b6;
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -142,6 +147,11 @@
      the bright-blue glow from the light-mode rgba() reads too loud here. */
   --cta-primary-bg: #4d62cc;
   --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+
+  /* Dimmed teal for toggle pills in dark mode (same role as --cta-primary-bg
+     for blue). Roughly matches the ~0.75× brightness drop applied to the
+     primary CTA so the two pills read as a matched pair. */
+  --cta-plot-bg: #25a090;
 
   /* Dim the sample-selection accent shadow in dark mode — the bright amber
      glow from the light-mode rgba() reads too loud against the dark UI.
@@ -206,6 +216,8 @@
 
     --cta-primary-bg: #4d62cc;
     --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+
+    --cta-plot-bg: #25a090;
 
     --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
