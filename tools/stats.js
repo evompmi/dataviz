@@ -186,9 +186,16 @@ function tcdf(t, df) {
 function tinv(p, df) {
   if (p <= 0) return -Infinity;
   if (p >= 1) return Infinity;
-  let lo = -50,
-    hi = 50;
-  for (let i = 0; i < 100; i++) {
+  if (p === 0.5) return 0;
+  // Start from a modest symmetric range and expand outward until the
+  // target probability is bracketed. Fixed [-50, 50] bounds silently
+  // clamped extreme quantiles — notably for low df where the t-tail is
+  // heavy (e.g. tinv(0.001, 1) ≈ −318 in R, well past ±50).
+  let lo = -1,
+    hi = 1;
+  for (let i = 0; i < 2000 && tcdf(lo, df) > p; i++) lo *= 2;
+  for (let i = 0; i < 2000 && tcdf(hi, df) < p; i++) hi *= 2;
+  for (let i = 0; i < 200; i++) {
     const mid = (lo + hi) / 2;
     if (tcdf(mid, df) < p) lo = mid;
     else hi = mid;

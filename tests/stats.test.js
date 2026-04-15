@@ -22,6 +22,7 @@ vm.runInContext(code, ctx);
 const {
   normcdf,
   tcdf,
+  tinv,
   shapiroWilk,
   sampleMean,
   sampleVariance,
@@ -57,6 +58,44 @@ suite("stats.js — primitive smoke tests");
 test("normcdf(0) === 0.5", () => approx(normcdf(0), 0.5, 1e-4));
 test("normcdf(1.96) ≈ 0.975", () => approx(normcdf(1.96), 0.975, 1e-4));
 test("tcdf(0, 10) === 0.5", () => approx(tcdf(0, 10), 0.5, 1e-4));
+
+// ── tinv extreme-quantile coverage ─────────────────────────────────────────
+//
+// The bisection bounds used to be hard-coded [-50, 50], which silently
+// clamped heavy-tail cases — e.g. tinv(0.001, 1) returned -50 instead of
+// -318.3 (Cauchy). All reference values cross-checked against R's qt().
+
+test("tinv standard critical values match R qt()", () => {
+  approx(tinv(0.025, 2), -4.302653, 1e-4); // qt(0.025, 2)
+  approx(tinv(0.01, 5), -3.36493, 1e-4); // qt(0.01, 5)
+  approx(tinv(0.975, 10), 2.228139, 1e-4); // qt(0.975, 10)
+  approx(tinv(0.5, 10), 0, 1e-9);
+});
+
+test("tinv handles heavy-tail Cauchy (df=1)", () => {
+  // R> qt(0.001, 1) = -318.3088
+  approx(tinv(0.001, 1), -318.3088, 1e-3);
+});
+
+test("tinv handles extreme quantiles beyond the old ±50 clamp", () => {
+  // R> qt(1e-6, 3)    = -103.2995
+  // R> qt(1e-10, 2)   = -70710.68
+  // R> qt(0.9999999, 30) = 6.7014
+  // Tolerances are absolute, so scale with the magnitude of each result.
+  approx(tinv(1e-6, 3), -103.2995, 1e-3);
+  approx(tinv(1e-10, 2), -70710.68, 1e-2);
+  approx(tinv(0.9999999, 30), 6.7014, 1e-3);
+});
+
+test("tinv round-trips through tcdf at extreme p", () => {
+  // Self-consistency: tcdf(tinv(p, df), df) ≈ p
+  for (const df of [1, 2, 3, 10, 30]) {
+    for (const p of [1e-8, 1e-4, 0.25, 0.75, 1 - 1e-4]) {
+      const q = tinv(p, df);
+      approx(tcdf(q, df), p, 1e-6);
+    }
+  }
+});
 
 // ── Sample helpers ─────────────────────────────────────────────────────────
 
