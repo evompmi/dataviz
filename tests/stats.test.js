@@ -527,6 +527,33 @@ test("Hedges g ≤ |Cohen d| (bias-corrected shrinks)", () => {
   assert(Math.abs(g) < Math.abs(d), `|g|=${Math.abs(g)} not < |d|=${Math.abs(d)}`);
 });
 
+test("Hedges g uses exact J (gammaln) — matches gamma-ratio form at small n", () => {
+  // n1 = n2 = 3 (df = 4) is where the asymptotic shortcut J ≈ 1 − 3/(4n−9)
+  // diverges most from the exact gamma-ratio form. By hand:
+  //   d = (mean(x)−mean(y)) / √sp² = (2−4) / √2.5 ≈ −1.264911
+  //   J(4) = Γ(2) / (Γ(1.5)·√2) = 1 / ((√π/2)·√2) ≈ 0.7978846
+  //   g = d · J ≈ −1.009253
+  // The old asymptotic shortcut would give J = 1 − 3/(4·6 − 9) = 0.8,
+  // and so g_old ≈ −1.011929 — a ~0.27 % error. The test below pins the
+  // exact value so any regression to the shortcut would fire.
+  const d = cohenD([1, 2, 3], [2, 4, 6]);
+  approx(d, -1.264911, 1e-5);
+  const g = hedgesG([1, 2, 3], [2, 4, 6]);
+  approx(g, -1.009253, 1e-5);
+});
+
+test("Hedges g exact J converges to asymptote for large n", () => {
+  // At n ≈ 30 the gamma-ratio form should agree with the asymptote to
+  // ~1e-4. This pins down the convergence behavior.
+  const x = Array.from({ length: 30 }, (_, i) => i);
+  const y = Array.from({ length: 30 }, (_, i) => i + 1);
+  const d = cohenD(x, y);
+  const g = hedgesG(x, y);
+  const J_exact = g / d;
+  const J_asymptote = 1 - 3 / (4 * 60 - 9);
+  approx(J_exact, J_asymptote, 1e-4);
+});
+
 test("rankBiserial — identical groups → 0", () => {
   const { U1 } = mannWhitneyU([1, 2, 3, 4], [1, 2, 3, 4]);
   approx(rankBiserial(U1, 4, 4), 0, 1e-12);

@@ -569,6 +569,14 @@ function powerChi2(w, n, alpha, df) {
 }
 
 // Cohen's f for ANOVA from group means + pooled within-SD.
+//
+// f = σ_means / σ_within, where σ_means is the **population-style** SD of
+// the group means — i.e. divides by k, not (k−1) — treating the supplied
+// means as the entire population of cell means rather than a sample. This
+// matches Cohen (1988) and R's pwr::pwr.anova.test, which is what the
+// downstream power calculator is calibrated against. Callers that have a
+// sample SD of group means should multiply by √((k−1)/k) before passing
+// in, or recompute from the raw means.
 function fFromGroupMeans(meansArr, sd) {
   if (!meansArr.length || sd <= 0) return 0;
   const grandMean = meansArr.reduce((a, b) => a + b, 0) / meansArr.length;
@@ -937,9 +945,17 @@ function cohenD(x, y) {
 
 function hedgesG(x, y) {
   const d = cohenD(x, y);
-  const n = x.length + y.length;
-  // Small-sample correction factor J ≈ 1 − 3/(4(n1+n2)−9)
-  const J = 1 - 3 / (4 * n - 9);
+  if (!Number.isFinite(d)) return d;
+  const df = x.length + y.length - 2;
+  if (df < 1) return NaN;
+  // Exact small-sample correction factor:
+  //   J(df) = Γ(df/2) / (Γ((df−1)/2) · √(df/2))
+  // computed in log space via gammaln to avoid Γ overflow at large df.
+  // The familiar `J ≈ 1 − 3/(4n − 9)` shortcut is the leading term of the
+  // asymptotic expansion; it's off by ~0.3% at the smallest practical
+  // sample (n1 = n2 = 3) and converges to the exact form by n ≈ 30.
+  // Tightening this also matches what `effectsize::hedges_g()` reports.
+  const J = Math.exp(gammaln(df / 2) - gammaln((df - 1) / 2) - 0.5 * Math.log(df / 2));
   return d * J;
 }
 
@@ -1476,6 +1492,18 @@ function compactLetterDisplay(pairs, k, alpha = 0.05) {
 // `{ alphaNormality, alphaVariance }` to override. When a group has n < 3
 // Shapiro-Wilk can't run — we treat normality as unknown and conservatively
 // recommend the rank-based test.
+//
+// **Caveat on per-group Shapiro-Wilk at α = 0.05:** running Shapiro on each
+// of k groups inflates the family-wise false-positive rate to roughly
+// 1 − (1 − α)^k. With k = 5 groups the chance of falsely declaring at least
+// one group "non-normal" is ~23 % even when all five are perfectly normal,
+// which biases this auto-selector toward Kruskal-Wallis. ANOVA is robust to
+// modest non-normality, so this conservative bias is by design — but users
+// who already know their data are normal can loosen `alphaNormality` (e.g.
+// 0.01) to reduce the inflation, or override the test pick directly. R's
+// pooled approach would be to test the residuals of the fitted model rather
+// than each group separately; we don't do that here because the auto-pick
+// is an entry-point heuristic, not a publication-grade decision rule.
 function selectTest(groups, opts = {}) {
   const alphaN = opts.alphaNormality != null ? opts.alphaNormality : 0.05;
   const alphaV = opts.alphaVariance != null ? opts.alphaVariance : 0.05;
