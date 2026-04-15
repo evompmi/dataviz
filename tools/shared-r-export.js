@@ -215,11 +215,163 @@ function buildRScript(ctx) {
   return parts.join("\n") + "\n";
 }
 
-// Power-analysis R export — deliberately stubbed here so boxplot/aequorin can
-// load this file without pulling the power-tool branch logic. Wired in the
-// follow-up commit that edits power.tsx.
-function buildRScriptForPower(_state) {
-  return "# buildRScriptForPower: not yet implemented\n";
+// ── Power analysis ─────────────────────────────────────────────────────────
+//
+// R's pwr package solves for whichever parameter you leave as NULL. The
+// Dataviz power tool lets the user pick `solveFor ∈ {"n", "power"}` and then
+// computes the missing value — so the generated script sets every *known*
+// parameter to its numeric value and omits the one being solved for, which
+// causes pwr to solve for it automatically.
+//
+// The ctx shape mirrors tools/power.tsx's App() state:
+//   { testKey, solveFor, es, n, alpha, power, tails, k, df, result }
+// where testKey ∈ {"t-ind","t-paired","t-one","anova","chi2","correlation"}
+// and solveFor ∈ {"n","power"}. `result` (optional) is the value the JS
+// solver produced — embedded as a trailing comment so the R run can be
+// cross-checked.
+
+const _R_POWER_TEST_LABELS = {
+  "t-ind": "Two-sample t-test (independent)",
+  "t-paired": "Paired t-test",
+  "t-one": "One-sample t-test",
+  anova: "One-way ANOVA",
+  chi2: "Chi-square test",
+  correlation: "Correlation test",
+};
+
+function _tTypeForTestKey(testKey) {
+  if (testKey === "t-ind") return "two.sample";
+  if (testKey === "t-paired") return "paired";
+  if (testKey === "t-one") return "one.sample";
+  return null;
+}
+
+function _alternativeForTails(tails) {
+  return tails === 1 ? "one.sided" : "two.sided";
+}
+
+// Emit one argument line like `  n = 30,` or `  n = NULL,  # solve for this`.
+// When `solveFor` matches `arg`, the value is replaced with NULL so pwr knows
+// this is the unknown — mirrors the R idiom exactly.
+function _pwrArg(arg, value, solveFor, annotation) {
+  const isSolveTarget =
+    (arg === "n" && solveFor === "n") || (arg === "power" && solveFor === "power");
+  const rhs = isSolveTarget ? "NULL" : formatRNumber(value);
+  const suffix = isSolveTarget ? "  # <- solve for this" : annotation ? "  # " + annotation : "";
+  return "  " + arg + " = " + rhs + "," + suffix;
+}
+
+function _pwrArgString(arg, value) {
+  return "  " + arg + ' = "' + value + '",';
+}
+
+function _pwrCallBody(testKey, state) {
+  const solveFor = state.solveFor;
+  const tTypeArg = _tTypeForTestKey(testKey);
+  const lines = [];
+  if (testKey === "t-ind" || testKey === "t-paired" || testKey === "t-one") {
+    lines.push(_pwrArg("n", state.n, solveFor));
+    lines.push(_pwrArg("d", state.es, solveFor));
+    lines.push(_pwrArg("sig.level", state.alpha, solveFor));
+    lines.push(_pwrArg("power", state.power, solveFor));
+    lines.push(_pwrArgString("type", tTypeArg));
+    lines.push(_pwrArgString("alternative", _alternativeForTails(state.tails)));
+  } else if (testKey === "anova") {
+    lines.push(_pwrArg("k", state.k, solveFor));
+    lines.push(_pwrArg("n", state.n, solveFor));
+    lines.push(_pwrArg("f", state.es, solveFor));
+    lines.push(_pwrArg("sig.level", state.alpha, solveFor));
+    lines.push(_pwrArg("power", state.power, solveFor));
+  } else if (testKey === "chi2") {
+    lines.push(_pwrArg("w", state.es, solveFor));
+    // pwr::pwr.chisq.test uses N (not n) for the total sample size.
+    const Ntag = solveFor === "n" ? "NULL" : formatRNumber(state.n);
+    const Nsuffix = solveFor === "n" ? "  # <- solve for this" : "";
+    lines.push("  N = " + Ntag + "," + Nsuffix);
+    lines.push(_pwrArg("df", state.df, solveFor));
+    lines.push(_pwrArg("sig.level", state.alpha, solveFor));
+    lines.push(_pwrArg("power", state.power, solveFor));
+  } else if (testKey === "correlation") {
+    lines.push(_pwrArg("n", state.n, solveFor));
+    lines.push(_pwrArg("r", state.es, solveFor));
+    lines.push(_pwrArg("sig.level", state.alpha, solveFor));
+    lines.push(_pwrArg("power", state.power, solveFor));
+    lines.push(_pwrArgString("alternative", _alternativeForTails(state.tails)));
+  }
+  // Drop the trailing comma from whatever the last non-comment line is so the
+  // R call parses cleanly even if we added an inline comment.
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const ln = lines[i];
+    const commentIdx = ln.indexOf("#");
+    const beforeComment = commentIdx >= 0 ? ln.slice(0, commentIdx) : ln;
+    // Strip the last comma in the non-comment portion.
+    const trimmed = beforeComment.replace(/,\s*$/, " ");
+    lines[i] = commentIdx >= 0 ? trimmed + ln.slice(commentIdx) : trimmed.replace(/\s+$/, "");
+    break;
+  }
+  return lines;
+}
+
+function _pwrCallName(testKey) {
+  if (testKey === "t-ind" || testKey === "t-paired" || testKey === "t-one") {
+    return "pwr::pwr.t.test";
+  }
+  if (testKey === "anova") return "pwr::pwr.anova.test";
+  if (testKey === "chi2") return "pwr::pwr.chisq.test";
+  if (testKey === "correlation") return "pwr::pwr.r.test";
+  return null;
+}
+
+function buildRScriptForPower(state) {
+  const s = state || {};
+  const testKey = s.testKey;
+  const call = _pwrCallName(testKey);
+  const generated = s.generatedAt || new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+
+  const lines = [];
+  lines.push("# -----------------------------------------------------------------------------");
+  lines.push("# Dataviz Toolbox — Power analysis R export");
+  lines.push("# Generated: " + generated);
+  lines.push("#");
+  lines.push("# Test:        " + (_R_POWER_TEST_LABELS[testKey] || testKey || "(unknown)"));
+  lines.push(
+    "# Solving for: " +
+      (s.solveFor === "n"
+        ? "sample size (n)"
+        : s.solveFor === "power"
+          ? "power"
+          : s.solveFor || "(unknown)")
+  );
+  lines.push("#");
+  lines.push("# Required package:");
+  lines.push('#   install.packages("pwr")');
+  lines.push("# -----------------------------------------------------------------------------");
+  lines.push("");
+  lines.push("library(pwr)");
+  lines.push("");
+
+  if (!call) {
+    lines.push("# (unknown test id — no pwr call emitted)");
+    return lines.join("\n") + "\n";
+  }
+
+  lines.push(call + "(");
+  const body = _pwrCallBody(testKey, s);
+  for (let i = 0; i < body.length; i++) lines.push(body[i]);
+  lines.push(")");
+
+  // Trailing sanity-check comment: what did the toolbox report for this
+  // configuration? Lets the user eyeball the R output against the JS one.
+  if (s.result != null && Number.isFinite(s.result)) {
+    lines.push("");
+    if (s.solveFor === "n") {
+      lines.push("# Toolbox reported: n = " + s.result);
+    } else if (s.solveFor === "power") {
+      lines.push("# Toolbox reported: power = " + (s.result * 100).toFixed(1) + "%");
+    }
+  }
+
+  return lines.join("\n") + "\n";
 }
 
 // Expose globals for browser consumption. In Node (tests) these live on the

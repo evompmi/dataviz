@@ -1,6 +1,7 @@
 const { suite, test, assert, eq, summary } = require("./harness");
 const {
   buildRScript,
+  buildRScriptForPower,
   sanitizeRString,
   formatRNumber,
   formatRVector,
@@ -278,6 +279,155 @@ test("decision-tree reason is appended as a trailing comment", () => {
   const out = buildRScript(ctxTwoGroups("welchT"));
   assert(out.includes("# Decision-tree rationale"), "missing rationale section");
   assert(out.includes("#   mock reason"), "rationale body missing");
+});
+
+// ── buildRScriptForPower ───────────────────────────────────────────────────
+//
+// The power builder takes the App state from tools/power.tsx. We build a
+// canonical state for each testKey and exercise both solveFor branches +
+// tails variants. Exact pwr numeric output isn't asserted — that's the job
+// of the benchmark suite; here we only verify the right R call is emitted
+// with the right argument list.
+
+function powerState(overrides) {
+  return Object.assign(
+    {
+      testKey: "t-ind",
+      solveFor: "n",
+      es: 0.5,
+      n: 30,
+      alpha: 0.05,
+      power: 0.8,
+      tails: 2,
+      k: 3,
+      df: 1,
+      result: 64,
+      generatedAt: "2026-04-15T00:00:00Z",
+    },
+    overrides
+  );
+}
+
+suite("shared-r-export.js — buildRScriptForPower header & packages");
+
+test("header includes test label, solve-for line, and library(pwr)", () => {
+  const out = buildRScriptForPower(powerState());
+  assert(out.includes("# Test:        Two-sample t-test (independent)"), "missing test label");
+  assert(out.includes("# Solving for: sample size (n)"), "missing solve-for line");
+  assert(out.includes('install.packages("pwr")'), "missing install.packages");
+  assert(out.includes("library(pwr)"), "missing library(pwr)");
+  assert(out.includes("Generated: 2026-04-15T00:00:00Z"), "missing timestamp");
+});
+
+test("solveFor=power flips the header label", () => {
+  const out = buildRScriptForPower(powerState({ solveFor: "power" }));
+  assert(out.includes("# Solving for: power"), "missing power solve-for line");
+});
+
+suite("shared-r-export.js — buildRScriptForPower t-tests");
+
+test("t-ind with solveFor=n emits n=NULL and type=two.sample", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "t-ind", solveFor: "n" }));
+  assert(out.includes("pwr::pwr.t.test("), "wrong pwr call");
+  assert(out.includes("n = NULL,  # <- solve for this"), "n should be NULL for solve-for-n");
+  assert(out.includes("d = 0.5,"), "missing d");
+  assert(out.includes("sig.level = 0.05,"), "missing sig.level");
+  assert(out.includes("power = 0.8,"), "missing power value");
+  assert(out.includes('type = "two.sample",'), "missing type");
+  assert(out.includes('alternative = "two.sided"'), "missing alternative");
+});
+
+test("t-ind with solveFor=power emits power=NULL", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "t-ind", solveFor: "power" }));
+  assert(out.includes("n = 30,"), "n should be numeric");
+  assert(out.includes("power = NULL"), "power should be NULL");
+  assert(out.includes("# <- solve for this"), "missing solve-for marker");
+});
+
+test("t-paired emits type=paired", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "t-paired" }));
+  assert(out.includes("pwr::pwr.t.test("), "wrong pwr call");
+  assert(out.includes('type = "paired"'), "missing type=paired");
+});
+
+test("t-one emits type=one.sample", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "t-one" }));
+  assert(out.includes("pwr::pwr.t.test("), "wrong pwr call");
+  assert(out.includes('type = "one.sample"'), "missing type=one.sample");
+});
+
+test("tails=1 emits alternative=one.sided", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "t-ind", tails: 1 }));
+  assert(out.includes('alternative = "one.sided"'), "missing one.sided alternative");
+});
+
+suite("shared-r-export.js — buildRScriptForPower anova / chi2 / correlation");
+
+test("anova emits pwr.anova.test with k, n, f", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "anova", k: 4, es: 0.25 }));
+  assert(out.includes("pwr::pwr.anova.test("), "wrong pwr call");
+  assert(out.includes("k = 4,"), "missing k");
+  assert(out.includes("f = 0.25,"), "missing f");
+  assert(!out.includes("alternative ="), "anova should not have alternative");
+  assert(!out.includes("type ="), "anova should not have type");
+});
+
+test("chi2 emits pwr.chisq.test with UPPERCASE N and df", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "chi2", df: 2, solveFor: "power" }));
+  assert(out.includes("pwr::pwr.chisq.test("), "wrong pwr call");
+  assert(out.includes("w = 0.5,"), "missing w");
+  assert(out.includes("N = 30,"), "missing uppercase N");
+  assert(out.includes("df = 2,"), "missing df");
+});
+
+test("chi2 with solveFor=n sets N=NULL", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "chi2", df: 2, solveFor: "n" }));
+  assert(out.includes("N = NULL"), "N should be NULL for solve-for-n in chi2");
+});
+
+test("correlation emits pwr.r.test with r and alternative", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "correlation", tails: 1, es: 0.3 }));
+  assert(out.includes("pwr::pwr.r.test("), "wrong pwr call");
+  assert(out.includes("r = 0.3,"), "missing r");
+  assert(out.includes('alternative = "one.sided"'), "missing one.sided alternative");
+});
+
+suite("shared-r-export.js — buildRScriptForPower result sanity comment");
+
+test("solveFor=n trailing comment shows integer n", () => {
+  const out = buildRScriptForPower(powerState({ solveFor: "n", result: 64 }));
+  assert(out.includes("# Toolbox reported: n = 64"), "missing toolbox-reported n");
+});
+
+test("solveFor=power trailing comment shows percent to one decimal", () => {
+  const out = buildRScriptForPower(powerState({ solveFor: "power", result: 0.7123 }));
+  assert(out.includes("# Toolbox reported: power = 71.2%"), "missing toolbox-reported power");
+});
+
+test("null result suppresses the sanity comment", () => {
+  const out = buildRScriptForPower(powerState({ result: null }));
+  assert(!out.includes("Toolbox reported"), "sanity comment should be absent");
+});
+
+test("unknown testKey emits a labeled placeholder instead of pwr call", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "bogus" }));
+  assert(out.includes("unknown test id"), "missing placeholder for unknown test");
+  assert(!out.includes("pwr::"), "should not emit any pwr call");
+});
+
+suite("shared-r-export.js — buildRScriptForPower trailing-comma cleanup");
+
+test("the final non-comment argument has no trailing comma", () => {
+  const out = buildRScriptForPower(powerState({ testKey: "anova" }));
+  // Find the ')' closing the pwr call and scan upward for the last arg line.
+  const lines = out.split("\n");
+  const closeIdx = lines.findIndex((l) => l.trim() === ")");
+  assert(closeIdx > 0, "missing closing paren");
+  const lastArg = lines[closeIdx - 1];
+  // Strip inline comment if present.
+  const beforeComment =
+    lastArg.indexOf("#") >= 0 ? lastArg.slice(0, lastArg.indexOf("#")) : lastArg;
+  assert(!/,\s*$/.test(beforeComment), "last argument still has a trailing comma: " + lastArg);
 });
 
 summary();

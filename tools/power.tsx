@@ -992,6 +992,7 @@ function App() {
               textAlign: "center",
               background: resultFlash ? "var(--success-bg)" : undefined,
               transition: "background 0.3s ease",
+              position: "relative",
             }}
           >
             <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
@@ -1011,6 +1012,32 @@ function App() {
               <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: 4 }}>
                 {test.totalLabel(result, k)}
               </div>
+            )}
+            {result != null && typeof buildRScriptForPower === "function" && (
+              <button
+                className="dv-btn dv-btn-dl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const script = buildRScriptForPower({
+                    testKey,
+                    solveFor,
+                    es,
+                    n,
+                    alpha,
+                    power,
+                    tails,
+                    k,
+                    df,
+                    result,
+                  });
+                  downloadText(script, `power_${testKey}_${solveFor}.R`);
+                  flashSaved(e.currentTarget);
+                }}
+                title="Download a runnable R script reproducing this power calculation with the pwr package"
+                style={{ position: "absolute", top: 10, right: 10 }}
+              >
+                {"\u2B07 R"}
+              </button>
             )}
           </div>
         </div>

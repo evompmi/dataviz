@@ -152,6 +152,13 @@ declare global {
     filename: string
   ): void;
 
+  // ── R-script export (shared-r-export.js) ──────────────────────────────────
+  function buildRScript(ctx: any): string;
+  function buildRScriptForPower(state: any): string;
+  function sanitizeRString(s: unknown): string;
+  function formatRNumber(n: number | null | undefined): string;
+  function formatRVector(arr: Array<number | null | undefined>): string;
+
   // ── Shared components (Phase 1: loose props; tighten per component later) ──
   const ColorInput: FC<any>;
   const FileDropZone: FC<any>;
