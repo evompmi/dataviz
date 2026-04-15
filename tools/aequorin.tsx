@@ -1569,13 +1569,13 @@ function HowToSection() {
         marginTop: 24,
         borderRadius: 14,
         overflow: "hidden",
-        border: "2px solid var(--accent-primary)",
-        boxShadow: "0 4px 20px rgba(100,143,255,0.12)",
+        border: "2px solid var(--howto-border)",
+        boxShadow: "var(--howto-shadow)",
       }}
     >
       <div
         style={{
-          background: "linear-gradient(135deg,#4a6cf7,#648FFF)",
+          background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
           padding: "14px 24px",
           display: "flex",
           alignItems: "center",

@@ -63,6 +63,12 @@
   --aes-shape-bg: #faf5ff;
   --aes-shape-border: #d8b4fe;
   --aes-shape-header: #9333ea;
+
+  /* "How to use" tiles — outer border, gradient header, soft blue shadow */
+  --howto-border: #648fff;
+  --howto-header-from: #4a6cf7;
+  --howto-header-to: #648fff;
+  --howto-shadow: 0 4px 20px rgba(100, 143, 255, 0.12);
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -108,6 +114,11 @@
   --aes-shape-bg: #221a2e;
   --aes-shape-border: #3d2a55;
   --aes-shape-header: #5e3a85;
+
+  --howto-border: #2e3a5c;
+  --howto-header-from: #1f2a4a;
+  --howto-header-to: #2e3a5c;
+  --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* OS-preference fallback applies only if the user hasn't made an explicit
@@ -155,6 +166,11 @@
     --aes-shape-bg: #221a2e;
     --aes-shape-border: #3d2a55;
     --aes-shape-header: #5e3a85;
+
+    --howto-border: #2e3a5c;
+    --howto-header-from: #1f2a4a;
+    --howto-header-to: #2e3a5c;
+    --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   }
 }
 
