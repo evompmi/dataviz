@@ -42,5 +42,9 @@ jobs:
       # can serve them statically. This step catches the case where someone
       # edited a tools/*.tsx source but forgot to run `npm run build`, which
       # would otherwise ship stale compiled JS to production.
+      #
+      # tools/version.js is excluded because it is generated from `git describe`
+      # rather than from TSX source — CI's shallow checkout has no tags and so
+      # would always regenerate it as "dev", producing a spurious drift.
       - name: Verify compiled tsx sources are in sync
-        run: git diff --exit-code tools/
+        run: git diff --exit-code -- tools/ ':(exclude)tools/version.js'
