@@ -625,34 +625,63 @@ function StatsTile({
 
   // ── Header rows ───────────────────────────────────────────────────────────
   const displayTileHeader = React.createElement("h3", { style: h3 }, "Statistics display");
+  // Compute the filename stem once — shared by both download chips.
+  const _safeStem =
+    typeof fileStem === "string" && fileStem.trim()
+      ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(/^-+|-+$/g, "")
+      : "stats_report";
+  // Build the ctx once per render so the two download buttons see the exact
+  // same decision trace. `chosenTest`, `postHocName`, etc. are closed over
+  // the current StatsTile memos — capturing them in the ctx means clicking
+  // either chip emits what the tile is currently showing.
+  const _statsCtx = {
+    names,
+    values,
+    recommendation,
+    chosenTest,
+    testResult,
+    postHocName,
+    postHocResult,
+    powerResult,
+  };
   const downloadReportBtn = React.createElement(
     "button",
     {
       onClick: (e) => {
         e.stopPropagation();
-        const txt = _buildStatsReport({
-          names,
-          values,
-          recommendation,
-          chosenTest,
-          testResult,
-          postHocName,
-          postHocResult,
-          powerResult,
-        });
-        const safeStem =
-          typeof fileStem === "string" && fileStem.trim()
-            ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(
-                /^-+|-+$/g,
-                ""
-              )
-            : "stats_report";
-        downloadText(txt, `${safeStem || "stats_report"}.txt`);
+        downloadText(_buildStatsReport(_statsCtx), `${_safeStem || "stats_report"}.txt`);
         flashSaved(e.currentTarget);
       },
       className: "dv-btn dv-btn-dl",
+      title: "Download a plain-text stats report",
     },
     "\u2B07 TXT"
+  );
+  // R-script chip: only rendered when tools/shared-r-export.js has been
+  // loaded as a sibling script tag. Guarded on the global so this file
+  // keeps working in environments (tests, tools with no stats) that don't
+  // bundle the exporter.
+  const rScriptBtn =
+    typeof buildRScript === "function"
+      ? React.createElement(
+          "button",
+          {
+            onClick: (e) => {
+              e.stopPropagation();
+              downloadText(buildRScript(_statsCtx), `${_safeStem || "stats_report"}.R`);
+              flashSaved(e.currentTarget);
+            },
+            className: "dv-btn dv-btn-dl",
+            title: "Download a runnable R script reproducing these tests",
+          },
+          "\u2B07 R"
+        )
+      : null;
+  const downloadChipsEl = React.createElement(
+    "div",
+    { style: { display: "flex", alignItems: "center", gap: 6 } },
+    downloadReportBtn,
+    rScriptBtn
   );
   const summaryHeaderEl = React.createElement(
     "div",
@@ -676,7 +705,7 @@ function StatsTile({
       }),
       React.createElement("h3", { style: h3 }, title || "Statistics summary")
     ),
-    downloadReportBtn
+    downloadChipsEl
   );
 
   // ── Display-on-plot controls ──────────────────────────────────────────────

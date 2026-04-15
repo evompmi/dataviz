@@ -125,6 +125,12 @@ const sharedGlobals = {
   formatP: "readonly",
   StatsTile: "readonly",
   assignBracketLevels: "readonly",
+  // shared-r-export.js
+  buildRScript: "readonly",
+  buildRScriptForPower: "readonly",
+  sanitizeRString: "readonly",
+  formatRNumber: "readonly",
+  formatRVector: "readonly",
   // theme.js
   ThemeToggle: "readonly",
   useThemeMode: "readonly",
