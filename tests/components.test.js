@@ -761,6 +761,54 @@ test("open render on k=2 shows assumption + test sections", function () {
   assert(countElements(el) > 30, "open tile should produce many elements");
 });
 
+test("sub-options are disabled when 'Display on plot' is off (k=2)", function () {
+  resetSC();
+  var el = sc.StatsTile({
+    groups: [
+      { name: "A", values: [1, 2, 3, 4, 5, 6, 7, 8] },
+      { name: "B", values: [2, 3, 4, 5, 6, 7, 8, 9] },
+    ],
+    onAnnotationsChange: noop,
+    onStatsSummaryChange: noop,
+  });
+  var str = JSON.stringify(el);
+  assert(
+    str.indexOf("Print summary below plot") >= 0,
+    "display-tile should expose 'Print summary below plot'"
+  );
+  assert(str.indexOf("Display on plot") >= 0, "display-tile should expose 'Display on plot'");
+  assert(str.indexOf("Show ns") >= 0, "display-tile should always render 'Show ns'");
+  // Default showOnPlot=false, so both "Print summary below plot" and "Show ns"
+  // must be disabled (no style radios for k=2).
+  var notAllowedCount = (str.match(/not-allowed/g) || []).length;
+  assert(notAllowedCount === 2, "expected 2 disabled controls for k=2, got " + notAllowedCount);
+});
+
+test("Show ns + Style radios + Print summary all disabled when display is off (k>2)", function () {
+  resetSC();
+  // k=3 → default annotKind is 'cld'. With showOnPlot=false by default,
+  // every sub-option of "Display on plot" should be disabled: Print summary,
+  // both Style radios, and Show ns (which is also independently disabled in CLD).
+  var pgCtrl = [4.17, 5.58, 5.18, 6.11, 4.5, 4.61, 5.17, 4.53, 5.33, 5.14];
+  var pgTrt1 = [4.81, 4.17, 4.41, 3.59, 5.87, 3.83, 6.03, 4.89, 4.32, 4.69];
+  var pgTrt2 = [6.31, 5.12, 5.54, 5.5, 5.37, 5.29, 4.92, 6.15, 5.8, 5.26];
+  var el = sc.StatsTile({
+    groups: [
+      { name: "ctrl", values: pgCtrl },
+      { name: "trt1", values: pgTrt1 },
+      { name: "trt2", values: pgTrt2 },
+    ],
+    onAnnotationsChange: noop,
+  });
+  var str = JSON.stringify(el);
+  assert(str.indexOf("Show ns") >= 0, "display-tile should always render 'Show ns'");
+  assert(str.indexOf("letters (a/ab/b)") >= 0, "Style radios should render for k>2");
+  assert(str.indexOf("brackets") >= 0, "brackets radio should render for k>2");
+  // 4 disabled controls: Print summary + cld radio + brackets radio + Show ns.
+  var notAllowedCount = (str.match(/not-allowed/g) || []).length;
+  assert(notAllowedCount === 4, "expected 4 disabled controls for k>2, got " + notAllowedCount);
+});
+
 test("open render on k=3 shows post-hoc table", function () {
   resetSC();
   var pgCtrl = [4.17, 5.58, 5.18, 6.11, 4.5, 4.61, 5.17, 4.53, 5.33, 5.14];

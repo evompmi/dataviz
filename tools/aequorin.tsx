@@ -1189,12 +1189,10 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             </button>
           </div>
 
-          {/* Bar plot canvas — this is the actual .dv-plot-card that hosts
-              the SVG, so it stays white (for export consistency) and gets
-              dimmed via `filter: brightness(0.85)` in dark mode. The outer
-              IntegralTile uses themed surface colors instead so the chrome
-              (header, toggle, CSV table, StatsTile) goes dark in dark mode
-              rather than sitting on a second nested white card. */}
+          {/* The inner .dv-plot-card is the actual plot canvas (stays white
+              for export consistency + dimmed via filter in dark mode); the
+              outer IntegralTile uses themed surface colors so its chrome
+              follows dark mode. */}
           <div
             className="dv-plot-card"
             style={{
@@ -1349,13 +1347,15 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   ) : null;
 
   // ── Collapsible time-course chart tile ──
+  // Same two-level theming as IntegralTile: outer is themed chrome (goes
+  // dark in dark mode), inner wraps the chart SVG in a .dv-plot-card so
+  // the plot canvas stays white-and-dimmed for export consistency.
   const ChartTile = (chartContent) => (
     <div
-      className="dv-plot-card"
       style={{
         borderRadius: 10,
-        border: "1px solid var(--plot-card-border)",
-        background: "var(--plot-card-bg)",
+        border: "1px solid var(--border-strong)",
+        background: "var(--surface)",
         overflow: "hidden",
       }}
     >
@@ -1390,7 +1390,21 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
           Time-course plot
         </span>
       </button>
-      {chartOpen && <div style={{ padding: "0 12px 12px" }}>{chartContent}</div>}
+      {chartOpen && (
+        <div style={{ padding: "0 12px 12px" }}>
+          <div
+            className="dv-plot-card"
+            style={{
+              background: "var(--plot-card-bg)",
+              borderRadius: 8,
+              border: "1px solid var(--plot-card-border)",
+              padding: 12,
+            }}
+          >
+            {chartContent}
+          </div>
+        </div>
+      )}
     </div>
   );
 

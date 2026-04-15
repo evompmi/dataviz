@@ -481,7 +481,9 @@ function StatsTile({
   // Build a plain-text stats summary for display below the plot.
   const statsSummary = React.useMemo(
     function () {
-      if (!showSummaryOnPlot || !chosenTest || !testResult || testResult.error) return null;
+      // Summary is a sub-option of "Display on plot": both must be on.
+      if (!showOnPlot || !showSummaryOnPlot || !chosenTest || !testResult || testResult.error)
+        return null;
       const parts = [];
       parts.push(
         (STATS_LABELS[chosenTest] || chosenTest) + ": " + _formatTestLine(chosenTest, testResult)
@@ -512,6 +514,7 @@ function StatsTile({
       return parts.join("\n");
     },
     [
+      showOnPlot,
       showSummaryOnPlot,
       chosenTest,
       testResult,
@@ -677,6 +680,57 @@ function StatsTile({
   );
 
   // ── Display-on-plot controls ──────────────────────────────────────────────
+  // Every control below "Display on plot" (style radios, "Print summary",
+  // "Show ns") is a sub-option: disabled when the parent is off so users see
+  // the full control set but can't interact with it. "Show ns" also gets an
+  // extra condition — in CLD mode (k>2 default) it's a dead control because
+  // letter displays don't have a non-significant filter to toggle.
+  const subDisabled = !showOnPlot;
+  const nsDisabled = subDisabled || (k > 2 && annotKind === "cld");
+  const checkboxLabel = (checked, onChange, text, disabled) =>
+    React.createElement(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12,
+          color: disabled ? "var(--text-faint)" : "var(--text)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.55 : 1,
+        },
+      },
+      React.createElement("input", {
+        type: "checkbox",
+        checked: disabled ? false : checked,
+        disabled,
+        onChange: (e) => onChange(e.target.checked),
+      }),
+      text
+    );
+  const radioLabel = (value, disabled) =>
+    React.createElement(
+      "label",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.55 : 1,
+          color: disabled ? "var(--text-faint)" : undefined,
+        },
+      },
+      React.createElement("input", {
+        type: "radio",
+        name: annotKindName,
+        checked: annotKind === value,
+        disabled,
+        onChange: () => setAnnotKind(value),
+      }),
+      value === "cld" ? "letters (a/ab/b)" : "brackets"
+    );
   const displayControls = React.createElement(
     "div",
     {
@@ -688,91 +742,22 @@ function StatsTile({
         flexWrap: "wrap",
       },
     },
-    React.createElement(
-      "label",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          fontSize: 12,
-          color: "var(--text)",
-          cursor: "pointer",
-        },
-      },
-      React.createElement("input", {
-        type: "checkbox",
-        checked: showOnPlot,
-        onChange: (e) => setShowOnPlot(e.target.checked),
-      }),
-      "Display on plot"
-    ),
-    React.createElement(
-      "label",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          fontSize: 12,
-          color: "var(--text)",
-          cursor: "pointer",
-        },
-      },
-      React.createElement("input", {
-        type: "checkbox",
-        checked: showSummaryOnPlot,
-        onChange: (e) => setShowSummaryOnPlot(e.target.checked),
-      }),
-      "Print summary below plot"
-    ),
+    checkboxLabel(showOnPlot, setShowOnPlot, "Display on plot", false),
+    checkboxLabel(showSummaryOnPlot, setShowSummaryOnPlot, "Print summary below plot", subDisabled),
     k > 2
       ? React.createElement(
           "div",
           { style: { display: "flex", alignItems: "center", gap: 10, fontSize: 12 } },
-          React.createElement("span", { style: { color: "var(--text-muted)" } }, "Style:"),
           React.createElement(
-            "label",
-            { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
-            React.createElement("input", {
-              type: "radio",
-              name: annotKindName,
-              checked: annotKind === "cld",
-              onChange: () => setAnnotKind("cld"),
-            }),
-            "letters (a/ab/b)"
+            "span",
+            { style: { color: subDisabled ? "var(--text-faint)" : "var(--text-muted)" } },
+            "Style:"
           ),
-          React.createElement(
-            "label",
-            { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer" } },
-            React.createElement("input", {
-              type: "radio",
-              name: annotKindName,
-              checked: annotKind === "brackets",
-              onChange: () => setAnnotKind("brackets"),
-            }),
-            "brackets"
-          )
+          radioLabel("cld", subDisabled),
+          radioLabel("brackets", subDisabled)
         )
       : null,
-    React.createElement(
-      "label",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-          fontSize: 12,
-          cursor: "pointer",
-        },
-      },
-      React.createElement("input", {
-        type: "checkbox",
-        checked: showNs,
-        onChange: (e) => setShowNs(e.target.checked),
-      }),
-      "Show ns"
-    )
+    checkboxLabel(showNs, setShowNs, "Show ns", nsDisabled)
   );
 
   const displayTile = React.createElement(
