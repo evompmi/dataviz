@@ -72,6 +72,7 @@ This tool is deliberately narrow. The numerics it ships are cross-validated agai
 - **Privacy-sensitive data** (clinical, unpublished, embargoed) where uploading to a hosted service is not an option and installing R is a hurdle.
 - **Publication-ready SVG output** with named `<g>` groups for downstream touch-up in Inkscape or Illustrator.
 - **A-priori power analysis** for t-tests, one-way ANOVA, χ², and correlation — like R's `pwr` package for the tests it covers, and easier to explore interactively.
+- **Reproducibility trail via one-click R export.** Group Plot, Aequorin, and Power Analysis all ship a `⬇ R` chip next to the existing report download. Clicking it emits a runnable R script that embeds the current data inline and reproduces the exact statistical tests the toolbox just ran (`t.test`, `aov`, `oneway.test`, `kruskal.test`, `TukeyHSD`, `rstatix::games_howell_test`, `rstatix::dunn_test`, or the matching `pwr::*` call). The script can be checked into version control or pasted into a methods section — a UI click-through becomes something a reviewer can rerun a year later. Plot reproduction is deliberately out of scope: the script covers statistics only and says so in its header comment.
 - **Niche tool** Aequorin Ca²⁺ calibration that is not first-class anywhere else.
 
 **Where you will outgrow it**
@@ -81,7 +82,6 @@ This tool is deliberately narrow. The numerics it ships are cross-validated agai
 - **No Dunnett's test** (control vs. many treatments).
 - **No regression beyond simple linear.** Multiple regression, logistic regression, non-linear curve fitting (dose-response, Michaelis-Menten, Hill / Boltzmann), spline smoothing are not provided. The Hill model in the Aequorin calibration tool is a fixed-form solver, not a general non-linear fitter.
 - **No survival, ROC, or time-to-event analysis.**
-- **Partial reproducibility trail.** Group Plot, Aequorin, and Power Analysis ship a one-click `⬇ R` export that emits a runnable R script reproducing the statistical tests: embedded data plus the same `t.test` / `aov` / `oneway.test` / `kruskal.test` / `TukeyHSD` / `rstatix::games_howell_test` / `rstatix::dunn_test` / `pwr::*` calls the tile or result panel just ran. That script can be checked into version control or pasted into a methods section. It does **not** reproduce plots — ggplot code is deliberately out of scope — and it only covers the statistical side. For a full end-to-end methods-to-figures pipeline, an R or Python notebook is still structurally better.
 - **Per-group Shapiro-Wilk at α = 0.05 inflates the family-wise false-positive rate** for normality screening at large _k_. This is documented in the source and biases the auto-pick toward Kruskal-Wallis at large _k_ — adjustable via the `alphaNormality` override but worth knowing about.
 - **Browser-only** means no large datasets (millions of rows will not work) and no headless / scripted batch processing.
 
