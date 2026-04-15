@@ -182,26 +182,84 @@ function tcdf(t, df) {
   return t >= 0 ? 1 - p : p;
 }
 
-// Inverse t CDF (bisection)
+// t-distribution PDF (computed in log space, used by tinv Newton-Raphson)
+function tpdf(x, df) {
+  const logpdf =
+    gammaln((df + 1) / 2) -
+    gammaln(df / 2) -
+    0.5 * Math.log(Math.PI * df) -
+    ((df + 1) / 2) * Math.log(1 + (x * x) / df);
+  return Math.exp(logpdf);
+}
+
+// Inverse t CDF.
+// Strategy:
+//   • df = 1 and df = 2 have closed forms — use them directly.
+//   • df ≥ 3: Newton-Raphson seeded with a Cornish-Fisher correction to the
+//     normal quantile, with a damped step and a bisection fallback if Newton
+//     fails to converge. Bracket bounds expand outward (doubling) to handle
+//     heavy-tailed cases where |t| can exceed hundreds or thousands at
+//     extreme p (e.g. qt(1e-10, 5) ≈ −157).
+//   • Work in the left tail (leftP ≤ 0.5) and flip sign at the end, so that
+//     inputs like p = 1 − 1e-15 don't suffer catastrophic cancellation.
 function tinv(p, df) {
   if (p <= 0) return -Infinity;
   if (p >= 1) return Infinity;
   if (p === 0.5) return 0;
-  // Start from a modest symmetric range and expand outward until the
-  // target probability is bracketed. Fixed [-50, 50] bounds silently
-  // clamped extreme quantiles — notably for low df where the t-tail is
-  // heavy (e.g. tinv(0.001, 1) ≈ −318 in R, well past ±50).
-  let lo = -1,
-    hi = 1;
-  for (let i = 0; i < 2000 && tcdf(lo, df) > p; i++) lo *= 2;
-  for (let i = 0; i < 2000 && tcdf(hi, df) < p; i++) hi *= 2;
-  for (let i = 0; i < 200; i++) {
-    const mid = (lo + hi) / 2;
-    if (tcdf(mid, df) < p) lo = mid;
-    else hi = mid;
-    if (hi - lo < 1e-10) break;
+
+  const upper = p > 0.5;
+  const leftP = upper ? 1 - p : p;
+
+  let tLeft;
+
+  if (df === 1) {
+    // Cauchy: F⁻¹(u) = tan(π(u − 0.5)) = −cot(π·u).
+    tLeft = -1 / Math.tan(Math.PI * leftP);
+  } else if (df === 2) {
+    // Closed form: t = (2u−1) / √(2u(1−u)).
+    tLeft = (2 * leftP - 1) / Math.sqrt(2 * leftP * (1 - leftP));
+  } else {
+    // Cornish-Fisher seed: first-order correction to the normal quantile.
+    const z = norminv(leftP);
+    let x = z + (z * (z * z + 1)) / (4 * df);
+
+    let converged = false;
+    for (let i = 0; i < 60; i++) {
+      const cdf = tcdf(x, df);
+      const pdf = tpdf(x, df);
+      if (!Number.isFinite(cdf) || !(pdf > 0)) break;
+      let step = (cdf - leftP) / pdf;
+      // Damp the step so we can't jump past a flat tail where PDF → 0.
+      const cap = Math.abs(x) + 1;
+      if (step > cap) step = cap;
+      else if (step < -cap) step = -cap;
+      x -= step;
+      if (Math.abs(step) < 1e-13 * (Math.abs(x) + 1)) {
+        converged = true;
+        break;
+      }
+    }
+
+    if (converged && Number.isFinite(x)) {
+      tLeft = x;
+    } else {
+      // Bisection fallback: expand the lower bound until leftP is bracketed.
+      let lo = -1;
+      const hi = 0;
+      for (let i = 0; i < 4000 && tcdf(lo, df) > leftP; i++) lo *= 2;
+      let a = lo,
+        b = hi;
+      for (let i = 0; i < 200; i++) {
+        const mid = (a + b) / 2;
+        if (tcdf(mid, df) < leftP) a = mid;
+        else b = mid;
+        if (b - a < 1e-12 * (Math.abs(a) + 1)) break;
+      }
+      tLeft = (a + b) / 2;
+    }
   }
-  return (lo + hi) / 2;
+
+  return upper ? -tLeft : tLeft;
 }
 
 // F-distribution CDF

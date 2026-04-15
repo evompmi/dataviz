@@ -61,30 +61,56 @@ test("tcdf(0, 10) === 0.5", () => approx(tcdf(0, 10), 0.5, 1e-4));
 
 // ── tinv extreme-quantile coverage ─────────────────────────────────────────
 //
-// The bisection bounds used to be hard-coded [-50, 50], which silently
-// clamped heavy-tail cases — e.g. tinv(0.001, 1) returned -50 instead of
-// -318.3 (Cauchy). All reference values cross-checked against R's qt().
+// Earlier revisions used pure bisection with hard-coded or lightly-expanded
+// bounds, which under-resolved heavy-tail cases. The current implementation
+// uses closed forms for df = 1 and df = 2, and Newton-Raphson seeded with a
+// Cornish-Fisher correction for df ≥ 3 (bisection fallback). Reference
+// values from R's qt(). Tolerances here are absolute and tight enough to
+// catch any regression to plain bisection.
 
 test("tinv standard critical values match R qt()", () => {
-  approx(tinv(0.025, 2), -4.302653, 1e-4); // qt(0.025, 2)
-  approx(tinv(0.01, 5), -3.36493, 1e-4); // qt(0.01, 5)
-  approx(tinv(0.975, 10), 2.228139, 1e-4); // qt(0.975, 10)
-  approx(tinv(0.5, 10), 0, 1e-9);
+  // All reference values generated with R: qt(p, df). 1e-10 absolute
+  // tolerance is tight enough to fail for the old ±50 bisection or any
+  // future regression to plain bisection.
+  approx(tinv(0.025, 2), -4.3026527297494637, 1e-10);
+  approx(tinv(0.01, 5), -3.3649299989072179, 1e-10);
+  approx(tinv(0.975, 10), 2.2281388519862735, 1e-10);
+  approx(tinv(0.5, 10), 0, 1e-12);
 });
 
-test("tinv handles heavy-tail Cauchy (df=1)", () => {
-  // R> qt(0.001, 1) = -318.3088
-  approx(tinv(0.001, 1), -318.3088, 1e-3);
+test("tinv closed forms — df=1 (Cauchy) and df=2", () => {
+  approx(tinv(0.001, 1), -318.30883898555049, 1e-9);
+  approx(tinv(0.99, 1), 31.820515953773935, 1e-10);
+  approx(tinv(0.01, 2), -6.9645567342832733, 1e-10);
+  approx(tinv(0.75, 2), 0.81649658092772592, 1e-12);
 });
 
 test("tinv handles extreme quantiles beyond the old ±50 clamp", () => {
-  // R> qt(1e-6, 3)    = -103.2995
-  // R> qt(1e-10, 2)   = -70710.68
-  // R> qt(0.9999999, 30) = 6.7014
-  // Tolerances are absolute, so scale with the magnitude of each result.
+  // R> qt(1e-6, 3)      = -103.2995
+  // R> qt(1e-10, 2)     = -70710.6781
+  // R> qt(1e-10, 5)     = -156.825592708894
+  // R> qt(1e-15, 3)     = -103311.08359285
+  // R> qt(1 - 1e-12, 30) = 11.397227795416
   approx(tinv(1e-6, 3), -103.2995, 1e-3);
-  approx(tinv(1e-10, 2), -70710.68, 1e-2);
-  approx(tinv(0.9999999, 30), 6.7014, 1e-3);
+  approx(tinv(1e-10, 2), -70710.6781, 1e-2);
+  approx(tinv(1e-10, 5), -156.825592708894, 1e-7);
+  approx(tinv(1e-15, 3), -103311.08359285, 1e-4);
+  approx(tinv(1 - 1e-12, 30), 11.397227795416, 1e-10);
+});
+
+test("tinv symmetric near p=1 without catastrophic cancellation", () => {
+  // Upper-tail inputs are handled by folding into the left tail, so the
+  // implementation must be antisymmetric across 0.5 to the precision
+  // allowed by the float representation of (1 - p). We stay at eps ≥ 1e-6
+  // so that (1 - eps) round-trips cleanly — below that, the subtraction
+  // 1 - (1 - eps) itself loses precision regardless of the solver.
+  for (const df of [1, 2, 3, 10, 50]) {
+    for (const eps of [1e-3, 1e-6]) {
+      const lo = tinv(eps, df);
+      const hi = tinv(1 - eps, df);
+      approx(hi, -lo, 1e-9 * (Math.abs(lo) + 1));
+    }
+  }
 });
 
 test("tinv round-trips through tcdf at extreme p", () => {
@@ -92,7 +118,7 @@ test("tinv round-trips through tcdf at extreme p", () => {
   for (const df of [1, 2, 3, 10, 30]) {
     for (const p of [1e-8, 1e-4, 0.25, 0.75, 1 - 1e-4]) {
       const q = tinv(p, df);
-      approx(tcdf(q, df), p, 1e-6);
+      approx(tcdf(q, df), p, 1e-9);
     }
   }
 });

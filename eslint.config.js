@@ -88,6 +88,7 @@ const sharedGlobals = {
   gammainc: "readonly",
   gammainc_upper: "readonly",
   tcdf: "readonly",
+  tpdf: "readonly",
   tinv: "readonly",
   fcdf: "readonly",
   chi2cdf: "readonly",
