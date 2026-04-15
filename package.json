@@ -5,7 +5,7 @@
     "build": "esbuild tools/boxplot.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap",
     "prewatch": "node scripts/write-version.js",
     "watch": "esbuild tools/boxplot.tsx tools/scatter.tsx tools/aequorin.tsx tools/venn.tsx tools/molarity.tsx tools/power.tsx --outdir=tools --jsx=transform --minify --sourcemap --watch",
-    "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js && node tests/stats.test.js",
+    "test": "node tests/shared.test.js && node tests/parsing.test.js && node tests/integration.test.js && node tests/components.test.js && node tests/power.test.js && node tests/stats.test.js && node tests/r-export.test.js",
     "benchmark": "Rscript benchmark/run-r.R && node benchmark/run.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
