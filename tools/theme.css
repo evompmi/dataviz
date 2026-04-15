@@ -27,6 +27,8 @@
   --accent-primary: #648fff;
   --accent-plot: #2ec4b6;
   --accent-dna: #785ef0;
+  --accent-warning: #f59e0b;
+  --accent-warning-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
 
   /* State — danger / warning / info */
   --danger-bg: #fef2f2;
@@ -126,6 +128,12 @@
 
   --step-active-bg: #3b4680;
   --step-active-border: #4a5a9a;
+
+  /* Dim the sample-selection accent shadow in dark mode — the bright amber
+     glow from the light-mode rgba() reads too loud against the dark UI.
+     The accent color itself (--accent-warning) stays identical across
+     themes like all other --accent-* vars. */
+  --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 /* OS-preference fallback applies only if the user hasn't made an explicit
@@ -181,6 +189,8 @@
 
     --step-active-bg: #3b4680;
     --step-active-border: #4a5a9a;
+
+    --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }
 
