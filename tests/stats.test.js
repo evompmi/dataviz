@@ -22,6 +22,7 @@ vm.runInContext(code, ctx);
 const {
   normcdf,
   tcdf,
+  tinv,
   shapiroWilk,
   sampleMean,
   sampleVariance,
@@ -46,6 +47,10 @@ const {
   dunnTest,
   compactLetterDisplay,
   selectTest,
+  bisect,
+  powerAnova,
+  chi2inv,
+  chi2cdf,
 } = ctx;
 
 // ── Primitives smoke test ──────────────────────────────────────────────────
@@ -58,6 +63,112 @@ test("normcdf(0) === 0.5", () => approx(normcdf(0), 0.5, 1e-4));
 test("normcdf(1.96) ≈ 0.975", () => approx(normcdf(1.96), 0.975, 1e-4));
 test("tcdf(0, 10) === 0.5", () => approx(tcdf(0, 10), 0.5, 1e-4));
 
+// ── tinv extreme-quantile coverage ─────────────────────────────────────────
+//
+// Earlier revisions used pure bisection with hard-coded or lightly-expanded
+// bounds, which under-resolved heavy-tail cases. The current implementation
+// uses closed forms for df = 1 and df = 2, and Newton-Raphson seeded with a
+// Cornish-Fisher correction for df ≥ 3 (bisection fallback). Reference
+// values from R's qt(). Tolerances here are absolute and tight enough to
+// catch any regression to plain bisection.
+
+test("tinv standard critical values match R qt()", () => {
+  // All reference values generated with R: qt(p, df). 1e-10 absolute
+  // tolerance is tight enough to fail for the old ±50 bisection or any
+  // future regression to plain bisection.
+  approx(tinv(0.025, 2), -4.3026527297494637, 1e-10);
+  approx(tinv(0.01, 5), -3.3649299989072179, 1e-10);
+  approx(tinv(0.975, 10), 2.2281388519862735, 1e-10);
+  approx(tinv(0.5, 10), 0, 1e-12);
+});
+
+test("tinv closed forms — df=1 (Cauchy) and df=2", () => {
+  approx(tinv(0.001, 1), -318.30883898555049, 1e-9);
+  approx(tinv(0.99, 1), 31.820515953773935, 1e-10);
+  approx(tinv(0.01, 2), -6.9645567342832733, 1e-10);
+  approx(tinv(0.75, 2), 0.81649658092772592, 1e-12);
+});
+
+test("tinv handles extreme quantiles beyond the old ±50 clamp", () => {
+  // R> qt(1e-6, 3)      = -103.2995
+  // R> qt(1e-10, 2)     = -70710.6781
+  // R> qt(1e-10, 5)     = -156.825592708894
+  // R> qt(1e-15, 3)     = -103311.08359285
+  // R> qt(1 - 1e-12, 30) = 11.397227795416
+  approx(tinv(1e-6, 3), -103.2995, 1e-3);
+  approx(tinv(1e-10, 2), -70710.6781, 1e-2);
+  approx(tinv(1e-10, 5), -156.825592708894, 1e-7);
+  approx(tinv(1e-15, 3), -103311.08359285, 1e-4);
+  approx(tinv(1 - 1e-12, 30), 11.397227795416, 1e-10);
+});
+
+test("tinv symmetric near p=1 without catastrophic cancellation", () => {
+  // Upper-tail inputs are handled by folding into the left tail, so the
+  // implementation must be antisymmetric across 0.5 to the precision
+  // allowed by the float representation of (1 - p). We stay at eps ≥ 1e-6
+  // so that (1 - eps) round-trips cleanly — below that, the subtraction
+  // 1 - (1 - eps) itself loses precision regardless of the solver.
+  for (const df of [1, 2, 3, 10, 50]) {
+    for (const eps of [1e-3, 1e-6]) {
+      const lo = tinv(eps, df);
+      const hi = tinv(1 - eps, df);
+      approx(hi, -lo, 1e-9 * (Math.abs(lo) + 1));
+    }
+  }
+});
+
+test("tinv round-trips through tcdf at extreme p", () => {
+  // Self-consistency: tcdf(tinv(p, df), df) ≈ p
+  for (const df of [1, 2, 3, 10, 30]) {
+    for (const p of [1e-8, 1e-4, 0.25, 0.75, 1 - 1e-4]) {
+      const q = tinv(p, df);
+      approx(tcdf(q, df), p, 1e-9);
+    }
+  }
+});
+
+// ── chi2inv: Newton-seeded inverse chi-square ──────────────────────────────
+//
+// Earlier revision was pure bisection (~50 iterations for 1e-10 tolerance).
+// The current implementation seeds Newton from the Wilson-Hilferty cubic-
+// normal approximation and falls back to bisection in the saturated tails
+// where the χ² PDF collapses below 1e-12 and Newton would overshoot.
+// Reference values from R's qchisq(); central-body tests target tight
+// tolerance, tail tests verify round-trip self-consistency.
+
+suite("stats.js — chi2inv vs R");
+
+test("chi2inv standard critical values match R qchisq()", () => {
+  approx(chi2inv(0.95, 1), 3.841459, 1e-5);
+  approx(chi2inv(0.95, 5), 11.0705, 1e-5);
+  approx(chi2inv(0.99, 10), 23.20925, 1e-5);
+  approx(chi2inv(0.5, 20), 19.33743, 1e-5);
+  approx(chi2inv(0.001, 100), 61.91752, 1e-3);
+  approx(chi2inv(0.999, 100), 149.4493, 1e-4);
+});
+
+test("chi2inv handles small df accurately", () => {
+  approx(chi2inv(0.5, 1), 0.4549364, 1e-6);
+  approx(chi2inv(0.025, 2), 0.05063562, 1e-7);
+  approx(chi2inv(0.975, 2), 7.377759, 1e-5);
+});
+
+test("chi2inv round-trips through chi2cdf (central body)", () => {
+  for (const k of [1, 2, 5, 10, 30, 100]) {
+    for (const p of [0.001, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999]) {
+      const x = chi2inv(p, k);
+      approx(chi2cdf(x, k), p, 1e-8);
+    }
+  }
+});
+
+test("chi2inv degenerate inputs", () => {
+  assert(chi2inv(0, 5) === 0, "p=0 → 0");
+  assert(chi2inv(1, 5) === Infinity, "p=1 → Infinity");
+  assert(Number.isNaN(chi2inv(0.5, 0)), "k=0 → NaN");
+  assert(Number.isNaN(chi2inv(0.5, -1)), "k<0 → NaN");
+});
+
 // ── Sample helpers ─────────────────────────────────────────────────────────
 
 suite("stats.js — sample helpers");
@@ -66,6 +177,20 @@ const xs = [2, 4, 4, 4, 5, 5, 7, 9];
 test("sampleMean", () => approx(sampleMean(xs), 5, 1e-12));
 test("sampleVariance (n-1)", () => approx(sampleVariance(xs), 32 / 7, 1e-12));
 test("sampleSD", () => approx(sampleSD(xs), Math.sqrt(32 / 7), 1e-12));
+
+test("sampleVariance is shift-invariant under large offsets (Welford)", () => {
+  // The naive E[X²] − E[X]² formula loses all precision once the data are
+  // offset by ~10⁹ or so, because both terms become huge and nearly equal.
+  // Welford's online algorithm holds up to ~10¹⁵ before IEEE 754 mantissa
+  // limits start to bite the inputs themselves. Verify the result is
+  // exactly the same as on the unshifted data at three offset scales.
+  const small = [1, 2, 3, 4, 5];
+  const v = sampleVariance(small); // = 2.5
+  approx(v, 2.5, 1e-12);
+  approx(sampleVariance(small.map((x) => x + 1e6)), 2.5, 1e-10);
+  approx(sampleVariance(small.map((x) => x + 1e9)), 2.5, 1e-6);
+  approx(sampleVariance(small.map((x) => x + 1e12)), 2.5, 1e-3);
+});
 
 test("rankWithTies — no ties", () => {
   const { ranks, tieCorrection } = rankWithTies([10, 20, 30]);
@@ -402,6 +527,33 @@ test("Hedges g ≤ |Cohen d| (bias-corrected shrinks)", () => {
   assert(Math.abs(g) < Math.abs(d), `|g|=${Math.abs(g)} not < |d|=${Math.abs(d)}`);
 });
 
+test("Hedges g uses exact J (gammaln) — matches gamma-ratio form at small n", () => {
+  // n1 = n2 = 3 (df = 4) is where the asymptotic shortcut J ≈ 1 − 3/(4n−9)
+  // diverges most from the exact gamma-ratio form. By hand:
+  //   d = (mean(x)−mean(y)) / √sp² = (2−4) / √2.5 ≈ −1.264911
+  //   J(4) = Γ(2) / (Γ(1.5)·√2) = 1 / ((√π/2)·√2) ≈ 0.7978846
+  //   g = d · J ≈ −1.009253
+  // The old asymptotic shortcut would give J = 1 − 3/(4·6 − 9) = 0.8,
+  // and so g_old ≈ −1.011929 — a ~0.27 % error. The test below pins the
+  // exact value so any regression to the shortcut would fire.
+  const d = cohenD([1, 2, 3], [2, 4, 6]);
+  approx(d, -1.264911, 1e-5);
+  const g = hedgesG([1, 2, 3], [2, 4, 6]);
+  approx(g, -1.009253, 1e-5);
+});
+
+test("Hedges g exact J converges to asymptote for large n", () => {
+  // At n ≈ 30 the gamma-ratio form should agree with the asymptote to
+  // ~1e-4. This pins down the convergence behavior.
+  const x = Array.from({ length: 30 }, (_, i) => i);
+  const y = Array.from({ length: 30 }, (_, i) => i + 1);
+  const d = cohenD(x, y);
+  const g = hedgesG(x, y);
+  const J_exact = g / d;
+  const J_asymptote = 1 - 3 / (4 * 60 - 9);
+  approx(J_exact, J_asymptote, 1e-4);
+});
+
 test("rankBiserial — identical groups → 0", () => {
   const { U1 } = mannWhitneyU([1, 2, 3, 4], [1, 2, 3, 4]);
   approx(rankBiserial(U1, 4, 4), 0, 1e-12);
@@ -527,6 +679,39 @@ test("InsectSprays — H=54.691 df=5", () => {
   assert(r.p < 1e-8, "p tiny");
 });
 
+test("kruskalWallis: all values tied → error (matches R warning + NaN)", () => {
+  // Ranks are all (N+1)/2, H is 0/0, the tie correction denominator is also
+  // 0. Old code skipped the divide and reported H=0, p=1 — implying "no
+  // significant difference detected" when really the test is undefined.
+  // Now matches R kruskal.test which warns and returns NaN.
+  const r = kruskalWallis([
+    [5, 5],
+    [5, 5],
+    [5, 5],
+  ]);
+  assert(r.error, `expected error, got ${JSON.stringify(r)}`);
+  assert(Number.isNaN(r.H), "H must be NaN");
+  assert(Number.isNaN(r.p), "p must be NaN");
+});
+
+test("kruskalWallis: all-tied across uneven groups also flagged", () => {
+  const r = kruskalWallis([[5], [5, 5], [5, 5, 5]]);
+  assert(r.error, `expected error, got ${JSON.stringify(r)}`);
+});
+
+test("kruskalWallis: partial ties still compute (only all-tied is rejected)", () => {
+  // Three groups with internal ties but distinct group medians — must
+  // still produce a finite H and p. This guards against the all-tied
+  // detection accidentally firing on routine tied data.
+  const r = kruskalWallis([
+    [1, 1, 2],
+    [3, 3, 4],
+    [5, 5, 6],
+  ]);
+  assert(!r.error, `unexpected error: ${r.error}`);
+  assert(Number.isFinite(r.H) && r.H > 0, `expected positive H, got ${r.H}`);
+});
+
 // ── k-sample effect sizes vs R ─────────────────────────────────────────────
 
 suite("stats.js — η² and ε² vs R");
@@ -591,6 +776,76 @@ test("qtukey(0.95, 6, 66) ≈ 4.150851", () => {
 
 test("qtukey(0.99, 4, 20) ≈ 5.018016", () => {
   approx(qtukey(0.99, 4, 20), 5.018016, 5e-3);
+});
+
+// ── Root-finder bracket expansion ──────────────────────────────────────────
+//
+// Earlier revisions of qtukey/powerAnova used fixed upper brackets that
+// silently clamped when the true root lay outside [lo, hi]. bisect itself
+// is now strict: if target is not bracketed it returns NaN rather than the
+// nearer endpoint, and the callers that need to handle heavy tails expand
+// hi by doubling first.
+
+suite("stats.js — root-finder bracket expansion");
+
+test("bisect returns NaN when target above fn(hi)", () => {
+  // fn is monotone non-decreasing on [0, 1], range [0, 1]; target 2 is
+  // unreachable. Old behavior would have returned the upper endpoint.
+  const result = bisect((x) => x, 2, 0, 1);
+  assert(Number.isNaN(result), `expected NaN, got ${result}`);
+});
+
+test("bisect returns NaN when target below fn(lo)", () => {
+  const result = bisect((x) => x, -2, 0, 1);
+  assert(Number.isNaN(result), `expected NaN, got ${result}`);
+});
+
+test("bisect still solves bracketed roots", () => {
+  approx(
+    bisect((x) => x * x, 0.25, 0, 1),
+    0.5,
+    1e-5
+  );
+});
+
+test("qtukey extreme tail at small df (R reference)", () => {
+  // R: qtukey(0.999, 3, 5) = 11.671498. Within ptukey integration accuracy.
+  approx(qtukey(0.999, 3, 5), 11.671498, 5e-3);
+});
+
+test("qtukey(0.999, 50, 1) > 100 (bracket actually expanded)", () => {
+  // The old fixed upper bound of 100 silently clamped this case — the
+  // result was ~99.999..., a stale endpoint. With bracket expansion, the
+  // root sits much higher (R refuses with NaN at this pathological input
+  // because its algorithm bails, but our integrator finds a finite root
+  // to the equation ptukey(q) = 0.999 well above 100).
+  const result = qtukey(0.999, 50, 1);
+  assert(Number.isFinite(result), `expected finite, got ${result}`);
+  assert(result > 100, `expected > 100 (proves expansion ran), got ${result}`);
+});
+
+test("qtukey degenerate inputs return NaN", () => {
+  assert(Number.isNaN(qtukey(0.95, 1, 10)), "k=1 must be NaN");
+  assert(Number.isNaN(qtukey(0.95, 3, 0)), "df=0 must be NaN");
+});
+
+test("powerAnova at heavy-tail (df1=1, df2=1) no longer clamps", () => {
+  // F(1, 1) only reaches 0.955 at x ≈ 200, so the old fixed upper bound
+  // of 200 silently clamped fCrit for any α ≤ 0.045. With bracket
+  // expansion the result is finite and lies in [0, 1].
+  const p = powerAnova(0.4, 2, 0.01, 2);
+  assert(Number.isFinite(p), `expected finite power, got ${p}`);
+  assert(p >= 0 && p <= 1, `expected p in [0,1], got ${p}`);
+});
+
+test("powerAnova standard case unaffected by expansion", () => {
+  // Sanity check that bracket expansion (a no-op here — hi=200 already
+  // covers 1−0.05 = 0.95 for df=(2, 57)) doesn't change the answer for
+  // routine inputs. Cross-checked against the existing tests in
+  // tests/power.test.js for f=0.4, k=3 at n=22 (R ref 0.8181) and at
+  // n=53 (R ref 0.80) which both still pass — the value here lies on
+  // the same curve.
+  approx(powerAnova(0.4, 22, 0.05, 3), 0.8181, 5e-3);
 });
 
 // ── Tukey HSD ──────────────────────────────────────────────────────────────
@@ -677,6 +932,157 @@ test("iris SL Games-Howell: Welch-Satterthwaite df", () => {
 test("iris SL Games-Howell: all pairs highly significant", () => {
   const r = gamesHowell(irisSL);
   for (const pr of r.pairs) assert(pr.p < 1e-5, `expected p<1e-5, got ${pr.p}`);
+});
+
+// ── Degenerate inputs (zero variance) ──────────────────────────────────────
+//
+// R refuses t.test on constant data ("data are essentially constant"); our
+// code used to silently emit NaN df / Infinity t / NaN p instead. These
+// tests pin the guards that now catch those cases before they reach ptukey
+// or compact-letter display and quietly corrupt results.
+
+suite("stats.js — degenerate (zero-variance) inputs");
+
+test("tTest equal-var: both groups constant → error", () => {
+  const r = tTest([2, 2, 2], [3, 3, 3], { equalVar: true });
+  assert(r.error != null, "expected error");
+  assert(Number.isNaN(r.p), "p should be NaN");
+  assert(Number.isNaN(r.df), "df should be NaN");
+});
+
+test("tTest Welch: both groups constant → error", () => {
+  const r = tTest([2, 2, 2], [3, 3, 3], { equalVar: false });
+  assert(r.error != null, "expected error");
+  assert(Number.isNaN(r.p), "p should be NaN");
+});
+
+test("tTest Welch: one group constant still computes (df = n_other − 1)", () => {
+  // v1=0, v2>0 — Welch-Satterthwaite collapses to n2−1 and SE is well-defined.
+  const r = tTest([5, 5, 5, 5], [1, 2, 3, 4], { equalVar: false });
+  assert(r.error == null, `unexpected error: ${r.error}`);
+  approx(r.df, 3, 1e-9); // n2 − 1
+  assert(Number.isFinite(r.t), "t should be finite");
+  assert(r.p >= 0 && r.p <= 1, `p in [0,1], got ${r.p}`);
+});
+
+test("tukeyHSD: all groups constant → error (MSE = 0)", () => {
+  const r = tukeyHSD([
+    [1, 1, 1],
+    [2, 2, 2],
+    [3, 3, 3],
+  ]);
+  assert(r.error != null, "expected error");
+  assert(r.pairs.length === 0, "pairs should be empty");
+});
+
+test("tukeyHSD: one constant group among varying still computes", () => {
+  // ssWithin is driven by the non-constant group → MSE > 0, formula holds.
+  const r = tukeyHSD([
+    [5, 5, 5, 5],
+    [1, 2, 3, 4],
+    [6, 7, 8, 9],
+  ]);
+  assert(r.error == null, `unexpected error: ${r.error}`);
+  assert(r.pairs.length === 3, `expected 3 pairs, got ${r.pairs.length}`);
+  for (const pr of r.pairs) {
+    assert(Number.isFinite(pr.q), `q finite, got ${pr.q}`);
+    assert(pr.p >= 0 && pr.p <= 1, `p in [0,1], got ${pr.p}`);
+  }
+});
+
+test("gamesHowell: any zero-variance group → error", () => {
+  const r = gamesHowell([
+    [5, 5, 5, 5],
+    [1, 2, 3, 4],
+    [6, 7, 8, 9],
+  ]);
+  assert(r.error != null, "expected error");
+  assert(r.pairs.length === 0, "pairs should be empty");
+});
+
+test("gamesHowell: all groups constant → error", () => {
+  const r = gamesHowell([
+    [1, 1, 1],
+    [2, 2, 2],
+    [3, 3, 3],
+  ]);
+  assert(r.error != null, "expected error");
+});
+
+// ── Additional zero-variance guards ────────────────────────────────────────
+//
+// These four functions used to return phantom F = Infinity, F = NaN, or
+// -Infinity on all-constant input. R's oneway.test returns NaN for Welch and
+// Levene on the same data; R's aov returns F = Inf with a warning; none of
+// those make sense in a non-statistician UI, so we refuse instead. The
+// canonical input is [[1,1,1],[2,2,2],[3,3,3]] — each group internally
+// constant with different means, so within-group dispersion collapses to 0.
+
+test("oneWayANOVA: all groups constant → error (not fake F=Infinity)", () => {
+  const r = oneWayANOVA([
+    [1, 1, 1],
+    [2, 2, 2],
+    [3, 3, 3],
+  ]);
+  assert(r.error != null, "expected error");
+  assert(!Number.isFinite(r.F), "F should not be finite");
+  assert(!Number.isFinite(r.p), "p should not be finite");
+  assert(r.ssWithin === 0, "ssWithin should still be reported as 0");
+});
+
+test("oneWayANOVA: one constant group among varying still computes", () => {
+  // Only guard the all-constant case — mixed inputs have ssWithin > 0 from
+  // the non-constant groups and produce a well-defined F.
+  const r = oneWayANOVA([
+    [5, 5, 5, 5],
+    [1, 2, 3, 4],
+    [6, 7, 8, 9],
+  ]);
+  assert(r.error == null, "should not error");
+  assert(Number.isFinite(r.F) && r.F > 0, "F should be finite and positive");
+});
+
+test("welchANOVA: any zero-variance group → error", () => {
+  // Welch weights are n/s² so a single constant group is enough to poison
+  // the whole statistic — R's oneway.test var.equal=FALSE returns NaN.
+  const r = welchANOVA([
+    [5, 5, 5, 5],
+    [1, 2, 3, 4],
+    [6, 7, 8, 9],
+  ]);
+  assert(r.error != null, "expected error");
+  assert(!Number.isFinite(r.F), "F should not be finite");
+});
+
+test("welchANOVA: all groups constant → error", () => {
+  const r = welchANOVA([
+    [1, 1, 1],
+    [2, 2, 2],
+    [3, 3, 3],
+  ]);
+  assert(r.error != null, "expected error");
+});
+
+test("leveneTest: all groups constant → error (not fake F=Infinity)", () => {
+  // All deviations from the group median collapse to 0, so the inner ANOVA
+  // hits 0/0. R's equivalent oneway.test on the deviations returns NaN.
+  const r = leveneTest([
+    [1, 1, 1],
+    [2, 2, 2],
+    [3, 3, 3],
+  ]);
+  assert(r.error != null, "expected error");
+  assert(!Number.isFinite(r.F), "F should not be finite");
+});
+
+test("cohenD / hedgesG: pooled SD = 0 → NaN (not ±Infinity)", () => {
+  // cohenD is a bare numeric return (not a result object), so the guard
+  // reports NaN rather than an error field. hedgesG calls cohenD and
+  // inherits the NaN via its correction factor.
+  const d = cohenD([1, 1, 1], [2, 2, 2]);
+  const g = hedgesG([1, 1, 1], [2, 2, 2]);
+  assert(Number.isNaN(d), `cohenD should be NaN, got ${d}`);
+  assert(Number.isNaN(g), `hedgesG should be NaN, got ${g}`);
 });
 
 // ── Benjamini-Hochberg adjustment ──────────────────────────────────────────
@@ -806,6 +1212,35 @@ test("CLD: prefers pAdj over p when available", () => {
   ];
   const cld = compactLetterDisplay(pairs, 3);
   assert(cld[0] === cld[1] && cld[1] === cld[2], "all same under pAdj");
+});
+
+test("CLD: NaN p-values are treated as non-significant (not silent splits)", () => {
+  // Without the NaN guard, `NaN >= alpha` is false so the loop would try to
+  // split letters on the NaN pair, producing arbitrary garbage labels. The
+  // guard treats unresolvable pairs as "no evidence of difference", so all
+  // groups share a letter when every pair is NaN.
+  const allNaN = [
+    { i: 0, j: 1, p: NaN },
+    { i: 0, j: 2, p: NaN },
+    { i: 1, j: 2, p: NaN },
+  ];
+  const cld = compactLetterDisplay(allNaN, 3);
+  assert(cld[0] === "a" && cld[1] === "a" && cld[2] === "a", `expected aaa, got ${cld}`);
+});
+
+test("CLD: mixed NaN + significant pairs only act on the resolved pairs", () => {
+  // Pair (0,2) is genuinely significant; (0,1) and (1,2) are NaN. The
+  // function should produce a correct two-letter split based on (0,2)
+  // alone — group 1 ends up grouped with both because no NaN pair tells
+  // us otherwise.
+  const mixed = [
+    { i: 0, j: 1, p: NaN },
+    { i: 0, j: 2, p: 0.001 },
+    { i: 1, j: 2, p: NaN },
+  ];
+  const cld = compactLetterDisplay(mixed, 3);
+  assert(cld[0] !== cld[2], `expected 0 and 2 distinct, got ${cld}`);
+  assert(cld[1].includes(cld[0]) || cld[1].includes(cld[2]), `1 must overlap, got ${cld}`);
 });
 
 // ── Automatic test selection ───────────────────────────────────────────────

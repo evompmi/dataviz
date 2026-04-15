@@ -61,6 +61,32 @@ The current run executes **285 comparisons, all within 5 × 10⁻³** of the R r
 
 In addition, the JavaScript code is covered by **485 unit and integration tests** across six suites (shared utilities, CSV / TSV parsing, edge-case integration, React component behaviour, power analysis, statistical functions). All tests are CI-gated on every commit alongside ESLint, Prettier, and `tsc --noEmit` type-checking.
 
+## Scope and limitations
+
+This tool is deliberately narrow. The numerics it ships are cross-validated against R, so what it computes can be trusted — but it covers only a slice of what a research workflow will need!
+
+**Where it fits best**
+
+- **One-way group comparisons** with bar / box / violin / raincloud plots and a defensible test pick (Student / Welch / Mann-Whitney / one-way ANOVA / Welch ANOVA / Kruskal-Wallis), plus Tukey HSD, Games-Howell, or Dunn-BH post-hocs and compact-letter display.
+- **Quick exploratory plotting** from pasted CSV/TSV — useful when the alternative is wrestling `ggplot2` margins or installing a 200 MB statistics package for a single bar chart.
+- **Privacy-sensitive data** (clinical, unpublished, embargoed) where uploading to a hosted service is not an option and installing R is a hurdle.
+- **Publication-ready SVG output** with named `<g>` groups for downstream touch-up in Inkscape or Illustrator.
+- **A-priori power analysis** for t-tests, one-way ANOVA, χ², and correlation — like R's `pwr` package for the tests it covers, and easier to explore interactively.
+- **Niche tool** Aequorin Ca²⁺ calibration that is not first-class anywhere else.
+
+**Where you will outgrow it**
+
+- **No repeated-measures or mixed models.** Time-course on the same plant, before/after on the same subject, longitudinal data — the tool offers paired t-tests but nothing beyond that. Use R's `lme4` / `nlme` or Prism's RM ANOVA for these designs.
+- **One-way only.** No factorial ANOVA, no two-way with interaction, no ANCOVA. Genotype × treatment. If that is a daily need for you, this tool cannot run it.
+- **No Dunnett's test** (control vs. many treatments).
+- **No regression beyond simple linear.** Multiple regression, logistic regression, non-linear curve fitting (dose-response, Michaelis-Menten, Hill / Boltzmann), spline smoothing are not provided. The Hill model in the Aequorin calibration tool is a fixed-form solver, not a general non-linear fitter.
+- **No survival, ROC, or time-to-event analysis.**
+- **No reproducibility trail.** A UI click-through cannot be pasted into a methods section. For analyses that need to be re-run a year later from a script, an R or Python notebook is structurally better.
+- **Per-group Shapiro-Wilk at α = 0.05 inflates the family-wise false-positive rate** for normality screening at large _k_. This is documented in the source and biases the auto-pick toward Kruskal-Wallis at large _k_ — adjustable via the `alphaNormality` override but worth knowing about.
+- **Browser-only** means no large datasets (millions of rows will not work) and no headless / scripted batch processing.
+
+**Summary.** Use this tool as a supplement to R or commercial software (Prism, SPSS, JMP, Stata), not as a replacement. For an undergrad doing simple one-way comparisons and producing thesis figures, the friction savings over R are real and the output is genuinely publication-grade. For a graduate student running factorial designs or repeated measurements, the coverage wall arrives quickly and a real statistics environment is the right tool.
+
 ## Installation and local use
 
 The application is a collection of static files. For casual use, visit the hosted version at [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz) — no installation required.

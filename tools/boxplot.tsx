@@ -1126,7 +1126,7 @@ function UploadStep({
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#2EC4B6",
+                color: "var(--accent-plot)",
                 marginBottom: 8,
                 textTransform: "uppercase",
                 letterSpacing: "1px",

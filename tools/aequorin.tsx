@@ -1162,9 +1162,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: statsDataMode === "raw" ? "#1d4ed8" : "var(--surface)",
-                color: statsDataMode === "raw" ? "#fff" : "var(--text-faint)",
-                border: `1px solid ${statsDataMode === "raw" ? "#1d4ed8" : "var(--border-strong)"}`,
+                background: statsDataMode === "raw" ? "var(--accent-primary)" : "var(--surface)",
+                color: statsDataMode === "raw" ? "var(--on-accent)" : "var(--text-faint)",
+                border: `1px solid ${statsDataMode === "raw" ? "var(--accent-primary)" : "var(--border-strong)"}`,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -1178,9 +1178,9 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: statsDataMode === "corrected" ? "#0f766e" : "var(--surface)",
-                color: statsDataMode === "corrected" ? "#fff" : "var(--text-faint)",
-                border: `1px solid ${statsDataMode === "corrected" ? "#0f766e" : "var(--border-strong)"}`,
+                background: statsDataMode === "corrected" ? "var(--accent-plot)" : "var(--surface)",
+                color: statsDataMode === "corrected" ? "var(--on-accent)" : "var(--text-faint)",
+                border: `1px solid ${statsDataMode === "corrected" ? "var(--accent-plot)" : "var(--border-strong)"}`,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -2611,10 +2611,10 @@ function SampleSelectionOverlay({
             fontWeight: 700,
             fontFamily: "inherit",
             cursor: "pointer",
-            background: showColumnOverlay ? "#f59e0b" : "var(--warning-bg)",
-            color: showColumnOverlay ? "#fff" : "var(--warning-text)",
-            border: "2px solid #f59e0b",
-            boxShadow: "0 2px 10px rgba(245,158,11,0.3)",
+            background: showColumnOverlay ? "var(--accent-warning)" : "var(--warning-bg)",
+            color: showColumnOverlay ? "var(--on-accent)" : "var(--warning-text)",
+            border: "2px solid var(--accent-warning)",
+            boxShadow: "var(--accent-warning-shadow)",
           }}
         >
           {showColumnOverlay ? "✕ Close" : "🔬 Sample selection"}
@@ -2629,7 +2629,7 @@ function SampleSelectionOverlay({
               width: 420,
               background: "var(--surface)",
               borderRadius: 10,
-              border: "2px solid #f59e0b",
+              border: "2px solid var(--accent-warning)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
               padding: "12px 14px",
               maxHeight: 360,
@@ -2662,9 +2662,10 @@ function SampleSelectionOverlay({
                       fontWeight: 600,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: poolReplicates === val ? "#f59e0b" : "var(--surface)",
-                      color: poolReplicates === val ? "#fff" : "var(--text-faint)",
-                      border: `1px solid ${poolReplicates === val ? "#f59e0b" : "var(--border-strong)"}`,
+                      background:
+                        poolReplicates === val ? "var(--accent-warning)" : "var(--surface)",
+                      color: poolReplicates === val ? "var(--on-accent)" : "var(--text-faint)",
+                      border: `1px solid ${poolReplicates === val ? "var(--accent-warning)" : "var(--border-strong)"}`,
                     }}
                   >
                     {label}
@@ -2743,7 +2744,11 @@ function SampleSelectionOverlay({
                                 type="checkbox"
                                 checked={enabled}
                                 onChange={(e) => handleColumnToggle(i, e.target.checked)}
-                                style={{ accentColor: "#f59e0b", width: 12, height: 12 }}
+                                style={{
+                                  accentColor: "var(--accent-warning)",
+                                  width: 12,
+                                  height: 12,
+                                }}
                               />
                               {showRep ? `rep${rep}` : h}
                             </label>
@@ -3245,7 +3250,7 @@ function App() {
                   aria-label="Plot view"
                   style={{
                     display: "inline-flex",
-                    border: "1px solid var(--accent-primary)",
+                    border: "1px solid var(--step-active-border)",
                     borderRadius: 8,
                     overflow: "hidden",
                     background: "var(--surface)",
@@ -3260,10 +3265,10 @@ function App() {
                       fontWeight: 600,
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      background: !vis.faceted ? "var(--accent-primary)" : "transparent",
-                      color: !vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      background: !vis.faceted ? "var(--step-active-bg)" : "transparent",
+                      color: !vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
                       border: "none",
-                      borderRight: "1px solid var(--accent-primary)",
+                      borderRight: "1px solid var(--step-active-border)",
                     }}
                   >
                     Combined
@@ -3277,8 +3282,8 @@ function App() {
                       fontWeight: 600,
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      background: vis.faceted ? "var(--accent-primary)" : "transparent",
-                      color: vis.faceted ? "var(--on-accent)" : "var(--accent-primary)",
+                      background: vis.faceted ? "var(--step-active-bg)" : "transparent",
+                      color: vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
                       border: "none",
                     }}
                   >

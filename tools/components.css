@@ -246,13 +246,13 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 700;
-  background: var(--accent-primary);
+  background: var(--cta-primary-bg);
   color: var(--on-accent);
 }
 .dv-btn-primary:hover:not(:disabled) {
   filter: brightness(1.15) saturate(1.05);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgb(100 143 255 / 0.45);
+  box-shadow: var(--cta-primary-shadow);
 }
 .dv-btn-primary:active:not(:disabled) {
   transform: translateY(1px);

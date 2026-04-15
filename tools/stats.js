@@ -182,19 +182,84 @@ function tcdf(t, df) {
   return t >= 0 ? 1 - p : p;
 }
 
-// Inverse t CDF (bisection)
+// t-distribution PDF (computed in log space, used by tinv Newton-Raphson)
+function tpdf(x, df) {
+  const logpdf =
+    gammaln((df + 1) / 2) -
+    gammaln(df / 2) -
+    0.5 * Math.log(Math.PI * df) -
+    ((df + 1) / 2) * Math.log(1 + (x * x) / df);
+  return Math.exp(logpdf);
+}
+
+// Inverse t CDF.
+// Strategy:
+//   • df = 1 and df = 2 have closed forms — use them directly.
+//   • df ≥ 3: Newton-Raphson seeded with a Cornish-Fisher correction to the
+//     normal quantile, with a damped step and a bisection fallback if Newton
+//     fails to converge. Bracket bounds expand outward (doubling) to handle
+//     heavy-tailed cases where |t| can exceed hundreds or thousands at
+//     extreme p (e.g. qt(1e-10, 5) ≈ −157).
+//   • Work in the left tail (leftP ≤ 0.5) and flip sign at the end, so that
+//     inputs like p = 1 − 1e-15 don't suffer catastrophic cancellation.
 function tinv(p, df) {
   if (p <= 0) return -Infinity;
   if (p >= 1) return Infinity;
-  let lo = -50,
-    hi = 50;
-  for (let i = 0; i < 100; i++) {
-    const mid = (lo + hi) / 2;
-    if (tcdf(mid, df) < p) lo = mid;
-    else hi = mid;
-    if (hi - lo < 1e-10) break;
+  if (p === 0.5) return 0;
+
+  const upper = p > 0.5;
+  const leftP = upper ? 1 - p : p;
+
+  let tLeft;
+
+  if (df === 1) {
+    // Cauchy: F⁻¹(u) = tan(π(u − 0.5)) = −cot(π·u).
+    tLeft = -1 / Math.tan(Math.PI * leftP);
+  } else if (df === 2) {
+    // Closed form: t = (2u−1) / √(2u(1−u)).
+    tLeft = (2 * leftP - 1) / Math.sqrt(2 * leftP * (1 - leftP));
+  } else {
+    // Cornish-Fisher seed: first-order correction to the normal quantile.
+    const z = norminv(leftP);
+    let x = z + (z * (z * z + 1)) / (4 * df);
+
+    let converged = false;
+    for (let i = 0; i < 60; i++) {
+      const cdf = tcdf(x, df);
+      const pdf = tpdf(x, df);
+      if (!Number.isFinite(cdf) || !(pdf > 0)) break;
+      let step = (cdf - leftP) / pdf;
+      // Damp the step so we can't jump past a flat tail where PDF → 0.
+      const cap = Math.abs(x) + 1;
+      if (step > cap) step = cap;
+      else if (step < -cap) step = -cap;
+      x -= step;
+      if (Math.abs(step) < 1e-13 * (Math.abs(x) + 1)) {
+        converged = true;
+        break;
+      }
+    }
+
+    if (converged && Number.isFinite(x)) {
+      tLeft = x;
+    } else {
+      // Bisection fallback: expand the lower bound until leftP is bracketed.
+      let lo = -1;
+      const hi = 0;
+      for (let i = 0; i < 4000 && tcdf(lo, df) > leftP; i++) lo *= 2;
+      let a = lo,
+        b = hi;
+      for (let i = 0; i < 200; i++) {
+        const mid = (a + b) / 2;
+        if (tcdf(mid, df) < leftP) a = mid;
+        else b = mid;
+        if (b - a < 1e-12 * (Math.abs(a) + 1)) break;
+      }
+      tLeft = (a + b) / 2;
+    }
   }
-  return (lo + hi) / 2;
+
+  return upper ? -tLeft : tLeft;
 }
 
 // F-distribution CDF
@@ -209,20 +274,51 @@ function chi2cdf(x, k) {
   return gammainc(k / 2, x / 2);
 }
 
-// Inverse chi-square CDF (bisection)
+// Chi-square PDF — used as the Newton derivative in chi2inv. Built in log
+// space to avoid overflow at large k or tiny x.
+function chi2pdf(x, k) {
+  if (x <= 0) return 0;
+  const halfK = k / 2;
+  return Math.exp((halfK - 1) * Math.log(x) - x / 2 - halfK * Math.log(2) - gammaln(halfK));
+}
+
+// Inverse chi-square CDF — Newton-Raphson on the central body, bisection
+// fallback for the saturated tails where the χ² CDF derivative collapses
+// to ~10⁻¹² and Newton overshoots wildly. The historical implementation was
+// pure bisection with a doubling upper bound (~50 iterations for 1e-10
+// tolerance); this version is much faster on typical inputs while remaining
+// correct on the tails. Uses the Wilson-Hilferty cubic-normal approximation
+// (X/k)^(1/3) ≈ N(1 − 2/(9k), 2/(9k)) to seed both Newton and the bracket.
 function chi2inv(p, k) {
   if (p <= 0) return 0;
   if (p >= 1) return Infinity;
-  let lo = 0,
-    hi = k + 10 * Math.sqrt(2 * k);
-  while (chi2cdf(hi, k) < p) hi *= 2;
-  for (let i = 0; i < 100; i++) {
-    const mid = (lo + hi) / 2;
-    if (chi2cdf(mid, k) < p) lo = mid;
-    else hi = mid;
-    if (hi - lo < 1e-10) break;
+  if (k <= 0) return NaN;
+  const z = norminv(p);
+  const h = 2 / (9 * k);
+  let x = k * Math.pow(1 - h + z * Math.sqrt(h), 3);
+  if (!(x > 0)) x = Math.max(1e-6, k * 0.01);
+  // Newton inside a wide guard: only accept iterations that stay positive
+  // and don't exceed twice the current point. If Newton makes <10⁻¹² PDF
+  // (deep in the saturated tail) or the step would leave the guard, drop
+  // straight to bisection.
+  for (let i = 0; i < 30; i++) {
+    const f = chi2cdf(x, k) - p;
+    if (Math.abs(f) < 1e-12) return x;
+    const fp = chi2pdf(x, k);
+    if (!(fp > 1e-12)) break;
+    const step = f / fp;
+    const xNew = x - step;
+    if (!(xNew > 0) || xNew > 2 * x || xNew < x / 2) break;
+    if (Math.abs(xNew - x) < 1e-12 * Math.max(1, x)) return xNew;
+    x = xNew;
   }
-  return (lo + hi) / 2;
+  // Bisection fallback. Use WH seed to set a tight initial bracket; expand
+  // by doubling if it doesn't cover p (bisect itself refuses unbracketed
+  // targets, so this guarantees progress).
+  let lo = 0,
+    hi = Math.max(x * 2, k + 10 * Math.sqrt(2 * k));
+  for (let i = 0; i < 40 && chi2cdf(hi, k) < p; i++) hi *= 2;
+  return bisect((q) => chi2cdf(q, k), p, lo, hi, 1e-10);
 }
 
 // Gauss-Legendre quadrature nodes and weights (computed once, cached)
@@ -398,8 +494,14 @@ function ncchi2cdf(x, k, lambda) {
 
 // ── 2. Generic helpers ──────────────────────────────────────────────────────
 
-// Generic bisection solver: find x in [lo, hi] such that fn(x) ≈ target
+// Generic bisection solver: find x in [lo, hi] such that fn(x) ≈ target.
+// Assumes fn is monotone non-decreasing. Returns NaN if target is not
+// bracketed — this is intentional: silent clamping to a bracket boundary
+// would let downstream code use a number that isn't actually a root. All
+// existing callers are responsible for expanding hi (or shrinking lo)
+// before delegating to bisect when their target might fall outside.
 function bisect(fn, target, lo, hi, tol = 1e-6, maxIter = 200) {
+  if (fn(lo) > target || fn(hi) < target) return NaN;
   for (let i = 0; i < maxIter; i++) {
     const mid = (lo + hi) / 2;
     if (fn(mid) < target) lo = mid;
@@ -439,7 +541,16 @@ function powerAnova(f, n, alpha, k) {
     df2 = k * (n - 1);
   if (df2 < 1) return 0;
   const lambda = n * k * f * f;
-  const fCrit = bisect((x) => fcdf(x, df1, df2), 1 - alpha, 0, 200);
+  // Central F at small df has very heavy tails — e.g. F(1, 1) only reaches
+  // p = 0.955 at x = 200 — so a fixed upper bracket of 200 silently clamps
+  // fCrit for α ≤ 0.045 at (df1, df2) = (1, 1). Expand the bracket until it
+  // covers 1 − α (20 doublings → ~2·10⁸, comfortably beyond any realistic
+  // fCrit) before delegating to bisect. bisect itself now refuses on an
+  // unbracketed target, so we propagate NaN when the expansion fails.
+  let hi = 200;
+  for (let i = 0; i < 20 && fcdf(hi, df1, df2) < 1 - alpha; i++) hi *= 2;
+  const fCrit = bisect((x) => fcdf(x, df1, df2), 1 - alpha, 0, hi);
+  if (!Number.isFinite(fCrit)) return NaN;
   return ncf_sf(fCrit, df1, df2, lambda);
 }
 
@@ -458,6 +569,14 @@ function powerChi2(w, n, alpha, df) {
 }
 
 // Cohen's f for ANOVA from group means + pooled within-SD.
+//
+// f = σ_means / σ_within, where σ_means is the **population-style** SD of
+// the group means — i.e. divides by k, not (k−1) — treating the supplied
+// means as the entire population of cell means rather than a sample. This
+// matches Cohen (1988) and R's pwr::pwr.anova.test, which is what the
+// downstream power calculator is calibrated against. Callers that have a
+// sample SD of group means should multiply by √((k−1)/k) before passing
+// in, or recompute from the raw means.
 function fFromGroupMeans(meansArr, sd) {
   if (!meansArr.length || sd <= 0) return 0;
   const grandMean = meansArr.reduce((a, b) => a + b, 0) / meansArr.length;
@@ -477,17 +596,24 @@ function sampleMean(x) {
   return s / n;
 }
 
-// Sample variance with (n-1) denominator (Bessel-corrected)
+// Sample variance with (n-1) denominator (Bessel-corrected). Welford's
+// online algorithm: one pass, no need to compute the mean separately, and
+// numerically more robust than the naive E[X²] − E[X]² formula (which
+// catastrophically cancels when the data have a large offset). The classic
+// two-pass algorithm is comparable in accuracy on most inputs, but Welford
+// avoids a second loop and pre-computed mean, which is cleaner and slightly
+// faster on large arrays.
 function sampleVariance(x) {
   const n = x.length;
   if (n < 2) return NaN;
-  const m = sampleMean(x);
-  let s = 0;
+  let mean = 0,
+    M2 = 0;
   for (let i = 0; i < n; i++) {
-    const d = x[i] - m;
-    s += d * d;
+    const d = x[i] - mean;
+    mean += d / (i + 1);
+    M2 += d * (x[i] - mean);
   }
-  return s / (n - 1);
+  return M2 / (n - 1);
 }
 
 function sampleSD(x) {
@@ -689,7 +815,18 @@ function leveneTest(groups) {
   }
   const df1 = k - 1;
   const df2 = Ntot - k;
-  if (ssWithin === 0) return { F: Infinity, df1, df2, p: 0 };
+  if (ssWithin === 0) {
+    // All groups are internally constant → within-group dispersion is zero
+    // and Levene's F is undefined (0/0 at best, a phantom ∞ at worst).
+    // R's equivalent oneway.test on the deviations reports F = NaN / p = NA.
+    return {
+      F: NaN,
+      df1,
+      df2,
+      p: NaN,
+      error: "Data are essentially constant (zero within-group dispersion)",
+    };
+  }
   const F = ssBetween / df1 / (ssWithin / df2);
   const p = 1 - fcdf(F, df1, df2);
   return { F, df1, df2, p };
@@ -713,6 +850,23 @@ function tTest(x, y, opts = {}) {
     m2 = sampleMean(y);
   const v1 = sampleVariance(x),
     v2 = sampleVariance(y);
+  // Degenerate case: both groups constant. Matches R, which refuses with
+  // "data are essentially constant" — any result here would have NaN df
+  // (Welch) or zero SE (Student), neither of which is meaningful.
+  if (v1 === 0 && v2 === 0) {
+    return {
+      t: NaN,
+      df: NaN,
+      p: NaN,
+      mean1: m1,
+      mean2: m2,
+      var1: v1,
+      var2: v2,
+      n1,
+      n2,
+      error: "Data are essentially constant (zero variance in both groups)",
+    };
+  }
   let t, df;
   if (equalVar) {
     const sp2 = ((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2);
@@ -784,14 +938,24 @@ function cohenD(x, y) {
   const v1 = sampleVariance(x),
     v2 = sampleVariance(y);
   const sp2 = ((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2);
+  // Pooled SD is zero → effect size is undefined (±Infinity is misleading).
+  if (sp2 === 0) return NaN;
   return (m1 - m2) / Math.sqrt(sp2);
 }
 
 function hedgesG(x, y) {
   const d = cohenD(x, y);
-  const n = x.length + y.length;
-  // Small-sample correction factor J ≈ 1 − 3/(4(n1+n2)−9)
-  const J = 1 - 3 / (4 * n - 9);
+  if (!Number.isFinite(d)) return d;
+  const df = x.length + y.length - 2;
+  if (df < 1) return NaN;
+  // Exact small-sample correction factor:
+  //   J(df) = Γ(df/2) / (Γ((df−1)/2) · √(df/2))
+  // computed in log space via gammaln to avoid Γ overflow at large df.
+  // The familiar `J ≈ 1 − 3/(4n − 9)` shortcut is the leading term of the
+  // asymptotic expansion; it's off by ~0.3% at the smallest practical
+  // sample (n1 = n2 = 3) and converges to the exact form by n ≈ 30.
+  // Tightening this also matches what `effectsize::hedges_g()` reports.
+  const J = Math.exp(gammaln(df / 2) - gammaln((df - 1) / 2) - 0.5 * Math.log(df / 2));
   return d * J;
 }
 
@@ -833,7 +997,22 @@ function oneWayANOVA(groups) {
   }
   const df1 = k - 1;
   const df2 = Ntot - k;
-  if (ssWithin === 0) return { F: Infinity, df1, df2, p: 0, ssBetween, ssWithin, grandMean };
+  if (ssWithin === 0) {
+    // Every group is internally constant. R's oneway.test returns F = Inf
+    // with p < 2.2e-16, but that's misleading in a UI — the "significance"
+    // is a divide-by-zero artefact, not evidence of a real location shift.
+    // Mirror the tTest convention and refuse.
+    return {
+      F: NaN,
+      df1,
+      df2,
+      p: NaN,
+      ssBetween,
+      ssWithin,
+      grandMean,
+      error: "Data are essentially constant (zero within-group dispersion)",
+    };
+  }
   const F = ssBetween / df1 / (ssWithin / df2);
   const p = 1 - fcdf(F, df1, df2);
   return { F, df1, df2, p, ssBetween, ssWithin, grandMean };
@@ -855,6 +1034,18 @@ function welchANOVA(groups) {
   }
   const means = groups.map(sampleMean);
   const vars = groups.map(sampleVariance);
+  // Welch weights are n_i / s_i² — any zero-variance group makes its weight
+  // infinite and poisons the whole computation (matches R oneway.test's
+  // F = NaN, p = NA on constant data).
+  if (vars.some((v) => v === 0)) {
+    return {
+      F: NaN,
+      df1: k - 1,
+      df2: NaN,
+      p: NaN,
+      error: "Data are essentially constant (zero variance in at least one group)",
+    };
+  }
   const w = vars.map((v, i) => ns[i] / v);
   const Wsum = w.reduce((a, b) => a + b, 0);
   const m = w.reduce((a, wi, i) => a + wi * means[i], 0) / Wsum;
@@ -893,6 +1084,22 @@ function kruskalWallis(groups) {
   }
   const N = all.length;
   if (N <= k) return { H: NaN, df: 0, p: NaN, error: "Not enough observations" };
+  // All values identical → ranks are all (N+1)/2, H computes to 0/0, and the
+  // tie-correction denominator C = 1 − (N³−N)/(N³−N) = 0. The naive code path
+  // skipped the divide and reported H=0, p=1 — a "no difference detected"
+  // answer that masks the fact that the test is undefined. Match R's
+  // kruskal.test behavior (it warns and returns NaN) by detecting the
+  // all-tied case explicitly and surfacing an error the stats tile picks up.
+  let allTied = true;
+  for (let i = 1; i < N; i++) {
+    if (all[i] !== all[0]) {
+      allTied = false;
+      break;
+    }
+  }
+  if (allTied) {
+    return { H: NaN, df: k - 1, p: NaN, error: "Data are essentially constant" };
+  }
   const { ranks, tieCorrection } = rankWithTies(all);
   // Sum of ranks per group.
   const R = new Array(k).fill(0);
@@ -996,11 +1203,34 @@ function ptukey(q, k, df) {
   return Math.max(0, Math.min(1, sum));
 }
 
-// Inverse: find q such that ptukey(q, k, df) = p. Bisection in [0.01, 100].
+// Inverse of the studentized range CDF: find q such that ptukey(q, k, df) = p.
+// Historically this called bisect(…, 0.01, 100) with a fixed upper bracket,
+// which clamped silently for extreme inputs (e.g. k = 50, df = 1, p = 0.999).
+// Now expands the upper bracket by doubling until it covers p, then bisects
+// with a relative-tolerance termination so the precision is consistent
+// regardless of the answer's magnitude. Returns NaN when the expansion
+// cannot bracket p — matches R qtukey's NaN-with-warning behavior at
+// pathological inputs rather than returning a stale bracket boundary.
 function qtukey(p, k, df) {
   if (p <= 0) return 0;
   if (p >= 1) return Infinity;
-  return bisect((q) => ptukey(q, k, df), p, 0.01, 100, 1e-5);
+  if (k < 2 || df < 1) return NaN;
+  let lo = 0.01,
+    hi = 100;
+  // 20 doublings cap hi at ~10⁸ — more than enough for any realistic
+  // (k, df, α) combo; anything larger is pathological and deserves NaN.
+  for (let i = 0; i < 20 && ptukey(hi, k, df) < p; i++) {
+    lo = hi;
+    hi *= 2;
+  }
+  if (ptukey(hi, k, df) < p) return NaN;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (ptukey(mid, k, df) < p) lo = mid;
+    else hi = mid;
+    if (hi - lo < 1e-7 * (Math.abs(lo) + 1)) break;
+  }
+  return (lo + hi) / 2;
 }
 
 // ── 11. Post-hoc tests ──────────────────────────────────────────────────────
@@ -1019,6 +1249,17 @@ function tukeyHSD(groups, opts = {}) {
   if (anova.error) return { pairs: [], error: anova.error };
   const dfErr = anova.df2;
   const mse = anova.ssWithin / dfErr;
+  // Degenerate case: every group is perfectly constant → MSE=0 → division
+  // by zero in q. Refuse rather than emit Infinity q / zero p-values.
+  if (mse === 0) {
+    return {
+      pairs: [],
+      k,
+      df: dfErr,
+      mse,
+      error: "Cannot compute Tukey HSD — zero within-group variance (data essentially constant)",
+    };
+  }
   const means = groups.map(sampleMean);
   const ns = groups.map((g) => g.length);
   const qCrit = qtukey(1 - alpha, k, dfErr);
@@ -1058,6 +1299,18 @@ function gamesHowell(groups) {
   const means = groups.map(sampleMean);
   const vars = groups.map(sampleVariance);
   const ns = groups.map((g) => g.length);
+  // Degenerate case: if any group has zero variance, pairs that touch it
+  // produce SE=0 (when both sides are zero) or NaN df in the Welch-
+  // Satterthwaite formula — ptukey then propagates NaN into p-values.
+  // Refuse at the top level rather than return a mix of valid and NaN pairs,
+  // which would quietly corrupt compact-letter displays downstream.
+  if (vars.some((v) => v === 0)) {
+    return {
+      pairs: [],
+      k,
+      error: "Cannot compute Games-Howell — at least one group has zero variance",
+    };
+  }
   const pairs = [];
   for (let i = 0; i < k - 1; i++) {
     for (let j = i + 1; j < k; j++) {
@@ -1161,7 +1414,13 @@ function compactLetterDisplay(pairs, k, alpha = 0.05) {
   let letters = [new Set(Array.from({ length: k }, (_, i) => i))];
   for (const pr of pairs) {
     const p = pr.pAdj != null ? pr.pAdj : pr.p;
-    if (p >= alpha) continue;
+    // Guard NaN explicitly: `NaN >= alpha` is false, so without this the loop
+    // would treat any unresolved pair as "significant" and start splitting
+    // letters on noise — corrupting the entire CLD silently. NaN p-values
+    // arise when an upstream test (tTest, Tukey, etc.) returns an error; we
+    // skip them rather than guess, matching R's multcompView::multcompLetters
+    // which also requires non-NA inputs.
+    if (!Number.isFinite(p) || p >= alpha) continue;
     const { i, j } = pr;
     const newLetters = [];
     for (const L of letters) {
@@ -1233,6 +1492,18 @@ function compactLetterDisplay(pairs, k, alpha = 0.05) {
 // `{ alphaNormality, alphaVariance }` to override. When a group has n < 3
 // Shapiro-Wilk can't run — we treat normality as unknown and conservatively
 // recommend the rank-based test.
+//
+// **Caveat on per-group Shapiro-Wilk at α = 0.05:** running Shapiro on each
+// of k groups inflates the family-wise false-positive rate to roughly
+// 1 − (1 − α)^k. With k = 5 groups the chance of falsely declaring at least
+// one group "non-normal" is ~23 % even when all five are perfectly normal,
+// which biases this auto-selector toward Kruskal-Wallis. ANOVA is robust to
+// modest non-normality, so this conservative bias is by design — but users
+// who already know their data are normal can loosen `alphaNormality` (e.g.
+// 0.01) to reduce the inflation, or override the test pick directly. R's
+// pooled approach would be to test the residuals of the fitted model rather
+// than each group separately; we don't do that here because the auto-pick
+// is an entry-point heuristic, not a publication-grade decision rule.
 function selectTest(groups, opts = {}) {
   const alphaN = opts.alphaNormality != null ? opts.alphaNormality : 0.05;
   const alphaV = opts.alphaVariance != null ? opts.alphaVariance : 0.05;

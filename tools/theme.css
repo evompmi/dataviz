@@ -27,6 +27,8 @@
   --accent-primary: #648fff;
   --accent-plot: #2ec4b6;
   --accent-dna: #785ef0;
+  --accent-warning: #f59e0b;
+  --accent-warning-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
 
   /* State — danger / warning / info */
   --danger-bg: #fef2f2;
@@ -73,6 +75,13 @@
   /* Active step-nav pill (Upload / Configure / Filter / Output / Plot) */
   --step-active-bg: #648fff;
   --step-active-border: #648fff;
+
+  /* Primary CTA button (`.dv-btn-primary` — Compute effect size, Continue to
+     plot, …). Same bright blue as the accent in light mode; in dark mode it
+     resolves to a stronger blue than `--step-active-bg` so the CTA still
+     reads as "press me", just without the neon glow of the raw accent. */
+  --cta-primary-bg: #648fff;
+  --cta-primary-shadow: 0 4px 12px -2px rgba(100, 143, 255, 0.45);
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -126,6 +135,19 @@
 
   --step-active-bg: #3b4680;
   --step-active-border: #4a5a9a;
+
+  /* Primary CTA dims in dark mode but sits noticeably brighter than
+     --step-active-bg so it still reads as a deliberate "press me" affordance
+     above the regular pill toggles. Shadow drops most of its alpha because
+     the bright-blue glow from the light-mode rgba() reads too loud here. */
+  --cta-primary-bg: #4d62cc;
+  --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+
+  /* Dim the sample-selection accent shadow in dark mode — the bright amber
+     glow from the light-mode rgba() reads too loud against the dark UI.
+     The accent color itself (--accent-warning) stays identical across
+     themes like all other --accent-* vars. */
+  --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
 /* OS-preference fallback applies only if the user hasn't made an explicit
@@ -181,6 +203,11 @@
 
     --step-active-bg: #3b4680;
     --step-active-border: #4a5a9a;
+
+    --cta-primary-bg: #4d62cc;
+    --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+
+    --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }
 
