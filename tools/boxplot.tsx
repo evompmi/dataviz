@@ -62,6 +62,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     barOutlineWidth,
     barOutlineColor,
     horizontal,
+    subgroups,
   },
   ref
 ) {
@@ -76,17 +77,15 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const labelZone = maxLabelLen * 7 + 20;
   const leftM = hz ? Math.max(62, labelZone + (hasPie ? pieSpace : 0)) : 62;
 
-  const annotPairs =
-    annotations && annotations.kind === "brackets"
-      ? assignBracketLevels(annotations.pairs || [])
-      : [];
+  const _hasLabels = annotations && (annotations.kind === "cld" || annotations.kind === "both");
+  const _hasPairs = annotations && (annotations.kind === "brackets" || annotations.kind === "both");
+  const annotPairs = _hasPairs ? assignBracketLevels(annotations.pairs || []) : [];
   const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
-  const annotTopPad =
-    annotations && annotations.kind === "cld"
-      ? 22
-      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
-        ? (annotMaxLevel + 1) * 20 + 6
-        : 0;
+  const subgroupLabelPad = subgroups && subgroups.length > 0 ? 18 : 0;
+  const cldPad = _hasLabels ? 22 : 0;
+  const bracketPad = annotPairs.length > 0 ? (annotMaxLevel + 1) * 20 + 6 : 0;
+  const annotTopPadBase = Math.max(cldPad, bracketPad);
+  const annotTopPad = annotTopPadBase + subgroupLabelPad;
   const M = { top: 24, right: 24, bottom: botM, left: leftM };
 
   const allV = groups.flatMap((g) => g.allValues);
@@ -124,7 +123,9 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
-  const catSize = Math.max(200, n * 100 * compact);
+  const separatorGap = subgroups && subgroups.length > 1 ? 40 : 0;
+  const totalGap = subgroups ? (subgroups.length - 1) * separatorGap : 0;
+  const catSize = Math.max(200, n * 100 * compact) + totalGap;
   const valSize = (isBar ? 420 : 504) + (hz ? 0 : absA > 0 ? absA * (isBar ? 0.9 : 0.8) : 0);
   const vbW = (hz ? valSize : catSize) + M.left + M.right;
   const vbH_base = (hz ? catSize : valSize) + M.top + M.bottom;
@@ -136,7 +137,6 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const h = vbH_chart - M.top - M.bottom;
 
   // Extend yMax so annotations fit inside the frame without overlapping data.
-  // Extend yMax so annotations fit inside the frame without overlapping data.
   // Vertical: headroom at top. Horizontal: headroom at right.
   const annotDim = hz ? w : h;
   if (annotTopPad > 0 && annotDim > annotTopPad + 10) {
@@ -146,13 +146,40 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   // Category axis: group index → pixel position.
   // Value axis: data value → pixel position.
   // In vertical mode bx→x, sy→y. In horizontal mode bx→y, sy→x.
-  const bandW = (hz ? h : w) / n;
-  const bx = (i) => (hz ? M.top : M.left) + i * bandW + bandW / 2;
+  const bandW = ((hz ? h : w) - totalGap) / n;
+  const _cumulGap = (() => {
+    if (!subgroups || subgroups.length < 2) return null;
+    const boundaries = new Set(subgroups.slice(1).map((sg) => sg.startIndex));
+    const arr = new Array(n);
+    let gap = 0;
+    for (let i = 0; i < n; i++) {
+      if (boundaries.has(i)) gap += separatorGap;
+      arr[i] = gap;
+    }
+    return arr;
+  })();
+  const bx = (i) => {
+    const base = (hz ? M.top : M.left) + i * bandW + bandW / 2;
+    return _cumulGap ? base + _cumulGap[i] : base;
+  };
   const sy = (v) => {
     const frac = (v - yMin) / (yMax - yMin || 1);
     return hz ? M.left + frac * w : M.top + (1 - frac) * h;
   };
   const yTicks = makeTicks(yMin, yMax, 8);
+  const _sgForIdx = (i) => {
+    if (!subgroups) return null;
+    for (const sg of subgroups) {
+      if (i >= sg.startIndex && i < sg.startIndex + sg.count) return sg;
+    }
+    return null;
+  };
+  const _grpId = (prefix, gi, name) => {
+    const sg = _sgForIdx(gi);
+    return sg
+      ? `${prefix}-${svgSafeId(sg.name)}-${svgSafeId(name)}`
+      : `${prefix}-${svgSafeId(name)}`;
+  };
   const halfBox = (boxWidth / 100) * bandW * 0.4;
 
   const pointColor = (g, src, si) => {
@@ -352,7 +379,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
             return (
               <g
                 key={g.name}
-                id={`bar-${svgSafeId(g.name)}`}
+                id={_grpId("bar", gi, g.name)}
                 role="group"
                 aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
               >
@@ -600,7 +627,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           return (
             <g
               key={g.name}
-              id={`group-${svgSafeId(g.name)}`}
+              id={_grpId("group", gi, g.name)}
               role="group"
               aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}
             >
@@ -619,6 +646,83 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
         <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
         <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
       </g>
+
+      {subgroups && subgroups.length > 1 && (
+        <g id="subgroup-separators">
+          {subgroups.slice(1).map((sg, idx) => {
+            const sepPos = bx(sg.startIndex) - bandW / 2 - separatorGap / 2;
+            return hz ? (
+              <line
+                key={`sep-${idx}`}
+                x1={M.left}
+                x2={M.left + w}
+                y1={sepPos}
+                y2={sepPos}
+                stroke="#999"
+                strokeWidth="1"
+                strokeDasharray="5,4"
+              />
+            ) : (
+              <line
+                key={`sep-${idx}`}
+                x1={sepPos}
+                x2={sepPos}
+                y1={M.top}
+                y2={M.top + h}
+                stroke="#999"
+                strokeWidth="1"
+                strokeDasharray="5,4"
+              />
+            );
+          })}
+        </g>
+      )}
+
+      {subgroups && subgroups.length > 0 && (
+        <g id="subgroup-labels">
+          {subgroups.map((sg) => {
+            const firstX = bx(sg.startIndex);
+            const lastX = bx(sg.startIndex + sg.count - 1);
+            const midPos = (firstX + lastX) / 2;
+            if (hz) {
+              const lx = M.left + w - subgroupLabelPad / 2;
+              return (
+                <text
+                  key={`sgl-${sg.name}`}
+                  x={lx}
+                  y={midPos}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="10"
+                  fontWeight="700"
+                  fill="#666"
+                  fontFamily="sans-serif"
+                  fontStyle="italic"
+                  transform={`rotate(90,${lx},${midPos})`}
+                >
+                  {sg.name}
+                </text>
+              );
+            }
+            return (
+              <text
+                key={`sgl-${sg.name}`}
+                x={midPos}
+                y={M.top + subgroupLabelPad / 2 + 3}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="10"
+                fontWeight="700"
+                fill="#666"
+                fontFamily="sans-serif"
+                fontStyle="italic"
+              >
+                {sg.name}
+              </text>
+            );
+          })}
+        </g>
+      )}
 
       <g id={hz ? "axis-y" : "axis-x"}>
         {groups.map((g, gi) => {
@@ -720,46 +824,50 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       </g>
 
       {annotations &&
-        annotations.kind === "cld" &&
+        _hasLabels &&
         (hz ? (
           <g id="cld-annotations">
-            {(annotations.labels || []).map((lbl, gi) => (
-              <text
-                key={`cld-${gi}`}
-                x={M.left + w - 10}
-                y={bx(gi)}
-                textAnchor="end"
-                dominantBaseline="middle"
-                fontSize="13"
-                fontWeight="700"
-                fill="#222"
-                fontFamily="sans-serif"
-              >
-                {lbl}
-              </text>
-            ))}
+            {(annotations.labels || []).map((lbl, gi) =>
+              lbl != null ? (
+                <text
+                  key={`cld-${gi}`}
+                  x={M.left + w - subgroupLabelPad - 10}
+                  y={bx(gi)}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  fontSize="13"
+                  fontWeight="700"
+                  fill="#222"
+                  fontFamily="sans-serif"
+                >
+                  {lbl}
+                </text>
+              ) : null
+            )}
           </g>
         ) : (
           <g id="cld-annotations">
-            {(annotations.labels || []).map((lbl, gi) => (
-              <text
-                key={`cld-${gi}`}
-                x={bx(gi)}
-                y={M.top + 15}
-                textAnchor="middle"
-                fontSize="13"
-                fontWeight="700"
-                fill="#222"
-                fontFamily="sans-serif"
-              >
-                {lbl}
-              </text>
-            ))}
+            {(annotations.labels || []).map((lbl, gi) =>
+              lbl != null ? (
+                <text
+                  key={`cld-${gi}`}
+                  x={bx(gi)}
+                  y={M.top + subgroupLabelPad + 15}
+                  textAnchor="middle"
+                  fontSize="13"
+                  fontWeight="700"
+                  fill="#222"
+                  fontFamily="sans-serif"
+                >
+                  {lbl}
+                </text>
+              ) : null
+            )}
           </g>
         ))}
 
       {annotations &&
-        annotations.kind === "brackets" &&
+        _hasPairs &&
         (hz ? (
           <g id="significance-brackets">
             {annotPairs.map((pr, idx) => {
@@ -1612,6 +1720,8 @@ function PlotControls({
   colorByCategories,
   facetByCol,
   setFacetByCol,
+  subgroupByCol,
+  setSubgroupByCol,
   onDownloadSvg,
   onDownloadPng,
 }) {
@@ -1972,6 +2082,24 @@ function PlotControls({
             onChange={(e) => setFacetByCol(Number(e.target.value))}
             className="dv-input"
             style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
+            disabled={subgroupByCol >= 0}
+          >
+            <option value={-1}>— none —</option>
+            {colorByCandidates.map((ci) => (
+              <option key={ci} value={ci}>
+                {colNames[ci]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <div className="dv-label">Subgroup by</div>
+          <select
+            value={subgroupByCol}
+            onChange={(e) => setSubgroupByCol(Number(e.target.value))}
+            className="dv-input"
+            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
+            disabled={facetByCol >= 0}
           >
             <option value={-1}>— none —</option>
             {colorByCandidates.map((ci) => (
@@ -2107,6 +2235,7 @@ function PlotArea({
   boxplotColors,
   facetStatsAnnotations,
   facetStatsSummary,
+  subgroups,
 }) {
   const globalAnnotations = facetStatsAnnotations["_global"] || null;
   const globalSummary = facetStatsSummary["_global"] || null;
@@ -2208,6 +2337,7 @@ function PlotArea({
             barOutlineWidth={vis.barOutlineWidth}
             barOutlineColor={vis.barOutlineColor}
             horizontal={vis.horizontal}
+            subgroups={subgroups}
             annotations={globalAnnotations}
             statsSummary={globalSummary}
             svgLegend={
@@ -2266,6 +2396,7 @@ function PlotArea({
               barOutlineWidth: vis.barOutlineWidth,
               barOutlineColor: vis.barOutlineColor,
               horizontal: vis.horizontal,
+              subgroups: null,
               svgLegend:
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2300,6 +2431,120 @@ function PlotArea({
 // Per-facet wrapper tile. Each facet gets its own outer container holding
 // the plot tile, the "Statistics display" tile and the collapsible
 // "Statistics summary" tile. Because every facet is enclosed in its own
+function SubgroupedStatsTile({
+  subgroups,
+  flatGroups,
+  fileStem,
+  onAnnotationsChange,
+  onStatsSummaryChange,
+}: any) {
+  const [subAnnotations, setSubAnnotations] = useState<Record<string, any>>({});
+  const [subSummaries, setSubSummaries] = useState<Record<string, string | null>>({});
+
+  const setSubAnnotFor = useCallback(
+    (key: string, spec: any) =>
+      setSubAnnotations((prev) => {
+        if (prev[key] === spec) return prev;
+        return { ...prev, [key]: spec };
+      }),
+    []
+  );
+  const setSubSummaryFor = useCallback(
+    (key: string, txt: string | null) =>
+      setSubSummaries((prev) => {
+        if (prev[key] === txt) return prev;
+        return { ...prev, [key]: txt };
+      }),
+    []
+  );
+
+  const mergedAnnotations = useMemo(() => {
+    const total = flatGroups.length;
+    const names = flatGroups.map((g) => g.name);
+    const cldLabels: Array<string | null> = new Array(total).fill(null);
+    const allPairs: any[] = [];
+    let hasCld = false;
+    let hasBrackets = false;
+
+    for (const sg of subgroups) {
+      const ann = subAnnotations[sg.name];
+      if (!ann) continue;
+      if (ann.kind === "cld" && ann.labels) {
+        hasCld = true;
+        ann.labels.forEach((lbl: string, i: number) => {
+          cldLabels[sg.startIndex + i] = lbl;
+        });
+      } else if (ann.kind === "brackets" && ann.pairs) {
+        hasBrackets = true;
+        for (const pr of ann.pairs) {
+          allPairs.push({ ...pr, i: pr.i + sg.startIndex, j: pr.j + sg.startIndex });
+        }
+      }
+    }
+
+    if (!hasCld && !hasBrackets) return null;
+
+    if (hasBrackets && hasCld) {
+      return {
+        kind: "both",
+        labels: cldLabels,
+        pairs: allPairs,
+        groupNames: names,
+      };
+    }
+    if (hasBrackets) {
+      return { kind: "brackets", pairs: allPairs, groupNames: names };
+    }
+    return { kind: "cld", labels: cldLabels, groupNames: names };
+  }, [subAnnotations, subgroups, flatGroups]);
+
+  const mergedSummary = useMemo(() => {
+    const parts: string[] = [];
+    for (const sg of subgroups) {
+      const txt = subSummaries[sg.name];
+      if (txt) {
+        parts.push(`\u2500\u2500 ${sg.name} \u2500\u2500`);
+        parts.push(txt);
+      }
+    }
+    return parts.length > 0 ? parts.join("\n") : null;
+  }, [subSummaries, subgroups]);
+
+  const onChangeRef = useRef(onAnnotationsChange);
+  onChangeRef.current = onAnnotationsChange;
+  const onSummaryRef = useRef(onStatsSummaryChange);
+  onSummaryRef.current = onStatsSummaryChange;
+  const specKey = mergedAnnotations ? JSON.stringify(mergedAnnotations) : "";
+  const summaryKey = mergedSummary || "";
+  useEffect(() => {
+    if (typeof onChangeRef.current === "function") onChangeRef.current(mergedAnnotations);
+  }, [specKey]);
+  useEffect(() => {
+    if (typeof onSummaryRef.current === "function") onSummaryRef.current(mergedSummary);
+  }, [summaryKey]);
+
+  return (
+    <div>
+      {subgroups.map((sg) => {
+        const sgGroups = flatGroups.slice(sg.startIndex, sg.startIndex + sg.count);
+        if (sgGroups.length < 2) return null;
+        return (
+          <StatsTile
+            key={sg.name}
+            compact
+            defaultOpen={false}
+            title={`Statistics \u2014 ${sg.name}`}
+            groups={sgGroups.map((g) => ({ name: g.name, values: g.allValues }))}
+            fileStem={`${fileStem}_${sg.name}_stats`}
+            onAnnotationsChange={(a) => setSubAnnotFor(sg.name, a)}
+            onStatsSummaryChange={(s) => setSubSummaryFor(sg.name, s)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 // frame, any height mismatch between the left stack (plot + display) and
 // the right column (summary) stays local to that facet and doesn't
 // visually misalign across the row of facets. Outer padding and inner gap
@@ -2417,6 +2662,7 @@ const FacetTrio = memo(function FacetTrio({
       barOutlineWidth: vis.barOutlineWidth,
       barOutlineColor: vis.barOutlineColor,
       horizontal: vis.horizontal,
+      subgroups: null,
       svgLegend,
     }),
     [
@@ -2622,7 +2868,16 @@ function App() {
   const [colorByCol, setColorByCol] = useState(-1);
   const [categoryColors, setCategoryColors] = useState({});
   const [dragState, setDragState] = useState(null);
-  const [facetByCol, setFacetByCol] = useState(-1);
+  const [facetByCol, _setFacetByCol] = useState(-1);
+  const [subgroupByCol, _setSubgroupByCol] = useState(-1);
+  const handleSetFacetByCol = useCallback((v) => {
+    _setFacetByCol(v);
+    if (v >= 0) _setSubgroupByCol(-1);
+  }, []);
+  const handleSetSubgroupByCol = useCallback((v) => {
+    _setSubgroupByCol(v);
+    if (v >= 0) _setFacetByCol(-1);
+  }, []);
   // Stats annotations + summary are keyed by facet category so each facet
   // subplot gets its own on-plot CLD/brackets and its own summary text.
   // The non-facet path uses the literal key "_global" so the same maps drive
@@ -2659,11 +2914,17 @@ function App() {
     setColumnOrders({});
     setColorByCol(-1);
     setCategoryColors({});
-    setFacetByCol(-1);
+    _setFacetByCol(-1);
+    _setSubgroupByCol(-1);
     setFacetStatsAnnotations({});
     setFacetStatsSummary({});
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
+
+  useEffect(() => {
+    setFacetStatsAnnotations({});
+    setFacetStatsSummary({});
+  }, [subgroupByCol]);
 
   const buildFilters = (hdrs, rws) => {
     const f = {};
@@ -3036,6 +3297,79 @@ function App() {
     disabledGroups,
   ]);
 
+  // Subgrouped data: single plot with groups partitioned by subgroup column
+  const subgroupedData = useMemo(() => {
+    if (subgroupByCol < 0 || groupColIdx < 0 || valueColIdx < 0) return null;
+    const sgOrder = orderableCols[subgroupByCol]?.order || [];
+    if (sgOrder.length === 0) return null;
+    const globalColorMap: Record<string, string> = {};
+    boxplotGroups.forEach((g) => {
+      globalColorMap[g.name] = g.color;
+    });
+    const cats = colorByCol >= 0 ? colorByCategories : ["_all"];
+    const subgroups: Array<{ name: string; startIndex: number; count: number }> = [];
+    const flatGroups: typeof boxplotGroups = [];
+    let startIndex = 0;
+    for (const sgCat of sgOrder) {
+      const catRows = renamedRows.filter((r) => r[subgroupByCol] === sgCat);
+      const gm: Record<string, Record<string, number[]>> = {};
+      catRows.forEach((r) => {
+        if (groupColIdx >= r.length || valueColIdx >= r.length) return;
+        const g = r[groupColIdx],
+          v = Number(r[valueColIdx]);
+        if (r[valueColIdx] === "" || isNaN(v)) return;
+        if (!gm[g]) gm[g] = {};
+        if (colorByCol >= 0) {
+          const cc = (colorByCol < r.length ? r[colorByCol] : null) || "?";
+          if (!gm[g][cc]) gm[g][cc] = [];
+          gm[g][cc].push(v);
+        } else {
+          if (!gm[g]["_all"]) gm[g]["_all"] = [];
+          gm[g]["_all"].push(v);
+        }
+      });
+      const groups = effectiveOrder
+        .filter((name) => gm[name] && !disabledGroups[name])
+        .map((name, gi) => {
+          const catMap = gm[name];
+          const sources = cats
+            .filter((c) => catMap[c])
+            .map((c, si) => ({
+              colIndex: si,
+              values: catMap[c],
+              category: c,
+            }));
+          const allValues = sources.flatMap((s) => s.values);
+          return {
+            name,
+            sources,
+            allValues,
+            stats: { ...quartiles(allValues), ...computeStats(allValues) },
+            color: globalColorMap[name] || boxplotColors[name] || PALETTE[gi % PALETTE.length],
+          };
+        });
+      if (groups.length > 0) {
+        subgroups.push({ name: sgCat, startIndex, count: groups.length });
+        flatGroups.push(...groups);
+        startIndex += groups.length;
+      }
+    }
+    if (subgroups.length === 0) return null;
+    return { subgroups, flatGroups };
+  }, [
+    subgroupByCol,
+    orderableCols,
+    renamedRows,
+    groupColIdx,
+    valueColIdx,
+    colorByCol,
+    colorByCategories,
+    effectiveOrder,
+    disabledGroups,
+    boxplotColors,
+    boxplotGroups,
+  ]);
+
   const toggleFilter = (ci, v) =>
     setFilters((p) => {
       const f = { ...p },
@@ -3228,7 +3562,9 @@ function App() {
             setCategoryColors={setCategoryColors}
             colorByCategories={colorByCategories}
             facetByCol={facetByCol}
-            setFacetByCol={setFacetByCol}
+            setFacetByCol={handleSetFacetByCol}
+            subgroupByCol={subgroupByCol}
+            setSubgroupByCol={handleSetSubgroupByCol}
             onDownloadSvg={handleDownloadSvg}
             onDownloadPng={handleDownloadPng}
           />
@@ -3244,7 +3580,15 @@ function App() {
                   facetedData={facetedData}
                   facetRefs={facetRefs}
                   chartRef={chartRef}
-                  displayBoxplotGroups={displayBoxplotGroups}
+                  displayBoxplotGroups={
+                    subgroupByCol >= 0 && subgroupedData
+                      ? subgroupedData.flatGroups.map((g) => ({
+                          ...g,
+                          name: plotGroupRenames[g.name] ?? g.name,
+                          color: boxplotColors[g.name] ?? g.color,
+                        }))
+                      : displayBoxplotGroups
+                  }
                   vis={vis}
                   yMinVal={yMinVal}
                   yMaxVal={yMaxVal}
@@ -3252,17 +3596,31 @@ function App() {
                   boxplotColors={boxplotColors}
                   facetStatsAnnotations={facetStatsAnnotations}
                   facetStatsSummary={facetStatsSummary}
+                  subgroups={subgroupByCol >= 0 && subgroupedData ? subgroupedData.subgroups : null}
                 />
-                {displayBoxplotGroups.length >= 2 && (
-                  <StatsTile
-                    groups={displayBoxplotGroups.map((g) => ({
-                      name: g.name,
-                      values: g.allValues,
+                {subgroupByCol >= 0 && subgroupedData ? (
+                  <SubgroupedStatsTile
+                    subgroups={subgroupedData.subgroups}
+                    flatGroups={subgroupedData.flatGroups.map((g) => ({
+                      ...g,
+                      name: plotGroupRenames[g.name] ?? g.name,
                     }))}
-                    fileStem={`${fileStem}_stats`}
+                    fileStem={fileStem}
                     onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
                     onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
                   />
+                ) : (
+                  displayBoxplotGroups.length >= 2 && (
+                    <StatsTile
+                      groups={displayBoxplotGroups.map((g) => ({
+                        name: g.name,
+                        values: g.allValues,
+                      }))}
+                      fileStem={`${fileStem}_stats`}
+                      onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
+                      onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
+                    />
+                  )
                 )}
               </>
             ) : (

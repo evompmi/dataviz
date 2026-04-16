@@ -180,6 +180,12 @@ declare global {
   const BaseStyleControls: FC<any>;
   const ErrorBoundary: FC<{ toolName?: string; children?: ReactNode }>;
   const StatsTile: FC<any>;
+  interface SubgroupMeta {
+    name: string;
+    startIndex: number;
+    count: number;
+  }
+
   interface BracketPair {
     i: number;
     j: number;
