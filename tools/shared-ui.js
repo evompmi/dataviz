@@ -198,7 +198,7 @@ function SliderControl(props) {
       onChange: function (e) {
         onChange(Number(e.target.value));
       },
-      style: { width: "100%", accentColor: "var(--accent-primary)" },
+      style: { width: "100%", accentColor: "var(--cta-primary-bg)" },
     })
   );
 }

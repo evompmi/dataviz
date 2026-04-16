@@ -87,6 +87,11 @@
      --cta-primary-bg pattern: same as --accent-plot in light mode, dimmed in
      dark so the "on" pill doesn't glow against the dark chrome. */
   --cta-plot-bg: #2ec4b6;
+
+  /* Chrome-safe purple (molarity DNA mode cards). Same pattern as the
+     blue/teal CTA tokens: identical to --accent-dna in light, dimmed in
+     dark so the ModeButton border/text doesn't glow. */
+  --cta-dna-bg: #785ef0;
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
@@ -153,6 +158,8 @@
      primary CTA so the two pills read as a matched pair. */
   --cta-plot-bg: #25a090;
 
+  --cta-dna-bg: #5a45b8;
+
   /* Dim the sample-selection accent shadow in dark mode — the bright amber
      glow from the light-mode rgba() reads too loud against the dark UI.
      The accent color itself (--accent-warning) stays identical across
@@ -218,6 +225,8 @@
     --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
 
     --cta-plot-bg: #25a090;
+
+    --cta-dna-bg: #5a45b8;
 
     --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
