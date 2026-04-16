@@ -410,41 +410,44 @@ suite("BoxplotChart");
   });
 })();
 
-// ── BarChart ────────────────────────────────────────────────────────────────
+// ── BoxplotChart (bar mode) ─────────────────────────────────────────────────
 
-suite("BarChart");
+suite("BoxplotChart (bar mode)");
 
 (function () {
   var tool = loadTool("boxplot");
-  var BarChart = tool.ctx.BarChart;
+  var BoxplotChart = tool.ctx.BoxplotChart;
 
   var sampleGroups = [
     {
       name: "Control",
       color: "#648FFF",
       displayName: "Control",
-      stats: { n: 5, mean: 5.4, sd: 1.14, sem: 0.51 },
+      stats: { n: 5, mean: 5.4, sd: 1.14, sem: 0.51, min: 4, max: 7, median: 5 },
+      allValues: [4, 5, 5, 6, 7],
       sources: [{ colIndex: 0, values: [4, 5, 5, 6, 7] }],
     },
     {
       name: "Treatment",
       color: "#DC267F",
       displayName: "Treatment",
-      stats: { n: 5, mean: 8.2, sd: 1.3, sem: 0.58 },
+      stats: { n: 5, mean: 8.2, sd: 1.3, sem: 0.58, min: 7, max: 9, median: 8 },
+      allValues: [7, 8, 8, 9, 9],
       sources: [{ colIndex: 0, values: [7, 8, 8, 9, 9] }],
     },
   ];
 
-  test("renders SVG bar chart", function () {
+  test("renders SVG bar chart via plotStyle='bar'", function () {
     tool.resetHooks();
-    var el = render(BarChart, {
+    var el = render(BoxplotChart, {
       groups: sampleGroups,
+      plotStyle: "bar",
       yLabel: "Value",
       plotTitle: "Bar Test",
       plotBg: "#fff",
       showGrid: true,
       gridColor: "#eee",
-      barWidth: 60,
+      boxWidth: 60,
       pointSize: 3,
       showPoints: true,
       jitterWidth: 0.3,
@@ -452,7 +455,8 @@ suite("BarChart");
       xLabelAngle: 0,
       errorType: "sem",
       barOpacity: 0.8,
-      catColors: {},
+      categoryColors: {},
+      colorByCol: -1,
       errStrokeWidth: 1.5,
       showBarOutline: false,
       barOutlineWidth: 1,
@@ -465,14 +469,15 @@ suite("BarChart");
 
   test("renders with no points and SD error bars", function () {
     tool.resetHooks();
-    var el = render(BarChart, {
+    var el = render(BoxplotChart, {
       groups: sampleGroups,
+      plotStyle: "bar",
       yLabel: "Value",
       plotTitle: "",
       plotBg: "#f8f8fa",
       showGrid: false,
       gridColor: "#ccc",
-      barWidth: 80,
+      boxWidth: 80,
       pointSize: 3,
       showPoints: false,
       jitterWidth: 0,
@@ -480,7 +485,8 @@ suite("BarChart");
       xLabelAngle: 30,
       errorType: "sd",
       barOpacity: 1,
-      catColors: {},
+      categoryColors: {},
+      colorByCol: -1,
       errStrokeWidth: 2,
       showBarOutline: true,
       barOutlineWidth: 1.5,

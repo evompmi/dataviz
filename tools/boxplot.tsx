@@ -55,18 +55,27 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     plotStyle = "box",
     annotations,
     statsSummary,
+    barOpacity,
+    errorType,
+    errStrokeWidth,
+    showBarOutline,
+    barOutlineWidth,
+    barOutlineColor,
+    horizontal,
   },
   ref
 ) {
-  const angle = xLabelAngle || 0;
+  const isBar = plotStyle === "bar";
+  const hz = !!horizontal;
+  const angle = hz ? 0 : xLabelAngle || 0;
   const absA = Math.abs(angle);
-  const pieSpace = cbc >= 0 && showCompPie ? 60 : 0;
-  const botM = 60 + (absA > 0 ? absA * 0.8 : 0) + pieSpace;
+  const hasPie = cbc >= 0 && showCompPie;
+  const pieSpace = hasPie ? 60 : 0;
+  const botM = hz ? 50 : 60 + (absA > 0 ? absA * (isBar ? 0.9 : 0.8) : 0) + (hz ? 0 : pieSpace);
+  const maxLabelLen = hz ? Math.max(...groups.map((g) => g.name.length), 4) : 0;
+  const labelZone = maxLabelLen * 7 + 20;
+  const leftM = hz ? Math.max(62, labelZone + (hasPie ? pieSpace : 0)) : 62;
 
-  // Precompute annotation layout. We reserve headroom *inside* the plot
-  // frame — the frame position is fixed; instead we extend yMax so that data
-  // doesn't reach the top of the inner area, and draw annotations in that
-  // headroom.
   const annotPairs =
     annotations && annotations.kind === "brackets"
       ? assignBracketLevels(annotations.pairs || [])
@@ -78,14 +87,27 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       : annotations && annotations.kind === "brackets" && annotPairs.length > 0
         ? (annotMaxLevel + 1) * 20 + 6
         : 0;
-  const M = { top: 24, right: 24, bottom: botM, left: 62 };
+  const M = { top: 24, right: 24, bottom: botM, left: leftM };
 
   const allV = groups.flatMap((g) => g.allValues);
   if (allV.length === 0) return null;
 
   let dMin = Math.min(...allV);
   let dMax = Math.max(...allV);
-  if (plotStyle === "violin" || plotStyle === "raincloud") {
+  if (isBar) {
+    dMin = 0;
+    dMax = 0;
+    for (const g of groups) {
+      if (!g.stats) continue;
+      const errVal = errorType === "sd" ? g.stats.sd : g.stats.sem;
+      const top = g.stats.mean + errVal;
+      const bot = g.stats.mean - errVal;
+      if (top > dMax) dMax = top;
+      if (bot < dMin) dMin = bot;
+      if (g.stats.max > dMax) dMax = g.stats.max;
+      if (g.stats.min < dMin) dMin = g.stats.min;
+    }
+  } else if (plotStyle === "violin" || plotStyle === "raincloud") {
     for (const g of groups) {
       if (g.allValues.length >= 2) {
         const pts = kde(g.allValues, 60);
@@ -97,31 +119,39 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     }
   }
   const pad = (dMax - dMin) * 0.08 || 1;
-  const yMin = yMinP != null ? yMinP : dMin - pad;
+  const yMin = yMinP != null ? yMinP : isBar ? (dMin >= 0 ? 0 : dMin - pad) : dMin - pad;
   let yMax = yMaxP != null ? yMaxP : dMax + pad;
 
   const n = groups.length;
   const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
-  const vbW = Math.max(200, n * 100 * compact + M.left + M.right);
-  const vbH_base = 504 + (absA > 0 ? absA * 0.8 : 0);
+  const catSize = Math.max(200, n * 100 * compact);
+  const valSize = (isBar ? 420 : 504) + (hz ? 0 : absA > 0 ? absA * (isBar ? 0.9 : 0.8) : 0);
+  const vbW = (hz ? valSize : catSize) + M.left + M.right;
+  const vbH_base = (hz ? catSize : valSize) + M.top + M.bottom;
   const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right, 88);
   const _statsH = statsSummaryHeight(statsSummary);
-  // Keep the overall viewBox height independent of the stats summary —
-  // shrink the chart area to make room instead, so the plot tile stays
-  // the same size when the summary is toggled on.
   const vbH_chart = vbH_base - _statsH;
   const vbH = vbH_base + _legH;
   const w = vbW - M.left - M.right;
   const h = vbH_chart - M.top - M.bottom;
 
-  // Extend yMax upward so annotations fit inside the frame without overlapping data.
-  if (annotTopPad > 0 && h > annotTopPad + 10) {
-    yMax = yMin + ((yMax - yMin) * h) / (h - annotTopPad);
+  // Extend yMax so annotations fit inside the frame without overlapping data.
+  // Extend yMax so annotations fit inside the frame without overlapping data.
+  // Vertical: headroom at top. Horizontal: headroom at right.
+  const annotDim = hz ? w : h;
+  if (annotTopPad > 0 && annotDim > annotTopPad + 10) {
+    yMax = yMin + ((yMax - yMin) * annotDim) / (annotDim - annotTopPad);
   }
 
-  const bandW = w / n;
-  const bx = (i) => M.left + i * bandW + bandW / 2;
-  const sy = (v) => M.top + (1 - (v - yMin) / (yMax - yMin || 1)) * h;
+  // Category axis: group index → pixel position.
+  // Value axis: data value → pixel position.
+  // In vertical mode bx→x, sy→y. In horizontal mode bx→y, sy→x.
+  const bandW = (hz ? h : w) / n;
+  const bx = (i) => (hz ? M.top : M.left) + i * bandW + bandW / 2;
+  const sy = (v) => {
+    const frac = (v - yMin) / (yMax - yMin || 1);
+    return hz ? M.left + frac * w : M.top + (1 - frac) * h;
+  };
   const yTicks = makeTicks(yMin, yMax, 8);
   const halfBox = (boxWidth / 100) * bandW * 0.4;
 
@@ -131,12 +161,11 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     return getPointColors(g.color, g.sources.length)[si] || g.color;
   };
 
-  const renderCompPie = (g, lx) => {
+  const renderCompPie = (g, px, py) => {
     if (cbc < 0 || !g.sources || !showCompPie) return null;
     const total = g.allValues.length;
     if (!total) return null;
     const r = 20;
-    const cy2 = vbH_chart - r - 12;
     let cum = 0;
 
     const slices = g.sources.map((src, si) => {
@@ -146,18 +175,16 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       cum += pct;
       const col = catCols && src.category ? catCols[src.category] || "#999" : "#999";
       if (pct >= 1)
-        return (
-          <circle key={si} cx={lx} cy={cy2} r={r} fill={col} stroke="#000" strokeWidth="0.5" />
-        );
-      const x0 = lx + Math.sin(a0) * r;
-      const y0 = cy2 - Math.cos(a0) * r;
-      const x1 = lx + Math.sin(a1) * r;
-      const y1 = cy2 - Math.cos(a1) * r;
+        return <circle key={si} cx={px} cy={py} r={r} fill={col} stroke="#000" strokeWidth="0.5" />;
+      const x0 = px + Math.sin(a0) * r;
+      const y0 = py - Math.cos(a0) * r;
+      const x1 = px + Math.sin(a1) * r;
+      const y1 = py - Math.cos(a1) * r;
       const lg = pct > 0.5 ? 1 : 0;
       return (
         <path
           key={si}
-          d={`M${lx},${cy2}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`}
+          d={`M${px},${py}L${x0},${y0}A${r},${r},0,${lg},1,${x1},${y1}Z`}
           fill={col}
           stroke="#000"
           strokeWidth="0.5"
@@ -174,8 +201,8 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       return (
         <text
           key={`t${si}`}
-          x={lx + Math.sin(midA) * lr}
-          y={cy2 - Math.cos(midA) * lr + 3}
+          x={px + Math.sin(midA) * lr}
+          y={py - Math.cos(midA) * lr + 3}
           textAnchor="middle"
           fontSize="7"
           fill="#888"
@@ -189,7 +216,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     return (
       <g key={`cb-${g.name}`}>
         {slices}
-        <circle cx={lx} cy={cy2} r={r} fill="none" stroke="#000" strokeWidth="0.5" />
+        <circle cx={px} cy={py} r={r} fill="none" stroke="#000" strokeWidth="0.5" />
         {labels}
       </g>
     );
@@ -202,51 +229,190 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label={plotTitle || "Box plot"}
+      aria-label={plotTitle || (isBar ? "Bar chart" : "Box plot")}
     >
-      <title>{plotTitle || "Box plot"}</title>
-      <desc>{`Box plot with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
+      <title>{plotTitle || (isBar ? "Bar chart" : "Box plot")}</title>
+      <desc>{`${isBar ? "Bar chart" : "Box plot"} with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
 
       <rect id="plot-area-background" x={M.left} y={M.top} width={w} height={h} fill={plotBg} />
 
       {showGrid && (
         <g id="grid">
-          {yTicks.map((t) => (
-            <line
-              key={t}
-              x1={M.left}
-              x2={M.left + w}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke={gridColor}
-              strokeWidth="0.5"
-            />
-          ))}
+          {yTicks.map((t) =>
+            hz ? (
+              <line
+                key={t}
+                x1={sy(t)}
+                x2={sy(t)}
+                y1={M.top}
+                y2={M.top + h}
+                stroke={gridColor}
+                strokeWidth="0.5"
+              />
+            ) : (
+              <line
+                key={t}
+                x1={M.left}
+                x2={M.left + w}
+                y1={sy(t)}
+                y2={sy(t)}
+                stroke={gridColor}
+                strokeWidth="0.5"
+              />
+            )
+          )}
         </g>
       )}
 
-      <g id="axis-y">
+      <g id={hz ? "axis-x" : "axis-y"}>
         {yTicks.map((t) => (
           <g key={t}>
-            <line x1={M.left - 5} x2={M.left} y1={sy(t)} y2={sy(t)} stroke="#333" strokeWidth="1" />
-            <text
-              x={M.left - 8}
-              y={sy(t) + 4}
-              textAnchor="end"
-              fontSize="11"
-              fill="#555"
-              fontFamily="sans-serif"
-            >
-              {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
-            </text>
+            {hz ? (
+              <>
+                <line
+                  x1={sy(t)}
+                  x2={sy(t)}
+                  y1={M.top + h}
+                  y2={M.top + h + 5}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+                <text
+                  x={sy(t)}
+                  y={M.top + h + 16}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill="#555"
+                  fontFamily="sans-serif"
+                >
+                  {Math.abs(t) < 0.01 && t !== 0
+                    ? t.toExponential(1)
+                    : t % 1 === 0
+                      ? t
+                      : t.toFixed(2)}
+                </text>
+              </>
+            ) : (
+              <>
+                <line
+                  x1={M.left - 5}
+                  x2={M.left}
+                  y1={sy(t)}
+                  y2={sy(t)}
+                  stroke="#333"
+                  strokeWidth="1"
+                />
+                <text
+                  x={M.left - 8}
+                  y={sy(t) + 4}
+                  textAnchor="end"
+                  fontSize="11"
+                  fill="#555"
+                  fontFamily="sans-serif"
+                >
+                  {Math.abs(t) < 0.01 && t !== 0
+                    ? t.toExponential(1)
+                    : t % 1 === 0
+                      ? t
+                      : t.toFixed(2)}
+                </text>
+              </>
+            )}
           </g>
         ))}
       </g>
 
-      <g id="groups">
+      <g id={isBar ? "bars" : "groups"}>
         {groups.map((g, gi) => {
           if (!g.stats) return null;
           const cx = bx(gi);
+
+          if (isBar) {
+            const { mean, sd, sem } = g.stats;
+            if (mean < yMin || mean > yMax) return null;
+            const errVal = errorType === "sd" ? sd : sem;
+            const baselinePos = sy(Math.max(0, yMin));
+            const meanPos = sy(mean);
+            const capSize = halfBox * 0.4;
+            const errHi = sy(mean + errVal);
+            const errLo = sy(mean - errVal);
+            const barR = hz
+              ? {
+                  x: Math.min(baselinePos, meanPos),
+                  y: cx - halfBox,
+                  width: Math.abs(meanPos - baselinePos),
+                  height: halfBox * 2,
+                }
+              : {
+                  x: cx - halfBox,
+                  y: mean >= 0 ? meanPos : baselinePos,
+                  width: halfBox * 2,
+                  height: Math.max(0, Math.abs(meanPos - baselinePos)),
+                };
+            return (
+              <g
+                key={g.name}
+                id={`bar-${svgSafeId(g.name)}`}
+                role="group"
+                aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
+              >
+                <rect
+                  {...barR}
+                  fill={g.color}
+                  fillOpacity={barOpacity}
+                  stroke={showBarOutline ? barOutlineColor || g.color : "none"}
+                  strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
+                  rx="1"
+                />
+                <line
+                  x1={hz ? errLo : cx}
+                  x2={hz ? errHi : cx}
+                  y1={hz ? cx : errHi}
+                  y2={hz ? cx : errLo}
+                  stroke="#333"
+                  strokeWidth={errStrokeWidth || 1.2}
+                />
+                <line
+                  x1={hz ? errHi : cx - capSize}
+                  x2={hz ? errHi : cx + capSize}
+                  y1={hz ? cx - capSize : errHi}
+                  y2={hz ? cx + capSize : errHi}
+                  stroke="#333"
+                  strokeWidth={errStrokeWidth || 1.2}
+                />
+                <line
+                  x1={hz ? errLo : cx - capSize}
+                  x2={hz ? errLo : cx + capSize}
+                  y1={hz ? cx - capSize : errLo}
+                  y2={hz ? cx + capSize : errLo}
+                  stroke="#333"
+                  strokeWidth={errStrokeWidth || 1.2}
+                />
+                {showPoints &&
+                  g.sources.map((src, si) => {
+                    const rng = seededRandom(gi * 1000 + si * 100 + 42);
+                    const ptColor = pointColor(g, src, si);
+                    return src.values.map((v, vi) => {
+                      const jitter = (rng() - 0.5) * jitterWidth * halfBox * 2;
+                      return (
+                        <circle
+                          key={`${g.name}-${si}-${vi}`}
+                          cx={hz ? sy(v) : cx + jitter}
+                          cy={hz ? cx + jitter : sy(v)}
+                          r={pointSize}
+                          fill={ptColor}
+                          fillOpacity={pointOpacity || 0.6}
+                          stroke={ptColor}
+                          strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
+                          strokeWidth="0.3"
+                        />
+                      );
+                    });
+                  })}
+              </g>
+            );
+          }
+
           const { q1, med, q3, wLo, wHi } = g.stats;
           const isRain = plotStyle === "raincloud";
           const isViolin = plotStyle === "violin" || isRain;
@@ -259,10 +425,12 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
             if (maxD > 0) {
               const sc = (d) => (d / maxD) * halfBox;
               if (isRain) {
-                // Half-violin on the left side only
-                let d = `M ${cx},${sy(pts[0].x)}`;
-                for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
-                d += ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
+                let d = hz ? `M ${sy(pts[0].x)},${cx}` : `M ${cx},${sy(pts[0].x)}`;
+                for (const p of pts)
+                  d += hz ? ` L ${sy(p.x)},${cx - sc(p.d)}` : ` L ${cx - sc(p.d)},${sy(p.x)}`;
+                d += hz
+                  ? ` L ${sy(pts[pts.length - 1].x)},${cx} Z`
+                  : ` L ${cx},${sy(pts[pts.length - 1].x)} Z`;
                 violinPath = (
                   <path
                     d={d}
@@ -273,12 +441,18 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                   />
                 );
               } else {
-                // Full symmetric violin
-                let d = `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
-                for (const p of pts) d += ` L ${cx - sc(p.d)},${sy(p.x)}`;
-                d += ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
+                let d = hz
+                  ? `M ${sy(pts[0].x)},${cx - sc(pts[0].d)}`
+                  : `M ${cx - sc(pts[0].d)},${sy(pts[0].x)}`;
+                for (const p of pts)
+                  d += hz ? ` L ${sy(p.x)},${cx - sc(p.d)}` : ` L ${cx - sc(p.d)},${sy(p.x)}`;
+                d += hz
+                  ? ` L ${sy(pts[pts.length - 1].x)},${cx + sc(pts[pts.length - 1].d)}`
+                  : ` L ${cx + sc(pts[pts.length - 1].d)},${sy(pts[pts.length - 1].x)}`;
                 for (let i = pts.length - 1; i >= 0; i--)
-                  d += ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
+                  d += hz
+                    ? ` L ${sy(pts[i].x)},${cx + sc(pts[i].d)}`
+                    : ` L ${cx + sc(pts[i].d)},${sy(pts[i].x)}`;
                 d += " Z";
                 violinPath = (
                   <path
@@ -296,7 +470,47 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           /* ── Box elements ── */
           const boxHalf = isViolin ? halfBox * 0.35 : halfBox;
           const boxCx = isRain ? cx + halfBox * 0.15 : cx;
-          const boxEls = (
+          const boxEls = hz ? (
+            <>
+              <line y1={boxCx} y2={boxCx} x1={sy(q3)} x2={sy(wHi)} stroke="#333" strokeWidth="1" />
+              <line y1={boxCx} y2={boxCx} x1={sy(wLo)} x2={sy(q1)} stroke="#333" strokeWidth="1" />
+              <line
+                y1={boxCx - boxHalf * 0.5}
+                y2={boxCx + boxHalf * 0.5}
+                x1={sy(wHi)}
+                x2={sy(wHi)}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              <line
+                y1={boxCx - boxHalf * 0.5}
+                y2={boxCx + boxHalf * 0.5}
+                x1={sy(wLo)}
+                x2={sy(wLo)}
+                stroke="#333"
+                strokeWidth="1"
+              />
+              <rect
+                x={sy(q1)}
+                y={boxCx - boxHalf}
+                width={sy(q3) - sy(q1)}
+                height={boxHalf * 2}
+                fill={isViolin ? "#fff" : g.color}
+                fillOpacity={isViolin ? 0.7 : boxFillOpacity}
+                stroke={g.color}
+                strokeWidth="1.5"
+                rx="2"
+              />
+              <line
+                y1={boxCx - boxHalf}
+                y2={boxCx + boxHalf}
+                x1={sy(med)}
+                x2={sy(med)}
+                stroke={g.color}
+                strokeWidth="2.5"
+              />
+            </>
+          ) : (
             <>
               <line x1={boxCx} x2={boxCx} y1={sy(wHi)} y2={sy(q3)} stroke="#333" strokeWidth="1" />
               <line x1={boxCx} x2={boxCx} y1={sy(q1)} y2={sy(wLo)} stroke="#333" strokeWidth="1" />
@@ -352,8 +566,8 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                 return (
                   <circle
                     key={`${g.name}-${si}-${vi}`}
-                    cx={cx + j}
-                    cy={sy(v)}
+                    cx={hz ? sy(v) : cx + j}
+                    cy={hz ? cx + j : sy(v)}
                     r={pointSize}
                     fill={ptColor}
                     fillOpacity={pointOpacity || 0.6}
@@ -373,8 +587,8 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
               .map((v, oi) => (
                 <circle
                   key={`out-${g.name}-${si}-${oi}`}
-                  cx={outlierCx}
-                  cy={sy(v)}
+                  cx={hz ? sy(v) : outlierCx}
+                  cy={hz ? outlierCx : sy(v)}
                   r={2.5}
                   fill="#000"
                   fillOpacity={0.8}
@@ -406,17 +620,52 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
         <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
       </g>
 
-      <g id="axis-x">
+      <g id={hz ? "axis-y" : "axis-x"}>
         {groups.map((g, gi) => {
-          const lx = bx(gi);
+          const gp = bx(gi);
+          if (hz) {
+            const labelX = M.left - 8;
+            const pieX = M.left - labelZone - pieSpace / 2;
+            const hzPie = renderCompPie(g, pieX, gp);
+            return (
+              <React.Fragment key={`xl-${g.name}`}>
+                <g>
+                  <text
+                    x={labelX}
+                    y={gp}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize="11"
+                    fill="#333"
+                    fontFamily="sans-serif"
+                    fontWeight="600"
+                  >
+                    {g.name}
+                  </text>
+                  <text
+                    x={labelX}
+                    y={gp + 12}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize="9"
+                    fill="#999"
+                    fontFamily="sans-serif"
+                  >
+                    n={g.stats?.n || 0}
+                  </text>
+                </g>
+                {hzPie}
+              </React.Fragment>
+            );
+          }
           const ly = M.top + h + 16;
-          const compBar = renderCompPie(g, lx);
+          const compBar = renderCompPie(g, gp, vbH_chart - 20 - 12);
           return (
             <React.Fragment key={`xl-${g.name}`}>
               {angle === 0 ? (
                 <g>
                   <text
-                    x={lx}
+                    x={gp}
                     y={ly}
                     textAnchor="middle"
                     fontSize="11"
@@ -427,7 +676,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                     {g.name}
                   </text>
                   <text
-                    x={lx}
+                    x={gp}
                     y={ly + 14}
                     textAnchor="middle"
                     fontSize="9"
@@ -438,9 +687,9 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                   </text>
                 </g>
               ) : (
-                <g transform={`rotate(${angle},${lx},${ly})`}>
+                <g transform={`rotate(${angle},${gp},${ly})`}>
                   <text
-                    x={lx}
+                    x={gp}
                     y={ly}
                     textAnchor="end"
                     dominantBaseline="middle"
@@ -452,7 +701,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                     {g.name}
                   </text>
                   <text
-                    x={lx}
+                    x={gp}
                     y={ly + 12}
                     textAnchor="end"
                     dominantBaseline="middle"
@@ -470,69 +719,137 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
         })}
       </g>
 
-      {annotations && annotations.kind === "cld" && (
-        <g id="cld-annotations">
-          {(annotations.labels || []).map((lbl, gi) => (
-            <text
-              key={`cld-${gi}`}
-              x={bx(gi)}
-              y={M.top + 15}
-              textAnchor="middle"
-              fontSize="13"
-              fontWeight="700"
-              fill="#222"
-              fontFamily="sans-serif"
-            >
-              {lbl}
-            </text>
-          ))}
-        </g>
-      )}
+      {annotations &&
+        annotations.kind === "cld" &&
+        (hz ? (
+          <g id="cld-annotations">
+            {(annotations.labels || []).map((lbl, gi) => (
+              <text
+                key={`cld-${gi}`}
+                x={M.left + w - 10}
+                y={bx(gi)}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize="13"
+                fontWeight="700"
+                fill="#222"
+                fontFamily="sans-serif"
+              >
+                {lbl}
+              </text>
+            ))}
+          </g>
+        ) : (
+          <g id="cld-annotations">
+            {(annotations.labels || []).map((lbl, gi) => (
+              <text
+                key={`cld-${gi}`}
+                x={bx(gi)}
+                y={M.top + 15}
+                textAnchor="middle"
+                fontSize="13"
+                fontWeight="700"
+                fill="#222"
+                fontFamily="sans-serif"
+              >
+                {lbl}
+              </text>
+            ))}
+          </g>
+        ))}
 
-      {annotations && annotations.kind === "brackets" && (
-        <g id="significance-brackets">
-          {annotPairs.map((pr, idx) => {
-            const x1 = bx(pr.i);
-            const x2 = bx(pr.j);
-            const lvl = pr._level || 0;
-            const yLine = M.top + annotTopPad - 6 - lvl * 20;
-            const tick = 4;
-            return (
-              <g key={`br-${idx}`}>
-                <path
-                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                  stroke="#333"
-                  strokeWidth="1"
-                  fill="none"
-                />
-                <text
-                  x={(x1 + x2) / 2}
-                  y={yLine - 2}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontWeight="700"
-                  fill="#222"
-                  fontFamily="sans-serif"
-                >
-                  {pr.label}
-                </text>
-              </g>
-            );
-          })}
-        </g>
-      )}
+      {annotations &&
+        annotations.kind === "brackets" &&
+        (hz ? (
+          <g id="significance-brackets">
+            {annotPairs.map((pr, idx) => {
+              const y1b = bx(pr.i);
+              const y2b = bx(pr.j);
+              const lvl = pr._level || 0;
+              const xLine = M.left + w - annotTopPad + 6 + lvl * 20;
+              const tick = 4;
+              return (
+                <g key={`br-${idx}`}>
+                  <path
+                    d={`M${xLine - tick},${y1b} L${xLine},${y1b} L${xLine},${y2b} L${xLine - tick},${y2b}`}
+                    stroke="#333"
+                    strokeWidth="1"
+                    fill="none"
+                  />
+                  <text
+                    x={xLine + 6}
+                    y={(y1b + y2b) / 2}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="12"
+                    fontWeight="700"
+                    fill="#222"
+                    fontFamily="sans-serif"
+                    transform={`rotate(90,${xLine + 6},${(y1b + y2b) / 2})`}
+                  >
+                    {pr.label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        ) : (
+          <g id="significance-brackets">
+            {annotPairs.map((pr, idx) => {
+              const x1 = bx(pr.i);
+              const x2 = bx(pr.j);
+              const lvl = pr._level || 0;
+              const yLine = M.top + annotTopPad - 6 - lvl * 20;
+              const tick = 4;
+              return (
+                <g key={`br-${idx}`}>
+                  <path
+                    d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
+                    stroke="#333"
+                    strokeWidth="1"
+                    fill="none"
+                  />
+                  <text
+                    x={(x1 + x2) / 2}
+                    y={yLine - 2}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="700"
+                    fill="#222"
+                    fontFamily="sans-serif"
+                  >
+                    {pr.label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        ))}
 
       {yLabel && (
-        <g id="y-axis-label">
-          <text
-            transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
-            textAnchor="middle"
-            fontSize="13"
-            fill="#444"
-            fontFamily="sans-serif"
-          >
-            {yLabel}
-          </text>
+        <g id={hz ? "x-axis-label" : "y-axis-label"}>
+          {hz ? (
+            <text
+              x={M.left + w / 2}
+              y={M.top + h + 36}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#444"
+              fontFamily="sans-serif"
+            >
+              {yLabel}
+            </text>
+          ) : (
+            <text
+              transform={`translate(14,${M.top + h / 2}) rotate(-90)`}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#444"
+              fontFamily="sans-serif"
+            >
+              {yLabel}
+            </text>
+          )}
         </g>
       )}
 
@@ -554,405 +871,6 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
       {renderStatsSummary(statsSummary, vbH_chart + _legH, M.left)}
-    </svg>
-  );
-});
-
-// ── Bar Chart ──────────────────────────────────────────────────────────────
-
-const BarChart = forwardRef<SVGSVGElement, any>(function BarChart(
-  {
-    groups,
-    yLabel,
-    plotTitle,
-    plotBg,
-    showGrid,
-    gridColor,
-    barWidth,
-    pointSize,
-    showPoints,
-    jitterWidth,
-    pointOpacity,
-    xLabelAngle,
-    errorType,
-    barOpacity,
-    yMin: yMinProp,
-    yMax: yMaxProp,
-    catColors,
-    errStrokeWidth,
-    showBarOutline,
-    barOutlineWidth,
-    barOutlineColor,
-    boxGap,
-    svgLegend,
-    annotations,
-    statsSummary,
-  },
-  ref
-) {
-  const angle = xLabelAngle || 0;
-  const bottomMargin = 60 + Math.abs(angle) * 0.9;
-
-  const annotPairs =
-    annotations && annotations.kind === "brackets"
-      ? assignBracketLevels(annotations.pairs || [])
-      : [];
-  const annotMaxLevel = annotPairs.reduce((m, pr) => Math.max(m, pr._level || 0), 0);
-  const annotTopPad =
-    annotations && annotations.kind === "cld"
-      ? 22
-      : annotations && annotations.kind === "brackets" && annotPairs.length > 0
-        ? (annotMaxLevel + 1) * 20 + 6
-        : 0;
-  const MChart = { top: 24, right: 24, bottom: bottomMargin, left: 62 };
-
-  const allVals = groups.flatMap((g) => g.allValues);
-  if (allVals.length === 0) return null;
-
-  let dataMax = 0;
-  let dataMin = 0;
-  groups.forEach((g) => {
-    if (!g.stats) return;
-    const errVal = errorType === "sd" ? g.stats.sd : g.stats.sem;
-    const top = g.stats.mean + errVal;
-    const bot = g.stats.mean - errVal;
-    if (top > dataMax) dataMax = top;
-    if (bot < dataMin) dataMin = bot;
-    if (g.stats.max > dataMax) dataMax = g.stats.max;
-    if (g.stats.min < dataMin) dataMin = g.stats.min;
-  });
-
-  const pad = (dataMax - dataMin) * 0.08 || 1;
-  const yMin = yMinProp != null ? yMinProp : dataMin >= 0 ? 0 : dataMin - pad;
-  let yMax = yMaxProp != null ? yMaxProp : dataMax + pad;
-
-  const n = groups.length;
-  const compact = (100 - (boxGap != null ? boxGap : 0)) / 100;
-  const vbW = Math.max(200, n * 100 * compact + MChart.left + MChart.right);
-  const vbH_base = 420 + Math.abs(angle) * 0.9;
-  const legendH = computeLegendHeight(svgLegend, vbW - MChart.left - MChart.right, 88);
-  const _statsH = statsSummaryHeight(statsSummary);
-  // Keep the overall viewBox height independent of the stats summary —
-  // shrink the chart area to make room instead.
-  const vbH_chart = vbH_base - _statsH;
-  const vbH = vbH_base + legendH;
-  const w = vbW - MChart.left - MChart.right;
-  const h = vbH_chart - MChart.top - MChart.bottom;
-
-  if (annotTopPad > 0 && h > annotTopPad + 10) {
-    yMax = yMin + ((yMax - yMin) * h) / (h - annotTopPad);
-  }
-
-  const bandW = w / n;
-  const bx = (i) => MChart.left + i * bandW + bandW / 2;
-  const sy = (v) => MChart.top + (1 - (v - yMin) / (yMax - yMin || 1)) * h;
-
-  const yTicks = makeTicks(yMin, yMax, 8);
-  const halfBar = (barWidth / 100) * bandW * 0.4;
-
-  return (
-    <svg
-      ref={ref}
-      viewBox={`0 0 ${vbW} ${vbH}`}
-      style={{ width: vbW, maxWidth: "100%", height: "auto", display: "block", margin: "0 auto" }}
-      xmlns="http://www.w3.org/2000/svg"
-      role="img"
-      aria-label={plotTitle || "Bar chart"}
-    >
-      <title>{plotTitle || "Bar chart"}</title>
-      <desc>{`Bar chart with ${groups.length} group${groups.length !== 1 ? "s" : ""}${yLabel ? `, Y axis: ${yLabel}` : ""}`}</desc>
-      <rect
-        id="plot-area-background"
-        x={MChart.left}
-        y={MChart.top}
-        width={w}
-        height={h}
-        fill={plotBg}
-      />
-
-      {showGrid && (
-        <g id="grid">
-          {yTicks.map((t) => (
-            <line
-              key={t}
-              x1={MChart.left}
-              x2={MChart.left + w}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke={gridColor}
-              strokeWidth="0.5"
-            />
-          ))}
-        </g>
-      )}
-
-      <g id="axis-y">
-        {yTicks.map((t) => (
-          <g key={t}>
-            <line
-              x1={MChart.left - 5}
-              x2={MChart.left}
-              y1={sy(t)}
-              y2={sy(t)}
-              stroke="#333"
-              strokeWidth="1"
-            />
-            <text
-              x={MChart.left - 8}
-              y={sy(t) + 4}
-              textAnchor="end"
-              fontSize="11"
-              fill="#555"
-              fontFamily="sans-serif"
-            >
-              {Math.abs(t) < 0.01 && t !== 0 ? t.toExponential(1) : t % 1 === 0 ? t : t.toFixed(2)}
-            </text>
-          </g>
-        ))}
-      </g>
-
-      <g id="bars">
-        {groups.map((g, gi) => {
-          if (!g.stats) return null;
-          const cx = bx(gi);
-          const { mean, sd, sem } = g.stats;
-          if (mean < yMin || mean > yMax) return null;
-          const errVal = errorType === "sd" ? sd : sem;
-          const baseline = sy(Math.max(0, yMin));
-          const barTop = sy(mean);
-          const yBar = mean >= 0 ? barTop : baseline;
-          const barH = mean >= 0 ? baseline - barTop : sy(mean) - baseline;
-
-          return (
-            <g
-              key={g.name}
-              id={`bar-${svgSafeId(g.name)}`}
-              role="group"
-              aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
-            >
-              <rect
-                x={cx - halfBar}
-                y={yBar}
-                width={halfBar * 2}
-                height={Math.max(0, barH)}
-                fill={g.color}
-                fillOpacity={barOpacity}
-                stroke={showBarOutline ? barOutlineColor || g.color : "none"}
-                strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
-                rx="1"
-              />
-              <line
-                x1={cx}
-                x2={cx}
-                y1={sy(mean + errVal)}
-                y2={sy(mean - errVal)}
-                stroke="#333"
-                strokeWidth={errStrokeWidth || 1.2}
-              />
-              <line
-                x1={cx - halfBar * 0.4}
-                x2={cx + halfBar * 0.4}
-                y1={sy(mean + errVal)}
-                y2={sy(mean + errVal)}
-                stroke="#333"
-                strokeWidth={errStrokeWidth || 1.2}
-              />
-              <line
-                x1={cx - halfBar * 0.4}
-                x2={cx + halfBar * 0.4}
-                y1={sy(mean - errVal)}
-                y2={sy(mean - errVal)}
-                stroke="#333"
-                strokeWidth={errStrokeWidth || 1.2}
-              />
-
-              {showPoints &&
-                g.sources.map((src, si) => {
-                  const rng = seededRandom(gi * 1000 + si * 100 + 42);
-                  const ptColors = getPointColors(g.color, g.sources.length);
-                  const cat = src.category;
-                  const ptColor =
-                    catColors && cat && catColors[cat] ? catColors[cat] : ptColors[si] || g.color;
-                  return src.values.map((v, vi) => {
-                    const jitter = (rng() - 0.5) * jitterWidth * halfBar * 2;
-                    return (
-                      <circle
-                        key={`${g.name}-${si}-${vi}`}
-                        cx={cx + jitter}
-                        cy={sy(v)}
-                        r={pointSize}
-                        fill={ptColor}
-                        fillOpacity={pointOpacity || 0.6}
-                        stroke={ptColor}
-                        strokeOpacity={Math.min(1, (pointOpacity || 0.6) + 0.15)}
-                        strokeWidth="0.3"
-                      />
-                    );
-                  });
-                })}
-            </g>
-          );
-        })}
-      </g>
-
-      <g id="plot-frame" fill="none" stroke="#333" strokeWidth="1">
-        <line
-          id="plot-frame-top"
-          x1={MChart.left}
-          y1={MChart.top}
-          x2={MChart.left + w}
-          y2={MChart.top}
-        />
-        <line
-          id="plot-frame-right"
-          x1={MChart.left + w}
-          y1={MChart.top}
-          x2={MChart.left + w}
-          y2={MChart.top + h}
-        />
-        <line
-          id="plot-frame-bottom"
-          x1={MChart.left}
-          y1={MChart.top + h}
-          x2={MChart.left + w}
-          y2={MChart.top + h}
-        />
-        <line
-          id="plot-frame-left"
-          x1={MChart.left}
-          y1={MChart.top}
-          x2={MChart.left}
-          y2={MChart.top + h}
-        />
-      </g>
-
-      {annotations && annotations.kind === "cld" && (
-        <g id="cld-annotations">
-          {(annotations.labels || []).map((lbl, gi) => (
-            <text
-              key={`cld-${gi}`}
-              x={bx(gi)}
-              y={MChart.top + 15}
-              textAnchor="middle"
-              fontSize="13"
-              fontWeight="700"
-              fill="#222"
-              fontFamily="sans-serif"
-            >
-              {lbl}
-            </text>
-          ))}
-        </g>
-      )}
-
-      {annotations && annotations.kind === "brackets" && (
-        <g id="significance-brackets">
-          {annotPairs.map((pr, idx) => {
-            const x1 = bx(pr.i);
-            const x2 = bx(pr.j);
-            const lvl = pr._level || 0;
-            const yLine = MChart.top + annotTopPad - 6 - lvl * 20;
-            const tick = 4;
-            return (
-              <g key={`br-${idx}`}>
-                <path
-                  d={`M${x1},${yLine + tick} L${x1},${yLine} L${x2},${yLine} L${x2},${yLine + tick}`}
-                  stroke="#333"
-                  strokeWidth="1"
-                  fill="none"
-                />
-                <text
-                  x={(x1 + x2) / 2}
-                  y={yLine - 2}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontWeight="700"
-                  fill="#222"
-                  fontFamily="sans-serif"
-                >
-                  {pr.label}
-                </text>
-              </g>
-            );
-          })}
-        </g>
-      )}
-
-      <g id="axis-x">
-        {groups.map((g, gi) => {
-          const lx = bx(gi);
-          const ly = MChart.top + h + 8;
-          const angled = angle !== 0;
-          return (
-            <g
-              key={`xl-${g.name}`}
-              id={`xlabel-${svgSafeId(g.name)}`}
-              transform={`translate(${lx},${ly}) rotate(${angle})`}
-            >
-              <text
-                x={0}
-                y={0}
-                textAnchor={angled ? "end" : "middle"}
-                dominantBaseline={angled ? "middle" : "hanging"}
-                fontSize="11"
-                fill="#333"
-                fontFamily="sans-serif"
-                fontWeight="600"
-              >
-                {g.name}
-              </text>
-              <text
-                x={0}
-                y={14}
-                textAnchor={angled ? "end" : "middle"}
-                dominantBaseline={angled ? "middle" : "hanging"}
-                fontSize="9"
-                fill="#999"
-                fontFamily="sans-serif"
-              >{`n=${g.stats?.n || 0}`}</text>
-            </g>
-          );
-        })}
-      </g>
-
-      {yLabel && (
-        <g id="y-axis-label">
-          <text
-            transform={`translate(14,${MChart.top + h / 2}) rotate(-90)`}
-            textAnchor="middle"
-            fontSize="13"
-            fill="#444"
-            fontFamily="sans-serif"
-          >
-            {yLabel}
-          </text>
-        </g>
-      )}
-
-      {plotTitle && (
-        <g id="title">
-          <text
-            x={MChart.left + w / 2}
-            y={14}
-            textAnchor="middle"
-            fontSize="15"
-            fontWeight="700"
-            fill="#222"
-            fontFamily="sans-serif"
-          >
-            {plotTitle}
-          </text>
-        </g>
-      )}
-      {renderSvgLegend(
-        svgLegend,
-        vbH_chart + 10,
-        MChart.left,
-        vbW - MChart.left - MChart.right,
-        88,
-        14
-      )}
-      {renderStatsSummary(statsSummary, vbH_chart + legendH, MChart.left)}
     </svg>
   );
 });
@@ -1448,7 +1366,26 @@ function ConfigureStep({
           </p>
         </div>
       )}
-      <button onClick={() => setStep("filter")} className="dv-btn dv-btn-primary">
+      {(colRoles.indexOf("group") < 0 || colRoles.indexOf("value") < 0) && (
+        <div
+          className="dv-panel"
+          style={{
+            background: "var(--warning-bg)",
+            borderColor: "var(--warning-border)",
+            marginBottom: 12,
+          }}
+        >
+          <p style={{ fontSize: 12, color: "var(--warning-text)" }}>
+            Assign at least one <strong style={{ color: roleColors.group }}>group</strong> and one{" "}
+            <strong style={{ color: roleColors.value }}>value</strong> column to continue.
+          </p>
+        </div>
+      )}
+      <button
+        onClick={() => setStep("filter")}
+        className="dv-btn dv-btn-primary"
+        disabled={colRoles.indexOf("group") < 0 || colRoles.indexOf("value") < 0}
+      >
         Filter & Rename →
       </button>
     </div>
@@ -1822,6 +1759,23 @@ function PlotControls({
             <option value="bar">Bar chart (mean ± error)</option>
           </select>
         </div>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            cursor: "pointer",
+            marginBottom: 4,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={vis.horizontal}
+            onChange={(e) => updVis({ horizontal: e.target.checked })}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
+          />
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Horizontal orientation</span>
+        </label>
         <BaseStyleControls
           plotBg={vis.plotBg}
           onPlotBgChange={sv("plotBg")}
@@ -1961,7 +1915,7 @@ function PlotControls({
                 ))}
               </select>
             </div>
-            {colorByCol >= 0 && vis.plotStyle !== "bar" && (
+            {colorByCol >= 0 && (
               <label
                 style={{
                   display: "flex",
@@ -2151,16 +2105,7 @@ const FacetBoxplotItem = memo(function FacetBoxplotItem({
           ({fd.groups.reduce((a, g) => a + g.allValues.length, 0)} pts)
         </span>
       </div>
-      {chartProps.plotStyle === "bar" ? (
-        <BarChart
-          ref={localRef}
-          {...chartProps}
-          barWidth={chartProps.boxWidth}
-          catColors={chartProps.categoryColors}
-        />
-      ) : (
-        <BoxplotChart ref={localRef} {...chartProps} />
-      )}
+      <BoxplotChart ref={localRef} {...chartProps} />
     </div>
   );
 });
@@ -2254,91 +2199,53 @@ function PlotArea({
             border: "1px solid var(--plot-card-border)",
           }}
         >
-          {vis.plotStyle === "bar" ? (
-            <BarChart
-              ref={chartRef}
-              groups={displayBoxplotGroups}
-              yLabel={vis.yLabel}
-              plotTitle={vis.plotTitle}
-              plotBg={vis.plotBg}
-              showGrid={vis.showGrid}
-              gridColor={vis.gridColor}
-              barWidth={vis.boxWidth}
-              barOpacity={vis.barOpacity}
-              pointSize={vis.pointSize}
-              showPoints={vis.showPoints}
-              jitterWidth={vis.jitterWidth}
-              pointOpacity={vis.pointOpacity}
-              xLabelAngle={vis.xLabelAngle}
-              errorType={vis.errorType}
-              errStrokeWidth={vis.errStrokeWidth}
-              showBarOutline={vis.showBarOutline}
-              barOutlineWidth={vis.barOutlineWidth}
-              barOutlineColor={vis.barOutlineColor}
-              boxGap={vis.boxGap}
-              yMin={yMinVal}
-              yMax={yMaxVal}
-              catColors={categoryColors}
-              annotations={globalAnnotations}
-              statsSummary={globalSummary}
-              svgLegend={
-                colorByCol >= 0 && colorByCategories.length > 0
-                  ? [
-                      {
-                        id: "legend-color",
-                        title: `Points colored by: ${colNames[colorByCol]}`,
-                        items: colorByCategories.map((c) => ({
-                          label: c,
-                          color: categoryColors[c] || "#999",
-                          shape: "dot",
-                        })),
-                      },
-                    ]
-                  : null
-              }
-            />
-          ) : (
-            <BoxplotChart
-              ref={chartRef}
-              groups={displayBoxplotGroups}
-              yLabel={vis.yLabel}
-              plotTitle={vis.plotTitle}
-              plotBg={vis.plotBg}
-              showGrid={vis.showGrid}
-              gridColor={vis.gridColor}
-              boxWidth={vis.boxWidth}
-              boxFillOpacity={vis.boxFillOpacity}
-              pointSize={vis.pointSize}
-              showPoints={vis.showPoints}
-              jitterWidth={vis.jitterWidth}
-              pointOpacity={vis.pointOpacity}
-              xLabelAngle={vis.xLabelAngle}
-              yMin={yMinVal}
-              yMax={yMaxVal}
-              categoryColors={categoryColors}
-              colorByCol={colorByCol}
-              boxGap={vis.boxGap}
-              showCompPie={vis.showCompPie}
-              plotStyle={vis.plotStyle}
-              annotations={globalAnnotations}
-              statsSummary={globalSummary}
-              svgLegend={
-                colorByCol >= 0 && colorByCategories.length > 0
-                  ? [
-                      {
-                        id: "legend-color",
-                        title: `Points colored by: ${colNames[colorByCol]}`,
-                        items: colorByCategories.map((c) => ({
-                          label: c,
-                          color: categoryColors[c] || "#999",
-                          shape: "dot",
-                        })),
-                      },
-                    ]
-                  : null
-              }
-            />
-          )}
+          <BoxplotChart
+            ref={chartRef}
+            groups={displayBoxplotGroups}
+            yLabel={vis.yLabel}
+            plotTitle={vis.plotTitle}
+            plotBg={vis.plotBg}
+            showGrid={vis.showGrid}
+            gridColor={vis.gridColor}
+            boxWidth={vis.boxWidth}
+            boxFillOpacity={vis.boxFillOpacity}
+            pointSize={vis.pointSize}
+            showPoints={vis.showPoints}
+            jitterWidth={vis.jitterWidth}
+            pointOpacity={vis.pointOpacity}
+            xLabelAngle={vis.xLabelAngle}
+            yMin={yMinVal}
+            yMax={yMaxVal}
+            categoryColors={categoryColors}
+            colorByCol={colorByCol}
+            boxGap={vis.boxGap}
+            showCompPie={vis.showCompPie}
+            plotStyle={vis.plotStyle}
+            barOpacity={vis.barOpacity}
+            errorType={vis.errorType}
+            errStrokeWidth={vis.errStrokeWidth}
+            showBarOutline={vis.showBarOutline}
+            barOutlineWidth={vis.barOutlineWidth}
+            barOutlineColor={vis.barOutlineColor}
+            horizontal={vis.horizontal}
+            annotations={globalAnnotations}
+            statsSummary={globalSummary}
+            svgLegend={
+              colorByCol >= 0 && colorByCategories.length > 0
+                ? [
+                    {
+                      id: "legend-color",
+                      title: `Points colored by: ${colNames[colorByCol]}`,
+                      items: colorByCategories.map((c) => ({
+                        label: c,
+                        color: categoryColors[c] || "#999",
+                        shape: "dot",
+                      })),
+                    },
+                  ]
+                : null
+            }
+          />
         </div>
       )}
       {facetByCol >= 0 && facetedData.length > 0 && (
@@ -2378,6 +2285,7 @@ function PlotArea({
               showBarOutline: vis.showBarOutline,
               barOutlineWidth: vis.barOutlineWidth,
               barOutlineColor: vis.barOutlineColor,
+              horizontal: vis.horizontal,
               svgLegend:
                 colorByCol >= 0 && colorByCategories.length > 0
                   ? [
@@ -2528,6 +2436,7 @@ const FacetTrio = memo(function FacetTrio({
       showBarOutline: vis.showBarOutline,
       barOutlineWidth: vis.barOutlineWidth,
       barOutlineColor: vis.barOutlineColor,
+      horizontal: vis.horizontal,
       svgLegend,
     }),
     [
@@ -2709,6 +2618,7 @@ function App() {
     yMaxCustom: "",
     showCompPie: false,
     plotStyle: "box",
+    horizontal: false,
     // bar-specific
     errorType: "sem",
     errStrokeWidth: 1.2,
