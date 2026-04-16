@@ -55,6 +55,8 @@ module.exports = {
   dataToColumns: ctx.dataToColumns,
   wideToLong: ctx.wideToLong,
   reshapeWide: ctx.reshapeWide,
+  // Filename helpers
+  fileBaseName: ctx.fileBaseName,
   // Statistics
   computeStats: ctx.computeStats,
   quartiles: ctx.quartiles,

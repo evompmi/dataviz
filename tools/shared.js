@@ -441,6 +441,11 @@ function svgSafeId(s) {
   return /^[A-Za-z_]/.test(cleaned) ? cleaned : "_" + cleaned;
 }
 
+function fileBaseName(fileName, fallback) {
+  if (typeof fileName === "string" && fileName.trim()) return fileName.replace(/\.[^.]+$/, "");
+  return fallback || "data";
+}
+
 function flashSaved(btn) {
   if (!btn) return;
   const original = btn.innerHTML;

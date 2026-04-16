@@ -1571,7 +1571,7 @@ function OutputStep({
               downloadCsv(
                 activeColIdxs.map((i) => colNames[i]),
                 renamedRows.map((r) => activeColIdxs.map((i) => r[i])),
-                `sanitized_long_${fileName.replace(/\.[^.]+$/, "")}.csv`
+                `${fileBaseName(fileName, "data")}_sanitized_long.csv`
               );
               flashSaved(e.currentTarget);
             }}
@@ -1614,7 +1614,7 @@ function OutputStep({
                 downloadCsv(
                   wideData.headers,
                   wideData.rows,
-                  `sanitized_wide_${fileName.replace(/\.[^.]+$/, "")}.csv`
+                  `${fileBaseName(fileName, "data")}_sanitized_wide.csv`
                 );
                 flashSaved(e.currentTarget);
               }}
@@ -3203,7 +3203,7 @@ function App() {
     setDisabledGroups((p) => ({ ...p, [name]: !p[name] }));
   };
 
-  const fileStem = "groupplot";
+  const fileStem = `${fileBaseName(fileName, "groupplot")}_groupplot`;
   const handleDownloadSvg = useCallback(() => {
     if (facetByCol >= 0 && facetedData.length > 0) {
       facetedData.forEach((fd) =>

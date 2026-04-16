@@ -143,6 +143,7 @@ declare global {
 
   // ── Download helpers ───────────────────────────────────────────────────────
   function svgSafeId(s: unknown): string;
+  function fileBaseName(fileName: string | null | undefined, fallback?: string): string;
   function flashSaved(btn: HTMLElement | null): void;
   function downloadSvg(svgEl: SVGSVGElement | null, filename: string): void;
   function downloadPng(svgEl: SVGSVGElement | null, filename: string, scale?: number): void;

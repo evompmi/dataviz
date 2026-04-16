@@ -1464,7 +1464,8 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
   );
 }
 
-function ItemListPanel({ intersection, allSetNames }) {
+function ItemListPanel({ intersection, allSetNames, fileName }) {
+  const baseName = fileBaseName(fileName, "venn");
   if (!intersection)
     return (
       <div
@@ -1500,7 +1501,7 @@ function ItemListPanel({ intersection, allSetNames }) {
             downloadCsv(
               ["Item"],
               intersection.items.map((i) => [i]),
-              `venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
+              `${baseName}_venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
             );
           }}
           className="dv-btn dv-btn-secondary"
@@ -1558,7 +1559,9 @@ function PlotControls({
   resetAll,
   proportional,
   onProportionalChange,
+  fileName,
 }) {
+  const baseName = fileBaseName(fileName, "venn");
   const sv = (k) => (v) => updVis({ [k]: v });
   return (
     <div
@@ -1575,8 +1578,8 @@ function PlotControls({
       }}
     >
       <ActionsPanel
-        onDownloadSvg={() => downloadSvg(chartRef.current, "venn.svg")}
-        onDownloadPng={() => downloadPng(chartRef.current, "venn.png", 2)}
+        onDownloadSvg={() => downloadSvg(chartRef.current, `${baseName}_venn.svg`)}
+        onDownloadPng={() => downloadPng(chartRef.current, `${baseName}_venn.png`, 2)}
         onReset={resetAll}
         extraDownloads={[
           {
@@ -1591,7 +1594,7 @@ function PlotControls({
                   item,
                   ...activeSetNames.map((n) => (allSets.get(n).has(item) ? "1" : "0")),
                 ]);
-              downloadCsv(headers, rows, "venn_membership.csv");
+              downloadCsv(headers, rows, `${baseName}_venn_membership.csv`);
             },
           },
         ]}
@@ -1993,6 +1996,7 @@ function App() {
               resetAll={resetAll}
               proportional={proportional}
               onProportionalChange={setProportional}
+              fileName={fileName}
             />
 
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -2102,7 +2106,11 @@ function App() {
                 >
                   Items
                 </p>
-                <ItemListPanel intersection={selectedIntersection} allSetNames={activeSetNames} />
+                <ItemListPanel
+                  intersection={selectedIntersection}
+                  allSetNames={activeSetNames}
+                  fileName={fileName}
+                />
               </div>
             </div>
           </div>

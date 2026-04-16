@@ -922,10 +922,10 @@ function PlotStep({
         {/* Actions */}
         <ActionsPanel
           onDownloadSvg={() =>
-            downloadSvg(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.svg`)
+            downloadSvg(svgRef.current, `${fileBaseName(fileName, "scatter")}_scatter.svg`)
           }
           onDownloadPng={() =>
-            downloadPng(svgRef.current, `scatter_${fileName.replace(/\.[^.]+$/, "")}.png`)
+            downloadPng(svgRef.current, `${fileBaseName(fileName, "scatter")}_scatter.png`)
           }
           onReset={resetAll}
           extraDownloads={[
@@ -935,7 +935,7 @@ function PlotStep({
                 downloadCsv(
                   activeColIdxs.map((i) => parsed.headers[i]),
                   filteredRawRows.map((r) => activeColIdxs.map((i) => r[i])),
-                  `scatter_${fileName.replace(/\.[^.]+$/, "")}.csv`
+                  `${fileBaseName(fileName, "scatter")}_scatter.csv`
                 ),
             },
           ]}

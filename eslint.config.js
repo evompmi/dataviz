@@ -44,6 +44,7 @@ const sharedGlobals = {
   quartiles: "readonly",
   kde: "readonly",
   computeGroupStats: "readonly",
+  fileBaseName: "readonly",
   flashSaved: "readonly",
   svgSafeId: "readonly",
   downloadSvg: "readonly",

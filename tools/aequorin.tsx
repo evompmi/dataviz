@@ -1033,36 +1033,40 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     }));
   }, [series, ts, convFactor]);
 
+  const baseName = fileBaseName(fileName, "aequorin");
+
   React.useImperativeHandle(
     ref,
     () => ({
       downloadMain: () => {
         if (faceted) {
-          displaySeries.forEach((s) => downloadSvg(facetRefs.current[s.prefix], `${s.label}.svg`));
+          displaySeries.forEach((s) =>
+            downloadSvg(facetRefs.current[s.prefix], `${baseName}_${s.label}.svg`)
+          );
         } else {
-          downloadSvg(combinedRef.current, "combined_plot.svg");
+          downloadSvg(combinedRef.current, `${baseName}_combined.svg`);
         }
         if (showInset && barRef.current) {
           const suffix = statsDataMode === "raw" ? "raw" : "corrected";
-          downloadSvg(barRef.current, `barplot_sum_${suffix}.svg`);
+          downloadSvg(barRef.current, `${baseName}_barplot_${suffix}.svg`);
         }
       },
       downloadMainPng: () => {
         if (faceted) {
-          displaySeries.forEach((s) => downloadPng(facetRefs.current[s.prefix], `${s.label}.png`));
+          displaySeries.forEach((s) =>
+            downloadPng(facetRefs.current[s.prefix], `${baseName}_${s.label}.png`)
+          );
         } else {
-          downloadPng(combinedRef.current, "combined_plot.png");
+          downloadPng(combinedRef.current, `${baseName}_combined.png`);
         }
         if (showInset && barRef.current) {
           const suffix = statsDataMode === "raw" ? "raw" : "corrected";
-          downloadPng(barRef.current, `barplot_sum_${suffix}.png`);
+          downloadPng(barRef.current, `${baseName}_barplot_${suffix}.png`);
         }
       },
     }),
-    [faceted, displaySeries, showInset, statsDataMode]
+    [faceted, displaySeries, showInset, statsDataMode, baseName]
   );
-
-  const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "data";
 
   if (activeStats.length === 0)
     return (
@@ -1105,7 +1109,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   const isCorrected = statsDataMode === "corrected";
   const sumKey = isCorrected ? "corrSum" : "rawSum";
   const sumLabel = isCorrected ? "Corrected Sum" : "Raw Sum";
-  const csvFileName = isCorrected ? `corrected_sums_${baseName}.csv` : `raw_sums_${baseName}.csv`;
+  const csvFileName = isCorrected ? `${baseName}_corrected_sums.csv` : `${baseName}_raw_sums.csv`;
 
   const IntegralTile = showInset ? (
     <div
@@ -3120,7 +3124,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `calibrated_${fileName.replace(/\.[^.]+$/, "")}.csv`;
+    a.download = `${fileBaseName(fileName, "aequorin")}_calibrated.csv`;
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();

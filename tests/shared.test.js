@@ -16,6 +16,7 @@ const {
   computeStats,
   quartiles,
   computeGroupStats,
+  fileBaseName,
 } = require("./helpers/shared-loader");
 
 // ── autoDetectSep ─────────────────────────────────────────────────────────────
@@ -426,6 +427,40 @@ test("returns empty result for empty rows", () => {
   const { headers, rows } = reshapeWide([], 0, 1);
   eq(headers, []);
   eq(rows, []);
+});
+
+// ── fileBaseName ──────────────────────────────────────────────────────────────
+
+suite("fileBaseName");
+
+test("strips extension from a normal filename", () => {
+  eq(fileBaseName("analysis1.csv", "data"), "analysis1");
+});
+
+test("strips only the last extension", () => {
+  eq(fileBaseName("my.data.file.tsv", "data"), "my.data.file");
+});
+
+test("returns fallback for empty string", () => {
+  eq(fileBaseName("", "scatter"), "scatter");
+});
+
+test("returns fallback for null/undefined", () => {
+  eq(fileBaseName(null, "venn"), "venn");
+  eq(fileBaseName(undefined, "groupplot"), "groupplot");
+});
+
+test("returns fallback for whitespace-only string", () => {
+  eq(fileBaseName("   ", "aequorin"), "aequorin");
+});
+
+test("returns 'data' when fallback is omitted", () => {
+  eq(fileBaseName(""), "data");
+  eq(fileBaseName(null), "data");
+});
+
+test("handles filename with no extension", () => {
+  eq(fileBaseName("mydata", "x"), "mydata");
 });
 
 summary();
