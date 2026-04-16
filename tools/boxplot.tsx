@@ -1504,6 +1504,7 @@ function OutputStep({
             Filtered data (long)
           </p>
           <button
+            className="dv-btn dv-btn-dl"
             onClick={(e) => {
               downloadCsv(
                 activeColIdxs.map((i) => colNames[i]),
@@ -1511,17 +1512,6 @@ function OutputStep({
                 `${fileBaseName(fileName, "data")}_sanitized_long.csv`
               );
               flashSaved(e.currentTarget);
-            }}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              fontSize: 12,
-              cursor: "pointer",
-              background: "var(--success-bg)",
-              border: "1px solid #86efac",
-              color: "var(--success-text)",
-              fontFamily: "inherit",
-              fontWeight: 600,
             }}
           >
             ⬇ Long CSV
@@ -1547,6 +1537,7 @@ function OutputStep({
               Reshaped (wide)
             </p>
             <button
+              className="dv-btn dv-btn-dl"
               onClick={(e) => {
                 downloadCsv(
                   wideData.headers,
@@ -1554,17 +1545,6 @@ function OutputStep({
                   `${fileBaseName(fileName, "data")}_sanitized_wide.csv`
                 );
                 flashSaved(e.currentTarget);
-              }}
-              style={{
-                padding: "8px 14px",
-                borderRadius: 6,
-                fontSize: 12,
-                cursor: "pointer",
-                background: "var(--success-bg)",
-                border: "1px solid #86efac",
-                color: "var(--success-text)",
-                fontFamily: "inherit",
-                fontWeight: 600,
               }}
             >
               ⬇ Wide CSV
