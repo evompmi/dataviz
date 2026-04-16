@@ -2321,7 +2321,7 @@ function PlotControls({
             type="checkbox"
             checked={vis.showInset}
             onChange={(e) => updVis({ showInset: e.target.checked })}
-            style={{ accentColor: "var(--accent-primary)" }}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
         </div>
 
@@ -2367,7 +2367,7 @@ function PlotControls({
                   type="checkbox"
                   checked={vis.insetShowGrid}
                   onChange={(e) => updVis({ insetShowGrid: e.target.checked })}
-                  style={{ accentColor: "var(--accent-primary)" }}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
                 />
               </div>
               {vis.insetShowGrid && (
@@ -2424,7 +2424,7 @@ function PlotControls({
                 type="checkbox"
                 checked={vis.insetShowBarOutline}
                 onChange={(e) => updVis({ insetShowBarOutline: e.target.checked })}
-                style={{ accentColor: "var(--accent-primary)" }}
+                style={{ accentColor: "var(--cta-primary-bg)" }}
               />
             </div>
             {vis.insetShowBarOutline && (
@@ -2508,7 +2508,7 @@ function PlotControls({
                   type="checkbox"
                   checked={vis.insetShowPoints}
                   onChange={(e) => updVis({ insetShowPoints: e.target.checked })}
-                  style={{ accentColor: "var(--accent-primary)" }}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
                 />
               </div>
               {vis.insetShowPoints && (

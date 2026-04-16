@@ -1694,7 +1694,7 @@ function PlotControls({
               type="checkbox"
               checked={proportional}
               onChange={(e) => onProportionalChange(e.target.checked)}
-              style={{ accentColor: "var(--accent-primary)" }}
+              style={{ accentColor: "var(--cta-primary-bg)" }}
             />
           </div>
           {proportional && (

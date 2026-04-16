@@ -1055,7 +1055,7 @@ function PlotStep({
                 type="checkbox"
                 checked={regression.on}
                 onChange={(e) => updRegression({ on: e.target.checked })}
-                style={{ accentColor: "var(--accent-primary)" }}
+                style={{ accentColor: "var(--cta-primary-bg)" }}
               />
               show
             </label>
@@ -1121,7 +1121,7 @@ function PlotStep({
                   type="checkbox"
                   checked={regression.dashed}
                   onChange={(e) => updRegression({ dashed: e.target.checked })}
-                  style={{ accentColor: "var(--accent-primary)" }}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
                 />
                 Dashed
               </label>
@@ -1139,7 +1139,7 @@ function PlotStep({
                   type="checkbox"
                   checked={regression.showStats}
                   onChange={(e) => updRegression({ showStats: e.target.checked })}
-                  style={{ accentColor: "var(--accent-primary)" }}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
                 />
                 Show equation &amp; R² on plot
               </label>
@@ -1623,7 +1623,7 @@ function PlotStep({
                     type="checkbox"
                     checked={rl.dashed}
                     onChange={(e) => updateRefLine(rl.id, "dashed", e.target.checked)}
-                    style={{ accentColor: "var(--accent-primary)" }}
+                    style={{ accentColor: "var(--cta-primary-bg)" }}
                   />
                 </div>
                 {rl.dashed && (
@@ -1753,7 +1753,7 @@ function PlotStep({
                                 type="checkbox"
                                 checked={checked}
                                 onChange={(e) => handleFilterToggle(ci, v, vals, e.target.checked)}
-                                style={{ accentColor: "var(--accent-primary)", margin: 0 }}
+                                style={{ accentColor: "var(--cta-primary-bg)", margin: 0 }}
                               />
                               {v}
                             </label>

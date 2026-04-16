@@ -330,7 +330,7 @@ function FilterCheckboxPanel(props) {
                 onChange: function () {
                   onToggle(i, v);
                 },
-                style: { accentColor: "var(--accent-primary)" },
+                style: { accentColor: "var(--cta-primary-bg)" },
               }),
               v || React.createElement("em", { style: { color: "var(--text-faint)" } }, "(empty)")
             );
@@ -725,7 +725,7 @@ function BaseStyleControls(props) {
         onChange: function (e) {
           onShowGridChange(e.target.checked);
         },
-        style: { accentColor: "var(--accent-primary)" },
+        style: { accentColor: "var(--cta-primary-bg)" },
       })
     ),
   ];

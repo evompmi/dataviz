@@ -1898,7 +1898,7 @@ function PlotControls({
                 type="checkbox"
                 checked={vis.showBarOutline}
                 onChange={(e) => updVis({ showBarOutline: e.target.checked })}
-                style={{ accentColor: "var(--accent-primary)" }}
+                style={{ accentColor: "var(--cta-primary-bg)" }}
               />
             </div>
             {vis.showBarOutline && (
@@ -1940,7 +1940,7 @@ function PlotControls({
             type="checkbox"
             checked={vis.showPoints}
             onChange={(e) => updVis({ showPoints: e.target.checked })}
-            style={{ accentColor: "var(--accent-primary)" }}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
         </div>
         {vis.showPoints && (

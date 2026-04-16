@@ -90,7 +90,8 @@ function UnitInput({
         {label}
       </label>
       <input
-        type="number"
+        type="text"
+        inputMode="decimal"
         value={value}
         onChange={(e) => onValueChange(e.target.value)}
         disabled={disabled}
@@ -248,11 +249,11 @@ function MolarityMode({ compact }: { compact?: boolean }) {
                   borderRadius: 6,
                   fontSize: compact ? 11 : 12,
                   fontWeight: 600,
-                  background: solveFor === f.key ? "var(--accent-primary)" : "var(--surface)",
+                  background: solveFor === f.key ? "var(--step-active-bg)" : "var(--surface)",
                   color: solveFor === f.key ? "var(--on-accent)" : "var(--text-faint)",
                   border:
                     "1px solid " +
-                    (solveFor === f.key ? "var(--accent-primary)" : "var(--border-strong)"),
+                    (solveFor === f.key ? "var(--step-active-border)" : "var(--border-strong)"),
                   cursor: "pointer",
                   fontFamily: "inherit",
                   textAlign: "left",
@@ -297,7 +298,8 @@ function MolarityMode({ compact }: { compact?: boolean }) {
               MW (g/mol)
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={solveFor === "mw" ? "" : mw}
               onChange={(e) => setMw(e.target.value)}
               disabled={solveFor === "mw"}
@@ -489,11 +491,11 @@ function DilutionMode({ compact }: { compact?: boolean }) {
                   borderRadius: 6,
                   fontSize: compact ? 11 : 12,
                   fontWeight: 600,
-                  background: solveFor === f.key ? "var(--accent-primary)" : "var(--surface)",
+                  background: solveFor === f.key ? "var(--step-active-bg)" : "var(--surface)",
                   color: solveFor === f.key ? "var(--on-accent)" : "var(--text-faint)",
                   border:
                     "1px solid " +
-                    (solveFor === f.key ? "var(--accent-primary)" : "var(--border-strong)"),
+                    (solveFor === f.key ? "var(--step-active-border)" : "var(--border-strong)"),
                   cursor: "pointer",
                   fontFamily: "inherit",
                   textAlign: "left",
@@ -961,7 +963,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
               Length
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={vectorBp}
               onChange={(e) => setVectorBp(e.target.value)}
               className="dv-input"
@@ -974,7 +977,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
               Amount
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={vectorNg}
               onChange={(e) => setVectorNg(e.target.value)}
               className="dv-input"
@@ -995,7 +999,8 @@ function LigationMode({ compact }: { compact?: boolean }) {
               Length
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={insertBp}
               onChange={(e) => setInsertBp(e.target.value)}
               className="dv-input"
@@ -1024,10 +1029,10 @@ function LigationMode({ compact }: { compact?: boolean }) {
               Vector
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={ratioVector}
               onChange={(e) => setRatioVector(e.target.value)}
-              min="1"
               className="dv-input"
               style={{ ...fieldStyle, width: 60, fontSize: 12 }}
             />
@@ -1045,10 +1050,10 @@ function LigationMode({ compact }: { compact?: boolean }) {
               Insert
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={ratioInsert}
               onChange={(e) => setRatioInsert(e.target.value)}
-              min="1"
               className="dv-input"
               style={{ ...fieldStyle, width: 60, fontSize: 12 }}
             />
@@ -1103,7 +1108,7 @@ function ModeButton({ label, desc, active, accentColor, activeBg, onClick, style
       style={{
         padding: "12px 8px",
         borderRadius: 10,
-        border: showAccent ? `2px solid ${accentColor}` : "1px solid #ddd",
+        border: showAccent ? `2px solid ${accentColor}` : "1px solid var(--border)",
         background: isActive ? activeBg : "var(--surface)",
         cursor: "pointer",
         fontFamily: "inherit",
@@ -1143,8 +1148,8 @@ function App() {
     { key: "ligation", label: "Ligation", desc: "Insert mass from vector:insert ratio" },
   ];
 
-  const chemColor = "var(--accent-primary)";
-  const dnaColor = "var(--accent-dna)";
+  const chemColor = "var(--cta-primary-bg)";
+  const dnaColor = "var(--cta-dna-bg)";
 
   return (
     <div
