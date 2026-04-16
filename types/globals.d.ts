@@ -64,6 +64,11 @@ declare global {
   function powerChi2(w: number, n: number, alpha: number, df: number): number;
   function fFromGroupMeans(means: number[], sd: number): number;
   function makeTicks(min: number, max: number, approxN: number): number[];
+  interface LogTick {
+    value: number;
+    major: boolean;
+  }
+  function makeLogTicks(dataMin: number, dataMax: number, base: number): LogTick[];
 
   // ── Separator detection & decimal comma fix ────────────────────────────────
   function autoDetectSep(text: string, override?: string): string | RegExp;
@@ -180,6 +185,12 @@ declare global {
   const BaseStyleControls: FC<any>;
   const ErrorBoundary: FC<{ toolName?: string; children?: ReactNode }>;
   const StatsTile: FC<any>;
+  interface SubgroupMeta {
+    name: string;
+    startIndex: number;
+    count: number;
+  }
+
   interface BracketPair {
     i: number;
     j: number;

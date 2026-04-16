@@ -31,6 +31,7 @@ const sharedGlobals = {
   seededRandom: "readonly",
   makeExamplePlantCSV: "readonly",
   makeTicks: "readonly",
+  makeLogTicks: "readonly",
   autoDetectSep: "readonly",
   fixDecimalCommas: "readonly",
   parseRaw: "readonly",

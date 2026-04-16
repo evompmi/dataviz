@@ -41,6 +41,7 @@ module.exports = {
   // Axis ticks
   niceStep: ctx.niceStep,
   makeTicks: ctx.makeTicks,
+  makeLogTicks: ctx.makeLogTicks,
   // Separator / decimal
   autoDetectSep: ctx.autoDetectSep,
   fixDecimalCommas: ctx.fixDecimalCommas,

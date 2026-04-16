@@ -190,6 +190,31 @@ function makeTicks(min, max, approxN) {
   }
   return ticks;
 }
+function makeLogTicks(dataMin, dataMax, base) {
+  if (!isFinite(dataMin) || dataMin <= 0) dataMin = base === 2 ? 0.5 : 0.1;
+  if (!isFinite(dataMax) || dataMax <= dataMin) dataMax = dataMin * 1000;
+  const logFn = base === 2 ? Math.log2 : base === 10 ? Math.log10 : Math.log;
+  const logMin = Math.floor(logFn(dataMin));
+  const logMax = Math.ceil(logFn(dataMax));
+  const decades = logMax - logMin;
+  const ticks = [];
+  for (let exp = logMin; exp <= logMax; exp++) {
+    const v = Math.pow(base, exp);
+    if (v >= dataMin * 0.99 && v <= dataMax * 1.01) ticks.push({ value: v, major: true });
+    if (base === 10) {
+      const muls = [2, 3, 4, 5, 6, 7, 8, 9];
+      for (const mul of muls) {
+        const sv = mul * Math.pow(base, exp);
+        if (sv >= dataMin * 0.99 && sv <= dataMax * 1.01) ticks.push({ value: sv, major: false });
+      }
+    } else if (base === 2 && decades <= 8) {
+      const mid = Math.pow(base, exp) * 1.5;
+      if (mid >= dataMin * 0.99 && mid <= dataMax * 1.01) ticks.push({ value: mid, major: false });
+    }
+  }
+  ticks.sort((a, b) => a.value - b.value);
+  return ticks;
+}
 
 // ── Separator detection ───────────────────────────────────────────────────────
 
