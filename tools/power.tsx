@@ -216,8 +216,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
     return (
       <div style={{ opacity: disabled ? 0.4 : 1 }}>
         <div style={smallLabel}>Expected correlation |r|</div>
-        <input
-          type="number"
+        <NumberInput
           min="0.01"
           max="0.99"
           step="0.05"
@@ -456,8 +455,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
                 ? "Effect size (w)"
                 : "Effect size (d)"}
           </div>
-          <input
-            type="number"
+          <NumberInput
             min="0.01"
             step="0.1"
             value={effectSize}
