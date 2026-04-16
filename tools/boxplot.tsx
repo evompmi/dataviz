@@ -63,6 +63,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     barOutlineColor,
     horizontal,
     subgroups,
+    subgroupSummaries,
     yScale,
   },
   ref
@@ -151,13 +152,32 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const totalGap = subgroups ? (subgroups.length - 1) * separatorGap : 0;
   const catSize = Math.max(200, n * 100 * compact) + totalGap;
   const valSize = (isBar ? 420 : 504) + (hz ? 0 : absA > 0 ? absA * (isBar ? 0.9 : 0.8) : 0);
-  const vbW = (hz ? valSize : catSize) + M.left + M.right;
+  const _hasSgSummaries =
+    subgroupSummaries && subgroups && Object.values(subgroupSummaries).some((v) => v);
+  const _hzSgSummaryW =
+    hz && _hasSgSummaries
+      ? Math.max(
+          ...Object.values(subgroupSummaries as Record<string, string | null>).map((txt) => {
+            if (!txt) return 0;
+            const maxLen = Math.max(...txt.split("\n").map((l) => l.length), 0);
+            return maxLen * (STATS_FONT * 0.62) + 16;
+          }),
+          0
+        )
+      : 0;
+  const _statsH =
+    _hasSgSummaries && !hz
+      ? Math.max(
+          ...subgroups.map((sg) => statsSummaryHeight(subgroupSummaries[sg.name] || null)),
+          0
+        )
+      : statsSummaryHeight(statsSummary);
+  const vbW = (hz ? valSize : catSize) + M.left + M.right + _hzSgSummaryW;
   const vbH_base = (hz ? catSize : valSize) + M.top + M.bottom;
-  const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right, 88);
-  const _statsH = statsSummaryHeight(statsSummary);
+  const _legH = computeLegendHeight(svgLegend, vbW - M.left - M.right - _hzSgSummaryW, 88);
   const vbH_chart = vbH_base - _statsH;
   const vbH = vbH_base + _legH;
-  const w = vbW - M.left - M.right;
+  const w = vbW - M.left - M.right - _hzSgSummaryW;
   const h = vbH_chart - M.top - M.bottom;
 
   const annotDim = hz ? w : h;
@@ -1028,7 +1048,57 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
       )}
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
-      {renderStatsSummary(statsSummary, vbH_chart + _legH, M.left)}
+      {_hasSgSummaries
+        ? subgroups.map((sg) => {
+            const txt = subgroupSummaries[sg.name];
+            if (!txt) return null;
+            const lines = txt.split("\n");
+            const firstPos = bx(sg.startIndex);
+            const lastPos = bx(sg.startIndex + sg.count - 1);
+            const centerPos = (firstPos + lastPos) / 2;
+            if (hz) {
+              const summaryX = M.left + w + 12;
+              const blockH = lines.length * STATS_LINE_H;
+              const startY = centerPos - blockH / 2;
+              return (
+                <g key={`sg-summary-${sg.name}`} id={`stats-summary-${svgSafeId(sg.name)}`}>
+                  {lines.map((line, i) => (
+                    <text
+                      key={i}
+                      x={summaryX}
+                      y={startY + i * STATS_LINE_H}
+                      textAnchor="start"
+                      dominantBaseline="middle"
+                      fontSize={STATS_FONT}
+                      fill="#aaa"
+                      fontFamily="monospace"
+                    >
+                      {line}
+                    </text>
+                  ))}
+                </g>
+              );
+            }
+            const summaryY = vbH_chart + _legH;
+            return (
+              <g key={`sg-summary-${sg.name}`} id={`stats-summary-${svgSafeId(sg.name)}`}>
+                {lines.map((line, i) => (
+                  <text
+                    key={i}
+                    x={centerPos}
+                    y={summaryY + 10 + i * STATS_LINE_H}
+                    textAnchor="middle"
+                    fontSize={STATS_FONT}
+                    fill="#aaa"
+                    fontFamily="monospace"
+                  >
+                    {line}
+                  </text>
+                ))}
+              </g>
+            );
+          })
+        : renderStatsSummary(statsSummary, vbH_chart + _legH, M.left)}
     </svg>
   );
 });
@@ -2300,6 +2370,7 @@ function PlotArea({
   facetStatsAnnotations,
   facetStatsSummary,
   subgroups,
+  subgroupSummaries,
 }) {
   const globalAnnotations = facetStatsAnnotations["_global"] || null;
   const globalSummary = facetStatsSummary["_global"] || null;
@@ -2403,6 +2474,7 @@ function PlotArea({
             barOutlineColor={vis.barOutlineColor}
             horizontal={vis.horizontal}
             subgroups={subgroups}
+            subgroupSummaries={subgroupSummaries}
             annotations={globalAnnotations}
             statsSummary={globalSummary}
             svgLegend={
@@ -2503,6 +2575,7 @@ function SubgroupedStatsTile({
   fileStem,
   onAnnotationsChange,
   onStatsSummaryChange,
+  onSubgroupSummariesChange,
 }: any) {
   const [subAnnotations, setSubAnnotations] = useState<Record<string, any>>({});
   const [subSummaries, setSubSummaries] = useState<Record<string, string | null>>({});
@@ -2564,30 +2637,26 @@ function SubgroupedStatsTile({
     return { kind: "cld", labels: cldLabels, groupNames: names };
   }, [subAnnotations, subgroups, flatGroups]);
 
-  const mergedSummary = useMemo(() => {
-    const parts: string[] = [];
-    for (const sg of subgroups) {
-      const txt = subSummaries[sg.name];
-      if (txt) {
-        parts.push(`\u2500\u2500 ${sg.name} \u2500\u2500`);
-        parts.push(txt);
-      }
-    }
-    return parts.length > 0 ? parts.join("\n") : null;
-  }, [subSummaries, subgroups]);
-
   const onChangeRef = useRef(onAnnotationsChange);
   onChangeRef.current = onAnnotationsChange;
   const onSummaryRef = useRef(onStatsSummaryChange);
   onSummaryRef.current = onStatsSummaryChange;
+  const onSgSummaryRef = useRef(onSubgroupSummariesChange);
+  onSgSummaryRef.current = onSubgroupSummariesChange;
+
   const specKey = mergedAnnotations ? JSON.stringify(mergedAnnotations) : "";
-  const summaryKey = mergedSummary || "";
   useEffect(() => {
     if (typeof onChangeRef.current === "function") onChangeRef.current(mergedAnnotations);
   }, [specKey]);
+
   useEffect(() => {
-    if (typeof onSummaryRef.current === "function") onSummaryRef.current(mergedSummary);
-  }, [summaryKey]);
+    if (typeof onSummaryRef.current === "function") onSummaryRef.current(null);
+  }, []);
+
+  const sgSummaryKey = JSON.stringify(subSummaries);
+  useEffect(() => {
+    if (typeof onSgSummaryRef.current === "function") onSgSummaryRef.current({ ...subSummaries });
+  }, [sgSummaryKey]);
 
   return (
     <div>
@@ -2952,6 +3021,7 @@ function App() {
   // both modes.
   const [facetStatsAnnotations, setFacetStatsAnnotations] = useState<Record<string, any>>({});
   const [facetStatsSummary, setFacetStatsSummary] = useState<Record<string, string | null>>({});
+  const [subgroupSummaries, setSubgroupSummaries] = useState<Record<string, string | null>>({});
   // Stable references so `FacetTrio`'s shallow-compare memo can skip
   // re-rendering unaffected facets when one facet's stats map entry updates.
   const setAnnotationsFor = useCallback(
@@ -2986,12 +3056,14 @@ function App() {
     _setSubgroupByCol(-1);
     setFacetStatsAnnotations({});
     setFacetStatsSummary({});
+    setSubgroupSummaries({});
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
 
   useEffect(() => {
     setFacetStatsAnnotations({});
     setFacetStatsSummary({});
+    setSubgroupSummaries({});
   }, [subgroupByCol]);
 
   const buildFilters = (hdrs, rws) => {
@@ -3687,6 +3759,7 @@ function App() {
                   facetStatsAnnotations={facetStatsAnnotations}
                   facetStatsSummary={facetStatsSummary}
                   subgroups={subgroupByCol >= 0 && subgroupedData ? subgroupedData.subgroups : null}
+                  subgroupSummaries={subgroupByCol >= 0 ? subgroupSummaries : null}
                 />
                 {subgroupByCol >= 0 && subgroupedData ? (
                   <SubgroupedStatsTile
@@ -3698,6 +3771,7 @@ function App() {
                     fileStem={fileStem}
                     onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
                     onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
+                    onSubgroupSummariesChange={setSubgroupSummaries}
                   />
                 ) : (
                   displayBoxplotGroups.length >= 2 && (
