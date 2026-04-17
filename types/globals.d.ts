@@ -201,6 +201,21 @@ declare global {
   }
   function assignBracketLevels(pairs: BracketPair[]): BracketPair[];
 
+  interface PowerFromDataRow {
+    alpha: number;
+    achieved: number;
+    nForTarget: number | null;
+  }
+  interface PowerFromDataResult {
+    effectLabel: string;
+    effect: number;
+    rows: PowerFromDataRow[];
+    targetPower: number;
+    nLabel: string;
+    approximate: boolean;
+  }
+  function computePowerFromData(chosenTest: string, values: number[][]): PowerFromDataResult | null;
+
   // ── Legend SVG helpers from shared-components.js ───────────────────────────
   interface LegendBlock {
     items: Array<{ label: string; color: string }>;

@@ -2867,185 +2867,976 @@ function PlotArea({
   );
 }
 
-// Per-facet wrapper tile. Each facet gets its own outer container holding
-// the plot tile, the "Statistics display" tile and the collapsible
-// "Statistics summary" tile. Because every facet is enclosed in its own
-function SubgroupedStatsTile({
-  subgroups,
-  flatGroups,
-  fileStem,
-  onAnnotationsChange,
-  onStatsSummaryChange,
-  onSubgroupSummariesChange,
-}: any) {
-  const [subAnnotations, setSubAnnotations] = useState<Record<string, any>>({});
-  const [subSummaries, setSubSummaries] = useState<Record<string, string | null>>({});
+// ─────────────────────────────────────────────────────────────────────────
+// Unified stats panel
+//
+// Replaces the per-facet / per-subgroup stack of StatsTiles with a single
+// scannable table: one row per "stat set" (facet, subgroup, or the whole
+// plot in flat mode), aggregate TXT / R downloads, and click-row-to-expand
+// detail with slate-banner sections (Groups / Assumptions / Test /
+// Post-hoc / Power). Matches the Line Plot per-x panel vocabulary.
+//
+// Per-set test override lives in the expanded detail. Global display
+// controls (show on plot, Letters vs Brackets, show ns, print summary
+// below plot) live in the panel header and apply to every set in lockstep.
+//
+// Annotation emission keeps the old per-key contract so the plot wiring
+// below the panel stays untouched:
+//   - Facet mode:    per-facet spec keyed on `fd.category`
+//   - Subgroup mode: App merges per-subgroup specs into one `_global` spec
+//                    with offset indices (see `mergeSubgroupAnnotations`)
+//   - Flat mode:     single spec keyed on `_global`
+// ─────────────────────────────────────────────────────────────────────────
 
-  const setSubAnnotFor = useCallback(
-    (key: string, spec: any) =>
-      setSubAnnotations((prev) => {
-        if (prev[key] === spec) return prev;
-        return { ...prev, [key]: spec };
-      }),
-    []
+const TEST_LABELS_BP = {
+  studentT: "Student's t-test",
+  welchT: "Welch's t-test",
+  mannWhitney: "Mann-Whitney U",
+  oneWayANOVA: "One-way ANOVA",
+  welchANOVA: "Welch's ANOVA",
+  kruskalWallis: "Kruskal-Wallis",
+};
+const POSTHOC_LABELS_BP = {
+  tukeyHSD: "Tukey HSD",
+  gamesHowell: "Games-Howell",
+  dunn: "Dunn (BH-adjusted)",
+};
+const TEST_OPTIONS_BP_2 = ["studentT", "welchT", "mannWhitney"];
+const TEST_OPTIONS_BP_K = ["oneWayANOVA", "welchANOVA", "kruskalWallis"];
+
+function runBpTest(name, values) {
+  try {
+    if (name === "studentT") return tTest(values[0], values[1], { equalVar: true });
+    if (name === "welchT") return tTest(values[0], values[1], { equalVar: false });
+    if (name === "mannWhitney") return mannWhitneyU(values[0], values[1]);
+    if (name === "oneWayANOVA") return oneWayANOVA(values);
+    if (name === "welchANOVA") return welchANOVA(values);
+    if (name === "kruskalWallis") return kruskalWallis(values);
+    return { error: "unknown test" };
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+}
+
+function runBpPostHoc(name, values) {
+  try {
+    if (name === "tukeyHSD") return tukeyHSD(values);
+    if (name === "gamesHowell") return gamesHowell(values);
+    if (name === "dunn") return dunnTest(values);
+    return null;
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+}
+
+function postHocForBpTest(testName) {
+  if (testName === "oneWayANOVA") return "tukeyHSD";
+  if (testName === "welchANOVA") return "gamesHowell";
+  if (testName === "kruskalWallis") return "dunn";
+  return null;
+}
+
+function formatBpStatShort(testName, res) {
+  if (!res || res.error) return "—";
+  if (testName === "studentT" || testName === "welchT")
+    return `t(${res.df.toFixed(2)}) = ${res.t.toFixed(3)}`;
+  if (testName === "mannWhitney") return `U = ${res.U.toFixed(1)}`;
+  if (testName === "oneWayANOVA" || testName === "welchANOVA")
+    return `F(${res.df1}, ${typeof res.df2 === "number" ? res.df2.toFixed(2) : res.df2}) = ${res.F.toFixed(3)}`;
+  if (testName === "kruskalWallis") return `H(${res.df}) = ${res.H.toFixed(3)}`;
+  return "—";
+}
+
+function formatBpResultLine(testName, res) {
+  if (!res || res.error) return res && res.error ? "⚠ " + res.error : "—";
+  if (testName === "studentT" || testName === "welchT")
+    return `t(${res.df.toFixed(2)}) = ${res.t.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "mannWhitney")
+    return `U = ${res.U.toFixed(1)},  z = ${res.z.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "oneWayANOVA" || testName === "welchANOVA")
+    return `F(${res.df1}, ${typeof res.df2 === "number" ? res.df2.toFixed(2) : res.df2}) = ${res.F.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "kruskalWallis")
+    return `H(${res.df}) = ${res.H.toFixed(3)},  p = ${formatP(res.p)}`;
+  return "—";
+}
+
+// Build the annotation spec the chart consumes, from a row's test / post-hoc
+// result. Mirrors StatsTile's logic but driven by panel-level display
+// controls rather than per-row toggles.
+function computeBpAnnotationSpec(row, displayMode, showNs) {
+  if (displayMode === "none" || !row || row.skip) return null;
+  const { k, names, testResult, postHocResult } = row;
+  if (k < 2) return null;
+  if (k === 2) {
+    const p = testResult && !testResult.error ? testResult.p : null;
+    if (p == null) return null;
+    if (!showNs && p >= 0.05) return null;
+    return {
+      kind: "brackets",
+      pairs: [{ i: 0, j: 1, p, label: pStars(p) }],
+      groupNames: names,
+    };
+  }
+  if (!postHocResult || postHocResult.error) return null;
+  if (displayMode === "cld") {
+    const labels = compactLetterDisplay(postHocResult.pairs, k);
+    return { kind: "cld", labels, groupNames: names };
+  }
+  const pairs = postHocResult.pairs
+    .map((pr) => ({ i: pr.i, j: pr.j, p: pr.pAdj != null ? pr.pAdj : pr.p }))
+    .map((pr) => ({ ...pr, label: pStars(pr.p) }))
+    .filter((pr) => showNs || pr.p < 0.05);
+  if (pairs.length === 0) return null;
+  return { kind: "brackets", pairs, groupNames: names };
+}
+
+// Plain-text "print summary below plot" string. Matches the StatsTile
+// output used by the old per-facet tile so chart exports line up.
+function computeBpSummaryText(row, showSummary) {
+  if (!showSummary || !row || row.skip) return null;
+  const { chosenTest, testResult, k, postHocResult, postHocName, names, values, powerResult } = row;
+  if (!chosenTest || !testResult || testResult.error) return null;
+  const parts = [];
+  parts.push(
+    `${TEST_LABELS_BP[chosenTest] || chosenTest}: ${formatBpResultLine(chosenTest, testResult)}`
   );
-  const setSubSummaryFor = useCallback(
-    (key: string, txt: string | null) =>
-      setSubSummaries((prev) => {
-        if (prev[key] === txt) return prev;
-        return { ...prev, [key]: txt };
-      }),
-    []
-  );
+  if (k > 2 && postHocResult && !postHocResult.error) {
+    parts.push("Post-hoc: " + (POSTHOC_LABELS_BP[postHocName] || postHocName));
+    for (const pr of postHocResult.pairs) {
+      const p = pr.pAdj != null ? pr.pAdj : pr.p;
+      parts.push(`  ${names[pr.i]} vs ${names[pr.j]}: p = ${formatP(p)} ${pStars(p)}`);
+    }
+  }
+  if (powerResult) {
+    parts.push(`Effect size: ${powerResult.effectLabel} = ${powerResult.effect.toFixed(3)}`);
+  }
+  parts.push(`n per group: ${names.map((n, i) => `${n}=${values[i].length}`).join(", ")}`);
+  return parts.join("\n");
+}
 
-  const mergedAnnotations = useMemo(() => {
-    const total = flatGroups.length;
-    const names = flatGroups.map((g) => g.name);
-    const cldLabels: Array<string | null> = new Array(total).fill(null);
-    const allPairs: any[] = [];
-    let hasCld = false;
-    let hasBrackets = false;
+function buildBpSetTextBlock(row, setLabel) {
+  const lines = [];
+  const names = row.names;
+  const values = row.values;
+  const res = row.testResult || {};
+  lines.push("=".repeat(60));
+  lines.push(`${setLabel || "Set"}: ${row.name || "—"}`);
+  lines.push("=".repeat(60));
+  lines.push("");
+  lines.push("Groups:");
+  for (let i = 0; i < names.length; i++) {
+    const vs = values[i];
+    const mean = sampleMean(vs);
+    const sd = vs.length > 1 ? sampleSD(vs) : 0;
+    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+  }
+  lines.push("");
+  const rec = row.rec;
+  const recTest = rec && rec.recommendation && rec.recommendation.test;
+  const reason = rec && rec.recommendation && rec.recommendation.reason;
+  lines.push(`Test: ${TEST_LABELS_BP[row.chosenTest] || row.chosenTest || "—"}`);
+  if (reason) lines.push(`Reason: ${reason}`);
+  if (res.error) lines.push(`Result: ⚠ ${res.error}`);
+  else if (row.chosenTest) lines.push(`Result: ${formatBpResultLine(row.chosenTest, res)}`);
+  if (recTest && recTest !== row.chosenTest)
+    lines.push(`  (Toolbox recommended ${TEST_LABELS_BP[recTest] || recTest})`);
+  lines.push("");
+  const norm = (rec && rec.normality) || [];
+  if (norm.length > 0) {
+    const parts = norm.map((r) => {
+      const label = names[r.group] || `g${r.group}`;
+      const verdict = r.normal === true ? "normal" : r.normal === false ? "not normal" : "—";
+      return `${label}: ${verdict}`;
+    });
+    lines.push(`Shapiro-Wilk: ${parts.join("; ")}`);
+  }
+  const lev = (rec && rec.levene) || {};
+  if (lev.F != null)
+    lines.push(
+      `Levene: F(${lev.df1}, ${lev.df2}) = ${lev.F.toFixed(3)}, p = ${formatP(lev.p)} → ${lev.equalVar ? "equal variance" : "unequal variance"}`
+    );
+  if (names.length >= 3 && row.postHocResult && !row.postHocResult.error) {
+    lines.push("");
+    lines.push(`Post-hoc — ${POSTHOC_LABELS_BP[row.postHocName] || row.postHocName}:`);
+    for (const pr of row.postHocResult.pairs) {
+      const p = pr.pAdj != null ? pr.pAdj : pr.p;
+      const diff =
+        pr.diff != null ? pr.diff.toFixed(3) : pr.z != null ? `z=${pr.z.toFixed(3)}` : "—";
+      lines.push(`  ${names[pr.i]} vs ${names[pr.j]}: ${diff},  p = ${formatP(p)}  ${pStars(p)}`);
+    }
+  }
+  if (row.powerResult) {
+    lines.push("");
+    lines.push(
+      `Power (target 80%): ${row.powerResult.effectLabel} = ${row.powerResult.effect.toFixed(3)}`
+    );
+    for (const pr of row.powerResult.rows) {
+      const nStr = pr.nForTarget != null ? `${pr.nForTarget} ${row.powerResult.nLabel}` : "> 5000";
+      lines.push(`  α=${pr.alpha}: achieved ${(pr.achieved * 100).toFixed(1)}%, need n = ${nStr}`);
+    }
+    if (row.powerResult.approximate)
+      lines.push("  (rank-based test — estimated from parametric analog)");
+  }
+  lines.push("");
+  return lines.join("\n");
+}
 
-    for (const sg of subgroups) {
-      const ann = subAnnotations[sg.name];
-      if (!ann) continue;
-      if (ann.kind === "cld" && ann.labels) {
-        hasCld = true;
-        ann.labels.forEach((lbl: string, i: number) => {
-          cldLabels[sg.startIndex + i] = lbl;
-        });
-      } else if (ann.kind === "brackets" && ann.pairs) {
-        hasBrackets = true;
-        for (const pr of ann.pairs) {
-          allPairs.push({ ...pr, i: pr.i + sg.startIndex, j: pr.j + sg.startIndex });
-        }
+function buildBpAggregateReport(rows, setLabel) {
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const label = setLabel || "Set";
+  const head = [
+    "Group Plot — combined statistical analysis",
+    "Generated: " + now,
+    `${label}${rows.length === 1 ? "" : "s"}: ${rows.length}`,
+    "",
+  ];
+  return head.join("\n") + rows.map((r) => buildBpSetTextBlock(r, label)).join("");
+}
+
+function buildBpAggregateRScript(rows, setLabel) {
+  if (!rows.length || typeof buildRScript !== "function") return "";
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const label = setLabel || "Set";
+  const header = [
+    "# -----------------------------------------------------------------------------",
+    "# Dataviz Toolbox — Group Plot R script export (combined analysis)",
+    "# Generated: " + now,
+    `# ${label}${rows.length === 1 ? "" : "s"}: ${rows.length}. Each section redefines df and runs its checks.`,
+    "# -----------------------------------------------------------------------------",
+    "",
+  ].join("\n");
+  const parts = [header];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const block = buildRScript({
+      names: row.names,
+      values: row.values,
+      recommendation: row.rec,
+      chosenTest: row.chosenTest,
+      postHocName: row.postHocName,
+      dataNote: `${label}: ${row.name || "—"}`,
+    });
+    const banner =
+      "\n# ==============================================================\n# " +
+      `${label}: ${row.name || "—"}` +
+      "\n# ==============================================================\n";
+    if (i === 0) {
+      parts.push(banner + block);
+    } else {
+      const lines = block.split("\n");
+      const dfIdx = lines.findIndex((l) => l.startsWith("df <- data.frame"));
+      parts.push(banner + (dfIdx >= 0 ? lines.slice(dfIdx).join("\n") : block));
+    }
+  }
+  return parts.join("\n");
+}
+
+// Combine per-subgroup annotation specs into a single spec with offset
+// indices so the main chart can draw all of them at once. Replaces the
+// inline merge loop from the old SubgroupedStatsTile.
+function mergeSubgroupAnnotations(subgroups, flatGroups, perKeySpecs) {
+  const total = flatGroups.length;
+  const names = flatGroups.map((g) => g.name);
+  const cldLabels: Array<string | null> = new Array(total).fill(null);
+  const allPairs: any[] = [];
+  let hasCld = false;
+  let hasBrackets = false;
+  for (const sg of subgroups) {
+    const spec = perKeySpecs[sg.name];
+    if (!spec) continue;
+    if (spec.kind === "cld" && spec.labels) {
+      hasCld = true;
+      spec.labels.forEach((lbl: string, i: number) => {
+        cldLabels[sg.startIndex + i] = lbl;
+      });
+    } else if (spec.kind === "brackets" && spec.pairs) {
+      hasBrackets = true;
+      for (const pr of spec.pairs) {
+        allPairs.push({ ...pr, i: pr.i + sg.startIndex, j: pr.j + sg.startIndex });
       }
     }
-
-    if (!hasCld && !hasBrackets) return null;
-
-    if (hasBrackets && hasCld) {
-      return {
-        kind: "both",
-        labels: cldLabels,
-        pairs: allPairs,
-        groupNames: names,
-      };
-    }
-    if (hasBrackets) {
-      return { kind: "brackets", pairs: allPairs, groupNames: names };
-    }
-    return { kind: "cld", labels: cldLabels, groupNames: names };
-  }, [subAnnotations, subgroups, flatGroups]);
-
-  const onChangeRef = useRef(onAnnotationsChange);
-  onChangeRef.current = onAnnotationsChange;
-  const onSummaryRef = useRef(onStatsSummaryChange);
-  onSummaryRef.current = onStatsSummaryChange;
-  const onSgSummaryRef = useRef(onSubgroupSummariesChange);
-  onSgSummaryRef.current = onSubgroupSummariesChange;
-
-  const specKey = mergedAnnotations ? JSON.stringify(mergedAnnotations) : "";
-  useEffect(() => {
-    if (typeof onChangeRef.current === "function") onChangeRef.current(mergedAnnotations);
-  }, [specKey]);
-
-  useEffect(() => {
-    if (typeof onSummaryRef.current === "function") onSummaryRef.current(null);
-  }, []);
-
-  const sgSummaryKey = JSON.stringify(subSummaries);
-  useEffect(() => {
-    if (typeof onSgSummaryRef.current === "function") onSgSummaryRef.current({ ...subSummaries });
-  }, [sgSummaryKey]);
-
-  return (
-    <div>
-      {subgroups.map((sg) => {
-        const sgGroups = flatGroups.slice(sg.startIndex, sg.startIndex + sg.count);
-        if (sgGroups.length < 2) return null;
-        return (
-          <StatsTile
-            key={sg.name}
-            compact
-            defaultOpen={false}
-            title={`Statistics \u2014 ${sg.name}`}
-            groups={sgGroups.map((g) => ({ name: g.name, values: g.allValues }))}
-            fileStem={`${fileStem}_${sg.name}_stats`}
-            onAnnotationsChange={(a) => setSubAnnotFor(sg.name, a)}
-            onStatsSummaryChange={(s) => setSubSummaryFor(sg.name, s)}
-          />
-        );
-      })}
-    </div>
-  );
+  }
+  if (!hasCld && !hasBrackets) return null;
+  if (hasBrackets && hasCld)
+    return { kind: "both", labels: cldLabels, pairs: allPairs, groupNames: names };
+  if (hasBrackets) return { kind: "brackets", pairs: allPairs, groupNames: names };
+  return { kind: "cld", labels: cldLabels, groupNames: names };
 }
 
-// frame, any height mismatch between the left stack (plot + display) and
-// the right column (summary) stays local to that facet and doesn't
-// visually misalign across the row of facets. Outer padding and inner gap
-// are both `FACET_WRAPPER_PAD` so the distance between any inner tile and
-// the wrapper edge matches the distance between two sibling inner tiles.
-const FACET_WRAPPER_PAD = 16;
-function FacetStatsRow({ fd, leftPlot, setAnnotationsFor, setSummaryFor, fileStem }: any) {
+function BoxplotStatsDetail({ row, onOverrideTest, isOverridden }) {
+  const names = row.names;
+  const values = row.values;
+  const k = names.length;
+  const res = row.testResult || {};
+  const rec = row.rec || {};
+  const recReason = rec.recommendation && rec.recommendation.reason;
+  const recTest = rec.recommendation && rec.recommendation.test;
+  const testOptions = k === 2 ? TEST_OPTIONS_BP_2 : TEST_OPTIONS_BP_K;
+
+  const subhead: React.CSSProperties = {
+    margin: "10px 0 6px",
+    padding: "4px 10px",
+    fontSize: 10,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: "0.8px",
+    color: "var(--subhead-text)",
+    background: "var(--subhead-bg)",
+    borderRadius: 4,
+    display: "block",
+  };
+  const thS: React.CSSProperties = {
+    textAlign: "left",
+    padding: "3px 6px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text-muted)",
+    fontWeight: 600,
+    fontSize: 11,
+  };
+  const tdS: React.CSSProperties = {
+    padding: "3px 6px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+    fontSize: 11,
+  };
+  const pillOk: React.CSSProperties = {
+    display: "inline-block",
+    padding: "1px 6px",
+    borderRadius: 8,
+    fontSize: 9,
+    fontWeight: 700,
+    background: "var(--success-bg)",
+    color: "var(--success-text)",
+  };
+  const pillBad: React.CSSProperties = {
+    ...pillOk,
+    background: "var(--danger-bg)",
+    color: "var(--danger-text)",
+  };
+  const pillNeutral: React.CSSProperties = {
+    ...pillOk,
+    background: "var(--neutral-bg)",
+    color: "var(--neutral-text)",
+  };
+  const norm = rec.normality || [];
+  const lev = rec.levene || {};
+
   return (
-    <div
-      style={{
-        background: "var(--surface-sunken)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: FACET_WRAPPER_PAD,
-      }}
-    >
-      <StatsTile
-        title={`Statistics — ${fd.category}`}
-        compact
-        defaultOpen={false}
-        groups={fd.groups.map((g) => ({ name: g.name, values: g.allValues }))}
-        fileStem={`${fileStem}_${fd.category}_stats`}
-        onAnnotationsChange={(a) => setAnnotationsFor(fd.category, a)}
-        onStatsSummaryChange={(s) => setSummaryFor(fd.category, s)}
-        renderLayout={({ displayEl, summaryEl }) => (
-          // `alignItems: stretch` pulls the left column up to the row's tallest
-          // child (usually the Statistics summary). Inside the left column,
-          // `justifyContent: space-between` pins the plot to the top and the
-          // "Statistics display" tile to the bottom, so the display tile keeps
-          // a fixed `FACET_WRAPPER_PAD` gap to the wrapper's inner bottom edge
-          // while the extra vertical slack is absorbed above the display tile,
-          // not below it.
-          <div style={{ display: "flex", gap: FACET_WRAPPER_PAD, alignItems: "stretch" }}>
+    <div style={{ padding: "6px 16px 12px 16px", background: "var(--surface-subtle)" }}>
+      <div style={subhead}>Groups</div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={thS}>Group</th>
+            <th style={thS}>n</th>
+            <th style={thS}>Mean</th>
+            <th style={thS}>SD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {names.map((name, i) => {
+            const vs = values[i];
+            const m = sampleMean(vs);
+            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            return (
+              <tr key={i}>
+                <td style={tdS}>{name}</td>
+                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{m.toFixed(3)}</td>
+                <td style={tdS}>{sd.toFixed(3)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={subhead}>Assumptions</div>
+      {norm.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          <div
+            style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 2 }}
+          >
+            Shapiro-Wilk (normality)
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {norm.map((r, i) => {
+              const label = names[r.group] || `g${r.group}`;
+              const pill = r.normal === true ? pillOk : r.normal === false ? pillBad : pillNeutral;
+              const verdict =
+                r.normal === true ? "normal" : r.normal === false ? "not normal" : "—";
+              return (
+                <span key={i} style={{ fontSize: 11, color: "var(--text)" }}>
+                  {label}: <span style={pill}>{verdict}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {lev.F != null && (
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          <span style={{ fontWeight: 600 }}>Levene</span> — F({lev.df1}, {lev.df2}) ={" "}
+          {lev.F.toFixed(3)}, p = {formatP(lev.p)}{" "}
+          <span style={lev.equalVar ? pillOk : pillBad}>
+            {lev.equalVar ? "equal variance" : "unequal variance"}
+          </span>
+        </div>
+      )}
+
+      <div style={subhead}>Test</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 6,
+        }}
+      >
+        <select
+          value={row.chosenTest || ""}
+          onChange={(e) =>
+            onOverrideTest && onOverrideTest(e.target.value === recTest ? null : e.target.value)
+          }
+          className="dv-select"
+          style={{ fontSize: 11, padding: "2px 6px", minWidth: 180 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {testOptions.map((t) => (
+            <option key={t} value={t}>
+              {TEST_LABELS_BP[t]}
+              {t === recTest ? "  (recommended)" : ""}
+            </option>
+          ))}
+        </select>
+        {isOverridden && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOverrideTest && onOverrideTest(null);
+            }}
+            className="dv-btn dv-btn-secondary"
+            style={{ padding: "2px 8px", fontSize: 10 }}
+          >
+            Use recommendation
+          </button>
+        )}
+      </div>
+      {recReason && (
+        <div
+          style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 6 }}
+        >
+          {recReason}
+        </div>
+      )}
+      <div
+        style={{
+          padding: "6px 10px",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          fontFamily: "ui-monospace, Menlo, monospace",
+          fontSize: 11,
+          color: "var(--text)",
+        }}
+      >
+        {res.error
+          ? `⚠ ${res.error}`
+          : row.chosenTest
+            ? formatBpResultLine(row.chosenTest, res)
+            : "—"}
+      </div>
+
+      {k >= 3 && row.postHocResult && !row.postHocResult.error && (
+        <>
+          <div style={subhead}>
+            Post-hoc — {POSTHOC_LABELS_BP[row.postHocName] || row.postHocName}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thS}>Pair</th>
+                <th style={thS}>{row.postHocName === "dunn" ? "Rank diff" : "Mean diff"}</th>
+                <th style={thS}>p</th>
+                <th style={thS}>Signif.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {row.postHocResult.pairs.map((pr, i) => {
+                const p = pr.pAdj != null ? pr.pAdj : pr.p;
+                const diff =
+                  pr.diff != null
+                    ? pr.diff.toFixed(3)
+                    : pr.z != null
+                      ? `z = ${pr.z.toFixed(3)}`
+                      : "—";
+                return (
+                  <tr key={i}>
+                    <td style={tdS}>
+                      {names[pr.i]} vs {names[pr.j]}
+                    </td>
+                    <td style={tdS}>{diff}</td>
+                    <td style={tdS}>{formatP(p)}</td>
+                    <td
+                      style={{
+                        ...tdS,
+                        fontWeight: 700,
+                        color: p < 0.05 ? "var(--success-text)" : "var(--text-faint)",
+                      }}
+                    >
+                      {pStars(p)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {row.powerResult && (
+        <>
+          <div style={subhead}>Power analysis (target 80%)</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thS}>Effect size</th>
+                <th style={thS}>α</th>
+                <th style={thS}>Achieved power</th>
+                <th style={thS}>n for 80% power</th>
+              </tr>
+            </thead>
+            <tbody>
+              {row.powerResult.rows.map((pr, i) => (
+                <tr key={i}>
+                  {i === 0 ? (
+                    <td style={tdS} rowSpan={row.powerResult.rows.length}>
+                      {row.powerResult.effectLabel} = {row.powerResult.effect.toFixed(3)}
+                    </td>
+                  ) : null}
+                  <td style={tdS}>{String(pr.alpha)}</td>
+                  <td
+                    style={{
+                      ...tdS,
+                      fontWeight: 700,
+                      color: pr.achieved >= 0.8 ? "var(--success-text)" : "var(--warning-text)",
+                    }}
+                  >
+                    {(pr.achieved * 100).toFixed(1)}%
+                  </td>
+                  <td style={tdS}>
+                    {pr.nForTarget != null
+                      ? `${pr.nForTarget} ${row.powerResult.nLabel}`
+                      : "> 5000"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {row.powerResult.approximate && (
             <div
               style={{
-                flex: "1 1 0",
-                minWidth: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: FACET_WRAPPER_PAD,
-                justifyContent: "space-between",
+                fontSize: 10,
+                color: "var(--text-faint)",
+                fontStyle: "italic",
+                marginTop: 4,
               }}
             >
-              {leftPlot}
-              {displayEl}
+              Approximation — rank-based test power estimated from its parametric analog.
             </div>
-            <div style={{ width: 320, flexShrink: 0 }}>{summaryEl}</div>
-          </div>
-        )}
-      />
+          )}
+        </>
+      )}
     </div>
   );
 }
 
-// Per-facet memoised wrapper. Holds the plot + (optionally) the stats-tile
-// row for a single facet. Memoising here is the key perf win for facet mode:
-// toggling "Show ns" or any other per-facet StatsTile control updates the
-// parent's `facetStatsAnnotations` / `facetStatsSummary` maps, which rebuilds
-// the entire `facetedData.map` in `FacetPlotList`. Before this wrapper, the
+function BoxplotStatsPanel({
+  sets,
+  setLabel,
+  fileStem,
+  onAnnotationForKey,
+  onSummaryForKey,
+  singletonAutoExpand = false,
+}: any) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(
+    singletonAutoExpand && sets.length === 1 ? { [sets[0].key]: true } : {}
+  );
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [displayMode, setDisplayMode] = useState<"none" | "cld" | "brackets">("none");
+  const [showNs, setShowNs] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  const enriched = useMemo(
+    () =>
+      sets.map((s: any) => {
+        const validGroups = (s.groups || []).filter(
+          (g: any) => g && Array.isArray(g.values) && g.values.length >= 2
+        );
+        const names = validGroups.map((g: any) => g.name);
+        const values = validGroups.map((g: any) => g.values.slice());
+        const k = names.length;
+        if (k < 2) return { ...s, names, values, k, skip: true };
+        const rec = selectTest(values);
+        const recTest =
+          rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
+        const chosenTest = overrides[s.key] || recTest || null;
+        const testResult = chosenTest ? runBpTest(chosenTest, values) : null;
+        const postHocName = postHocForBpTest(chosenTest);
+        const postHocResult = k > 2 && postHocName ? runBpPostHoc(postHocName, values) : null;
+        const powerResult = computePowerFromData(chosenTest, values);
+        return {
+          ...s,
+          names,
+          values,
+          k,
+          rec,
+          recTest,
+          chosenTest,
+          testResult,
+          postHocName,
+          postHocResult,
+          powerResult,
+        };
+      }),
+    [sets, overrides]
+  );
+
+  const annotByKey = useMemo(() => {
+    const out: Record<string, any> = {};
+    for (const r of enriched) {
+      out[r.key] = r.skip ? null : computeBpAnnotationSpec(r, displayMode, showNs);
+    }
+    return out;
+  }, [enriched, displayMode, showNs]);
+  const annotKey = JSON.stringify(annotByKey);
+  const onAnnotationForKeyRef = useRef(onAnnotationForKey);
+  onAnnotationForKeyRef.current = onAnnotationForKey;
+  useEffect(() => {
+    if (typeof onAnnotationForKeyRef.current !== "function") return;
+    for (const r of sets) {
+      onAnnotationForKeyRef.current(r.key, annotByKey[r.key] || null);
+    }
+  }, [annotKey]);
+
+  const summaryByKey = useMemo(() => {
+    const out: Record<string, string | null> = {};
+    for (const r of enriched) {
+      out[r.key] = r.skip ? null : computeBpSummaryText(r, showSummary);
+    }
+    return out;
+  }, [enriched, showSummary]);
+  const summaryKey = JSON.stringify(summaryByKey);
+  const onSummaryForKeyRef = useRef(onSummaryForKey);
+  onSummaryForKeyRef.current = onSummaryForKey;
+  useEffect(() => {
+    if (typeof onSummaryForKeyRef.current !== "function") return;
+    for (const r of sets) {
+      onSummaryForKeyRef.current(r.key, summaryByKey[r.key] || null);
+    }
+  }, [summaryKey]);
+
+  const setOverride = (key: string, test: string | null) =>
+    setOverrides((prev) => {
+      const next = { ...prev };
+      if (test == null) delete next[key];
+      else next[key] = test;
+      return next;
+    });
+
+  const eligible = enriched.filter((r: any) => !r.skip);
+  if (eligible.length === 0) return null;
+
+  const hasR = typeof buildRScript === "function";
+  const stem =
+    typeof fileStem === "string" && fileStem.trim()
+      ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(/^-+|-+$/g, "")
+      : "stats_report";
+  const downloadReport = (e: any) => {
+    downloadText(buildBpAggregateReport(eligible, setLabel), `${stem}_stats.txt`);
+    flashSaved(e.currentTarget);
+  };
+  const downloadR = (e: any) => {
+    downloadText(buildBpAggregateRScript(eligible, setLabel), `${stem}_stats.R`);
+    flashSaved(e.currentTarget);
+  };
+
+  const anyMulti = eligible.some((r: any) => r.k > 2);
+  const singleSet = sets.length === 1;
+  const headingLabel =
+    setLabel && !singleSet ? `Statistics at each ${setLabel.toLowerCase()}` : "Statistics";
+
+  const thS: React.CSSProperties = {
+    textAlign: "left",
+    padding: "6px 8px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--subhead-text)",
+    fontWeight: 600,
+    fontSize: 12,
+    background: "var(--subhead-bg)",
+  };
+  const tdS: React.CSSProperties = {
+    padding: "6px 8px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+    fontSize: 12,
+  };
+  const mono: React.CSSProperties = { fontFamily: "ui-monospace, Menlo, monospace" };
+
+  const segBtn = (value: "none" | "cld" | "brackets", label: string) => {
+    const active = displayMode === value;
+    return (
+      <button
+        key={value}
+        type="button"
+        onClick={() => setDisplayMode(value)}
+        style={{
+          flex: "0 0 auto",
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: active ? 700 : 400,
+          fontFamily: "inherit",
+          cursor: "pointer",
+          border: "none",
+          background: active ? "var(--accent-primary)" : "var(--surface)",
+          color: active ? "var(--on-accent)" : "var(--text-muted)",
+          transition: "background 120ms ease, color 120ms ease",
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+  const nsDisabled = displayMode === "none" || (anyMulti && displayMode === "cld");
+
+  return (
+    <div className="dv-panel" style={{ padding: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 14px",
+          borderBottom: "1px solid var(--border)",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 700,
+              color: "var(--text)",
+              letterSpacing: "0.2px",
+            }}
+          >
+            {headingLabel}
+          </h3>
+          <p style={{ margin: "3px 0 0", fontSize: 11, color: "var(--text-faint)" }}>
+            Click a row to inspect decision trace, assumptions, post-hoc and power.
+            {singleSet
+              ? ""
+              : " Tests are independent per " + (setLabel || "set").toLowerCase() + "."}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            className="dv-btn dv-btn-dl"
+            onClick={downloadReport}
+            title={
+              singleSet
+                ? "Download a plain-text stats report"
+                : `Download a plain-text report covering every ${(setLabel || "set").toLowerCase()}`
+            }
+          >
+            ⬇ TXT
+          </button>
+          {hasR && (
+            <button
+              type="button"
+              className="dv-btn dv-btn-dl"
+              onClick={downloadR}
+              title={
+                singleSet
+                  ? "Download a runnable R script reproducing these tests"
+                  : `Download a runnable R script reproducing every ${(setLabel || "set").toLowerCase()} test`
+              }
+            >
+              ⬇ R
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+          padding: "10px 14px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--surface-subtle)",
+        }}
+      >
+        <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>
+          Display on plot
+        </span>
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid var(--border-strong)",
+          }}
+        >
+          {segBtn("none", "Off")}
+          {anyMulti && segBtn("cld", "Letters")}
+          {segBtn("brackets", "Brackets")}
+        </div>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            color: nsDisabled ? "var(--text-faint)" : "var(--text)",
+            cursor: nsDisabled ? "not-allowed" : "pointer",
+            opacity: nsDisabled ? 0.55 : 1,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={!nsDisabled && showNs}
+            disabled={nsDisabled}
+            onChange={(e) => setShowNs(e.target.checked)}
+          />
+          Show ns
+        </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            color: "var(--text)",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showSummary}
+            onChange={(e) => setShowSummary(e.target.checked)}
+          />
+          Print summary below plot
+        </label>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={thS}>{setLabel || "Set"}</th>
+            <th style={thS}>Groups</th>
+            <th style={thS}>Test</th>
+            <th style={thS}>Statistic</th>
+            <th style={thS}>p</th>
+            <th style={{ ...thS, width: 60 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {enriched.map((r: any) => {
+            const key = r.key;
+            const isOpen = !!expanded[key];
+            if (r.skip) {
+              return (
+                <tr key={key}>
+                  <td style={tdS}>{r.name || "—"}</td>
+                  <td style={tdS} colSpan={5}>
+                    <span style={{ color: "var(--text-faint)", fontStyle: "italic" }}>
+                      Needs ≥ 2 groups with n ≥ 2 to run a test.
+                    </span>
+                  </td>
+                </tr>
+              );
+            }
+            const p = r.testResult && !r.testResult.error ? r.testResult.p : null;
+            const sig = p != null && p < 0.05;
+            const stars = p != null ? pStars(p) : "";
+            return (
+              <React.Fragment key={key}>
+                <tr
+                  onClick={() => setExpanded((prev) => ({ ...prev, [key]: !isOpen }))}
+                  onMouseEnter={() => setHovered(key)}
+                  onMouseLeave={() => setHovered((h) => (h === key ? null : h))}
+                  style={{
+                    cursor: "pointer",
+                    background: isOpen
+                      ? "var(--surface-subtle)"
+                      : hovered === key
+                        ? "var(--row-hover-bg)"
+                        : undefined,
+                    transition: "background 120ms ease",
+                  }}
+                >
+                  <td style={tdS}>{r.name || "—"}</td>
+                  <td style={tdS}>{r.k}</td>
+                  <td style={tdS}>{TEST_LABELS_BP[r.chosenTest] || r.chosenTest || "—"}</td>
+                  <td style={{ ...tdS, ...mono }}>
+                    {formatBpStatShort(r.chosenTest, r.testResult)}
+                  </td>
+                  <td
+                    style={{
+                      ...tdS,
+                      ...mono,
+                      fontWeight: sig ? 700 : 400,
+                      color: sig ? "var(--success-text)" : "var(--text)",
+                    }}
+                  >
+                    {p != null ? formatP(p) : "—"}
+                  </td>
+                  <td
+                    style={{
+                      ...tdS,
+                      textAlign: "right",
+                      color: sig ? "var(--success-text)" : "var(--text-faint)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {stars && stars !== "ns" ? stars : ""}
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr>
+                    <td colSpan={6} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
+                      <BoxplotStatsDetail
+                        row={r}
+                        isOverridden={!!overrides[key]}
+                        onOverrideTest={(t: string | null) => setOverride(key, t)}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Per-facet memoised wrapper. Memoising here is the key perf win for facet
+// mode: toggling a panel-level control updates the parent's
+// `facetStatsAnnotations` / `facetStatsSummary` maps, which rebuilds the
+// entire `facetedData.map` in `FacetPlotList`. Before this wrapper, the
 // inline `chartProps` object was re-created for every facet on every App
-// render, so `FacetBoxplotItem`'s `React.memo` shallow-compare always failed
-// and every chart re-rendered — even unaffected siblings. By passing only
-// the per-facet `annotations` / `statsSummary` plus stable shared props,
-// facet B's memo succeeds when only facet A's stats changed, and `chartProps`
-// is `useMemo`'d inside so `FacetBoxplotItem`'s memo finally holds.
+// render, so `FacetBoxplotItem`'s `React.memo` shallow-compare always
+// failed and every chart re-rendered — even unaffected siblings.
 const FacetTrio = memo(function FacetTrio({
   fd,
   annotations,
@@ -3059,9 +3850,6 @@ const FacetTrio = memo(function FacetTrio({
   colorByCol,
   svgLegend,
   facetRefs,
-  setAnnotationsFor,
-  setSummaryFor,
-  fileStem,
 }: any) {
   const chartProps = useMemo(
     () => ({
@@ -3116,29 +3904,15 @@ const FacetTrio = memo(function FacetTrio({
       svgLegend,
     ]
   );
-  // No `fillHeight`: the facet wrapper uses `justifyContent: space-between`
-  // on the left column to push the display tile to the bottom, so the plot
-  // tile must stay at its natural size instead of absorbing the extra slack
-  // via `flex: 1 1 auto`.
-  const leftPlot = (
-    <FacetBoxplotItem
-      fd={fd}
-      facetRefs={facetRefs}
-      chartProps={chartProps}
-      categoryColors={categoryColors}
-    />
-  );
-  if (fd.groups.length < 2) {
-    return <div style={{ maxWidth: 720 }}>{leftPlot}</div>;
-  }
   return (
-    <FacetStatsRow
-      fd={fd}
-      leftPlot={leftPlot}
-      setAnnotationsFor={setAnnotationsFor}
-      setSummaryFor={setSummaryFor}
-      fileStem={fileStem}
-    />
+    <div style={{ maxWidth: 720 }}>
+      <FacetBoxplotItem
+        fd={fd}
+        facetRefs={facetRefs}
+        chartProps={chartProps}
+        categoryColors={categoryColors}
+      />
+    </div>
   );
 });
 
@@ -3156,9 +3930,6 @@ function FacetPlotList({
   colNames,
   facetStatsAnnotations,
   facetStatsSummary,
-  setAnnotationsFor,
-  setSummaryFor,
-  fileStem,
 }: any) {
   // Stabilise svgLegend so FacetTrio's shallow-compare can hold across
   // unrelated re-renders. Without this, it would be a fresh array literal
@@ -3229,9 +4000,6 @@ function FacetPlotList({
           colorByCol={colorByCol}
           svgLegend={svgLegend}
           facetRefs={facetRefs}
-          setAnnotationsFor={setAnnotationsFor}
-          setSummaryFor={setSummaryFor}
-          fileStem={fileStem}
         />
       ))}
     </div>
@@ -3323,6 +4091,11 @@ function App() {
   const [facetStatsAnnotations, setFacetStatsAnnotations] = useState<Record<string, any>>({});
   const [facetStatsSummary, setFacetStatsSummary] = useState<Record<string, string | null>>({});
   const [subgroupSummaries, setSubgroupSummaries] = useState<Record<string, string | null>>({});
+  // Subgroup mode: per-subgroup annotation specs emitted by the panel, merged
+  // into a single `_global` spec with offset indices so the shared chart
+  // renders all of them as one continuous axis. Summaries emit directly into
+  // `subgroupSummaries` (already per-key) which the chart renders inline.
+  const [subgroupAnnotSpecs, setSubgroupAnnotSpecs] = useState<Record<string, any>>({});
   // Stable references so `FacetTrio`'s shallow-compare memo can skip
   // re-rendering unaffected facets when one facet's stats map entry updates.
   const setAnnotationsFor = useCallback(
@@ -3358,6 +4131,7 @@ function App() {
     setFacetStatsAnnotations({});
     setFacetStatsSummary({});
     setSubgroupSummaries({});
+    setSubgroupAnnotSpecs({});
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
 
@@ -3365,6 +4139,7 @@ function App() {
     setFacetStatsAnnotations({});
     setFacetStatsSummary({});
     setSubgroupSummaries({});
+    setSubgroupAnnotSpecs({});
   }, [subgroupByCol]);
 
   const buildFilters = (hdrs, rws) => {
@@ -3811,6 +4586,22 @@ function App() {
     boxplotGroups,
   ]);
 
+  // Merge per-subgroup annotation specs from the stats panel into a single
+  // spec with offset indices so the shared chart renders CLD letters /
+  // brackets across the flat axis.
+  const mergedSubgroupAnnot = useMemo(() => {
+    if (!subgroupedData) return null;
+    const renamedFlat = subgroupedData.flatGroups.map((g) => ({
+      ...g,
+      name: plotGroupRenames[g.name] ?? g.name,
+    }));
+    return mergeSubgroupAnnotations(subgroupedData.subgroups, renamedFlat, subgroupAnnotSpecs);
+  }, [subgroupedData, subgroupAnnotSpecs, plotGroupRenames]);
+  useEffect(() => {
+    if (subgroupByCol < 0) return;
+    setAnnotationsFor("_global", mergedSubgroupAnnot);
+  }, [mergedSubgroupAnnot, subgroupByCol, setAnnotationsFor]);
+
   const toggleFilter = (ci, v) =>
     setFilters((p) => {
       const f = { ...p },
@@ -4062,51 +4853,101 @@ function App() {
                   subgroups={subgroupByCol >= 0 && subgroupedData ? subgroupedData.subgroups : null}
                   subgroupSummaries={subgroupByCol >= 0 ? subgroupSummaries : null}
                 />
-                {subgroupByCol >= 0 && subgroupedData ? (
-                  <SubgroupedStatsTile
-                    subgroups={subgroupedData.subgroups}
-                    flatGroups={subgroupedData.flatGroups.map((g) => ({
-                      ...g,
-                      name: plotGroupRenames[g.name] ?? g.name,
-                    }))}
-                    fileStem={fileStem}
-                    onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
-                    onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
-                    onSubgroupSummariesChange={setSubgroupSummaries}
-                  />
-                ) : (
-                  displayBoxplotGroups.length >= 2 && (
-                    <StatsTile
-                      groups={displayBoxplotGroups.map((g) => ({
-                        name: g.name,
-                        values: g.allValues,
-                      }))}
-                      fileStem={`${fileStem}_stats`}
-                      onAnnotationsChange={(a) => setAnnotationsFor("_global", a)}
-                      onStatsSummaryChange={(s) => setSummaryFor("_global", s)}
-                    />
-                  )
-                )}
+                {subgroupByCol >= 0 && subgroupedData
+                  ? (() => {
+                      const sets = subgroupedData.subgroups
+                        .map((sg) => {
+                          const sgGroups = subgroupedData.flatGroups.slice(
+                            sg.startIndex,
+                            sg.startIndex + sg.count
+                          );
+                          return {
+                            key: sg.name,
+                            name: sg.name,
+                            groups: sgGroups.map((g) => ({
+                              name: plotGroupRenames[g.name] ?? g.name,
+                              values: g.allValues,
+                            })),
+                          };
+                        })
+                        .filter((s) => s.groups.length >= 2);
+                      if (sets.length === 0) return null;
+                      return (
+                        <BoxplotStatsPanel
+                          sets={sets}
+                          setLabel="Subgroup"
+                          fileStem={fileStem}
+                          onAnnotationForKey={(key, spec) =>
+                            setSubgroupAnnotSpecs((prev) => {
+                              if (prev[key] === spec) return prev;
+                              return { ...prev, [key]: spec };
+                            })
+                          }
+                          onSummaryForKey={(key, txt) =>
+                            setSubgroupSummaries((prev) => {
+                              if (prev[key] === txt) return prev;
+                              return { ...prev, [key]: txt };
+                            })
+                          }
+                        />
+                      );
+                    })()
+                  : displayBoxplotGroups.length >= 2 && (
+                      <BoxplotStatsPanel
+                        sets={[
+                          {
+                            key: "_global",
+                            name: "",
+                            groups: displayBoxplotGroups.map((g) => ({
+                              name: g.name,
+                              values: g.allValues,
+                            })),
+                          },
+                        ]}
+                        setLabel=""
+                        fileStem={`${fileStem}_stats`}
+                        singletonAutoExpand
+                        onAnnotationForKey={(_key, spec) => setAnnotationsFor("_global", spec)}
+                        onSummaryForKey={(_key, txt) => setSummaryFor("_global", txt)}
+                      />
+                    )}
               </>
             ) : (
-              <FacetPlotList
-                facetedData={facetedData}
-                facetRefs={facetRefs}
-                vis={vis}
-                yMinVal={yMinVal}
-                yMaxVal={yMaxVal}
-                plotGroupRenames={plotGroupRenames}
-                boxplotColors={boxplotColors}
-                categoryColors={categoryColors}
-                colorByCol={colorByCol}
-                colorByCategories={colorByCategories}
-                colNames={colNames}
-                facetStatsAnnotations={facetStatsAnnotations}
-                facetStatsSummary={facetStatsSummary}
-                setAnnotationsFor={setAnnotationsFor}
-                setSummaryFor={setSummaryFor}
-                fileStem={fileStem}
-              />
+              <>
+                <FacetPlotList
+                  facetedData={facetedData}
+                  facetRefs={facetRefs}
+                  vis={vis}
+                  yMinVal={yMinVal}
+                  yMaxVal={yMaxVal}
+                  plotGroupRenames={plotGroupRenames}
+                  boxplotColors={boxplotColors}
+                  categoryColors={categoryColors}
+                  colorByCol={colorByCol}
+                  colorByCategories={colorByCategories}
+                  colNames={colNames}
+                  facetStatsAnnotations={facetStatsAnnotations}
+                  facetStatsSummary={facetStatsSummary}
+                />
+                {facetedData && facetedData.length > 0 && (
+                  <BoxplotStatsPanel
+                    sets={facetedData
+                      .filter((fd) => fd.groups.length >= 2)
+                      .map((fd) => ({
+                        key: fd.category,
+                        name: fd.category,
+                        groups: fd.groups.map((g) => ({
+                          name: plotGroupRenames[g.name] ?? g.name,
+                          values: g.allValues,
+                        })),
+                      }))}
+                    setLabel="Facet"
+                    fileStem={fileStem}
+                    onAnnotationForKey={(key, spec) => setAnnotationsFor(key, spec)}
+                    onSummaryForKey={(key, txt) => setSummaryFor(key, txt)}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>

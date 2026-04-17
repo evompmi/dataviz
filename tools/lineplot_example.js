@@ -1,0 +1,50 @@
+// Example dataset for the Line Plot tool.
+// Long-format: time (h), OD600, strain. Three strains, five timepoints,
+// three biological replicates per (strain, time) cell.
+window.__LINEPLOT_EXAMPLE__ = `time,od600,strain
+0,0.05,WT
+0,0.06,WT
+0,0.05,WT
+2,0.18,WT
+2,0.21,WT
+2,0.19,WT
+4,0.55,WT
+4,0.58,WT
+4,0.61,WT
+6,1.12,WT
+6,1.18,WT
+6,1.08,WT
+8,1.42,WT
+8,1.38,WT
+8,1.45,WT
+0,0.05,mutant_A
+0,0.06,mutant_A
+0,0.05,mutant_A
+2,0.15,mutant_A
+2,0.17,mutant_A
+2,0.16,mutant_A
+4,0.42,mutant_A
+4,0.39,mutant_A
+4,0.45,mutant_A
+6,0.82,mutant_A
+6,0.78,mutant_A
+6,0.85,mutant_A
+8,1.05,mutant_A
+8,1.02,mutant_A
+8,1.09,mutant_A
+0,0.05,mutant_B
+0,0.06,mutant_B
+0,0.05,mutant_B
+2,0.12,mutant_B
+2,0.14,mutant_B
+2,0.13,mutant_B
+4,0.31,mutant_B
+4,0.28,mutant_B
+4,0.33,mutant_B
+6,0.58,mutant_B
+6,0.55,mutant_B
+6,0.61,mutant_B
+8,0.78,mutant_B
+8,0.75,mutant_B
+8,0.81,mutant_B
+`;

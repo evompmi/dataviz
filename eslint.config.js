@@ -127,6 +127,7 @@ const sharedGlobals = {
   formatP: "readonly",
   StatsTile: "readonly",
   assignBracketLevels: "readonly",
+  computePowerFromData: "readonly",
   // shared-r-export.js
   buildRScript: "readonly",
   buildRScriptForPower: "readonly",

@@ -265,7 +265,7 @@ function _buildStatsReport(ctx) {
 // tests (Mann-Whitney / Kruskal-Wallis) we report the parametric analog as
 // an approximation — noted in the returned `approximate` flag and in the
 // on-screen label. Computed at α = 0.05, 0.01, 0.001; target power = 0.80.
-function _computePower(chosenTest, values) {
+function computePowerFromData(chosenTest, values) {
   if (!chosenTest || !values || values.length < 2) return null;
   const alphas = [0.05, 0.01, 0.001];
   const target = 0.8;
@@ -445,7 +445,10 @@ function StatsTile({
     () => (k > 2 && postHocName ? _runPostHoc(postHocName, values) : null),
     [postHocName, values, k]
   );
-  const powerResult = React.useMemo(() => _computePower(chosenTest, values), [chosenTest, values]);
+  const powerResult = React.useMemo(
+    () => computePowerFromData(chosenTest, values),
+    [chosenTest, values]
+  );
 
   // Build annotation spec for the chart.
   const annotationSpec = React.useMemo(() => {

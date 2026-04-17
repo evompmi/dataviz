@@ -13,6 +13,7 @@
   --surface: #ffffff;
   --surface-subtle: #f8f8fa;
   --surface-sunken: #f0f0f5;
+  --row-hover-bg: #d6deef;
 
   /* Text */
   --text: #222222;
@@ -104,6 +105,7 @@
   --surface: #1a1b23;
   --surface-subtle: #23242e;
   --surface-sunken: #16171f;
+  --row-hover-bg: #2a3766;
 
   --text: #e8e8ef;
   --text-muted: #a8a8b5;
@@ -181,6 +183,7 @@
     --surface: #1a1b23;
     --surface-subtle: #23242e;
     --surface-sunken: #16171f;
+    --row-hover-bg: #2a3766;
 
     --text: #e8e8ef;
     --text-muted: #a8a8b5;
