@@ -2121,6 +2121,49 @@ function ConfigureStep({
   );
 }
 
+function ControlSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "7px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+        }}
+      >
+        <span
+          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+          aria-hidden="true"
+        />
+        {title}
+      </button>
+      {open && (
+        <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlotControls({
   stats,
   conditions,
@@ -2166,10 +2209,7 @@ function PlotControls({
       />
 
       {/* Conditions */}
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Conditions
-        </p>
+      <ControlSection title="Conditions" defaultOpen>
         <ConditionEditor conditions={conditions} onChange={setConditions} />
         <details style={{ marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
           <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
@@ -2191,134 +2231,119 @@ function PlotControls({
               .join("\n")}
           </pre>
         </details>
-      </div>
+      </ControlSection>
 
       {/* Time-course parameters */}
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Time-course parameters
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div>
-            <div className="dv-label">X start</div>
-            <NumberInput
-              value={vis.xStart}
-              onChange={(e) => updVis({ xStart: Number(e.target.value) })}
-              style={{ width: "100%" }}
-            />
-          </div>
-          <div>
-            <div className="dv-label">X end</div>
-            <NumberInput
-              value={vis.xEnd}
-              onChange={(e) => updVis({ xEnd: Number(e.target.value) })}
-              style={{ width: "100%" }}
-            />
-          </div>
-          <div>
-            <div className="dv-label">Y min</div>
-            <NumberInput
-              value={vis.yMin}
-              onChange={(e) => updVis({ yMin: Number(e.target.value) })}
-              style={{ width: "100%" }}
-              step="0.1"
-            />
-          </div>
-          <div>
-            <div className="dv-label">Y max</div>
-            <NumberInput
-              value={vis.yMax}
-              onChange={(e) => updVis({ yMax: Number(e.target.value) })}
-              style={{ width: "100%" }}
-              step="0.1"
-            />
-          </div>
-          <SliderControl
-            label="Smooth (±pts)"
-            value={vis.smoothWidth}
-            min={0}
-            max={20}
-            step={1}
-            onChange={sv("smoothWidth")}
+      <ControlSection title="Time-course parameters" defaultOpen>
+        <div>
+          <div className="dv-label">X start</div>
+          <NumberInput
+            value={vis.xStart}
+            onChange={(e) => updVis({ xStart: Number(e.target.value) })}
+            style={{ width: "100%" }}
           />
-          <div>
-            <div className="dv-label">Title</div>
-            <input
-              value={vis.plotTitle}
-              onChange={(e) => updVis({ plotTitle: e.target.value })}
-              className="dv-input-num"
-              style={{ width: "100%", textAlign: "left" }}
-            />
-          </div>
-          <div>
-            <div className="dv-label">Subtitle</div>
-            <input
-              value={vis.plotSubtitle}
-              onChange={(e) => updVis({ plotSubtitle: e.target.value })}
-              className="dv-input-num"
-              style={{ width: "100%", textAlign: "left" }}
-            />
-          </div>
         </div>
-      </div>
+        <div>
+          <div className="dv-label">X end</div>
+          <NumberInput
+            value={vis.xEnd}
+            onChange={(e) => updVis({ xEnd: Number(e.target.value) })}
+            style={{ width: "100%" }}
+          />
+        </div>
+        <div>
+          <div className="dv-label">Y min</div>
+          <NumberInput
+            value={vis.yMin}
+            onChange={(e) => updVis({ yMin: Number(e.target.value) })}
+            style={{ width: "100%" }}
+            step="0.1"
+          />
+        </div>
+        <div>
+          <div className="dv-label">Y max</div>
+          <NumberInput
+            value={vis.yMax}
+            onChange={(e) => updVis({ yMax: Number(e.target.value) })}
+            style={{ width: "100%" }}
+            step="0.1"
+          />
+        </div>
+        <SliderControl
+          label="Smooth (±pts)"
+          value={vis.smoothWidth}
+          min={0}
+          max={20}
+          step={1}
+          onChange={sv("smoothWidth")}
+        />
+        <div>
+          <div className="dv-label">Title</div>
+          <input
+            value={vis.plotTitle}
+            onChange={(e) => updVis({ plotTitle: e.target.value })}
+            className="dv-input-num"
+            style={{ width: "100%", textAlign: "left" }}
+          />
+        </div>
+        <div>
+          <div className="dv-label">Subtitle</div>
+          <input
+            value={vis.plotSubtitle}
+            onChange={(e) => updVis({ plotSubtitle: e.target.value })}
+            className="dv-input-num"
+            style={{ width: "100%", textAlign: "left" }}
+          />
+        </div>
+      </ControlSection>
 
       {/* Style controls */}
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Style
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <BaseStyleControls
-            plotBg={vis.plotBg}
-            onPlotBgChange={sv("plotBg")}
-            showGrid={vis.showGrid}
-            onShowGridChange={sv("showGrid")}
-            gridColor={vis.gridColor}
-            onGridColorChange={sv("gridColor")}
-          />
-          <SliderControl
-            label="Line width"
-            value={vis.lineWidth}
-            min={0.5}
-            max={5}
-            step={0.5}
-            onChange={sv("lineWidth")}
-          />
-          <SliderControl
-            label="SD opacity"
-            value={vis.ribbonOpacity}
-            displayValue={vis.ribbonOpacity.toFixed(2)}
-            min={0}
-            max={1}
-            step={0.05}
-            onChange={sv("ribbonOpacity")}
-          />
-          <div>
-            <div className="dv-label">Display unit</div>
-            <select
-              value={vis.displayUnit}
-              onChange={(e) => updVis({ displayUnit: e.target.value })}
-              className="dv-select"
-              style={{ width: "100%" }}
-            >
-              {TIME_UNITS.map((u) => (
-                <option key={u.key} value={u.key}>
-                  {u.label}
-                </option>
-              ))}
-            </select>
-          </div>
+      <ControlSection title="Style" defaultOpen>
+        <BaseStyleControls
+          plotBg={vis.plotBg}
+          onPlotBgChange={sv("plotBg")}
+          showGrid={vis.showGrid}
+          onShowGridChange={sv("showGrid")}
+          gridColor={vis.gridColor}
+          onGridColorChange={sv("gridColor")}
+        />
+        <SliderControl
+          label="Line width"
+          value={vis.lineWidth}
+          min={0.5}
+          max={5}
+          step={0.5}
+          onChange={sv("lineWidth")}
+        />
+        <SliderControl
+          label="SD opacity"
+          value={vis.ribbonOpacity}
+          displayValue={vis.ribbonOpacity.toFixed(2)}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={sv("ribbonOpacity")}
+        />
+        <div>
+          <div className="dv-label">Display unit</div>
+          <select
+            value={vis.displayUnit}
+            onChange={(e) => updVis({ displayUnit: e.target.value })}
+            className="dv-select"
+            style={{ width: "100%" }}
+          >
+            {TIME_UNITS.map((u) => (
+              <option key={u.key} value={u.key}>
+                {u.label}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
+      </ControlSection>
 
       {/* Barplot controls */}
-      <div className="dv-panel">
-        <p
-          style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
-        >
-          Barplot (Σ of plotted values)
-        </p>
-        <div style={{ marginBottom: 10 }}>
+      <ControlSection title="Barplot (Σ of plotted values)" defaultOpen>
+        <div>
           <span className="dv-label">Show</span>
           <div
             style={{
@@ -2714,7 +2739,7 @@ function PlotControls({
             </div>
           </>
         )}
-      </div>
+      </ControlSection>
     </div>
   );
 }
