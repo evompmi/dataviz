@@ -2372,22 +2372,42 @@ function PlotControls({
               </select>
             </div>
             {colorByCol >= 0 && (
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  paddingLeft: 8,
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={vis.showCompPie}
-                  onChange={(e) => updVis({ showCompPie: e.target.checked })}
-                />
-                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>Composition pies</span>
-              </label>
+              <div>
+                <div className="dv-label">Composition pies</div>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {(["off", "on"] as const).map((mode) => {
+                    const active = mode === "on" ? vis.showCompPie : !vis.showCompPie;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updVis({ showCompPie: mode === "on" })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "off" ? "Off" : "On"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
             {colorByCol >= 0 &&
               colorByCategories.map((cat) => (

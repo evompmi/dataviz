@@ -714,19 +714,45 @@ function BaseStyleControls(props) {
     ),
     React.createElement(
       "div",
-      {
-        key: "grid",
-        style: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-      },
+      { key: "grid" },
       React.createElement("span", { className: "dv-label" }, "Grid"),
-      React.createElement("input", {
-        type: "checkbox",
-        checked: showGrid,
-        onChange: function (e) {
-          onShowGridChange(e.target.checked);
+      React.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid var(--border-strong)",
+          },
         },
-        style: { accentColor: "var(--cta-primary-bg)" },
-      })
+        ["off", "on"].map(function (mode) {
+          var active = mode === "on" ? showGrid : !showGrid;
+          return React.createElement(
+            "button",
+            {
+              key: mode,
+              type: "button",
+              onClick: function () {
+                onShowGridChange(mode === "on");
+              },
+              style: {
+                flex: 1,
+                padding: "4px 0",
+                fontSize: 11,
+                fontWeight: active ? 700 : 400,
+                fontFamily: "inherit",
+                cursor: "pointer",
+                border: "none",
+                background: active ? "var(--accent-primary)" : "var(--surface)",
+                color: active ? "var(--on-accent)" : "var(--text-muted)",
+                transition: "background 120ms ease, color 120ms ease",
+              },
+            },
+            mode === "off" ? "Off" : "On"
+          );
+        })
+      )
     ),
   ];
   if (showGrid) {
