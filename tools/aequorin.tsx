@@ -792,13 +792,12 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
         {annotations && annotations.kind === "cld" && annotations.labels && (
           <g id="cld-annotations">
             {annotations.labels.map((letter, i) => {
-              if (i >= bars.length) return null;
-              const top = sy(bars[i].barMean + (errBars[i] || 0));
+              if (i >= bars.length || letter == null) return null;
               return (
                 <text
                   key={`cld-${i}`}
                   x={bx(i)}
-                  y={top - 6}
+                  y={M.top + 15}
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="700"
