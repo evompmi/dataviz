@@ -2002,15 +2002,42 @@ function PlotControls({
             <option value="bar">Bar chart (mean ± error)</option>
           </select>
         </div>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={vis.horizontal}
-            onChange={(e) => updVis({ horizontal: e.target.checked })}
-            style={{ accentColor: "var(--cta-primary-bg)" }}
-          />
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Horizontal orientation</span>
-        </label>
+        <div>
+          <div className="dv-label">Orientation</div>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(["vertical", "horizontal"] as const).map((mode) => {
+              const active = mode === "horizontal" ? vis.horizontal : !vis.horizontal;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => updVis({ horizontal: mode === "horizontal" })}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {mode === "vertical" ? "Vertical" : "Horizontal"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Shape & fill */}
