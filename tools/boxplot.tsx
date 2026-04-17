@@ -1967,10 +1967,10 @@ function PlotControls({
       />
 
       {/* Conditions / group color editor */}
-      <div className="dv-panel" style={{ marginBottom: 0 }}>
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Conditions
-        </p>
+      <ControlSection
+        title={`Conditions (${allDisplayGroups.filter((g) => g.enabled).length}/${allDisplayGroups.length})`}
+        defaultOpen
+      >
         <p style={{ margin: "0 0 6px", fontSize: 11, color: "var(--text-faint)" }}>
           {allDisplayGroups.filter((g) => g.enabled).length} of {allDisplayGroups.length} selected ·{" "}
           {renamedRows.length} obs
@@ -1981,7 +1981,7 @@ function PlotControls({
           onNameChange={handleNameChange}
           onToggle={onToggleGroup}
         />
-      </div>
+      </ControlSection>
 
       {/* Plot style — always visible */}
       <div
@@ -1990,17 +1990,162 @@ function PlotControls({
       >
         <div>
           <div className="dv-label">Plot style</div>
-          <select
-            value={vis.plotStyle}
-            onChange={(e) => updVis({ plotStyle: e.target.value })}
-            className="dv-input"
-            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
-          >
-            <option value="box">Box plot</option>
-            <option value="violin">Violin plot</option>
-            <option value="raincloud">Raincloud plot</option>
-            <option value="bar">Bar chart (mean ± error)</option>
-          </select>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
+            {(
+              [
+                {
+                  key: "box",
+                  label: "Box",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                      <line x1="11" y1="2" x2="11" y2="6" stroke="currentColor" strokeWidth="1.2" />
+                      <rect
+                        x="5"
+                        y="6"
+                        width="12"
+                        height="10"
+                        rx="1"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                      <line
+                        x1="5"
+                        y1="11"
+                        x2="17"
+                        y2="11"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <line
+                        x1="11"
+                        y1="16"
+                        x2="11"
+                        y2="20"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "violin",
+                  label: "Violin",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                      <path
+                        d="M11 2 C7 6, 5 9, 5 11 C5 13, 7 16, 11 20 C15 16, 17 13, 17 11 C17 9, 15 6, 11 2Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                      <line
+                        x1="7"
+                        y1="11"
+                        x2="15"
+                        y2="11"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "raincloud",
+                  label: "Rain",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                      <path
+                        d="M11 2 C8 5, 6 8, 6 11 C6 14, 8 17, 11 20"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                      <circle cx="14" cy="7" r="1" fill="currentColor" />
+                      <circle cx="16" cy="10" r="1" fill="currentColor" />
+                      <circle cx="13" cy="13" r="1" fill="currentColor" />
+                      <circle cx="15" cy="16" r="1" fill="currentColor" />
+                      <circle cx="14" cy="19" r="1" fill="currentColor" />
+                    </svg>
+                  ),
+                },
+                {
+                  key: "bar",
+                  label: "Bar",
+                  icon: (
+                    <svg width="22" height="22" viewBox="0 0 22 22">
+                      <rect
+                        x="2"
+                        y="10"
+                        width="5"
+                        height="10"
+                        rx="0.5"
+                        fill="currentColor"
+                        opacity="0.7"
+                      />
+                      <rect
+                        x="8.5"
+                        y="4"
+                        width="5"
+                        height="16"
+                        rx="0.5"
+                        fill="currentColor"
+                        opacity="0.7"
+                      />
+                      <rect
+                        x="15"
+                        y="7"
+                        width="5"
+                        height="13"
+                        rx="0.5"
+                        fill="currentColor"
+                        opacity="0.7"
+                      />
+                      <line x1="10" y1="2" x2="10" y2="4" stroke="currentColor" strokeWidth="1.2" />
+                      <line
+                        x1="8.5"
+                        y1="3"
+                        x2="11.5"
+                        y2="3"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                      />
+                    </svg>
+                  ),
+                },
+              ] as const
+            ).map(({ key, label, icon }) => {
+              const active = vis.plotStyle === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => updVis({ plotStyle: key })}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 2,
+                    padding: "6px 0 4px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    border: active
+                      ? "1.5px solid var(--accent-primary)"
+                      : "1px solid var(--border-strong)",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    fontFamily: "inherit",
+                    fontSize: 9,
+                    fontWeight: active ? 700 : 400,
+                    transition: "background 120ms ease, color 120ms ease, border-color 120ms ease",
+                  }}
+                >
+                  {icon}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div>
           <div className="dv-label">Orientation</div>
@@ -2082,16 +2227,40 @@ function PlotControls({
               onChange={sv("barOpacity")}
             />
             <div>
-              <span className="dv-label">Error bars</span>
-              <select
-                value={vis.errorType}
-                onChange={(e) => updVis({ errorType: e.target.value })}
-                className="dv-select"
-                style={{ width: "100%", fontSize: 11, marginTop: 2 }}
+              <div className="dv-label">Error bars</div>
+              <div
+                style={{
+                  display: "flex",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: "1px solid var(--border-strong)",
+                }}
               >
-                <option value="sem">SEM</option>
-                <option value="sd">SD</option>
-              </select>
+                {(["sem", "sd"] as const).map((mode) => {
+                  const active = vis.errorType === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => updVis({ errorType: mode })}
+                      style={{
+                        flex: 1,
+                        padding: "4px 0",
+                        fontSize: 11,
+                        fontWeight: active ? 700 : 400,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        border: "none",
+                        background: active ? "var(--accent-primary)" : "var(--surface)",
+                        color: active ? "var(--on-accent)" : "var(--text-muted)",
+                        transition: "background 120ms ease, color 120ms ease",
+                      }}
+                    >
+                      {mode.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <SliderControl
               label="Error bar stroke"
@@ -2148,14 +2317,41 @@ function PlotControls({
 
       {/* Data points */}
       <ControlSection title="Data points" defaultOpen>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span className="dv-label">Show points</span>
-          <input
-            type="checkbox"
-            checked={vis.showPoints}
-            onChange={(e) => updVis({ showPoints: e.target.checked })}
-            style={{ accentColor: "var(--cta-primary-bg)" }}
-          />
+        <div>
+          <div className="dv-label">Show points</div>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(["off", "on"] as const).map((mode) => {
+              const active = mode === "on" ? vis.showPoints : !vis.showPoints;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => updVis({ showPoints: mode === "on" })}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {mode === "off" ? "Off" : "On"}
+                </button>
+              );
+            })}
+          </div>
         </div>
         {vis.showPoints && (
           <>
