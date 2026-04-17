@@ -905,6 +905,830 @@ const FacetChartItem = memo(function FacetChartItem({ s, facetRefs, chartProps }
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Unified stats panel (matches Group Plot and Line Plot vocabulary).
+// Aequorin only ever has a single set (one bar per condition), so the panel
+// runs in `singletonAutoExpand` mode: one row, already expanded. Panel-level
+// controls (Display on plot: Off / Letters / Brackets, Show ns, Print
+// summary below plot) drive the inset barplot's annotations and summary
+// text, replacing the per-tile toggles inside the old StatsTile.
+// ─────────────────────────────────────────────────────────────────────────
+
+const TEST_LABELS_AQ = {
+  studentT: "Student's t-test",
+  welchT: "Welch's t-test",
+  mannWhitney: "Mann-Whitney U",
+  oneWayANOVA: "One-way ANOVA",
+  welchANOVA: "Welch's ANOVA",
+  kruskalWallis: "Kruskal-Wallis",
+};
+const POSTHOC_LABELS_AQ = {
+  tukeyHSD: "Tukey HSD",
+  gamesHowell: "Games-Howell",
+  dunn: "Dunn (BH-adjusted)",
+};
+const TEST_OPTIONS_AQ_2 = ["studentT", "welchT", "mannWhitney"];
+const TEST_OPTIONS_AQ_K = ["oneWayANOVA", "welchANOVA", "kruskalWallis"];
+
+function runAqTest(name, values) {
+  try {
+    if (name === "studentT") return tTest(values[0], values[1], { equalVar: true });
+    if (name === "welchT") return tTest(values[0], values[1], { equalVar: false });
+    if (name === "mannWhitney") return mannWhitneyU(values[0], values[1]);
+    if (name === "oneWayANOVA") return oneWayANOVA(values);
+    if (name === "welchANOVA") return welchANOVA(values);
+    if (name === "kruskalWallis") return kruskalWallis(values);
+    return { error: "unknown test" };
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+}
+
+function runAqPostHoc(name, values) {
+  try {
+    if (name === "tukeyHSD") return tukeyHSD(values);
+    if (name === "gamesHowell") return gamesHowell(values);
+    if (name === "dunn") return dunnTest(values);
+    return null;
+  } catch (e) {
+    return { error: String((e && e.message) || e) };
+  }
+}
+
+function postHocForAqTest(testName) {
+  if (testName === "oneWayANOVA") return "tukeyHSD";
+  if (testName === "welchANOVA") return "gamesHowell";
+  if (testName === "kruskalWallis") return "dunn";
+  return null;
+}
+
+function formatAqStatShort(testName, res) {
+  if (!res || res.error) return "—";
+  if (testName === "studentT" || testName === "welchT")
+    return `t(${res.df.toFixed(2)}) = ${res.t.toFixed(3)}`;
+  if (testName === "mannWhitney") return `U = ${res.U.toFixed(1)}`;
+  if (testName === "oneWayANOVA" || testName === "welchANOVA")
+    return `F(${res.df1}, ${typeof res.df2 === "number" ? res.df2.toFixed(2) : res.df2}) = ${res.F.toFixed(3)}`;
+  if (testName === "kruskalWallis") return `H(${res.df}) = ${res.H.toFixed(3)}`;
+  return "—";
+}
+
+function formatAqResultLine(testName, res) {
+  if (!res || res.error) return res && res.error ? "⚠ " + res.error : "—";
+  if (testName === "studentT" || testName === "welchT")
+    return `t(${res.df.toFixed(2)}) = ${res.t.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "mannWhitney")
+    return `U = ${res.U.toFixed(1)},  z = ${res.z.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "oneWayANOVA" || testName === "welchANOVA")
+    return `F(${res.df1}, ${typeof res.df2 === "number" ? res.df2.toFixed(2) : res.df2}) = ${res.F.toFixed(3)},  p = ${formatP(res.p)}`;
+  if (testName === "kruskalWallis")
+    return `H(${res.df}) = ${res.H.toFixed(3)},  p = ${formatP(res.p)}`;
+  return "—";
+}
+
+function computeAqAnnotationSpec(row, displayMode, showNs) {
+  if (displayMode === "none" || !row || row.skip) return null;
+  const { k, names, testResult, postHocResult } = row;
+  if (k < 2) return null;
+  if (k === 2) {
+    const p = testResult && !testResult.error ? testResult.p : null;
+    if (p == null) return null;
+    if (!showNs && p >= 0.05) return null;
+    return {
+      kind: "brackets",
+      pairs: [{ i: 0, j: 1, p, label: pStars(p) }],
+      groupNames: names,
+    };
+  }
+  if (!postHocResult || postHocResult.error) return null;
+  if (displayMode === "cld") {
+    const labels = compactLetterDisplay(postHocResult.pairs, k);
+    return { kind: "cld", labels, groupNames: names };
+  }
+  const pairs = postHocResult.pairs
+    .map((pr) => ({ i: pr.i, j: pr.j, p: pr.pAdj != null ? pr.pAdj : pr.p }))
+    .map((pr) => ({ ...pr, label: pStars(pr.p) }))
+    .filter((pr) => showNs || pr.p < 0.05);
+  if (pairs.length === 0) return null;
+  return { kind: "brackets", pairs, groupNames: names };
+}
+
+function computeAqSummaryText(row, showSummary) {
+  if (!showSummary || !row || row.skip) return null;
+  const { chosenTest, testResult, k, postHocResult, postHocName, names, values, powerResult } = row;
+  if (!chosenTest || !testResult || testResult.error) return null;
+  const parts = [];
+  parts.push(
+    `${TEST_LABELS_AQ[chosenTest] || chosenTest}: ${formatAqResultLine(chosenTest, testResult)}`
+  );
+  if (k > 2 && postHocResult && !postHocResult.error) {
+    parts.push("Post-hoc: " + (POSTHOC_LABELS_AQ[postHocName] || postHocName));
+    for (const pr of postHocResult.pairs) {
+      const p = pr.pAdj != null ? pr.pAdj : pr.p;
+      parts.push(`  ${names[pr.i]} vs ${names[pr.j]}: p = ${formatP(p)} ${pStars(p)}`);
+    }
+  }
+  if (powerResult) {
+    parts.push(`Effect size: ${powerResult.effectLabel} = ${powerResult.effect.toFixed(3)}`);
+  }
+  parts.push(`n per group: ${names.map((n, i) => `${n}=${values[i].length}`).join(", ")}`);
+  return parts.join("\n");
+}
+
+function buildAqSetTextBlock(row) {
+  const lines = [];
+  const names = row.names;
+  const values = row.values;
+  const res = row.testResult || {};
+  lines.push("Groups:");
+  for (let i = 0; i < names.length; i++) {
+    const vs = values[i];
+    const mean = sampleMean(vs);
+    const sd = vs.length > 1 ? sampleSD(vs) : 0;
+    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+  }
+  lines.push("");
+  const rec = row.rec;
+  const recTest = rec && rec.recommendation && rec.recommendation.test;
+  const reason = rec && rec.recommendation && rec.recommendation.reason;
+  lines.push(`Test: ${TEST_LABELS_AQ[row.chosenTest] || row.chosenTest || "—"}`);
+  if (reason) lines.push(`Reason: ${reason}`);
+  if (res.error) lines.push(`Result: ⚠ ${res.error}`);
+  else if (row.chosenTest) lines.push(`Result: ${formatAqResultLine(row.chosenTest, res)}`);
+  if (recTest && recTest !== row.chosenTest)
+    lines.push(`  (Toolbox recommended ${TEST_LABELS_AQ[recTest] || recTest})`);
+  lines.push("");
+  const norm = (rec && rec.normality) || [];
+  if (norm.length > 0) {
+    const parts = norm.map((r) => {
+      const label = names[r.group] || `g${r.group}`;
+      const verdict = r.normal === true ? "normal" : r.normal === false ? "not normal" : "—";
+      return `${label}: ${verdict}`;
+    });
+    lines.push(`Shapiro-Wilk: ${parts.join("; ")}`);
+  }
+  const lev = (rec && rec.levene) || {};
+  if (lev.F != null)
+    lines.push(
+      `Levene: F(${lev.df1}, ${lev.df2}) = ${lev.F.toFixed(3)}, p = ${formatP(lev.p)} → ${lev.equalVar ? "equal variance" : "unequal variance"}`
+    );
+  if (names.length >= 3 && row.postHocResult && !row.postHocResult.error) {
+    lines.push("");
+    lines.push(`Post-hoc — ${POSTHOC_LABELS_AQ[row.postHocName] || row.postHocName}:`);
+    for (const pr of row.postHocResult.pairs) {
+      const p = pr.pAdj != null ? pr.pAdj : pr.p;
+      const diff =
+        pr.diff != null ? pr.diff.toFixed(3) : pr.z != null ? `z=${pr.z.toFixed(3)}` : "—";
+      lines.push(`  ${names[pr.i]} vs ${names[pr.j]}: ${diff},  p = ${formatP(p)}  ${pStars(p)}`);
+    }
+  }
+  if (row.powerResult) {
+    lines.push("");
+    lines.push(
+      `Power (target 80%): ${row.powerResult.effectLabel} = ${row.powerResult.effect.toFixed(3)}`
+    );
+    for (const pr of row.powerResult.rows) {
+      const nStr = pr.nForTarget != null ? `${pr.nForTarget} ${row.powerResult.nLabel}` : "> 5000";
+      lines.push(`  α=${pr.alpha}: achieved ${(pr.achieved * 100).toFixed(1)}%, need n = ${nStr}`);
+    }
+    if (row.powerResult.approximate)
+      lines.push("  (rank-based test — estimated from parametric analog)");
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+function buildAqAggregateReport(rows) {
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const head = ["Aequorin — statistical analysis", "Generated: " + now, ""];
+  return head.join("\n") + rows.map((r) => buildAqSetTextBlock(r)).join("");
+}
+
+function buildAqAggregateRScript(rows) {
+  if (!rows.length || typeof buildRScript !== "function") return "";
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const header = [
+    "# -----------------------------------------------------------------------------",
+    "# Dataviz Toolbox — Aequorin R script export",
+    "# Generated: " + now,
+    "# -----------------------------------------------------------------------------",
+    "",
+  ].join("\n");
+  const parts = [header];
+  for (const row of rows) {
+    parts.push(
+      buildRScript({
+        names: row.names,
+        values: row.values,
+        recommendation: row.rec,
+        chosenTest: row.chosenTest,
+        postHocName: row.postHocName,
+      })
+    );
+  }
+  return parts.join("\n");
+}
+
+function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
+  const names = row.names;
+  const values = row.values;
+  const k = names.length;
+  const res = row.testResult || {};
+  const rec = row.rec || {};
+  const recReason = rec.recommendation && rec.recommendation.reason;
+  const recTest = rec.recommendation && rec.recommendation.test;
+  const testOptions = k === 2 ? TEST_OPTIONS_AQ_2 : TEST_OPTIONS_AQ_K;
+
+  const subhead: React.CSSProperties = {
+    margin: "10px 0 6px",
+    padding: "4px 10px",
+    fontSize: 10,
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: "0.8px",
+    color: "var(--subhead-text)",
+    background: "var(--subhead-bg)",
+    borderRadius: 4,
+    display: "block",
+  };
+  const thS: React.CSSProperties = {
+    textAlign: "left",
+    padding: "3px 6px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text-muted)",
+    fontWeight: 600,
+    fontSize: 11,
+  };
+  const tdS: React.CSSProperties = {
+    padding: "3px 6px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+    fontSize: 11,
+  };
+  const pillOk: React.CSSProperties = {
+    display: "inline-block",
+    padding: "1px 6px",
+    borderRadius: 8,
+    fontSize: 9,
+    fontWeight: 700,
+    background: "var(--success-bg)",
+    color: "var(--success-text)",
+  };
+  const pillBad: React.CSSProperties = {
+    ...pillOk,
+    background: "var(--danger-bg)",
+    color: "var(--danger-text)",
+  };
+  const pillNeutral: React.CSSProperties = {
+    ...pillOk,
+    background: "var(--neutral-bg)",
+    color: "var(--neutral-text)",
+  };
+  const norm = rec.normality || [];
+  const lev = rec.levene || {};
+
+  return (
+    <div style={{ padding: "6px 16px 12px 16px", background: "var(--surface-subtle)" }}>
+      <div style={subhead}>Groups</div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={thS}>Group</th>
+            <th style={thS}>n</th>
+            <th style={thS}>Mean</th>
+            <th style={thS}>SD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {names.map((name, i) => {
+            const vs = values[i];
+            const m = sampleMean(vs);
+            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            return (
+              <tr key={i}>
+                <td style={tdS}>{name}</td>
+                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{m.toFixed(3)}</td>
+                <td style={tdS}>{sd.toFixed(3)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={subhead}>Assumptions</div>
+      {norm.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          <div
+            style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", marginBottom: 2 }}
+          >
+            Shapiro-Wilk (normality)
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {norm.map((r, i) => {
+              const label = names[r.group] || `g${r.group}`;
+              const pill = r.normal === true ? pillOk : r.normal === false ? pillBad : pillNeutral;
+              const verdict =
+                r.normal === true ? "normal" : r.normal === false ? "not normal" : "—";
+              return (
+                <span key={i} style={{ fontSize: 11, color: "var(--text)" }}>
+                  {label}: <span style={pill}>{verdict}</span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {lev.F != null && (
+        <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          <span style={{ fontWeight: 600 }}>Levene</span> — F({lev.df1}, {lev.df2}) ={" "}
+          {lev.F.toFixed(3)}, p = {formatP(lev.p)}{" "}
+          <span style={lev.equalVar ? pillOk : pillBad}>
+            {lev.equalVar ? "equal variance" : "unequal variance"}
+          </span>
+        </div>
+      )}
+
+      <div style={subhead}>Test</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 6,
+        }}
+      >
+        <select
+          value={row.chosenTest || ""}
+          onChange={(e) =>
+            onOverrideTest && onOverrideTest(e.target.value === recTest ? null : e.target.value)
+          }
+          className="dv-select"
+          style={{ fontSize: 11, padding: "2px 6px", minWidth: 180 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {testOptions.map((t) => (
+            <option key={t} value={t}>
+              {TEST_LABELS_AQ[t]}
+              {t === recTest ? "  (recommended)" : ""}
+            </option>
+          ))}
+        </select>
+        {isOverridden && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOverrideTest && onOverrideTest(null);
+            }}
+            className="dv-btn dv-btn-secondary"
+            style={{ padding: "2px 8px", fontSize: 10 }}
+          >
+            Use recommendation
+          </button>
+        )}
+      </div>
+      {recReason && (
+        <div
+          style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic", marginBottom: 6 }}
+        >
+          {recReason}
+        </div>
+      )}
+      <div
+        style={{
+          padding: "6px 10px",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          fontFamily: "ui-monospace, Menlo, monospace",
+          fontSize: 11,
+          color: "var(--text)",
+        }}
+      >
+        {res.error
+          ? `⚠ ${res.error}`
+          : row.chosenTest
+            ? formatAqResultLine(row.chosenTest, res)
+            : "—"}
+      </div>
+
+      {k >= 3 && row.postHocResult && !row.postHocResult.error && (
+        <>
+          <div style={subhead}>
+            Post-hoc — {POSTHOC_LABELS_AQ[row.postHocName] || row.postHocName}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thS}>Pair</th>
+                <th style={thS}>{row.postHocName === "dunn" ? "Rank diff" : "Mean diff"}</th>
+                <th style={thS}>p</th>
+                <th style={thS}>Signif.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {row.postHocResult.pairs.map((pr, i) => {
+                const p = pr.pAdj != null ? pr.pAdj : pr.p;
+                const diff =
+                  pr.diff != null
+                    ? pr.diff.toFixed(3)
+                    : pr.z != null
+                      ? `z = ${pr.z.toFixed(3)}`
+                      : "—";
+                return (
+                  <tr key={i}>
+                    <td style={tdS}>
+                      {names[pr.i]} vs {names[pr.j]}
+                    </td>
+                    <td style={tdS}>{diff}</td>
+                    <td style={tdS}>{formatP(p)}</td>
+                    <td
+                      style={{
+                        ...tdS,
+                        fontWeight: 700,
+                        color: p < 0.05 ? "var(--success-text)" : "var(--text-faint)",
+                      }}
+                    >
+                      {pStars(p)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {row.powerResult && (
+        <>
+          <div style={subhead}>Power analysis (target 80%)</div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th style={thS}>Effect size</th>
+                <th style={thS}>α</th>
+                <th style={thS}>Achieved power</th>
+                <th style={thS}>n for 80% power</th>
+              </tr>
+            </thead>
+            <tbody>
+              {row.powerResult.rows.map((pr, i) => (
+                <tr key={i}>
+                  {i === 0 ? (
+                    <td style={tdS} rowSpan={row.powerResult.rows.length}>
+                      {row.powerResult.effectLabel} = {row.powerResult.effect.toFixed(3)}
+                    </td>
+                  ) : null}
+                  <td style={tdS}>{String(pr.alpha)}</td>
+                  <td
+                    style={{
+                      ...tdS,
+                      fontWeight: 700,
+                      color: pr.achieved >= 0.8 ? "var(--success-text)" : "var(--warning-text)",
+                    }}
+                  >
+                    {(pr.achieved * 100).toFixed(1)}%
+                  </td>
+                  <td style={tdS}>
+                    {pr.nForTarget != null
+                      ? `${pr.nForTarget} ${row.powerResult.nLabel}`
+                      : "> 5000"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {row.powerResult.approximate && (
+            <div
+              style={{
+                fontSize: 10,
+                color: "var(--text-faint)",
+                fontStyle: "italic",
+                marginTop: 4,
+              }}
+            >
+              Approximation — rank-based test power estimated from its parametric analog.
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function AequorinStatsPanel({ groups, fileStem, onAnnotationChange, onSummaryChange }: any) {
+  const singleKey = "_global";
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ [singleKey]: true });
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [override, setOverride] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<"none" | "cld" | "brackets">("none");
+  const [showNs, setShowNs] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+
+  const enriched = useMemo(() => {
+    const validGroups = (groups || []).filter(
+      (g: any) => g && Array.isArray(g.values) && g.values.length >= 2
+    );
+    const names = validGroups.map((g: any) => g.name);
+    const values = validGroups.map((g: any) => g.values.slice());
+    const k = names.length;
+    if (k < 2) return { key: singleKey, name: "", names, values, k, skip: true };
+    const rec = selectTest(values);
+    const recTest =
+      rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
+    const chosenTest = override || recTest || null;
+    const testResult = chosenTest ? runAqTest(chosenTest, values) : null;
+    const postHocName = postHocForAqTest(chosenTest);
+    const postHocResult = k > 2 && postHocName ? runAqPostHoc(postHocName, values) : null;
+    const powerResult = computePowerFromData(chosenTest, values);
+    return {
+      key: singleKey,
+      name: "",
+      names,
+      values,
+      k,
+      rec,
+      recTest,
+      chosenTest,
+      testResult,
+      postHocName,
+      postHocResult,
+      powerResult,
+    };
+  }, [groups, override]);
+
+  const annotSpec = useMemo(
+    () => (enriched.skip ? null : computeAqAnnotationSpec(enriched, displayMode, showNs)),
+    [enriched, displayMode, showNs]
+  );
+  const annotKey = JSON.stringify(annotSpec);
+  const onAnnotRef = useRef(onAnnotationChange);
+  onAnnotRef.current = onAnnotationChange;
+  useEffect(() => {
+    if (typeof onAnnotRef.current === "function") onAnnotRef.current(annotSpec);
+  }, [annotKey]);
+
+  const summaryText = useMemo(
+    () => (enriched.skip ? null : computeAqSummaryText(enriched, showSummary)),
+    [enriched, showSummary]
+  );
+  const onSummaryRef = useRef(onSummaryChange);
+  onSummaryRef.current = onSummaryChange;
+  useEffect(() => {
+    if (typeof onSummaryRef.current === "function") onSummaryRef.current(summaryText);
+  }, [summaryText]);
+
+  if (enriched.skip) return null;
+
+  const hasR = typeof buildRScript === "function";
+  const stem =
+    typeof fileStem === "string" && fileStem.trim()
+      ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(/^-+|-+$/g, "")
+      : "aequorin_stats";
+  const downloadReport = (e: any) => {
+    downloadText(buildAqAggregateReport([enriched]), `${stem}.txt`);
+    flashSaved(e.currentTarget);
+  };
+  const downloadR = (e: any) => {
+    downloadText(buildAqAggregateRScript([enriched]), `${stem}.R`);
+    flashSaved(e.currentTarget);
+  };
+
+  const isOpen = !!expanded[singleKey];
+  const p =
+    enriched.testResult && !enriched.testResult.error ? (enriched.testResult as any).p : null;
+  const sig = p != null && p < 0.05;
+  const stars = p != null ? pStars(p) : "";
+
+  const thS: React.CSSProperties = {
+    textAlign: "left",
+    padding: "6px 8px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--subhead-text)",
+    fontWeight: 600,
+    fontSize: 12,
+    background: "var(--subhead-bg)",
+  };
+  const tdS: React.CSSProperties = {
+    padding: "6px 8px",
+    borderBottom: "1px solid var(--border)",
+    color: "var(--text)",
+    fontSize: 12,
+  };
+  const mono: React.CSSProperties = { fontFamily: "ui-monospace, Menlo, monospace" };
+
+  const segBtn = (value: "none" | "cld" | "brackets", label: string) => {
+    const active = displayMode === value;
+    return (
+      <button
+        key={value}
+        type="button"
+        onClick={() => setDisplayMode(value)}
+        style={{
+          flex: "0 0 auto",
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: active ? 700 : 400,
+          fontFamily: "inherit",
+          cursor: "pointer",
+          border: "none",
+          background: active ? "var(--accent-primary)" : "var(--surface)",
+          color: active ? "var(--on-accent)" : "var(--text-muted)",
+          transition: "background 120ms ease, color 120ms ease",
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+  const anyMulti = enriched.k > 2;
+  const nsDisabled = displayMode === "none" || (anyMulti && displayMode === "cld");
+
+  return (
+    <div className="dv-panel" style={{ padding: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 14px",
+          borderBottom: "1px solid var(--border)",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 14,
+              fontWeight: 700,
+              color: "var(--text)",
+              letterSpacing: "0.2px",
+            }}
+          >
+            Statistics
+          </h3>
+          <p style={{ margin: "3px 0 0", fontSize: 11, color: "var(--text-faint)" }}>
+            Click the row to inspect decision trace, assumptions, post-hoc and power.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            className="dv-btn dv-btn-dl"
+            onClick={downloadReport}
+            title="Download a plain-text stats report"
+          >
+            ⬇ TXT
+          </button>
+          {hasR && (
+            <button
+              type="button"
+              className="dv-btn dv-btn-dl"
+              onClick={downloadR}
+              title="Download a runnable R script reproducing this test"
+            >
+              ⬇ R
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+          padding: "10px 14px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--surface-subtle)",
+        }}
+      >
+        <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>
+          Display on plot
+        </span>
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid var(--border-strong)",
+          }}
+        >
+          {segBtn("none", "Off")}
+          {anyMulti && segBtn("cld", "Letters")}
+          {segBtn("brackets", "Brackets")}
+        </div>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            color: nsDisabled ? "var(--text-faint)" : "var(--text)",
+            cursor: nsDisabled ? "not-allowed" : "pointer",
+            opacity: nsDisabled ? 0.55 : 1,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={!nsDisabled && showNs}
+            disabled={nsDisabled}
+            onChange={(e) => setShowNs(e.target.checked)}
+          />
+          Show ns
+        </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12,
+            color: "var(--text)",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showSummary}
+            onChange={(e) => setShowSummary(e.target.checked)}
+          />
+          Print summary below plot
+        </label>
+      </div>
+
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={thS}>Groups</th>
+            <th style={thS}>Test</th>
+            <th style={thS}>Statistic</th>
+            <th style={thS}>p</th>
+            <th style={{ ...thS, width: 60 }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            onClick={() => setExpanded((prev) => ({ ...prev, [singleKey]: !isOpen }))}
+            onMouseEnter={() => setHovered(singleKey)}
+            onMouseLeave={() => setHovered((h) => (h === singleKey ? null : h))}
+            style={{
+              cursor: "pointer",
+              background: isOpen
+                ? "var(--surface-subtle)"
+                : hovered === singleKey
+                  ? "var(--row-hover-bg)"
+                  : undefined,
+              transition: "background 120ms ease",
+            }}
+          >
+            <td style={tdS}>{enriched.k}</td>
+            <td style={tdS}>{TEST_LABELS_AQ[enriched.chosenTest] || enriched.chosenTest || "—"}</td>
+            <td style={{ ...tdS, ...mono }}>
+              {formatAqStatShort(enriched.chosenTest, enriched.testResult)}
+            </td>
+            <td
+              style={{
+                ...tdS,
+                ...mono,
+                fontWeight: sig ? 700 : 400,
+                color: sig ? "var(--success-text)" : "var(--text)",
+              }}
+            >
+              {p != null ? formatP(p) : "—"}
+            </td>
+            <td
+              style={{
+                ...tdS,
+                textAlign: "right",
+                color: sig ? "var(--success-text)" : "var(--text-faint)",
+                fontWeight: 700,
+              }}
+            >
+              {stars && stars !== "ns" ? stars : ""}
+            </td>
+          </tr>
+          {isOpen && (
+            <tr>
+              <td colSpan={5} style={{ padding: 0, borderBottom: "1px solid var(--border)" }}>
+                <AequorinStatsDetail
+                  row={enriched}
+                  isOverridden={!!override}
+                  onOverrideTest={(t: string | null) => setOverride(t)}
+                />
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
   {
     stats,
@@ -1330,14 +2154,14 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
             </div>
           )}
 
-          {/* StatsTile */}
+          {/* Stats panel */}
           {statsGroups && (
             <div style={{ marginTop: 12 }}>
-              <StatsTile
+              <AequorinStatsPanel
                 groups={statsGroups}
                 fileStem={`${baseName}_stats`}
-                onAnnotationsChange={setStatsAnnotations}
-                onStatsSummaryChange={setStatsSummary}
+                onAnnotationChange={setStatsAnnotations}
+                onSummaryChange={setStatsSummary}
               />
             </div>
           )}
