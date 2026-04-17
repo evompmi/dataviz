@@ -808,9 +808,9 @@ test("Show ns + Style radios + Print summary all disabled when display is off (k
   });
   var str = JSON.stringify(el);
   assert(str.indexOf("Show ns") >= 0, "display-tile should always render 'Show ns'");
-  assert(str.indexOf("letters (a/ab/b)") >= 0, "Style radios should render for k>2");
-  assert(str.indexOf("brackets") >= 0, "brackets radio should render for k>2");
-  // 4 disabled controls: Print summary + cld radio + brackets radio + Show ns.
+  assert(str.indexOf("Letters") >= 0, "Style toggle should render 'Letters' for k>2");
+  assert(str.indexOf("Brackets") >= 0, "Style toggle should render 'Brackets' for k>2");
+  // 4 disabled controls: Print summary + Letters button + Brackets button + Show ns.
   var notAllowedCount = (str.match(/not-allowed/g) || []).length;
   assert(notAllowedCount === 4, "expected 4 disabled controls for k>2, got " + notAllowedCount);
 });

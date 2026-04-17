@@ -738,28 +738,47 @@ function StatsTile({
       }),
       text
     );
-  const radioLabel = (value, disabled) =>
-    React.createElement(
-      "label",
+  var segmentedToggle = function (disabled) {
+    return React.createElement(
+      "div",
       {
         style: {
           display: "flex",
-          alignItems: "center",
-          gap: 4,
-          cursor: disabled ? "not-allowed" : "pointer",
+          borderRadius: 6,
+          overflow: "hidden",
+          border: "1px solid var(--border-strong)",
           opacity: disabled ? 0.55 : 1,
-          color: disabled ? "var(--text-faint)" : undefined,
+          pointerEvents: disabled ? "none" : "auto",
         },
       },
-      React.createElement("input", {
-        type: "radio",
-        name: annotKindName,
-        checked: annotKind === value,
-        disabled,
-        onChange: () => setAnnotKind(value),
-      }),
-      value === "cld" ? "letters (a/ab/b)" : "brackets"
+      ["cld", "brackets"].map(function (value) {
+        var active = annotKind === value;
+        return React.createElement(
+          "button",
+          {
+            key: value,
+            type: "button",
+            onClick: function () {
+              setAnnotKind(value);
+            },
+            style: {
+              flex: 1,
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: active ? 700 : 400,
+              fontFamily: "inherit",
+              cursor: disabled ? "not-allowed" : "pointer",
+              border: "none",
+              background: active ? "var(--accent-primary)" : "var(--surface)",
+              color: active ? "var(--on-accent)" : "var(--text-muted)",
+              transition: "background 120ms ease, color 120ms ease",
+            },
+          },
+          value === "cld" ? "Letters" : "Brackets"
+        );
+      })
     );
+  };
   const displayControls = React.createElement(
     "div",
     {
@@ -776,14 +795,13 @@ function StatsTile({
     k > 2
       ? React.createElement(
           "div",
-          { style: { display: "flex", alignItems: "center", gap: 10, fontSize: 12 } },
+          { style: { display: "flex", alignItems: "center", gap: 8, fontSize: 12 } },
           React.createElement(
             "span",
             { style: { color: subDisabled ? "var(--text-faint)" : "var(--text-muted)" } },
             "Style:"
           ),
-          radioLabel("cld", subDisabled),
-          radioLabel("brackets", subDisabled)
+          segmentedToggle(subDisabled)
         )
       : null,
     checkboxLabel(showNs, setShowNs, "Show ns", nsDisabled)
