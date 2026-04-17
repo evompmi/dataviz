@@ -1691,14 +1691,41 @@ function PlotControls({
           Display
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div>
             <span className="dv-label">Proportional areas</span>
-            <input
-              type="checkbox"
-              checked={proportional}
-              onChange={(e) => onProportionalChange(e.target.checked)}
-              style={{ accentColor: "var(--cta-primary-bg)" }}
-            />
+            <div
+              style={{
+                display: "flex",
+                borderRadius: 6,
+                overflow: "hidden",
+                border: "1px solid var(--border-strong)",
+              }}
+            >
+              {(["off", "on"] as const).map((mode) => {
+                const active = mode === "on" ? proportional : !proportional;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onProportionalChange(mode === "on")}
+                    style={{
+                      flex: 1,
+                      padding: "4px 0",
+                      fontSize: 11,
+                      fontWeight: active ? 700 : 400,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      border: "none",
+                      background: active ? "var(--accent-primary)" : "var(--surface)",
+                      color: active ? "var(--on-accent)" : "var(--text-muted)",
+                      transition: "background 120ms ease, color 120ms ease",
+                    }}
+                  >
+                    {mode === "off" ? "Off" : "On"}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {proportional && (
             <SliderControl

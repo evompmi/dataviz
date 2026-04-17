@@ -2318,14 +2318,41 @@ function PlotControls({
         >
           Barplot (Σ of plotted values)
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <div style={{ marginBottom: 10 }}>
           <span className="dv-label">Show</span>
-          <input
-            type="checkbox"
-            checked={vis.showInset}
-            onChange={(e) => updVis({ showInset: e.target.checked })}
-            style={{ accentColor: "var(--cta-primary-bg)" }}
-          />
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(["off", "on"] as const).map((mode) => {
+              const active = mode === "on" ? vis.showInset : !vis.showInset;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => updVis({ showInset: mode === "on" })}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {mode === "off" ? "Off" : "On"}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {vis.showInset && (
@@ -2364,14 +2391,41 @@ function PlotControls({
                   placeholder="auto"
                 />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div>
                 <span className="dv-label">Grid</span>
-                <input
-                  type="checkbox"
-                  checked={vis.insetShowGrid}
-                  onChange={(e) => updVis({ insetShowGrid: e.target.checked })}
-                  style={{ accentColor: "var(--cta-primary-bg)" }}
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {(["off", "on"] as const).map((mode) => {
+                    const active = mode === "on" ? vis.insetShowGrid : !vis.insetShowGrid;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updVis({ insetShowGrid: mode === "on" })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "off" ? "Off" : "On"}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {vis.insetShowGrid && (
                 <div>
@@ -2421,14 +2475,41 @@ function PlotControls({
               step={0.05}
               onChange={sv("insetFillOpacity")}
             />
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div>
               <span className="dv-label">Bar outline</span>
-              <input
-                type="checkbox"
-                checked={vis.insetShowBarOutline}
-                onChange={(e) => updVis({ insetShowBarOutline: e.target.checked })}
-                style={{ accentColor: "var(--cta-primary-bg)" }}
-              />
+              <div
+                style={{
+                  display: "flex",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: "1px solid var(--border-strong)",
+                }}
+              >
+                {(["off", "on"] as const).map((mode) => {
+                  const active = mode === "on" ? vis.insetShowBarOutline : !vis.insetShowBarOutline;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => updVis({ insetShowBarOutline: mode === "on" })}
+                      style={{
+                        flex: 1,
+                        padding: "4px 0",
+                        fontSize: 11,
+                        fontWeight: active ? 700 : 400,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        border: "none",
+                        background: active ? "var(--accent-primary)" : "var(--surface)",
+                        color: active ? "var(--on-accent)" : "var(--text-muted)",
+                        transition: "background 120ms ease, color 120ms ease",
+                      }}
+                    >
+                      {mode === "off" ? "Off" : "On"}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {vis.insetShowBarOutline && (
               <>
@@ -2528,14 +2609,41 @@ function PlotControls({
               Points
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div>
                 <span className="dv-label">Show</span>
-                <input
-                  type="checkbox"
-                  checked={vis.insetShowPoints}
-                  onChange={(e) => updVis({ insetShowPoints: e.target.checked })}
-                  style={{ accentColor: "var(--cta-primary-bg)" }}
-                />
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {(["off", "on"] as const).map((mode) => {
+                    const active = mode === "on" ? vis.insetShowPoints : !vis.insetShowPoints;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updVis({ insetShowPoints: mode === "on" })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "off" ? "Off" : "On"}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {vis.insetShowPoints && (
                 <>
