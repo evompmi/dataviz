@@ -1035,30 +1035,46 @@ function PlotStep({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: 10,
               marginBottom: regression.on ? 10 : 0,
             }}
           >
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
               Regression line
             </p>
-            <label
+            <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 11,
-                color: "var(--text-muted)",
-                cursor: "pointer",
+                borderRadius: 6,
+                overflow: "hidden",
+                border: "1px solid var(--border-strong)",
+                flexShrink: 0,
               }}
             >
-              <input
-                type="checkbox"
-                checked={regression.on}
-                onChange={(e) => updRegression({ on: e.target.checked })}
-                style={{ accentColor: "var(--cta-primary-bg)" }}
-              />
-              show
-            </label>
+              {(["off", "on"] as const).map((mode) => {
+                const active = mode === "on" ? regression.on : !regression.on;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => updRegression({ on: mode === "on" })}
+                    style={{
+                      padding: "4px 12px",
+                      fontSize: 11,
+                      fontWeight: active ? 700 : 400,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      border: "none",
+                      background: active ? "var(--accent-primary)" : "var(--surface)",
+                      color: active ? "var(--on-accent)" : "var(--text-muted)",
+                      transition: "background 120ms ease, color 120ms ease",
+                    }}
+                  >
+                    {mode === "off" ? "Off" : "On"}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {regression.on && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1107,42 +1123,78 @@ function PlotStep({
                 step={0.25}
                 onChange={(v) => updRegression({ strokeWidth: v })}
               />
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={regression.dashed}
-                  onChange={(e) => updRegression({ dashed: e.target.checked })}
-                  style={{ accentColor: "var(--cta-primary-bg)" }}
-                />
-                Dashed
-              </label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={regression.showStats}
-                  onChange={(e) => updRegression({ showStats: e.target.checked })}
-                  style={{ accentColor: "var(--cta-primary-bg)" }}
-                />
-                Show equation &amp; R² on plot
-              </label>
+              <div>
+                <span className="dv-label">Dashed</span>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {(["off", "on"] as const).map((mode) => {
+                    const active = mode === "on" ? regression.dashed : !regression.dashed;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updRegression({ dashed: mode === "on" })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "off" ? "Off" : "On"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <span className="dv-label">Show equation &amp; R² on plot</span>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {(["off", "on"] as const).map((mode) => {
+                    const active = mode === "on" ? regression.showStats : !regression.showStats;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updRegression({ showStats: mode === "on" })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "off" ? "Off" : "On"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               {regression.showStats && (
                 <div>
                   <div className="dv-label">Label position</div>
@@ -1650,14 +1702,41 @@ function PlotStep({
                   step={0.25}
                   onChange={(v) => updateRefLine(rl.id, "strokeWidth", v)}
                 />
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Dashed</span>
-                  <input
-                    type="checkbox"
-                    checked={rl.dashed}
-                    onChange={(e) => updateRefLine(rl.id, "dashed", e.target.checked)}
-                    style={{ accentColor: "var(--cta-primary-bg)" }}
-                  />
+                <div>
+                  <span className="dv-label">Dashed</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      border: "1px solid var(--border-strong)",
+                    }}
+                  >
+                    {(["off", "on"] as const).map((mode) => {
+                      const active = mode === "on" ? rl.dashed : !rl.dashed;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => updateRefLine(rl.id, "dashed", mode === "on")}
+                          style={{
+                            flex: 1,
+                            padding: "4px 0",
+                            fontSize: 11,
+                            fontWeight: active ? 700 : 400,
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            border: "none",
+                            background: active ? "var(--accent-primary)" : "var(--surface)",
+                            color: active ? "var(--on-accent)" : "var(--text-muted)",
+                            transition: "background 120ms ease, color 120ms ease",
+                          }}
+                        >
+                          {mode === "off" ? "Off" : "On"}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 {rl.dashed && (
                   <select
