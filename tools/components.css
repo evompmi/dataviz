@@ -381,6 +381,50 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: none;
 }
 
+/* ── Segmented toggle ──────────────────────────────────────────────────
+   Pill-bar where one option is active at a time. Wrap a row of buttons
+   in `.dv-seg` and give the active button `.dv-seg-btn-active`. Used
+   across power + molarity for mode/alpha/tails/solveFor/separator pickers.
+   Replaces the inline-styled flex+overflow:hidden pattern that each tool
+   previously re-implemented. */
+.dv-seg {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+}
+.dv-seg-btn {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: var(--surface);
+  color: var(--text-muted);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.dv-seg-btn:hover:not(:disabled):not(.dv-seg-btn-active) {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+.dv-seg-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+.dv-seg-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.dv-seg-btn-active {
+  background: var(--accent-primary);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
 /* Facet-mode statistics summary: fill the scroll wrapper so its bottom
    aligns with the plot + display-tile stack on the left. */
 .dv-facet-stats-scroll > .dv-panel {

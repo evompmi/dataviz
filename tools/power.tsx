@@ -236,15 +236,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
   return (
     <div style={{ opacity: disabled ? 0.4 : 1 }}>
       {/* Mode toggle */}
-      <div
-        style={{
-          display: "flex",
-          borderRadius: 6,
-          overflow: "hidden",
-          border: "1px solid var(--border-strong)",
-          marginBottom: 6,
-        }}
-      >
+      <div className="dv-seg" style={{ marginBottom: 6 }}>
         {(["helper", "direct"] as const).map((m) => {
           const active = mode === m;
           return (
@@ -252,18 +244,7 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              style={{
-                flex: 1,
-                padding: "4px 0",
-                fontSize: 11,
-                fontWeight: active ? 700 : 400,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                border: "none",
-                background: active ? "var(--accent-primary)" : "var(--surface)",
-                color: active ? "var(--on-accent)" : "var(--text-muted)",
-                transition: "background 120ms ease, color 120ms ease",
-              }}
+              className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
             >
               {m === "helper" ? "From my data" : "Direct value"}
             </button>
@@ -795,14 +776,7 @@ function App() {
           <div className="dv-label" style={{ marginBottom: 6 }}>
             What do you need to find?
           </div>
-          <div
-            style={{
-              display: "flex",
-              borderRadius: 6,
-              overflow: "hidden",
-              border: "1px solid var(--border-strong)",
-            }}
-          >
+          <div className="dv-seg">
             {(
               [
                 ["n", "Sample size"],
@@ -815,18 +789,8 @@ function App() {
                   key={key}
                   type="button"
                   onClick={() => setSolveFor(key)}
-                  style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: 12,
-                    fontWeight: active ? 700 : 400,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    border: "none",
-                    background: active ? "var(--accent-primary)" : "var(--surface)",
-                    color: active ? "var(--on-accent)" : "var(--text-muted)",
-                    transition: "background 120ms ease, color 120ms ease",
-                  }}
+                  className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
+                  style={{ fontSize: 12 }}
                 >
                   {label}
                 </button>
@@ -882,14 +846,7 @@ function App() {
             {/* Significance */}
             <div>
               <div className="dv-label">Significance level (α)</div>
-              <div
-                style={{
-                  display: "flex",
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  border: "1px solid var(--border-strong)",
-                }}
-              >
+              <div className="dv-seg">
                 {(["0.10", "0.05", "0.01", "0.001"] as const).map((a) => {
                   const active = alphaInput === a;
                   return (
@@ -897,18 +854,7 @@ function App() {
                       key={a}
                       type="button"
                       onClick={() => setAlphaInput(a)}
-                      style={{
-                        flex: 1,
-                        padding: "4px 0",
-                        fontSize: 11,
-                        fontWeight: active ? 700 : 400,
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        border: "none",
-                        background: active ? "var(--accent-primary)" : "var(--surface)",
-                        color: active ? "var(--on-accent)" : "var(--text-muted)",
-                        transition: "background 120ms ease, color 120ms ease",
-                      }}
+                      className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
                     >
                       {a}
                     </button>
@@ -920,15 +866,7 @@ function App() {
             {/* Power */}
             <div style={{ opacity: solveFor === "power" ? 0.4 : 1 }}>
               <div className="dv-label">Desired power (1 − β)</div>
-              <div
-                style={{
-                  display: "flex",
-                  borderRadius: 6,
-                  overflow: "hidden",
-                  border: "1px solid var(--border-strong)",
-                  pointerEvents: solveFor === "power" ? "none" : "auto",
-                }}
-              >
+              <div className="dv-seg">
                 {(["0.70", "0.80", "0.90", "0.95"] as const).map((p) => {
                   const active = powerInput === p;
                   return (
@@ -938,18 +876,7 @@ function App() {
                       onClick={() => setPowerInput(p)}
                       disabled={solveFor === "power"}
                       title={p === "0.80" ? "0.80 (standard)" : undefined}
-                      style={{
-                        flex: 1,
-                        padding: "4px 0",
-                        fontSize: 11,
-                        fontWeight: active ? 700 : 400,
-                        fontFamily: "inherit",
-                        cursor: solveFor === "power" ? "not-allowed" : "pointer",
-                        border: "none",
-                        background: active ? "var(--accent-primary)" : "var(--surface)",
-                        color: active ? "var(--on-accent)" : "var(--text-muted)",
-                        transition: "background 120ms ease, color 120ms ease",
-                      }}
+                      className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
                     >
                       {p}
                     </button>
@@ -962,14 +889,7 @@ function App() {
             {testKey !== "anova" && testKey !== "chi2" && (
               <div>
                 <div className="dv-label">Direction of the test</div>
-                <div
-                  style={{
-                    display: "flex",
-                    borderRadius: 6,
-                    overflow: "hidden",
-                    border: "1px solid var(--border-strong)",
-                  }}
-                >
+                <div className="dv-seg">
                   {(
                     [
                       [2, "Two-sided"],
@@ -982,18 +902,7 @@ function App() {
                         key={t}
                         type="button"
                         onClick={() => setTails(t)}
-                        style={{
-                          flex: 1,
-                          padding: "4px 0",
-                          fontSize: 11,
-                          fontWeight: active ? 700 : 400,
-                          fontFamily: "inherit",
-                          cursor: "pointer",
-                          border: "none",
-                          background: active ? "var(--accent-primary)" : "var(--surface)",
-                          color: active ? "var(--on-accent)" : "var(--text-muted)",
-                          transition: "background 120ms ease, color 120ms ease",
-                        }}
+                        className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
                       >
                         {label}
                       </button>
