@@ -1208,8 +1208,9 @@ function PlotStep({
                   >
                     {(["tl", "tr", "bl", "br"] as const).map((pos) => {
                       const active = regression.position === pos;
-                      const glyph =
-                        pos === "tl" ? "↖" : pos === "tr" ? "↗" : pos === "bl" ? "↙" : "↘";
+                      const cx = pos === "tl" || pos === "bl" ? 6 : 18;
+                      const cy = pos === "tl" || pos === "tr" ? 5 : 13;
+                      const fg = active ? "var(--on-accent)" : "var(--text-muted)";
                       return (
                         <button
                           key={pos}
@@ -1226,18 +1227,29 @@ function PlotStep({
                           onClick={() => updRegression({ position: pos })}
                           style={{
                             flex: 1,
-                            padding: "4px 0",
-                            fontSize: 13,
-                            fontWeight: active ? 700 : 400,
-                            fontFamily: "inherit",
+                            padding: "5px 0 3px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                             cursor: "pointer",
                             border: "none",
                             background: active ? "var(--accent-primary)" : "var(--surface)",
-                            color: active ? "var(--on-accent)" : "var(--text-muted)",
                             transition: "background 120ms ease, color 120ms ease",
                           }}
                         >
-                          {glyph}
+                          <svg width={24} height={18} viewBox="0 0 24 18" aria-hidden="true">
+                            <rect
+                              x={1}
+                              y={1}
+                              width={22}
+                              height={16}
+                              fill="none"
+                              stroke={fg}
+                              strokeWidth={1.2}
+                              rx={1.5}
+                            />
+                            <circle cx={cx} cy={cy} r={2.2} fill={fg} />
+                          </svg>
                         </button>
                       );
                     })}
