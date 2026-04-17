@@ -483,7 +483,6 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
 const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   {
     series,
-    insetColors,
     insetFillOpacity,
     insetBarWidth,
     insetBarGap,
@@ -567,7 +566,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     return {
       label: s.label,
       prefix: s.prefix,
-      fillColor: insetColors[s.prefix] || s.color,
+      fillColor: s.color,
       barMean,
       sd,
       sem,
@@ -926,7 +925,6 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
     baseUnit,
     displayUnit,
     showInset,
-    insetColors,
     insetFillOpacity,
     insetBarWidth,
     insetBarGap,
@@ -1083,7 +1081,6 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
 
   const insetBarProps = {
     series,
-    insetColors,
     insetFillOpacity,
     insetBarWidth,
     insetBarGap,
@@ -2124,37 +2121,51 @@ function ConfigureStep({
 function ControlSection({
   title,
   defaultOpen = false,
+  headerRight,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
-      <button
-        onClick={() => setOpen(!open)}
+      <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 6,
           width: "100%",
           padding: "7px 10px",
-          background: "none",
-          border: "none",
-          cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--text-muted)",
+          gap: 8,
         }}
       >
-        <span
-          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
-          aria-hidden="true"
-        />
-        {title}
-      </button>
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flex: 1,
+            padding: 0,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--text-muted)",
+            textAlign: "left",
+          }}
+        >
+          <span
+            className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+            aria-hidden="true"
+          />
+          {title}
+        </button>
+        {headerRight}
+      </div>
       {open && (
         <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
           {children}
@@ -2164,8 +2175,24 @@ function ControlSection({
   );
 }
 
+function SubHeading({ children }: { children?: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        margin: "10px 0 2px",
+        fontSize: 12,
+        fontWeight: 600,
+        color: "var(--text-muted)",
+        paddingLeft: 8,
+        borderLeft: "3px solid var(--accent-primary)",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
 function PlotControls({
-  stats,
   conditions,
   setConditions,
   vis,
@@ -2173,8 +2200,6 @@ function PlotControls({
   plotPanelRef,
   downloadCalibrated,
   resetAll,
-  insetColors,
-  setInsetColors,
 }) {
   const sv = (k) => (v) => updVis({ [k]: v });
   return (
@@ -2211,94 +2236,98 @@ function PlotControls({
       {/* Conditions */}
       <ControlSection title="Conditions" defaultOpen>
         <ConditionEditor conditions={conditions} onChange={setConditions} />
-        <details style={{ marginTop: 8, fontSize: 11, color: "var(--text-faint)" }}>
-          <summary style={{ cursor: "pointer" }}>Debug: column grouping</summary>
-          <pre
-            style={{
-              whiteSpace: "pre-wrap",
-              marginTop: 4,
-              fontSize: 10,
-              background: "var(--surface-sunken)",
-              padding: 8,
-              borderRadius: 4,
-            }}
-          >
-            {stats
-              .map(
-                (c) =>
-                  `"${c.prefix}" → ${c.colIndices.length} replicate(s) (col indices: ${c.colIndices.join(", ")})`
-              )
-              .join("\n")}
-          </pre>
-        </details>
       </ControlSection>
 
-      {/* Time-course parameters */}
-      <ControlSection title="Time-course parameters" defaultOpen>
-        <div>
-          <div className="dv-label">X start</div>
-          <NumberInput
-            value={vis.xStart}
-            onChange={(e) => updVis({ xStart: Number(e.target.value) })}
-            style={{ width: "100%" }}
-          />
+      {/* Axes */}
+      <ControlSection title="Axes" defaultOpen>
+        <div style={{ display: "flex", gap: 6 }}>
+          <label style={{ flex: 1, display: "block" }}>
+            <span className="dv-label">X start</span>
+            <NumberInput
+              value={vis.xStart}
+              onChange={(e) => updVis({ xStart: Number(e.target.value) })}
+              style={{ width: "100%" }}
+            />
+          </label>
+          <label style={{ flex: 1, display: "block" }}>
+            <span className="dv-label">X end</span>
+            <NumberInput
+              value={vis.xEnd}
+              onChange={(e) => updVis({ xEnd: Number(e.target.value) })}
+              style={{ width: "100%" }}
+            />
+          </label>
         </div>
-        <div>
-          <div className="dv-label">X end</div>
-          <NumberInput
-            value={vis.xEnd}
-            onChange={(e) => updVis({ xEnd: Number(e.target.value) })}
-            style={{ width: "100%" }}
-          />
-        </div>
-        <div>
-          <div className="dv-label">Y min</div>
-          <NumberInput
-            value={vis.yMin}
-            onChange={(e) => updVis({ yMin: Number(e.target.value) })}
-            style={{ width: "100%" }}
-            step="0.1"
-          />
-        </div>
-        <div>
-          <div className="dv-label">Y max</div>
-          <NumberInput
-            value={vis.yMax}
-            onChange={(e) => updVis({ yMax: Number(e.target.value) })}
-            style={{ width: "100%" }}
-            step="0.1"
-          />
+        <div style={{ display: "flex", gap: 6 }}>
+          <label style={{ flex: 1, display: "block" }}>
+            <span className="dv-label">Y min</span>
+            <NumberInput
+              value={vis.yMin}
+              onChange={(e) => updVis({ yMin: Number(e.target.value) })}
+              style={{ width: "100%" }}
+              step="0.1"
+            />
+          </label>
+          <label style={{ flex: 1, display: "block" }}>
+            <span className="dv-label">Y max</span>
+            <NumberInput
+              value={vis.yMax}
+              onChange={(e) => updVis({ yMax: Number(e.target.value) })}
+              style={{ width: "100%" }}
+              step="0.1"
+            />
+          </label>
         </div>
         <SliderControl
           label="Smooth (±pts)"
           value={vis.smoothWidth}
+          displayValue={`${vis.smoothWidth} pts`}
           min={0}
           max={20}
           step={1}
           onChange={sv("smoothWidth")}
         />
-        <div>
-          <div className="dv-label">Title</div>
+        <label style={{ display: "block" }}>
+          <span className="dv-label">Display unit</span>
+          <select
+            value={vis.displayUnit}
+            onChange={(e) => updVis({ displayUnit: e.target.value })}
+            className="dv-select"
+            style={{ width: "100%" }}
+          >
+            {TIME_UNITS.map((u) => (
+              <option key={u.key} value={u.key}>
+                {u.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </ControlSection>
+
+      {/* Labels */}
+      <ControlSection title="Labels">
+        <label style={{ display: "block" }}>
+          <span className="dv-label">Title</span>
           <input
             value={vis.plotTitle}
             onChange={(e) => updVis({ plotTitle: e.target.value })}
             className="dv-input-num"
             style={{ width: "100%", textAlign: "left" }}
           />
-        </div>
-        <div>
-          <div className="dv-label">Subtitle</div>
+        </label>
+        <label style={{ display: "block" }}>
+          <span className="dv-label">Subtitle</span>
           <input
             value={vis.plotSubtitle}
             onChange={(e) => updVis({ plotSubtitle: e.target.value })}
             className="dv-input-num"
             style={{ width: "100%", textAlign: "left" }}
           />
-        </div>
+        </label>
       </ControlSection>
 
       {/* Style controls */}
-      <ControlSection title="Style" defaultOpen>
+      <ControlSection title="Style">
         <BaseStyleControls
           plotBg={vis.plotBg}
           onPlotBgChange={sv("plotBg")}
@@ -2324,34 +2353,20 @@ function PlotControls({
           step={0.05}
           onChange={sv("ribbonOpacity")}
         />
-        <div>
-          <div className="dv-label">Display unit</div>
-          <select
-            value={vis.displayUnit}
-            onChange={(e) => updVis({ displayUnit: e.target.value })}
-            className="dv-select"
-            style={{ width: "100%" }}
-          >
-            {TIME_UNITS.map((u) => (
-              <option key={u.key} value={u.key}>
-                {u.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </ControlSection>
 
       {/* Barplot controls */}
-      <ControlSection title="Barplot (Σ of plotted values)" defaultOpen>
-        <div>
-          <span className="dv-label">Show</span>
+      <ControlSection
+        title="Summary barplot"
+        headerRight={
           <div
             style={{
               display: "flex",
-              borderRadius: 6,
+              borderRadius: 4,
               overflow: "hidden",
               border: "1px solid var(--border-strong)",
             }}
+            title="Barplot of the sum (Σ) of plotted values per condition"
           >
             {(["off", "on"] as const).map((mode) => {
               const active = mode === "on" ? vis.showInset : !vis.showInset;
@@ -2361,9 +2376,8 @@ function PlotControls({
                   type="button"
                   onClick={() => updVis({ showInset: mode === "on" })}
                   style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: 11,
+                    padding: "2px 8px",
+                    fontSize: 10,
                     fontWeight: active ? 700 : 400,
                     fontFamily: "inherit",
                     cursor: "pointer",
@@ -2378,26 +2392,14 @@ function PlotControls({
               );
             })}
           </div>
-        </div>
-
+        }
+      >
         {vis.showInset && (
           <>
-            {/* Layout */}
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Layout
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-              <div>
-                <div className="dv-label">Y min (auto)</div>
+            <SubHeading>Layout</SubHeading>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ display: "block" }}>
+                <span className="dv-label">Y min</span>
                 <input
                   value={vis.insetYMinCustom}
                   onChange={(e) => updVis({ insetYMinCustom: e.target.value })}
@@ -2405,9 +2407,9 @@ function PlotControls({
                   style={{ width: "100%", textAlign: "left" }}
                   placeholder="auto"
                 />
-              </div>
-              <div>
-                <div className="dv-label">Y max (auto)</div>
+              </label>
+              <label style={{ display: "block" }}>
+                <span className="dv-label">Y max</span>
                 <input
                   value={vis.insetYMaxCustom}
                   onChange={(e) => updVis({ insetYMaxCustom: e.target.value })}
@@ -2415,7 +2417,7 @@ function PlotControls({
                   style={{ width: "100%", textAlign: "left" }}
                   placeholder="auto"
                 />
-              </div>
+              </label>
               <div>
                 <span className="dv-label">Grid</span>
                 <div
@@ -2453,14 +2455,14 @@ function PlotControls({
                 </div>
               </div>
               {vis.insetShowGrid && (
-                <div>
-                  <div className="dv-label">Grid color</div>
+                <label style={{ display: "block" }}>
+                  <span className="dv-label">Grid color</span>
                   <ColorInput
                     value={vis.insetGridColor}
                     onChange={sv("insetGridColor")}
                     size={24}
                   />
-                </div>
+                </label>
               )}
               <SliderControl
                 label="X label angle"
@@ -2547,33 +2549,21 @@ function PlotControls({
                   step={0.1}
                   onChange={sv("insetBarStrokeWidth")}
                 />
-                <div>
-                  <div className="dv-label">Outline color</div>
+                <label style={{ display: "block" }}>
+                  <span className="dv-label">Outline color</span>
                   <ColorInput
                     value={vis.insetBarOutlineColor}
                     onChange={sv("insetBarOutlineColor")}
                     size={24}
                   />
-                </div>
+                </label>
               </>
             )}
 
-            {/* Error bars */}
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Error bars
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <SubHeading>Error bars</SubHeading>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
-                <div className="dv-label">Type</div>
+                <span className="dv-label">Type</span>
                 <div
                   style={{
                     display: "flex",
@@ -2620,20 +2610,8 @@ function PlotControls({
               )}
             </div>
 
-            {/* Points */}
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Points
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <SubHeading>Points</SubHeading>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div>
                 <span className="dv-label">Show</span>
                 <div
@@ -2672,14 +2650,14 @@ function PlotControls({
               </div>
               {vis.insetShowPoints && (
                 <>
-                  <div>
-                    <div className="dv-label">Color</div>
+                  <label style={{ display: "block" }}>
+                    <span className="dv-label">Color</span>
                     <ColorInput
                       value={vis.insetPointColor}
                       onChange={sv("insetPointColor")}
                       size={24}
                     />
-                  </div>
+                  </label>
                   <SliderControl
                     label="Size"
                     value={vis.insetPointSize}
@@ -2691,51 +2669,6 @@ function PlotControls({
                   />
                 </>
               )}
-            </div>
-
-            {/* Per-condition colors */}
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text-faint)",
-                textTransform: "uppercase",
-                letterSpacing: 1,
-              }}
-            >
-              Condition colors
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {stats
-                .filter((s) => s.enabled)
-                .map((s) => (
-                  <div
-                    key={s.prefix}
-                    style={{
-                      padding: "6px 8px",
-                      background: "var(--surface-sunken)",
-                      borderRadius: 5,
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: "var(--text-muted)",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                    >
-                      {s.label}
-                    </div>
-                    <ColorInput
-                      value={insetColors[s.prefix] || s.color}
-                      onChange={(v) => setInsetColors((prev) => ({ ...prev, [s.prefix]: v }))}
-                      size={18}
-                    />
-                  </div>
-                ))}
             </div>
           </>
         )}
@@ -2985,7 +2918,6 @@ function App() {
   };
   const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
   const [step, setStep] = useState("upload");
-  const [insetColors, setInsetColors] = useState({});
 
   const parsed = useMemo(() => (rawText ? parseData(rawText) : null), [rawText]);
   const calData = useMemo(() => {
@@ -3148,11 +3080,6 @@ function App() {
       };
     });
     setConditions(allConds);
-    const ic = { ...insetColors };
-    allConds.forEach((c) => {
-      if (!ic[c.prefix]) ic[c.prefix] = c.color;
-    });
-    setInsetColors(ic);
   };
 
   const handlePoolChange = (pool) => {
@@ -3242,11 +3169,6 @@ function App() {
     setPoolReplicates(true);
     const detectedConds = detectConditions(headers, true, ce).map((c) => ({ ...c, enabled: true }));
     setConditions(detectedConds);
-    const ic = {};
-    detectedConds.forEach((c) => {
-      ic[c.prefix] = c.color;
-    });
-    setInsetColors(ic);
     updVis({ xStart: 0, xEnd: data.length, faceted: false });
     setStep("configure");
   }, []);
@@ -3378,7 +3300,6 @@ function App() {
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
             {/* LEFT: controls panel */}
             <PlotControls
-              stats={stats}
               conditions={conditions}
               setConditions={handleConditionsChange}
               vis={vis}
@@ -3386,8 +3307,6 @@ function App() {
               plotPanelRef={plotPanelRef}
               downloadCalibrated={downloadCalibrated}
               resetAll={resetAll}
-              insetColors={insetColors}
-              setInsetColors={setInsetColors}
             />
 
             {/* RIGHT: chart area */}
@@ -3501,7 +3420,6 @@ function App() {
                 baseUnit={vis.baseUnit}
                 displayUnit={vis.displayUnit}
                 showInset={vis.showInset}
-                insetColors={insetColors}
                 insetFillOpacity={vis.insetFillOpacity}
                 insetBarWidth={vis.insetBarWidth}
                 insetBarGap={vis.insetBarGap}
