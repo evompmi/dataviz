@@ -789,9 +789,9 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
           <line id="plot-frame-bottom" x1={M.left} y1={M.top + h} x2={M.left + w} y2={M.top + h} />
           <line id="plot-frame-left" x1={M.left} y1={M.top} x2={M.left} y2={M.top + h} />
         </g>
-        {annotations && annotations.kind === "cld" && annotations.letters && (
+        {annotations && annotations.kind === "cld" && annotations.labels && (
           <g id="cld-annotations">
-            {annotations.letters.map((letter, i) => {
+            {annotations.labels.map((letter, i) => {
               if (i >= bars.length) return null;
               const top = sy(bars[i].barMean + (errBars[i] || 0));
               return (
