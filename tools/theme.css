@@ -158,7 +158,7 @@
   /* Dimmed teal for toggle pills in dark mode (same role as --cta-primary-bg
      for blue). Roughly matches the ~0.75× brightness drop applied to the
      primary CTA so the two pills read as a matched pair. */
-  --cta-plot-bg: #25a090;
+  --cta-plot-bg: #1d7a6d;
 
   --cta-dna-bg: #5a45b8;
 
@@ -228,7 +228,7 @@
     --cta-primary-bg: #4d62cc;
     --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
 
-    --cta-plot-bg: #25a090;
+    --cta-plot-bg: #1d7a6d;
 
     --cta-dna-bg: #5a45b8;
 

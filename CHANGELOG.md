@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Dark-mode Σ Baseline-corrected toggle dimmed** — the teal `--cta-plot-bg` (`#25a090`) read as glaringly bright against the dark chrome, especially next to the much quieter navy `Σ Raw` pill. Dropped to `#1d7a6d` so the two toggles now read as a matched pair in both themes.
 - **Aequorin Y-axis auto-rescale rounds to 2 decimals** — when adjusting the X window, the recomputed `yMin`/`yMax` were writing 10+ decimal floats into the number inputs. Values are now rounded to `X.XX` so the controls stay legible.
 - **Scatter regression default colour is a hex literal** — was leaking `var(--danger-text)` into SVG exports (CSS vars don't belong inside charts per CLAUDE.md).
 - **Aequorin inset barplot CLD letters now display (#1)** — `InsetBarplot` was reading `annotations.letters`; `StatsTile` emits `labels`. Letters also moved to a fixed row under the plot frame, matching boxplot.
