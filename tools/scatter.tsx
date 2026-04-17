@@ -1146,17 +1146,50 @@ function PlotStep({
               {regression.showStats && (
                 <div>
                   <div className="dv-label">Label position</div>
-                  <select
-                    value={regression.position}
-                    onChange={(e) => updRegression({ position: e.target.value })}
-                    className="dv-select"
-                    style={{ width: "100%", fontSize: 11 }}
+                  <div
+                    style={{
+                      display: "flex",
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      border: "1px solid var(--border-strong)",
+                    }}
                   >
-                    <option value="tl">top-left</option>
-                    <option value="tr">top-right</option>
-                    <option value="bl">bottom-left</option>
-                    <option value="br">bottom-right</option>
-                  </select>
+                    {(["tl", "tr", "bl", "br"] as const).map((pos) => {
+                      const active = regression.position === pos;
+                      const glyph =
+                        pos === "tl" ? "↖" : pos === "tr" ? "↗" : pos === "bl" ? "↙" : "↘";
+                      return (
+                        <button
+                          key={pos}
+                          type="button"
+                          title={
+                            pos === "tl"
+                              ? "top-left"
+                              : pos === "tr"
+                                ? "top-right"
+                                : pos === "bl"
+                                  ? "bottom-left"
+                                  : "bottom-right"
+                          }
+                          onClick={() => updRegression({ position: pos })}
+                          style={{
+                            flex: 1,
+                            padding: "4px 0",
+                            fontSize: 13,
+                            fontWeight: active ? 700 : 400,
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            border: "none",
+                            background: active ? "var(--accent-primary)" : "var(--surface)",
+                            color: active ? "var(--on-accent)" : "var(--text-muted)",
+                            transition: "background 120ms ease, color 120ms ease",
+                          }}
+                        >
+                          {glyph}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
