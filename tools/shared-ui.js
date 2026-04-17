@@ -179,7 +179,14 @@ function SliderControl(props) {
     max = props.max,
     step = props.step,
     onChange = props.onChange;
-  const dv = displayValue != null ? displayValue : value;
+  var dv = displayValue != null ? displayValue : value;
+  var pct = ((value - min) / (max - min)) * 100;
+  var grad =
+    "linear-gradient(to right, var(--accent-primary) " +
+    pct +
+    "%, var(--slider-track) " +
+    pct +
+    "%)";
   return React.createElement(
     "div",
     null,
@@ -198,7 +205,7 @@ function SliderControl(props) {
       onChange: function (e) {
         onChange(Number(e.target.value));
       },
-      style: { width: "100%", accentColor: "var(--cta-primary-bg)" },
+      style: { width: "100%", background: grad },
     })
   );
 }
