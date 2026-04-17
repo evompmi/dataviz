@@ -267,8 +267,8 @@ test("renders background and grid controls", function () {
     gridColor: "#e0e0e0",
     onGridColorChange: noop,
   });
-  assert(Array.isArray(el), "returns array of children");
-  assert(el.length === 3, "bg + grid toggle + grid color");
+  assert(el && el.children, "returns wrapper div with children");
+  assert(el.children.length === 3, "bg + grid toggle + grid color");
 });
 
 test("hides grid color when grid is off", function () {
@@ -281,8 +281,8 @@ test("hides grid color when grid is off", function () {
     gridColor: "#e0e0e0",
     onGridColorChange: noop,
   });
-  assert(Array.isArray(el), "returns array");
-  assert(el.length === 2, "only bg + grid toggle");
+  assert(el && el.children, "returns wrapper div");
+  assert(el.children.length === 2, "only bg + grid toggle");
 });
 
 suite("ColorInput");

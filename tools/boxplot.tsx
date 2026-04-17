@@ -1852,7 +1852,11 @@ function ControlSection({
         />
         {title}
       </button>
-      {open && <div style={{ padding: "0 10px 10px" }}>{children}</div>}
+      {open && (
+        <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }

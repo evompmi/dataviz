@@ -768,5 +768,9 @@ function BaseStyleControls(props) {
       )
     );
   }
-  return children;
+  return React.createElement(
+    "div",
+    { style: { display: "flex", flexDirection: "column", gap: 8 } },
+    children
+  );
 }
