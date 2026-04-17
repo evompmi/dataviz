@@ -4,18 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      // Landing page defaults to light theme (even on dark-preference systems)
-      // unless the user has explicitly chosen a theme. Tools still follow
-      // prefers-color-scheme on first visit.
+      // Same no-FOUC pattern as the tool HTMLs: only pin [data-theme] when the
+      // user has explicitly picked a theme. When nothing is stored, leave the
+      // attribute unset and let theme.css's `prefers-color-scheme` fallback
+      // decide — so a dark-OS visitor doesn't flip from white landing to dark
+      // tool on first click.
       try {
         var t = localStorage.getItem("dataviz-theme");
-        document.documentElement.setAttribute(
-          "data-theme",
-          t === "dark" || t === "light" ? t : "light"
-        );
-      } catch (e) {
-        document.documentElement.setAttribute("data-theme", "light");
-      }
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
     </script>
     <title>Data Visualization Toolbox</title>
     <link
@@ -193,22 +190,24 @@
       .tool-topbar {
         display: flex;
         align-items: center;
-        /* 27px aligns the first icon button's glyph center with the tool's
-           PageHeader icon beneath it (which sits at viewport x=43 via the
-           tool's 32px outer padding + 22px icon). */
-        padding: 0 16px 0 27px;
+        /* Left-padding matches the tool's outer padding (32px) so the first
+           icon button's left edge lines up with the PageHeader — and every
+           other page-content row — beneath it. We previously matched
+           glyph-centers instead, but with the larger 40px button the
+           resulting negative offset read as "misaligned." */
+        padding: 0 16px 0 32px;
         background: var(--surface);
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
-        height: 46px;
+        height: 50px;
         gap: 6px;
       }
       .tb-icon-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         padding: 0;
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -226,9 +225,13 @@
         color: var(--accent-primary);
         background: var(--surface-subtle);
       }
+      .tb-icon-btn:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
       .tb-icon-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 20px;
+        height: 20px;
         display: block;
       }
       .tb-sep {
@@ -248,8 +251,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 40px;
+        height: 40px;
         padding: 0;
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -264,6 +267,14 @@
       .theme-toggle-btn:hover {
         border-color: var(--accent-primary);
         color: var(--accent-primary);
+      }
+      .theme-toggle-btn:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
+      .theme-toggle-btn svg {
+        width: 20px;
+        height: 20px;
       }
 
       .help-content {

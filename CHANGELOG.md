@@ -32,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Exclusive selectors across Aequorin / Scatter / Power / Molarity → segmented pills** — consistency pass extending boxplot's pattern. Dropdowns with 5+ options, true booleans, and Molarity's Solve-for column left alone.
 - **Bar chart merged into `BoxplotChart`** — the standalone `BarChart` (~400 lines) is now a `plotStyle === "bar"` branch sharing legend, annotation, and facet pipelines. Zero stat regressions.
 
+### Changed
+
+- **Plot tools now reflow on narrow viewports** — dropped the `min-width: 1100px` floor from boxplot, aequorin, scatter, and venn. Previously a 13″ laptop at default zoom forced a horizontal scrollbar across the whole page; now the chrome reflows like the calculator tools do.
+- **Landing page follows `prefers-color-scheme` on first visit** — matches every tool's no-FOUC inline script. A dark-OS visitor used to land on a white page, click into a tool, and flip to dark. The landing page now only pins `[data-theme]` when the user has explicitly chosen a theme.
+- **Toolbar icon buttons bumped from 32 × 32 → 40 × 40 px** — closer to the WCAG 44 × 44 touch-target guideline, with clearer focus rings. Applies to both the per-tool topbar icons (`.tb-icon-btn`) and the landing-page theme toggle (`.theme-toggle-btn`). Topbar height moved from 46 → 50 px and its left-padding now matches the tool body's 32 px outer padding, so the back-button's left edge lines up with the PageHeader (and every other row) below it.
+- **Segmented-toggle pattern extracted into `.dv-seg` / `.dv-seg-btn`** — power and molarity's mode/alpha/power/tails/solveFor/separator pill bars used to re-implement the same inline-styled flex container in every call-site. Now a single CSS class pair in `components.css` owns the active/inactive styling, hover, focus, and disabled states, so a future theme tweak lands in one place.
+
 ### Fixed
 
 - **Dark-mode Σ Baseline-corrected toggle dimmed** — the teal `--cta-plot-bg` (`#25a090`) read as glaringly bright against the dark chrome, especially next to the much quieter navy `Σ Raw` pill. Dropped to `#1d7a6d` so the two toggles now read as a matched pair in both themes.

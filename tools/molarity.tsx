@@ -760,14 +760,7 @@ function BatchMode() {
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-primary)" }}>
             Separator:
           </span>
-          <div
-            style={{
-              display: "flex",
-              borderRadius: 6,
-              overflow: "hidden",
-              border: "1px solid var(--border-strong)",
-            }}
-          >
+          <div className="dv-seg">
             {(
               [
                 ["", "Auto-detect"],
@@ -782,17 +775,8 @@ function BatchMode() {
                   key={label}
                   type="button"
                   onClick={() => setSepOverride(val)}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: 11,
-                    fontWeight: active ? 700 : 400,
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    border: "none",
-                    background: active ? "var(--accent-primary)" : "var(--surface)",
-                    color: active ? "var(--on-accent)" : "var(--text-muted)",
-                    transition: "background 120ms ease, color 120ms ease",
-                  }}
+                  className={"dv-seg-btn" + (active ? " dv-seg-btn-active" : "")}
+                  style={{ flex: "0 0 auto", padding: "4px 10px" }}
                 >
                   {label}
                 </button>
