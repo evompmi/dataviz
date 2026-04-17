@@ -724,6 +724,97 @@ suite("AequorinChart");
   });
 })();
 
+// ── Line Plot Chart ─────────────────────────────────────────────────────────
+
+suite("LineChart");
+
+(function () {
+  var tool = loadTool("lineplot");
+  var Chart = tool.ctx.Chart;
+
+  var sampleSeries = [
+    {
+      name: "WT",
+      color: "#648FFF",
+      points: [
+        { x: 0, values: [0.05, 0.06, 0.05], n: 3, mean: 0.053, sd: 0.006, sem: 0.003, ci95: 0.014 },
+        { x: 2, values: [0.18, 0.21, 0.19], n: 3, mean: 0.193, sd: 0.015, sem: 0.009, ci95: 0.038 },
+        { x: 4, values: [0.55, 0.58, 0.61], n: 3, mean: 0.58, sd: 0.03, sem: 0.017, ci95: 0.075 },
+      ],
+    },
+    {
+      name: "mutant_A",
+      color: "#DC267F",
+      points: [
+        { x: 0, values: [0.05, 0.06, 0.05], n: 3, mean: 0.053, sd: 0.006, sem: 0.003, ci95: 0.014 },
+        { x: 2, values: [0.15, 0.17, 0.16], n: 3, mean: 0.16, sd: 0.01, sem: 0.006, ci95: 0.025 },
+        { x: 4, values: [0.42, 0.39, 0.45], n: 3, mean: 0.42, sd: 0.03, sem: 0.017, ci95: 0.075 },
+      ],
+    },
+  ];
+
+  test("renders SVG line chart", function () {
+    tool.resetHooks();
+    var el = render(Chart, {
+      series: sampleSeries,
+      perXStats: [],
+      xMin: 0,
+      xMax: 4,
+      yMin: 0,
+      yMax: 0.7,
+      vbW: 700,
+      vbH: 440,
+      xLabel: "Time (h)",
+      yLabel: "OD600",
+      plotTitle: "Growth curves",
+      plotSubtitle: "",
+      plotBg: "#ffffff",
+      showGrid: true,
+      gridColor: "#e0e0e0",
+      lineWidth: 1.5,
+      pointRadius: 3.5,
+      errorStrokeWidth: 1,
+      errorCapWidth: 6,
+      errorType: "sem",
+      svgLegend: [{ items: sampleSeries.map((s) => ({ label: s.name, color: s.color })) }],
+      showStars: true,
+    });
+    assert(el, "should return an element");
+    assert(el.type === "svg", "root should be an SVG");
+    assert(countElements(el) > 10, "should produce a complex tree");
+  });
+
+  test("renders with empty series", function () {
+    tool.resetHooks();
+    var el = render(Chart, {
+      series: [],
+      perXStats: [],
+      xMin: 0,
+      xMax: 10,
+      yMin: 0,
+      yMax: 1,
+      vbW: 700,
+      vbH: 440,
+      xLabel: "X",
+      yLabel: "Y",
+      plotTitle: "",
+      plotSubtitle: "",
+      plotBg: "#ffffff",
+      showGrid: false,
+      gridColor: "#e0e0e0",
+      lineWidth: 1.5,
+      pointRadius: 3.5,
+      errorStrokeWidth: 1,
+      errorCapWidth: 6,
+      errorType: "sem",
+      svgLegend: [],
+      showStars: false,
+    });
+    assert(el, "should return an element");
+    assert(el.type === "svg", "root should be an SVG");
+  });
+})();
+
 // ════════════════════════════════════════════════════════════════════════════
 //  StatsTile
 // ════════════════════════════════════════════════════════════════════════════

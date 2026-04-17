@@ -29,6 +29,7 @@ No test framework — custom harness in `tests/harness.js` using `suite()`, `tes
 - `index.html` — landing page with tool grid; loads tools in iframes; prefetches vendor scripts with progress bar
 - `tools/aequorin.html` — Ca2+ luminescence calibration plots with inset barplot
 - `tools/boxplot.html` — group comparison plots (box, violin, raincloud, bar chart) with statistics
+- `tools/lineplot.html` — profile plot: mean ± error (SEM / SD / 95% CI) per group across shared x, with per-x stats
 - `tools/molarity.html` — molarity/dilution calculator
 - `tools/power.html` — statistical power analysis calculator
 - `tools/scatter.html` — XY scatter with color/size mapping

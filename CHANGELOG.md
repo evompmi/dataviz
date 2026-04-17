@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Line Plot tool** — new profile plot for long-format `(x, y, group)` data. Renders one line per group through mean ± error at each shared x-value with error bars (SEM / SD / 95% CI, selectable). Runs per-x statistical tests (`selectTest` routing — t-test / Welch / Mann-Whitney for 2 groups, one-way / Welch / Kruskal-Wallis ANOVA for 3+) with Benjamini-Hochberg adjustment across the x-axis; significance stars render above each significant x. Each eligible x gets its own collapsed `StatsTile` with ↓ TXT (decision-trace / debug report) and ↓ R (reproducible script) downloads. Stats CSV export, named `<g id="…">` SVG groups for Inkscape, dark-mode aware. Strict numeric equality for "same x" — no tolerance.
 - **Horizontal orientation for Group Plot** — checkbox flips all four plot styles to groups-on-y (ggplot2 `coord_flip()`); annotations, grids, and pies rotate to match. Works in combined and faceted views.
 - **Subgroup-by for Group Plot** — dropdown partitions groups into subgroups separated by dashed dividers, with stats computed independently per subgroup. Mutually exclusive with faceting.
 - **Group Plot configure step requires group + value columns** — the Filter & Rename button is disabled with a warning banner when either role is missing.

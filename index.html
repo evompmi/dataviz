@@ -424,6 +424,25 @@
             <span class="tile-label">Venn Diagram</span>
             <span class="tile-desc">Set overlaps<br />2&#x2013;3 sets</span>
           </button>
+          <button class="tile" data-tool="lineplot">
+            <span class="tile-icon"
+              ><svg
+                viewBox="0 0 44 44"
+                fill="none"
+                stroke="#648FFF"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="6,34 16,24 26,28 36,12" />
+                <circle cx="6" cy="34" r="2.5" fill="#648FFF" />
+                <circle cx="16" cy="24" r="2.5" fill="#648FFF" />
+                <circle cx="26" cy="28" r="2.5" fill="#648FFF" />
+                <circle cx="36" cy="12" r="2.5" fill="#648FFF" /></svg
+            ></span>
+            <span class="tile-label">Line Plot</span>
+            <span class="tile-desc">Profile plot<br />mean &#xB1; error by group</span>
+          </button>
           <button class="tile" data-tool="aequorin">
             <span class="tile-icon"
               ><svg
@@ -513,6 +532,10 @@
     <div class="tool-view" id="view-aequorin">
       <div class="tool-topbar" data-topbar-for="aequorin"></div>
       <iframe id="frame-aequorin" src="tools/aequorin.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-lineplot">
+      <div class="tool-topbar" data-topbar-for="lineplot"></div>
+      <iframe id="frame-lineplot" src="tools/lineplot.html"></iframe>
     </div>
     <div class="tool-view" id="view-scatter">
       <div class="tool-topbar" data-topbar-for="scatter"></div>
@@ -627,6 +650,10 @@
             label: "Aequorin Ca\u00B2\u207A",
             svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
           },
+          lineplot: {
+            label: "Line Plot",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,34 16,24 26,28 36,12"/><circle cx="6" cy="34" r="2.5" fill="currentColor"/><circle cx="16" cy="24" r="2.5" fill="currentColor"/><circle cx="26" cy="28" r="2.5" fill="currentColor"/><circle cx="36" cy="12" r="2.5" fill="currentColor"/></svg>',
+          },
           power: {
             label: "Power Analysis",
             svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.6"/></svg>',
@@ -637,7 +664,15 @@
           },
         };
         // Display order in the topbar (plots first, then stats/calc).
-        var TOOL_ORDER = ["boxplot", "scatter", "venn", "aequorin", "power", "molarity"];
+        var TOOL_ORDER = [
+          "boxplot",
+          "scatter",
+          "venn",
+          "lineplot",
+          "aequorin",
+          "power",
+          "molarity",
+        ];
 
         function buildTopbar(current) {
           var parts = [];
