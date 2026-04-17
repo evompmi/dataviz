@@ -760,16 +760,45 @@ function BatchMode() {
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--accent-primary)" }}>
             Separator:
           </span>
-          <select
-            value={sepOverride}
-            onChange={(e) => setSepOverride(e.target.value)}
-            className="dv-select-sep"
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
           >
-            <option value="">Auto-detect</option>
-            <option value=",">Comma (,)</option>
-            <option value=";">Semicolon (;)</option>
-            <option value={"\t"}>Tab (\t)</option>
-          </select>
+            {(
+              [
+                ["", "Auto-detect"],
+                [",", "Comma (,)"],
+                [";", "Semicolon (;)"],
+                ["\t", "Tab (\\t)"],
+              ] as const
+            ).map(([val, label]) => {
+              const active = sepOverride === val;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setSepOverride(val)}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <textarea
           value={raw}

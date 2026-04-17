@@ -2468,16 +2468,39 @@ function PlotControls({
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               <div>
                 <div className="dv-label">Type</div>
-                <select
-                  value={vis.insetErrorType}
-                  onChange={(e) => updVis({ insetErrorType: e.target.value })}
-                  className="dv-select"
-                  style={{ width: "100%" }}
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
                 >
-                  <option value="none">None</option>
-                  <option value="sem">SEM</option>
-                  <option value="sd">SD</option>
-                </select>
+                  {(["none", "sem", "sd"] as const).map((mode) => {
+                    const active = vis.insetErrorType === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => updVis({ insetErrorType: mode })}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {mode === "none" ? "None" : mode === "sem" ? "SEM" : "SD"}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               {vis.insetErrorType !== "none" && (
                 <SliderControl

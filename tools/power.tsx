@@ -236,41 +236,39 @@ function EffectSizePanel({ testKey, effectSize, onEffectChange, disabled }) {
   return (
     <div style={{ opacity: disabled ? 0.4 : 1 }}>
       {/* Mode toggle */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 6 }}>
-        <div
-          style={{
-            padding: "5px 8px",
-            borderRadius: 4,
-            fontSize: 11,
-            cursor: "pointer",
-            background: mode === "helper" ? "var(--step-active-bg)" : "var(--surface-sunken)",
-            color: mode === "helper" ? "var(--on-accent)" : "var(--text-muted)",
-            fontWeight: mode === "helper" ? 700 : 400,
-            flex: 1,
-            textAlign: "center",
-            boxSizing: "border-box",
-          }}
-          onClick={() => setMode("helper")}
-        >
-          From my data
-        </div>
-        <div
-          style={{
-            padding: "5px 8px",
-            borderRadius: 4,
-            fontSize: 11,
-            cursor: "pointer",
-            background: mode === "direct" ? "var(--step-active-bg)" : "var(--surface-sunken)",
-            color: mode === "direct" ? "var(--on-accent)" : "var(--text-muted)",
-            fontWeight: mode === "direct" ? 700 : 400,
-            flex: 1,
-            textAlign: "center",
-            boxSizing: "border-box",
-          }}
-          onClick={() => setMode("direct")}
-        >
-          Direct value
-        </div>
+      <div
+        style={{
+          display: "flex",
+          borderRadius: 6,
+          overflow: "hidden",
+          border: "1px solid var(--border-strong)",
+          marginBottom: 6,
+        }}
+      >
+        {(["helper", "direct"] as const).map((m) => {
+          const active = mode === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              style={{
+                flex: 1,
+                padding: "4px 0",
+                fontSize: 11,
+                fontWeight: active ? 700 : 400,
+                fontFamily: "inherit",
+                cursor: "pointer",
+                border: "none",
+                background: active ? "var(--accent-primary)" : "var(--surface)",
+                color: active ? "var(--on-accent)" : "var(--text-muted)",
+                transition: "background 120ms ease, color 120ms ease",
+              }}
+            >
+              {m === "helper" ? "From my data" : "Direct value"}
+            </button>
+          );
+        })}
       </div>
 
       {mode === "helper" && testKey === "t-ind" && (
@@ -759,20 +757,6 @@ function App() {
   }, []);
 
   const inputStyle = { width: "100%" };
-  const chipStyle = (active: boolean): React.CSSProperties => ({
-    padding: "4px 8px",
-    borderRadius: 4,
-    fontSize: 12,
-    cursor: "pointer",
-    border: active ? "1px solid var(--step-active-border)" : "1px solid var(--border-strong)",
-    background: active ? "var(--step-active-bg)" : "var(--surface)",
-    fontWeight: active ? 600 : 400,
-    color: active ? "var(--on-accent)" : "var(--text)",
-    fontFamily: "inherit",
-    flex: 1,
-    textAlign: "center",
-    boxSizing: "border-box",
-  });
 
   return (
     <div style={{ maxWidth: 960, padding: "24px 32px" }}>
@@ -811,15 +795,43 @@ function App() {
           <div className="dv-label" style={{ marginBottom: 6 }}>
             What do you need to find?
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {[
-              ["n", "Sample size"],
-              ["power", "Power"],
-            ].map(([key, label]) => (
-              <div key={key} style={chipStyle(solveFor === key)} onClick={() => setSolveFor(key)}>
-                {label}
-              </div>
-            ))}
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(
+              [
+                ["n", "Sample size"],
+                ["power", "Power"],
+              ] as const
+            ).map(([key, label]) => {
+              const active = solveFor === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSolveFor(key)}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -870,51 +882,123 @@ function App() {
             {/* Significance */}
             <div>
               <div className="dv-label">Significance level (α)</div>
-              <select
-                value={alphaInput}
-                onChange={(e) => setAlphaInput(e.target.value)}
-                className="dv-select"
-                style={{ width: "100%" }}
+              <div
+                style={{
+                  display: "flex",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: "1px solid var(--border-strong)",
+                }}
               >
-                <option value="0.10">0.10</option>
-                <option value="0.05">0.05</option>
-                <option value="0.01">0.01</option>
-                <option value="0.001">0.001</option>
-              </select>
+                {(["0.10", "0.05", "0.01", "0.001"] as const).map((a) => {
+                  const active = alphaInput === a;
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => setAlphaInput(a)}
+                      style={{
+                        flex: 1,
+                        padding: "4px 0",
+                        fontSize: 11,
+                        fontWeight: active ? 700 : 400,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        border: "none",
+                        background: active ? "var(--accent-primary)" : "var(--surface)",
+                        color: active ? "var(--on-accent)" : "var(--text-muted)",
+                        transition: "background 120ms ease, color 120ms ease",
+                      }}
+                    >
+                      {a}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Power */}
             <div style={{ opacity: solveFor === "power" ? 0.4 : 1 }}>
               <div className="dv-label">Desired power (1 − β)</div>
-              <select
-                value={powerInput}
-                onChange={(e) => setPowerInput(e.target.value)}
-                disabled={solveFor === "power"}
-                className="dv-select"
-                style={{ width: "100%" }}
+              <div
+                style={{
+                  display: "flex",
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  border: "1px solid var(--border-strong)",
+                  pointerEvents: solveFor === "power" ? "none" : "auto",
+                }}
               >
-                <option value="0.70">0.70</option>
-                <option value="0.80">0.80 (standard)</option>
-                <option value="0.90">0.90</option>
-                <option value="0.95">0.95</option>
-              </select>
+                {(["0.70", "0.80", "0.90", "0.95"] as const).map((p) => {
+                  const active = powerInput === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPowerInput(p)}
+                      disabled={solveFor === "power"}
+                      title={p === "0.80" ? "0.80 (standard)" : undefined}
+                      style={{
+                        flex: 1,
+                        padding: "4px 0",
+                        fontSize: 11,
+                        fontWeight: active ? 700 : 400,
+                        fontFamily: "inherit",
+                        cursor: solveFor === "power" ? "not-allowed" : "pointer",
+                        border: "none",
+                        background: active ? "var(--accent-primary)" : "var(--surface)",
+                        color: active ? "var(--on-accent)" : "var(--text-muted)",
+                        transition: "background 120ms ease, color 120ms ease",
+                      }}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Tails */}
             {testKey !== "anova" && testKey !== "chi2" && (
               <div>
                 <div className="dv-label">Direction of the test</div>
-                <div style={{ display: "flex", gap: 6 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
                   {(
                     [
                       [2, "Two-sided"],
                       [1, "One-sided"],
                     ] as const
-                  ).map(([t, label]) => (
-                    <div key={t} style={chipStyle(tails === t)} onClick={() => setTails(t)}>
-                      {label}
-                    </div>
-                  ))}
+                  ).map(([t, label]) => {
+                    const active = tails === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTails(t)}
+                        style={{
+                          flex: 1,
+                          padding: "4px 0",
+                          fontSize: 11,
+                          fontWeight: active ? 700 : 400,
+                          fontFamily: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          background: active ? "var(--accent-primary)" : "var(--surface)",
+                          color: active ? "var(--on-accent)" : "var(--text-muted)",
+                          transition: "background 120ms ease, color 120ms ease",
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
                 <div style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 4 }}>
                   Two-sided: the difference could go either way. One-sided: you expect a specific
