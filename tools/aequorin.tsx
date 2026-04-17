@@ -3033,7 +3033,8 @@ function App() {
         }
       });
     if (isFinite(lo) && isFinite(hi)) {
-      updVis({ yMin: Math.max(0, lo * 0.9), yMax: hi * 1.1 });
+      const round2 = (v) => Math.round(v * 100) / 100;
+      updVis({ yMin: round2(Math.max(0, lo * 0.9)), yMax: round2(hi * 1.1) });
     }
   }, [formula, calData, vis.xStart, vis.xEnd]);
 

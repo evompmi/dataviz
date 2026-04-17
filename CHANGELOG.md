@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Aequorin Y-axis auto-rescale rounds to 2 decimals** — when adjusting the X window, the recomputed `yMin`/`yMax` were writing 10+ decimal floats into the number inputs. Values are now rounded to `X.XX` so the controls stay legible.
 - **Scatter regression default colour is a hex literal** — was leaking `var(--danger-text)` into SVG exports (CSS vars don't belong inside charts per CLAUDE.md).
 - **Aequorin inset barplot CLD letters now display (#1)** — `InsetBarplot` was reading `annotations.letters`; `StatsTile` emits `labels`. Letters also moved to a fixed row under the plot frame, matching boxplot.
 - **Group Plot enforces one `value` column** — configure step was letting users assign `value` to multiple columns; only the first drove the plot. Now demotes prior assignments to `filter`, matching the existing `group` rule.
