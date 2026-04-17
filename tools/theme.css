@@ -22,6 +22,7 @@
   /* Borders */
   --border: #dddddd;
   --border-strong: #cccccc;
+  --slider-track: #d1d5db;
 
   /* Accents */
   --accent-primary: #648fff;
@@ -110,6 +111,7 @@
 
   --border: #2e2f3a;
   --border-strong: #3e3f4c;
+  --slider-track: #2e2f3a;
 
   --danger-bg: #2a1517;
   --danger-text: #f87171;
@@ -186,6 +188,7 @@
 
     --border: #2e2f3a;
     --border-strong: #3e3f4c;
+    --slider-track: #2e2f3a;
 
     --danger-bg: #2a1517;
     --danger-text: #f87171;
