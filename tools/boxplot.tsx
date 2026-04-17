@@ -1818,6 +1818,45 @@ function OutputStep({
   );
 }
 
+function ControlSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children?: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div className="dv-panel" style={{ marginBottom: 6, padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "7px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+        }}
+      >
+        <span
+          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+          aria-hidden="true"
+        />
+        {title}
+      </button>
+      {open && <div style={{ padding: "0 10px 10px" }}>{children}</div>}
+    </div>
+  );
+}
+
 function PlotControls({
   dataFormat,
   setDataFormat,
@@ -1944,16 +1983,10 @@ function PlotControls({
         />
       </div>
 
-      {/* Style controls */}
+      {/* Plot style — always visible */}
       <div
         className="dv-panel"
-        style={{
-          padding: 12,
-          marginBottom: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 9,
-        }}
+        style={{ padding: 12, marginBottom: 0, display: "flex", flexDirection: "column", gap: 9 }}
       >
         <div>
           <div className="dv-label">Plot style</div>
@@ -1969,15 +2002,7 @@ function PlotControls({
             <option value="bar">Bar chart (mean ± error)</option>
           </select>
         </div>
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            cursor: "pointer",
-            marginBottom: 4,
-          }}
-        >
+        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
           <input
             type="checkbox"
             checked={vis.horizontal}
@@ -1986,6 +2011,10 @@ function PlotControls({
           />
           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Horizontal orientation</span>
         </label>
+      </div>
+
+      {/* Shape & fill */}
+      <ControlSection title="Shape & fill" defaultOpen>
         <BaseStyleControls
           plotBg={vis.plotBg}
           onPlotBgChange={sv("plotBg")}
@@ -2030,18 +2059,8 @@ function PlotControls({
               <select
                 value={vis.errorType}
                 onChange={(e) => updVis({ errorType: e.target.value })}
-                style={{
-                  width: "100%",
-                  background: "var(--surface)",
-                  border: "1px solid var(--border-strong)",
-                  borderRadius: 4,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  fontFamily: "inherit",
-                  color: "var(--text)",
-                  cursor: "pointer",
-                  marginTop: 2,
-                }}
+                className="dv-select"
+                style={{ width: "100%", fontSize: 11, marginTop: 2 }}
               >
                 <option value="sem">SEM</option>
                 <option value="sd">SD</option>
@@ -2098,8 +2117,12 @@ function PlotControls({
             onChange={sv("boxFillOpacity")}
           />
         )}
+      </ControlSection>
+
+      {/* Data points */}
+      <ControlSection title="Data points" defaultOpen>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span className="dv-label">Points</span>
+          <span className="dv-label">Show points</span>
           <input
             type="checkbox"
             checked={vis.showPoints}
@@ -2186,62 +2209,84 @@ function PlotControls({
             />
           </>
         )}
-        <SliderControl
-          label="X angle"
-          value={vis.xLabelAngle}
-          displayValue={vis.xLabelAngle + "°"}
-          min={-90}
-          max={0}
-          step={5}
-          onChange={sv("xLabelAngle")}
-        />
-        <div>
-          <div className="dv-label">Facet by</div>
-          <select
-            value={facetByCol}
-            onChange={(e) => setFacetByCol(Number(e.target.value))}
-            className="dv-input"
-            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
-            disabled={subgroupByCol >= 0}
-          >
-            <option value={-1}>— none —</option>
-            {colorByCandidates.map((ci) => (
-              <option key={ci} value={ci}>
-                {colNames[ci]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <div className="dv-label">Subgroup by</div>
-          <select
-            value={subgroupByCol}
-            onChange={(e) => setSubgroupByCol(Number(e.target.value))}
-            className="dv-input"
-            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
-            disabled={facetByCol >= 0}
-          >
-            <option value={-1}>— none —</option>
-            {colorByCandidates.map((ci) => (
-              <option key={ci} value={ci}>
-                {colNames[ci]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      </ControlSection>
 
-      {/* Plot params */}
-      <div
-        className="dv-panel"
-        style={{
-          padding: 12,
-          marginBottom: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
+      {/* Split by */}
+      <ControlSection title="Split by" defaultOpen>
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 6,
+            overflow: "hidden",
+            border: "1px solid var(--border-strong)",
+            marginBottom: facetByCol >= 0 || subgroupByCol >= 0 ? 6 : 0,
+          }}
+        >
+          {(["none", "facet", "subgroup"] as const).map((mode) => {
+            const active =
+              mode === "facet"
+                ? facetByCol >= 0
+                : mode === "subgroup"
+                  ? subgroupByCol >= 0
+                  : facetByCol < 0 && subgroupByCol < 0;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => {
+                  if (mode === "none") {
+                    setFacetByCol(-1);
+                    setSubgroupByCol(-1);
+                  } else if (mode === "facet") {
+                    setSubgroupByCol(-1);
+                    if (facetByCol < 0 && colorByCandidates.length > 0)
+                      setFacetByCol(colorByCandidates[0]);
+                  } else {
+                    setFacetByCol(-1);
+                    if (subgroupByCol < 0 && colorByCandidates.length > 0)
+                      setSubgroupByCol(colorByCandidates[0]);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: "4px 0",
+                  fontSize: 11,
+                  fontWeight: active ? 700 : 400,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  border: "none",
+                  background: active ? "var(--accent-primary)" : "var(--surface)",
+                  color: active ? "var(--on-accent)" : "var(--text-muted)",
+                  transition: "background 120ms ease, color 120ms ease",
+                }}
+              >
+                {mode === "none" ? "None" : mode === "facet" ? "Facet" : "Subgroup"}
+              </button>
+            );
+          })}
+        </div>
+        {(facetByCol >= 0 || subgroupByCol >= 0) && (
+          <select
+            value={facetByCol >= 0 ? facetByCol : subgroupByCol}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (facetByCol >= 0) setFacetByCol(v);
+              else setSubgroupByCol(v);
+            }}
+            className="dv-input"
+            style={{ cursor: "pointer", fontSize: 11, width: "100%" }}
+          >
+            {colorByCandidates.map((ci) => (
+              <option key={ci} value={ci}>
+                {colNames[ci]}
+              </option>
+            ))}
+          </select>
+        )}
+      </ControlSection>
+
+      {/* Axes & labels */}
+      <ControlSection title="Axes & labels">
         <div>
           <div className="dv-label">Title</div>
           <input
@@ -2296,7 +2341,16 @@ function PlotControls({
             <option value="ln">{" Ln (natural)"}</option>
           </select>
         </div>
-      </div>
+        <SliderControl
+          label="Group label angle"
+          value={vis.xLabelAngle}
+          displayValue={vis.xLabelAngle + "°"}
+          min={-90}
+          max={0}
+          step={5}
+          onChange={sv("xLabelAngle")}
+        />
+      </ControlSection>
     </div>
   );
 }
