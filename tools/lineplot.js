@@ -6,139 +6,139 @@ const { useState, useEffect, useRef, useReducer, useMemo, useCallback, forwardRe
     { value: "sd", label: "SD" },
     { value: "ci95", label: "95% CI" },
   ],
-  round4 = (n) => Math.round(n * 1e4) / 1e4;
-function buildLineD(n) {
-  const o = n.filter((d) => d.y != null);
-  return o.length < 2 ? "" : "M" + o.map((d) => `${d.x.toFixed(2)},${d.y.toFixed(2)}`).join("L");
+  round4 = (l) => Math.round(l * 1e4) / 1e4;
+function buildLineD(l) {
+  const o = l.filter((c) => c.y != null);
+  return o.length < 2 ? "" : "M" + o.map((c) => `${c.x.toFixed(2)},${c.y.toFixed(2)}`).join("L");
 }
-function formatX(n) {
-  return n == null || !Number.isFinite(n) || Number.isInteger(n) ? String(n) : String(round4(n));
+function formatX(l) {
+  return l == null || !Number.isFinite(l) || Number.isInteger(l) ? String(l) : String(round4(l));
 }
-function runChosenTest(n, o) {
+function runChosenTest(l, o) {
   try {
-    return n === "studentT"
+    return l === "studentT"
       ? tTest(o[0], o[1], { equalVar: !0 })
-      : n === "welchT"
+      : l === "welchT"
         ? tTest(o[0], o[1], { equalVar: !1 })
-        : n === "mannWhitney"
+        : l === "mannWhitney"
           ? mannWhitneyU(o[0], o[1])
-          : n === "oneWayANOVA"
+          : l === "oneWayANOVA"
             ? oneWayANOVA(o)
-            : n === "welchANOVA"
+            : l === "welchANOVA"
               ? welchANOVA(o)
-              : n === "kruskalWallis"
+              : l === "kruskalWallis"
                 ? kruskalWallis(o)
                 : { error: "unknown test" };
-  } catch (d) {
-    return { error: String((d && d.message) || d) };
+  } catch (c) {
+    return { error: String((c && c.message) || c) };
   }
 }
-function computeSeries(n, o, d, m, v, k, N) {
+function computeSeries(l, o, c, g, b, N, m) {
   const i = [],
     a = new Map();
-  for (let g = 0; g < n.length; g++) {
-    const f = n[g][d],
-      u = n[g][m];
+  for (let x = 0; x < l.length; x++) {
+    const f = l[x][c],
+      u = l[x][g];
     if (f == null || u == null || !Number.isFinite(f) || !Number.isFinite(u)) continue;
-    const t = v == null ? "(all)" : String(o[g][v] ?? "");
+    const t = b == null ? "(all)" : String(o[x][b] ?? "");
     a.has(t) || (a.set(t, new Map()), i.push(t));
     const p = a.get(t);
     (p.has(f) || p.set(f, []), p.get(f).push(u));
   }
-  return i.map((g, f) => {
-    const u = a.get(g),
+  return i.map((x, f) => {
+    const u = a.get(x),
       p = [...u.keys()]
-        .sort((c, w) => c - w)
-        .map((c) => {
-          const w = u.get(c),
-            y = w.length,
-            E = sampleMean(w),
-            b = y > 1 ? sampleSD(w) : 0,
-            F = y > 1 ? b / Math.sqrt(y) : 0,
-            W = y > 1 ? tinv(0.975, y - 1) * F : 0;
-          return { x: c, values: w, n: y, mean: E, sd: b, sem: F, ci95: W };
+        .sort((d, k) => d - k)
+        .map((d) => {
+          const k = u.get(d),
+            y = k.length,
+            F = sampleMean(k),
+            S = y > 1 ? sampleSD(k) : 0,
+            T = y > 1 ? S / Math.sqrt(y) : 0,
+            L = y > 1 ? tinv(0.975, y - 1) * T : 0;
+          return { x: d, values: k, n: y, mean: F, sd: S, sem: T, ci95: L };
         });
-    return { name: g, color: k[g] || N[f % N.length], points: p };
+    return { name: x, color: N[x] || m[f % m.length], points: p };
   });
 }
-function computePerXStats(n) {
+function computePerXStats(l) {
   const o = new Set();
-  for (const i of n) for (const a of i.points) o.add(a.x);
-  const d = [...o].sort((i, a) => i - a),
-    m = [];
-  for (const i of d) {
+  for (const i of l) for (const a of i.points) o.add(a.x);
+  const c = [...o].sort((i, a) => i - a),
+    g = [];
+  for (const i of c) {
     const a = [];
-    for (const c of n) {
-      const w = c.points.find((y) => y.x === i);
-      w && w.n >= 2 && a.push({ name: c.name, values: w.values });
+    for (const d of l) {
+      const k = d.points.find((y) => y.x === i);
+      k && k.n >= 2 && a.push({ name: d.name, values: k.values });
     }
     if (a.length < 2) continue;
-    const g = a.map((c) => c.values),
-      f = a.map((c) => c.name),
-      u = selectTest(g),
+    const x = a.map((d) => d.values),
+      f = a.map((d) => d.name),
+      u = selectTest(x),
       t = u && u.recommendation && u.recommendation.test ? u.recommendation.test : null,
-      p = t ? runChosenTest(t, g) : null;
-    m.push({ x: i, names: f, values: g, chosenTest: t, result: p });
+      p = t ? runChosenTest(t, x) : null;
+    g.push({ x: i, names: f, values: x, chosenTest: t, result: p });
   }
-  const v = [],
-    k = [];
-  m.forEach((i, a) => {
-    i.result && !i.result.error && Number.isFinite(i.result.p) && (v.push(a), k.push(i.result.p));
+  const b = [],
+    N = [];
+  g.forEach((i, a) => {
+    i.result && !i.result.error && Number.isFinite(i.result.p) && (b.push(a), N.push(i.result.p));
   });
-  const N = k.length > 0 ? bhAdjust(k) : [];
-  return (m.forEach((i) => (i.pAdj = null)), v.forEach((i, a) => (m[i].pAdj = N[a])), m);
+  const m = N.length > 0 ? bhAdjust(N) : [];
+  return (g.forEach((i) => (i.pAdj = null)), b.forEach((i, a) => (g[i].pAdj = m[a])), g);
 }
 const Chart = forwardRef(function (
   {
     series: o,
-    perXStats: d,
-    xMin: m,
-    xMax: v,
-    yMin: k,
-    yMax: N,
+    perXStats: c,
+    xMin: g,
+    xMax: b,
+    yMin: N,
+    yMax: m,
     vbW: i,
     vbH: a,
-    xLabel: g,
+    xLabel: x,
     yLabel: f,
     plotTitle: u,
     plotSubtitle: t,
     plotBg: p,
-    showGrid: c,
-    gridColor: w,
+    showGrid: d,
+    gridColor: k,
     lineWidth: y,
-    pointRadius: E,
-    errorStrokeWidth: b,
-    errorCapWidth: F,
-    errorType: W,
-    svgLegend: H,
-    showStars: z,
+    pointRadius: F,
+    errorStrokeWidth: S,
+    errorCapWidth: T,
+    errorType: L,
+    svgLegend: Y,
+    showStars: X,
   },
   K
 ) {
-  const l = (e) => {
-      const S = Math.max(0, ...(e.items || []).map((I) => (I.label || "").length));
-      return Math.max(110, S * 6 + 28);
+  const n = (e) => {
+      const w = Math.max(0, ...(e.items || []).map((R) => (R.label || "").length));
+      return Math.max(110, w * 6 + 28);
     },
-    D = computeLegendHeight(H, i - MARGIN.left - MARGIN.right, l),
-    x = (u ? 20 : 0) + (t ? 16 : 0),
-    L = z && d.some((e) => e.pAdj != null) ? STAR_ROW_H : 0,
-    P = i - MARGIN.left - MARGIN.right,
+    B = computeLegendHeight(Y, i - MARGIN.left - MARGIN.right, n),
+    v = (u ? 20 : 0) + (t ? 16 : 0),
+    W = X && c.some((e) => e.pAdj != null) ? STAR_ROW_H : 0,
+    I = i - MARGIN.left - MARGIN.right,
     U = a - MARGIN.top - MARGIN.bottom,
-    M = MARGIN.top + L,
-    s = U - L,
-    q = v - m || 1,
-    V = N - k || 1,
-    O = (e) => MARGIN.left + ((e - m) / q) * P,
-    C = (e) => M + (1 - (e - k) / V) * s,
-    ee = (e) => Math.max(k, Math.min(N, e)),
-    te = makeTicks(m, v, 8),
-    X = makeTicks(k, N, 6),
-    ne = (e) => (W === "sd" ? e.sd : W === "ci95" ? e.ci95 : e.sem);
+    M = MARGIN.top + W,
+    r = U - W,
+    q = b - g || 1,
+    Z = m - N || 1,
+    z = (e) => MARGIN.left + ((e - g) / q) * I,
+    C = (e) => M + (1 - (e - N) / Z) * r,
+    ee = (e) => Math.max(N, Math.min(m, e)),
+    te = makeTicks(g, b, 8),
+    j = makeTicks(N, m, 6),
+    le = (e) => (L === "sd" ? e.sd : L === "ci95" ? e.ci95 : e.sem);
   return React.createElement(
     "svg",
     {
       ref: K,
-      viewBox: `0 0 ${i} ${a + D + x}`,
+      viewBox: `0 0 ${i} ${a + B + v}`,
       style: { width: "100%", height: "auto", display: "block" },
       xmlns: "http://www.w3.org/2000/svg",
       role: "img",
@@ -187,38 +187,38 @@ const Chart = forwardRef(function (
       ),
     React.createElement(
       "g",
-      { id: "chart", transform: `translate(0, ${x})` },
+      { id: "chart", transform: `translate(0, ${v})` },
       React.createElement("rect", {
         id: "plot-area-background",
         x: MARGIN.left,
         y: MARGIN.top,
-        width: P,
+        width: I,
         height: U,
         fill: p || "#fff",
       }),
-      c &&
+      d &&
         React.createElement(
           "g",
           { id: "grid" },
-          X.map((e) =>
+          j.map((e) =>
             React.createElement("line", {
               key: `gy-${e}`,
               x1: MARGIN.left,
-              x2: MARGIN.left + P,
+              x2: MARGIN.left + I,
               y1: C(e),
               y2: C(e),
-              stroke: w || "#e0e0e0",
+              stroke: k || "#e0e0e0",
               strokeWidth: "0.5",
             })
           ),
           te.map((e) =>
             React.createElement("line", {
               key: `gx-${e}`,
-              x1: O(e),
-              x2: O(e),
+              x1: z(e),
+              x2: z(e),
               y1: M,
-              y2: M + s,
-              stroke: w || "#e0e0e0",
+              y2: M + r,
+              stroke: k || "#e0e0e0",
               strokeWidth: "0.5",
             })
           )
@@ -227,13 +227,13 @@ const Chart = forwardRef(function (
         "g",
         { id: "traces" },
         o.map((e) => {
-          const S = e.points.map((_) => ({ x: O(_.x), y: _.mean != null ? C(_.mean) : null })),
-            I = buildLineD(S);
-          return I
+          const w = e.points.map(($) => ({ x: z($.x), y: $.mean != null ? C($.mean) : null })),
+            R = buildLineD(w);
+          return R
             ? React.createElement("path", {
                 key: `line-${e.name}`,
                 id: `trace-${svgSafeId(e.name)}`,
-                d: I,
+                d: R,
                 fill: "none",
                 stroke: e.color,
                 strokeWidth: y,
@@ -248,40 +248,40 @@ const Chart = forwardRef(function (
           React.createElement(
             "g",
             { key: `errs-${e.name}`, id: `errbars-${svgSafeId(e.name)}` },
-            e.points.map((S, I) => {
-              if (S.n < 2 || S.mean == null) return null;
-              const _ = ne(S);
-              if (!_ || !Number.isFinite(_)) return null;
-              const Y = O(S.x),
-                J = C(ee(S.mean + _)),
-                r = C(ee(S.mean - _)),
-                h = F / 2;
+            e.points.map((w, R) => {
+              if (w.n < 2 || w.mean == null) return null;
+              const $ = le(w);
+              if (!$ || !Number.isFinite($)) return null;
+              const H = z(w.x),
+                V = C(ee(w.mean + $)),
+                s = C(ee(w.mean - $)),
+                h = T / 2;
               return React.createElement(
                 "g",
-                { key: `err-${I}` },
+                { key: `err-${R}` },
                 React.createElement("line", {
-                  x1: Y,
-                  x2: Y,
-                  y1: J,
-                  y2: r,
+                  x1: H,
+                  x2: H,
+                  y1: V,
+                  y2: s,
                   stroke: e.color,
-                  strokeWidth: b,
+                  strokeWidth: S,
                 }),
                 React.createElement("line", {
-                  x1: Y - h,
-                  x2: Y + h,
-                  y1: J,
-                  y2: J,
+                  x1: H - h,
+                  x2: H + h,
+                  y1: V,
+                  y2: V,
                   stroke: e.color,
-                  strokeWidth: b,
+                  strokeWidth: S,
                 }),
                 React.createElement("line", {
-                  x1: Y - h,
-                  x2: Y + h,
-                  y1: r,
-                  y2: r,
+                  x1: H - h,
+                  x2: H + h,
+                  y1: s,
+                  y2: s,
                   stroke: e.color,
-                  strokeWidth: b,
+                  strokeWidth: S,
                 })
               );
             })
@@ -295,14 +295,14 @@ const Chart = forwardRef(function (
           React.createElement(
             "g",
             { key: `pts-${e.name}`, id: `points-${svgSafeId(e.name)}` },
-            e.points.map((S, I) =>
-              S.mean == null
+            e.points.map((w, R) =>
+              w.mean == null
                 ? null
                 : React.createElement("circle", {
-                    key: `pt-${I}`,
-                    cx: O(S.x),
-                    cy: C(S.mean),
-                    r: E,
+                    key: `pt-${R}`,
+                    cx: z(w.x),
+                    cy: C(w.mean),
+                    r: F,
                     fill: e.color,
                     stroke: "#fff",
                     strokeWidth: "0.5",
@@ -311,21 +311,21 @@ const Chart = forwardRef(function (
           )
         )
       ),
-      z &&
-        L > 0 &&
+      X &&
+        W > 0 &&
         React.createElement(
           "g",
           { id: "significance-stars" },
-          d.map((e, S) => {
+          c.map((e, w) => {
             if (e.pAdj == null) return null;
-            const I = pStars(e.pAdj);
-            return !I || I === "ns"
+            const R = pStars(e.pAdj);
+            return !R || R === "ns"
               ? null
               : React.createElement(
                   "text",
                   {
-                    key: `star-${S}`,
-                    x: O(e.x),
+                    key: `star-${w}`,
+                    x: z(e.x),
                     y: MARGIN.top + 14,
                     textAnchor: "middle",
                     fontSize: "13",
@@ -333,17 +333,17 @@ const Chart = forwardRef(function (
                     fill: "#222",
                     fontFamily: "sans-serif",
                   },
-                  I
+                  R
                 );
           })
         ),
       React.createElement(
         "g",
         { id: "plot-frame", fill: "none", stroke: "#333", strokeWidth: "1" },
-        React.createElement("line", { x1: MARGIN.left, y1: M, x2: MARGIN.left + P, y2: M }),
-        React.createElement("line", { x1: MARGIN.left + P, y1: M, x2: MARGIN.left + P, y2: M + s }),
-        React.createElement("line", { x1: MARGIN.left, y1: M + s, x2: MARGIN.left + P, y2: M + s }),
-        React.createElement("line", { x1: MARGIN.left, y1: M, x2: MARGIN.left, y2: M + s })
+        React.createElement("line", { x1: MARGIN.left, y1: M, x2: MARGIN.left + I, y2: M }),
+        React.createElement("line", { x1: MARGIN.left + I, y1: M, x2: MARGIN.left + I, y2: M + r }),
+        React.createElement("line", { x1: MARGIN.left, y1: M + r, x2: MARGIN.left + I, y2: M + r }),
+        React.createElement("line", { x1: MARGIN.left, y1: M, x2: MARGIN.left, y2: M + r })
       ),
       React.createElement(
         "g",
@@ -353,18 +353,18 @@ const Chart = forwardRef(function (
             "g",
             { key: e },
             React.createElement("line", {
-              x1: O(e),
-              x2: O(e),
-              y1: M + s,
-              y2: M + s + 5,
+              x1: z(e),
+              x2: z(e),
+              y1: M + r,
+              y2: M + r + 5,
               stroke: "#333",
               strokeWidth: "1",
             }),
             React.createElement(
               "text",
               {
-                x: O(e),
-                y: M + s + 18,
+                x: z(e),
+                y: M + r + 18,
                 textAnchor: "middle",
                 fontSize: "11",
                 fill: "#555",
@@ -378,7 +378,7 @@ const Chart = forwardRef(function (
       React.createElement(
         "g",
         { id: "axis-y" },
-        X.map((e) =>
+        j.map((e) =>
           React.createElement(
             "g",
             { key: e },
@@ -405,21 +405,21 @@ const Chart = forwardRef(function (
           )
         )
       ),
-      g &&
+      x &&
         React.createElement(
           "g",
           { id: "x-axis-label" },
           React.createElement(
             "text",
             {
-              x: MARGIN.left + P / 2,
+              x: MARGIN.left + I / 2,
               y: a - 4,
               textAnchor: "middle",
               fontSize: "13",
               fill: "#444",
               fontFamily: "sans-serif",
             },
-            g
+            x
           )
         ),
       f &&
@@ -429,7 +429,7 @@ const Chart = forwardRef(function (
           React.createElement(
             "text",
             {
-              transform: `translate(14,${M + s / 2}) rotate(-90)`,
+              transform: `translate(14,${M + r / 2}) rotate(-90)`,
               textAnchor: "middle",
               fontSize: "13",
               fill: "#444",
@@ -438,19 +438,19 @@ const Chart = forwardRef(function (
             f
           )
         ),
-      renderSvgLegend(H, a + 10, MARGIN.left, i - MARGIN.left - MARGIN.right, l)
+      renderSvgLegend(Y, a + 10, MARGIN.left, i - MARGIN.left - MARGIN.right, n)
     )
   );
 });
-function ControlSection({ title: n, defaultOpen: o = !1, children: d }) {
-  const [m, v] = useState(o);
+function ControlSection({ title: l, defaultOpen: o = !1, children: c }) {
+  const [g, b] = useState(o);
   return React.createElement(
     "div",
     { className: "dv-panel", style: { marginBottom: 0, padding: 0 } },
     React.createElement(
       "button",
       {
-        onClick: () => v(!m),
+        onClick: () => b(!g),
         style: {
           display: "flex",
           alignItems: "center",
@@ -467,51 +467,265 @@ function ControlSection({ title: n, defaultOpen: o = !1, children: d }) {
         },
       },
       React.createElement("span", {
-        className: "dv-disclosure" + (m ? " dv-disclosure-open" : ""),
+        className: "dv-disclosure" + (g ? " dv-disclosure-open" : ""),
         "aria-hidden": "true",
       }),
-      n
+      l
     ),
-    m &&
+    g &&
       React.createElement(
         "div",
         { style: { padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 } },
-        d
+        c
       )
   );
 }
 function UploadStep({
-  sepOverride: n,
+  sepOverride: l,
   setSepOverride: o,
-  rawText: d,
-  doParse: m,
-  handleFileLoad: v,
-  onLoadExample: k,
+  rawText: c,
+  doParse: g,
+  handleFileLoad: b,
+  onLoadExample: N,
 }) {
-  return React.createElement(UploadPanel, {
-    sepOverride: n,
-    setSepOverride: o,
-    rawText: d,
-    doParse: m,
-    handleFileLoad: v,
-    onLoadExample: k,
-    tip: "Expects long-format data: one row per observation. You'll pick which columns are X, Y, and the grouping variable.",
-  });
+  return React.createElement(
+    "div",
+    null,
+    React.createElement(UploadPanel, {
+      sepOverride: l,
+      onSepChange: (m) => {
+        (o(m), c && g(c, m));
+      },
+      onFileLoad: b,
+      onLoadExample: N,
+      exampleLabel: "Bacterial growth curves (3 strains \xD7 5 timepoints \xD7 3 reps)",
+      hint: "CSV \xB7 TSV \xB7 TXT \u2014 one row per observation, columns for X, Y, and grouping variable",
+    }),
+    React.createElement(
+      "p",
+      {
+        style: {
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        },
+      },
+      "Max file size: 2 MB"
+    ),
+    React.createElement(
+      "div",
+      {
+        style: {
+          marginTop: 24,
+          borderRadius: 14,
+          overflow: "hidden",
+          border: "2px solid var(--howto-border)",
+          boxShadow: "var(--howto-shadow)",
+        },
+      },
+      React.createElement(
+        "div",
+        {
+          style: {
+            background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
+            padding: "14px 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          },
+        },
+        toolIcon("lineplot", 24, { circle: !0 }),
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "div",
+            { style: { color: "#fff", fontWeight: 700, fontSize: 15 } },
+            "Line Plot \u2014 How to use"
+          ),
+          React.createElement(
+            "div",
+            { style: { color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 } },
+            "Upload \u2192 Preview & pick X / Y / Group \u2192 Plot with per-x statistics"
+          )
+        )
+      ),
+      React.createElement(
+        "div",
+        {
+          style: {
+            background: "var(--info-bg)",
+            padding: "20px 24px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 14,
+          },
+        },
+        React.createElement(
+          "div",
+          {
+            style: {
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+              gridColumn: "1/-1",
+            },
+          },
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              },
+            },
+            "Data layout"
+          ),
+          React.createElement(
+            "p",
+            { style: { fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 } },
+            React.createElement("strong", null, "Long format"),
+            " \u2014 one ",
+            React.createElement("strong", null, "row"),
+            " per observation, with a numeric",
+            " ",
+            React.createElement("strong", null, "X"),
+            ", a numeric ",
+            React.createElement("strong", null, "Y"),
+            ", and a categorical",
+            " ",
+            React.createElement("strong", null, "group"),
+            " column. Replicates share the same (X, group) pair. Replicates are averaged to build the line; their spread becomes the error bar."
+          )
+        ),
+        React.createElement(
+          "div",
+          {
+            style: {
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+            },
+          },
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              },
+            },
+            "Error bars"
+          ),
+          React.createElement(
+            "p",
+            { style: { fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 } },
+            "Pick ",
+            React.createElement("strong", null, "SEM"),
+            " (default), ",
+            React.createElement("strong", null, "SD"),
+            ", or",
+            " ",
+            React.createElement("strong", null, "95% CI"),
+            ". CI uses the ",
+            React.createElement("em", null, "t"),
+            " quantile at ",
+            React.createElement("em", null, "n\u22121"),
+            " degrees of freedom. Error bars only render when a group has \u2265 2 replicates at that X."
+          )
+        ),
+        React.createElement(
+          "div",
+          {
+            style: {
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+            },
+          },
+          React.createElement(
+            "div",
+            {
+              style: {
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              },
+            },
+            "Per-x statistics"
+          ),
+          React.createElement(
+            "p",
+            { style: { fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 } },
+            "At every X shared by \u2265 2 groups, the right test is picked automatically (",
+            React.createElement("em", null, "t"),
+            " / Welch / Mann-Whitney; ANOVA / Welch-ANOVA / Kruskal-Wallis). P-values are",
+            " ",
+            React.createElement("strong", null, "BH-adjusted"),
+            " across the X-axis; stars mark significant points."
+          )
+        ),
+        React.createElement(
+          "div",
+          { style: { gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" } },
+          [
+            "Long-format (x, y, group)",
+            "SEM / SD / 95% CI",
+            "Per-x test auto-routing",
+            "BH-adjusted significance stars",
+            "Decision trace & R export",
+            "100% browser-side",
+          ].map((m) =>
+            React.createElement(
+              "span",
+              {
+                key: m,
+                style: {
+                  fontSize: 10,
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  background: "var(--surface)",
+                  border: "1px solid var(--info-border)",
+                  color: "var(--text-muted)",
+                },
+              },
+              m
+            )
+          )
+        )
+      )
+    )
+  );
 }
 function ConfigureStep({
-  parsed: n,
+  parsed: l,
   fileName: o,
-  xCol: d,
-  setXCol: m,
-  yCol: v,
-  setYCol: k,
-  groupCol: N,
+  xCol: c,
+  setXCol: g,
+  yCol: b,
+  setYCol: N,
+  groupCol: m,
   setGroupCol: i,
   numericCols: a,
-  categoricalCols: g,
+  categoricalCols: x,
   setStep: f,
 }) {
-  const u = d != null && v != null && a.length >= 2;
+  const u = c != null && b != null && a.length >= 2;
   return React.createElement(
     "div",
     { style: { display: "flex", flexDirection: "column", gap: 16 } },
@@ -537,9 +751,9 @@ function ConfigureStep({
           React.createElement("strong", { style: { color: "var(--text)" } }, o || "pasted data"),
           " \u2014",
           " ",
-          n.rawData.length,
+          l.rawData.length,
           " rows \xD7 ",
-          n.headers.length,
+          l.headers.length,
           " columns"
         ),
         React.createElement(
@@ -553,7 +767,7 @@ function ConfigureStep({
           "Plot \u2192"
         )
       ),
-      React.createElement(DataPreview, { headers: n.headers, rows: n.rawData, maxRows: 10 })
+      React.createElement(DataPreview, { headers: l.headers, rows: l.rawData, maxRows: 10 })
     ),
     React.createElement(
       "div",
@@ -581,12 +795,12 @@ function ConfigureStep({
           React.createElement(
             "select",
             {
-              value: d ?? "",
-              onChange: (t) => m(parseInt(t.target.value)),
+              value: c ?? "",
+              onChange: (t) => g(parseInt(t.target.value)),
               className: "dv-select",
               style: { width: "100%" },
             },
-            a.map((t) => React.createElement("option", { key: t, value: t }, n.headers[t]))
+            a.map((t) => React.createElement("option", { key: t, value: t }, l.headers[t]))
           )
         ),
         React.createElement(
@@ -596,12 +810,12 @@ function ConfigureStep({
           React.createElement(
             "select",
             {
-              value: v ?? "",
-              onChange: (t) => k(parseInt(t.target.value)),
+              value: b ?? "",
+              onChange: (t) => N(parseInt(t.target.value)),
               className: "dv-select",
               style: { width: "100%" },
             },
-            a.map((t) => React.createElement("option", { key: t, value: t }, n.headers[t]))
+            a.map((t) => React.createElement("option", { key: t, value: t }, l.headers[t]))
           )
         ),
         React.createElement(
@@ -611,13 +825,13 @@ function ConfigureStep({
           React.createElement(
             "select",
             {
-              value: N ?? "",
+              value: m ?? "",
               onChange: (t) => i(t.target.value === "" ? null : parseInt(t.target.value)),
               className: "dv-select",
               style: { width: "100%" },
             },
             React.createElement("option", { value: "" }, "(single line)"),
-            g.map((t) => React.createElement("option", { key: t, value: t }, n.headers[t]))
+            x.map((t) => React.createElement("option", { key: t, value: t }, l.headers[t]))
           )
         )
       ),
@@ -631,51 +845,51 @@ function ConfigureStep({
   );
 }
 function PlotControls({
-  parsed: n,
+  parsed: l,
   fileName: o,
-  xCol: d,
-  setXCol: m,
-  yCol: v,
-  setYCol: k,
-  groupCol: N,
+  xCol: c,
+  setXCol: g,
+  yCol: b,
+  setYCol: N,
+  groupCol: m,
   setGroupCol: i,
   numericCols: a,
-  categoricalCols: g,
+  categoricalCols: x,
   series: f,
   setGroupColor: u,
   vis: t,
   updVis: p,
-  autoAxis: c,
-  errorType: w,
+  autoAxis: d,
+  errorType: k,
   setErrorType: y,
-  showStars: E,
-  setShowStars: b,
-  statsRows: F,
-  svgRef: W,
-  resetAll: H,
+  showStars: F,
+  setShowStars: S,
+  statsRows: T,
+  svgRef: L,
+  resetAll: Y,
 }) {
-  const z = (l) => (D) => p({ [l]: D }),
+  const X = (n) => (B) => p({ [n]: B }),
     K = () => {
-      const l = ["x", "test", "statistic", "p", "p_adj", "stars"],
-        D = F.map((x) => {
-          const L =
-              x.result && !x.result.error
-                ? x.result.t != null
-                  ? x.result.t
-                  : x.result.U != null
-                    ? x.result.U
-                    : x.result.F != null
-                      ? x.result.F
-                      : x.result.H != null
-                        ? x.result.H
+      const n = ["x", "test", "statistic", "p", "p_adj", "stars"],
+        B = T.map((v) => {
+          const W =
+              v.result && !v.result.error
+                ? v.result.t != null
+                  ? v.result.t
+                  : v.result.U != null
+                    ? v.result.U
+                    : v.result.F != null
+                      ? v.result.F
+                      : v.result.H != null
+                        ? v.result.H
                         : ""
                 : "",
-            P = x.result && !x.result.error ? x.result.p : "",
-            U = x.pAdj != null ? x.pAdj : "",
-            M = x.pAdj != null ? pStars(x.pAdj) : "";
-          return [formatX(x.x), x.chosenTest || "", L, P, U, M];
+            I = v.result && !v.result.error ? v.result.p : "",
+            U = v.pAdj != null ? v.pAdj : "",
+            M = v.pAdj != null ? pStars(v.pAdj) : "";
+          return [formatX(v.x), v.chosenTest || "", W, I, U, M];
         });
-      downloadCsv(l, D, `${fileBaseName(o, "lineplot")}_stats.csv`);
+      downloadCsv(n, B, `${fileBaseName(o, "lineplot")}_stats.csv`);
     };
   return React.createElement(
     "div",
@@ -693,10 +907,10 @@ function PlotControls({
       },
     },
     React.createElement(ActionsPanel, {
-      onDownloadSvg: () => downloadSvg(W.current, `${fileBaseName(o, "lineplot")}_lineplot.svg`),
-      onDownloadPng: () => downloadPng(W.current, `${fileBaseName(o, "lineplot")}_lineplot.png`),
-      onReset: H,
-      extraDownloads: F.length > 0 ? [{ label: "Stats CSV", onClick: K }] : [],
+      onDownloadSvg: () => downloadSvg(L.current, `${fileBaseName(o, "lineplot")}_lineplot.svg`),
+      onDownloadPng: () => downloadPng(L.current, `${fileBaseName(o, "lineplot")}_lineplot.png`),
+      onReset: Y,
+      extraDownloads: T.length > 0 ? [{ label: "Stats CSV", onClick: K }] : [],
     }),
     React.createElement(
       ControlSection,
@@ -708,12 +922,12 @@ function PlotControls({
         React.createElement(
           "select",
           {
-            value: d,
-            onChange: (l) => m(parseInt(l.target.value)),
+            value: c,
+            onChange: (n) => g(parseInt(n.target.value)),
             className: "dv-select",
             style: { width: "100%" },
           },
-          a.map((l) => React.createElement("option", { key: l, value: l }, n.headers[l]))
+          a.map((n) => React.createElement("option", { key: n, value: n }, l.headers[n]))
         )
       ),
       React.createElement(
@@ -723,12 +937,12 @@ function PlotControls({
         React.createElement(
           "select",
           {
-            value: v,
-            onChange: (l) => k(parseInt(l.target.value)),
+            value: b,
+            onChange: (n) => N(parseInt(n.target.value)),
             className: "dv-select",
             style: { width: "100%" },
           },
-          a.map((l) => React.createElement("option", { key: l, value: l }, n.headers[l]))
+          a.map((n) => React.createElement("option", { key: n, value: n }, l.headers[n]))
         )
       ),
       React.createElement(
@@ -738,13 +952,13 @@ function PlotControls({
         React.createElement(
           "select",
           {
-            value: N ?? "",
-            onChange: (l) => i(l.target.value === "" ? null : parseInt(l.target.value)),
+            value: m ?? "",
+            onChange: (n) => i(n.target.value === "" ? null : parseInt(n.target.value)),
             className: "dv-select",
             style: { width: "100%" },
           },
           React.createElement("option", { value: "" }, "(single line)"),
-          g.map((l) => React.createElement("option", { key: l, value: l }, n.headers[l]))
+          x.map((n) => React.createElement("option", { key: n, value: n }, l.headers[n]))
         )
       )
     ),
@@ -760,15 +974,15 @@ function PlotControls({
         : React.createElement(
             "div",
             { style: { display: "flex", flexDirection: "column", gap: 6 } },
-            f.map((l) =>
+            f.map((n) =>
               React.createElement(
                 "div",
-                { key: l.name, style: { display: "flex", alignItems: "center", gap: 8 } },
-                React.createElement(ColorInput, { value: l.color, onChange: (D) => u(l.name, D) }),
+                { key: n.name, style: { display: "flex", alignItems: "center", gap: 8 } },
+                React.createElement(ColorInput, { value: n.color, onChange: (B) => u(n.name, B) }),
                 React.createElement(
                   "span",
                   { style: { fontSize: 12, color: "var(--text)" } },
-                  l.name
+                  n.name
                 )
               )
             )
@@ -780,16 +994,16 @@ function PlotControls({
       React.createElement(
         "div",
         { className: "dv-seg", role: "group", "aria-label": "Error bar type" },
-        ERROR_KINDS.map((l) =>
+        ERROR_KINDS.map((n) =>
           React.createElement(
             "button",
             {
-              key: l.value,
+              key: n.value,
               type: "button",
-              className: "dv-seg-btn" + (w === l.value ? " dv-seg-btn-active" : ""),
-              onClick: () => y(l.value),
+              className: "dv-seg-btn" + (k === n.value ? " dv-seg-btn-active" : ""),
+              onClick: () => y(n.value),
             },
-            l.label
+            n.label
           )
         )
       )
@@ -805,8 +1019,8 @@ function PlotControls({
           { style: { flex: 1, display: "block" } },
           React.createElement("span", { className: "dv-label" }, "X min"),
           React.createElement(NumberInput, {
-            value: t.xMin != null ? t.xMin : c.xMin,
-            onChange: (l) => p({ xMin: Number(l.target.value) }),
+            value: t.xMin != null ? t.xMin : d.xMin,
+            onChange: (n) => p({ xMin: Number(n.target.value) }),
             step: "any",
             style: { width: "100%" },
           })
@@ -816,8 +1030,8 @@ function PlotControls({
           { style: { flex: 1, display: "block" } },
           React.createElement("span", { className: "dv-label" }, "X max"),
           React.createElement(NumberInput, {
-            value: t.xMax != null ? t.xMax : c.xMax,
-            onChange: (l) => p({ xMax: Number(l.target.value) }),
+            value: t.xMax != null ? t.xMax : d.xMax,
+            onChange: (n) => p({ xMax: Number(n.target.value) }),
             step: "any",
             style: { width: "100%" },
           })
@@ -831,8 +1045,8 @@ function PlotControls({
           { style: { flex: 1, display: "block" } },
           React.createElement("span", { className: "dv-label" }, "Y min"),
           React.createElement(NumberInput, {
-            value: t.yMin != null ? t.yMin : c.yMin,
-            onChange: (l) => p({ yMin: Number(l.target.value) }),
+            value: t.yMin != null ? t.yMin : d.yMin,
+            onChange: (n) => p({ yMin: Number(n.target.value) }),
             step: "any",
             style: { width: "100%" },
           })
@@ -842,8 +1056,8 @@ function PlotControls({
           { style: { flex: 1, display: "block" } },
           React.createElement("span", { className: "dv-label" }, "Y max"),
           React.createElement(NumberInput, {
-            value: t.yMax != null ? t.yMax : c.yMax,
-            onChange: (l) => p({ yMax: Number(l.target.value) }),
+            value: t.yMax != null ? t.yMax : d.yMax,
+            onChange: (n) => p({ yMax: Number(n.target.value) }),
             step: "any",
             style: { width: "100%" },
           })
@@ -859,7 +1073,7 @@ function PlotControls({
         React.createElement("span", { className: "dv-label" }, "Title"),
         React.createElement("input", {
           value: t.plotTitle,
-          onChange: (l) => p({ plotTitle: l.target.value }),
+          onChange: (n) => p({ plotTitle: n.target.value }),
           className: "dv-input",
           style: { width: "100%" },
         })
@@ -870,7 +1084,7 @@ function PlotControls({
         React.createElement("span", { className: "dv-label" }, "Subtitle"),
         React.createElement("input", {
           value: t.plotSubtitle,
-          onChange: (l) => p({ plotSubtitle: l.target.value }),
+          onChange: (n) => p({ plotSubtitle: n.target.value }),
           className: "dv-input",
           style: { width: "100%" },
         })
@@ -881,7 +1095,7 @@ function PlotControls({
         React.createElement("span", { className: "dv-label" }, "X label"),
         React.createElement("input", {
           value: t.xLabel,
-          onChange: (l) => p({ xLabel: l.target.value }),
+          onChange: (n) => p({ xLabel: n.target.value }),
           className: "dv-input",
           style: { width: "100%" },
         })
@@ -892,7 +1106,7 @@ function PlotControls({
         React.createElement("span", { className: "dv-label" }, "Y label"),
         React.createElement("input", {
           value: t.yLabel,
-          onChange: (l) => p({ yLabel: l.target.value }),
+          onChange: (n) => p({ yLabel: n.target.value }),
           className: "dv-input",
           style: { width: "100%" },
         })
@@ -934,7 +1148,7 @@ function PlotControls({
         min: 0.5,
         max: 5,
         step: 0.5,
-        onChange: z("lineWidth"),
+        onChange: X("lineWidth"),
       }),
       React.createElement(SliderControl, {
         label: "Point radius",
@@ -942,7 +1156,7 @@ function PlotControls({
         min: 0,
         max: 10,
         step: 0.5,
-        onChange: z("pointRadius"),
+        onChange: X("pointRadius"),
       }),
       React.createElement(SliderControl, {
         label: "Error cap width",
@@ -950,7 +1164,7 @@ function PlotControls({
         min: 0,
         max: 20,
         step: 1,
-        onChange: z("errorCapWidth"),
+        onChange: X("errorCapWidth"),
       })
     ),
     React.createElement(
@@ -967,8 +1181,8 @@ function PlotControls({
             "button",
             {
               type: "button",
-              className: "dv-seg-btn" + (E ? "" : " dv-seg-btn-active"),
-              onClick: () => b(!1),
+              className: "dv-seg-btn" + (F ? "" : " dv-seg-btn-active"),
+              onClick: () => S(!1),
             },
             "Off"
           ),
@@ -976,8 +1190,8 @@ function PlotControls({
             "button",
             {
               type: "button",
-              className: "dv-seg-btn" + (E ? " dv-seg-btn-active" : ""),
-              onClick: () => b(!0),
+              className: "dv-seg-btn" + (F ? " dv-seg-btn-active" : ""),
+              onClick: () => S(!0),
             },
             "On"
           )
@@ -991,30 +1205,30 @@ function PlotControls({
     )
   );
 }
-function PlotStep(n) {
+function PlotStep(l) {
   const {
       parsed: o,
-      fileName: d,
-      series: m,
-      statsRows: v,
-      xCol: k,
-      yCol: N,
+      fileName: c,
+      series: g,
+      statsRows: b,
+      xCol: N,
+      yCol: m,
       groupCol: i,
       vis: a,
-      autoAxis: g,
+      autoAxis: x,
       effAxis: f,
       errorType: u,
       showStars: t,
       svgRef: p,
-      svgLegend: c,
-    } = n,
-    w = 700,
+      svgLegend: d,
+    } = l,
+    k = 700,
     y = 440,
-    E = fileBaseName(d, "lineplot");
+    F = fileBaseName(c, "lineplot");
   return React.createElement(
     "div",
     { style: { display: "flex", gap: 20, alignItems: "flex-start" } },
-    React.createElement(PlotControls, { ...n }),
+    React.createElement(PlotControls, { ...l }),
     React.createElement(
       "div",
       { style: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 } },
@@ -1028,7 +1242,7 @@ function PlotStep(n) {
             borderColor: "var(--plot-card-border)",
           },
         },
-        m.length === 0
+        g.length === 0
           ? React.createElement(
               "p",
               {
@@ -1044,16 +1258,16 @@ function PlotStep(n) {
             )
           : React.createElement(Chart, {
               ref: p,
-              series: m,
-              perXStats: v,
+              series: g,
+              perXStats: b,
               xMin: f.xMin,
               xMax: f.xMax,
               yMin: f.yMin,
               yMax: f.yMax,
-              vbW: w,
+              vbW: k,
               vbH: y,
-              xLabel: a.xLabel || o.headers[k],
-              yLabel: a.yLabel || o.headers[N],
+              xLabel: a.xLabel || o.headers[N],
+              yLabel: a.yLabel || o.headers[m],
               plotTitle: a.plotTitle,
               plotSubtitle: a.plotSubtitle,
               plotBg: a.plotBg,
@@ -1064,11 +1278,11 @@ function PlotStep(n) {
               errorStrokeWidth: a.errorStrokeWidth,
               errorCapWidth: a.errorCapWidth,
               errorType: u,
-              svgLegend: c,
+              svgLegend: d,
               showStars: t,
             })
       ),
-      v.length > 0 &&
+      b.length > 0 &&
         React.createElement(
           "div",
           { style: { display: "flex", flexDirection: "column", gap: 10 } },
@@ -1085,14 +1299,14 @@ function PlotStep(n) {
             },
             "Per-x statistics"
           ),
-          v.map((b) =>
+          b.map((S) =>
             React.createElement(StatsTile, {
-              key: `stats-${b.x}`,
-              title: `x = ${formatX(b.x)}`,
+              key: `stats-${S.x}`,
+              title: `x = ${formatX(S.x)}`,
               defaultOpen: !1,
               compact: !0,
-              groups: b.names.map((F, W) => ({ name: F, values: b.values[W] })),
-              fileStem: `${E}_x${svgSafeId(formatX(b.x))}`,
+              groups: S.names.map((T, L) => ({ name: T, values: S.values[L] })),
+              fileStem: `${F}_x${svgSafeId(formatX(S.x))}`,
             })
           )
         )
@@ -1100,20 +1314,20 @@ function PlotStep(n) {
   );
 }
 function App() {
-  const [n, o] = useState(null),
-    [d, m] = useState(!1),
-    [v, k] = useState(0),
-    [N, i] = useState(""),
-    [a, g] = useState(""),
+  const [l, o] = useState(null),
+    [c, g] = useState(!1),
+    [b, N] = useState(0),
+    [m, i] = useState(""),
+    [a, x] = useState(""),
     [f, u] = useState(null),
     [t, p] = useState("upload"),
-    [c, w] = useState(0),
-    [y, E] = useState(1),
-    [b, F] = useState(null),
-    [W, H] = useState("sem"),
-    [z, K] = useState(!0),
-    [l, D] = useState({}),
-    x = {
+    [d, k] = useState(0),
+    [y, F] = useState(1),
+    [S, T] = useState(null),
+    [L, Y] = useState("sem"),
+    [X, K] = useState(!0),
+    [n, B] = useState({}),
+    v = {
       xMin: null,
       xMax: null,
       yMin: null,
@@ -1130,61 +1344,61 @@ function App() {
       errorStrokeWidth: 1,
       errorCapWidth: 6,
     },
-    [L, P] = useReducer((r, h) => (h._reset ? { ...x } : { ...r, ...h }), x),
+    [W, I] = useReducer((s, h) => (h._reset ? { ...v } : { ...s, ...h }), v),
     U = useRef(null),
     M = useRef(""),
-    s = useMemo(() => (n ? parseData(n, M.current) : null), [n]),
+    r = useMemo(() => (l ? parseData(l, M.current) : null), [l]),
     q = useMemo(
       () =>
-        s
-          ? s.headers.reduce((r, h, A) => {
-              const $ = s.rawData.map((T) => T[A]).filter((T) => T !== "" && T != null);
+        r
+          ? r.headers.reduce((s, h, A) => {
+              const D = r.rawData.map((P) => P[A]).filter((P) => P !== "" && P != null);
               return (
-                (r[A] = $.length > 0 && $.filter((T) => isNumericValue(T)).length / $.length > 0.5),
-                r
+                (s[A] = D.length > 0 && D.filter((P) => isNumericValue(P)).length / D.length > 0.5),
+                s
               );
             }, {})
           : {},
-      [s]
+      [r]
     ),
-    V = useMemo(() => (s ? s.headers.reduce((r, h, A) => (q[A] ? [...r, A] : r), []) : []), [s, q]),
-    O = useMemo(() => (s ? s.headers.reduce((r, h, A) => (q[A] ? r : [...r, A]), []) : []), [s, q]),
+    Z = useMemo(() => (r ? r.headers.reduce((s, h, A) => (q[A] ? [...s, A] : s), []) : []), [r, q]),
+    z = useMemo(() => (r ? r.headers.reduce((s, h, A) => (q[A] ? s : [...s, A]), []) : []), [r, q]),
     C = useMemo(
       () =>
-        !s || c == null || y == null ? [] : computeSeries(s.data, s.rawData, c, y, b, l, PALETTE),
-      [s, c, y, b, l]
+        !r || d == null || y == null ? [] : computeSeries(r.data, r.rawData, d, y, S, n, PALETTE),
+      [r, d, y, S, n]
     ),
-    ee = useCallback((r, h) => D((A) => ({ ...A, [r]: h })), []),
+    ee = useCallback((s, h) => B((A) => ({ ...A, [s]: h })), []),
     te = useMemo(() => (C.length >= 2 ? computePerXStats(C) : []), [C]),
-    X = useMemo(() => {
+    j = useMemo(() => {
       if (C.length === 0) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
-      let r = 1 / 0,
+      let s = 1 / 0,
         h = -1 / 0,
         A = 1 / 0,
-        $ = -1 / 0;
+        D = -1 / 0;
       for (const ae of C)
-        for (const R of ae.points) {
-          if ((R.x < r && (r = R.x), R.x > h && (h = R.x), R.mean == null)) continue;
-          const j = W === "sd" ? R.sd : W === "ci95" ? R.ci95 : R.sem,
-            Q = R.mean + (j || 0),
-            B = R.mean - (j || 0);
-          (B < A && (A = B), Q > $ && ($ = Q));
+        for (const E of ae.points) {
+          if ((E.x < s && (s = E.x), E.x > h && (h = E.x), E.mean == null)) continue;
+          const _ = L === "sd" ? E.sd : L === "ci95" ? E.ci95 : E.sem,
+            J = E.mean + (_ || 0),
+            G = E.mean - (_ || 0);
+          (G < A && (A = G), J > D && (D = J));
         }
-      if (!Number.isFinite(r)) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
-      const T = r === h ? 0.5 : (h - r) * 0.05,
-        le = A === $ ? 0.5 : ($ - A) * 0.08;
+      if (!Number.isFinite(s)) return { xMin: 0, xMax: 1, yMin: 0, yMax: 1 };
+      const P = s === h ? 0.5 : (h - s) * 0.05,
+        ne = A === D ? 0.5 : (D - A) * 0.08;
       return {
-        xMin: round4(r - T),
-        xMax: round4(h + T),
-        yMin: round4(A - le),
-        yMax: round4($ + le),
+        xMin: round4(s - P),
+        xMax: round4(h + P),
+        yMin: round4(A - ne),
+        yMax: round4(D + ne),
       };
-    }, [C, W]),
-    ne = {
-      xMin: L.xMin != null ? L.xMin : X.xMin,
-      xMax: L.xMax != null ? L.xMax : X.xMax,
-      yMin: L.yMin != null ? L.yMin : X.yMin,
-      yMax: L.yMax != null ? L.yMax : X.yMax,
+    }, [C, L]),
+    le = {
+      xMin: W.xMin != null ? W.xMin : j.xMin,
+      xMax: W.xMax != null ? W.xMax : j.xMax,
+      yMin: W.yMin != null ? W.yMin : j.yMin,
+      yMax: W.yMax != null ? W.yMax : j.yMax,
     },
     e = useMemo(
       () =>
@@ -1193,70 +1407,70 @@ function App() {
           : [
               {
                 id: "legend-group",
-                title: b != null && s ? s.headers[b] : "",
-                items: C.map((r) => ({ label: r.name, color: r.color, shape: "dot" })),
+                title: S != null && r ? r.headers[S] : "",
+                items: C.map((s) => ({ label: s.name, color: s.color, shape: "dot" })),
               },
             ],
-      [C, b, s]
+      [C, S, r]
     );
   useEffect(() => {
-    !s ||
-      c == null ||
+    !r ||
+      d == null ||
       y == null ||
-      P({
+      I({
         xMin: null,
         xMax: null,
         yMin: null,
         yMax: null,
-        xLabel: s.headers[c],
-        yLabel: s.headers[y],
+        xLabel: r.headers[d],
+        yLabel: r.headers[y],
       });
-  }, [c, y, s]);
-  const S = useCallback((r, h) => {
+  }, [d, y, r]);
+  const w = useCallback((s, h) => {
       M.current = h;
-      const A = fixDecimalCommas(r, h);
-      (m(A.commaFixed), k(A.count));
-      const $ = A.text,
-        { headers: T, data: le, rawData: ae } = parseData($, h);
-      if (T.length < 2 || le.length === 0) {
+      const A = fixDecimalCommas(s, h);
+      (g(A.commaFixed), N(A.count));
+      const D = A.text,
+        { headers: P, data: ne, rawData: ae } = parseData(D, h);
+      if (P.length < 2 || ne.length === 0) {
         u(
           "The file appears to be empty or has no data rows. Please check your file and try again."
         );
         return;
       }
-      (u(null), o($));
-      const R = (B) => {
-          const Z = ae.map((G) => G[B]).filter((G) => G !== "" && G != null);
-          return Z.length > 0 && Z.filter((G) => isNumericValue(G)).length / Z.length > 0.5;
+      (u(null), o(D));
+      const E = (G) => {
+          const Q = ae.map((O) => O[G]).filter((O) => O !== "" && O != null);
+          return Q.length > 0 && Q.filter((O) => isNumericValue(O)).length / Q.length > 0.5;
         },
-        j = T.reduce((B, Z, G) => (R(G) ? [...B, G] : B), []),
-        Q = T.reduce((B, Z, G) => (R(G) ? B : [...B, G]), []);
-      (w(j[0] !== void 0 ? j[0] : 0),
-        E(j[1] !== void 0 ? j[1] : j[0] !== void 0 ? j[0] : 1),
-        F(Q[0] !== void 0 ? Q[0] : null),
-        D({}),
+        _ = P.reduce((G, Q, O) => (E(O) ? [...G, O] : G), []),
+        J = P.reduce((G, Q, O) => (E(O) ? G : [...G, O]), []);
+      (k(_[0] !== void 0 ? _[0] : 0),
+        F(_[1] !== void 0 ? _[1] : _[0] !== void 0 ? _[0] : 1),
+        T(J[0] !== void 0 ? J[0] : null),
+        B({}),
         p("configure"));
     }, []),
-    I = useCallback(
-      (r, h) => {
-        (g(h), S(r, N));
+    R = useCallback(
+      (s, h) => {
+        (x(h), w(s, m));
       },
-      [N, S]
+      [m, w]
     ),
-    _ = useCallback(() => {
-      const r = window.__LINEPLOT_EXAMPLE__;
-      r && (i(","), g("bacterial_growth.csv"), S(r, ","));
-    }, [S]),
-    Y = () => {
-      (o(null), g(""), p("upload"));
+    $ = useCallback(() => {
+      const s = window.__LINEPLOT_EXAMPLE__;
+      s && (i(","), x("bacterial_growth.csv"), w(s, ","));
+    }, [w]),
+    H = () => {
+      (o(null), x(""), p("upload"));
     },
-    J = (r) =>
-      r === "upload"
+    V = (s) =>
+      s === "upload"
         ? !0
-        : r === "configure"
-          ? !!s
-          : r === "plot"
-            ? !!s && c != null && y != null
+        : s === "configure"
+          ? !!r
+          : s === "plot"
+            ? !!r && d != null && y != null
             : !1;
   return React.createElement(
     "div",
@@ -1277,61 +1491,61 @@ function App() {
       steps: ["upload", "configure", "plot"],
       currentStep: t,
       onStepChange: p,
-      canNavigate: J,
+      canNavigate: V,
     }),
-    React.createElement(CommaFixBanner, { commaFixed: d, commaFixCount: v }),
+    React.createElement(CommaFixBanner, { commaFixed: c, commaFixCount: b }),
     React.createElement(ParseErrorBanner, { error: f }),
     t === "upload" &&
       React.createElement(UploadStep, {
-        sepOverride: N,
+        sepOverride: m,
         setSepOverride: i,
-        rawText: n,
-        doParse: S,
-        handleFileLoad: I,
-        onLoadExample: _,
+        rawText: l,
+        doParse: w,
+        handleFileLoad: R,
+        onLoadExample: $,
       }),
     t === "configure" &&
-      s &&
+      r &&
       React.createElement(ConfigureStep, {
-        parsed: s,
+        parsed: r,
         fileName: a,
-        xCol: c,
-        setXCol: w,
+        xCol: d,
+        setXCol: k,
         yCol: y,
-        setYCol: E,
-        groupCol: b,
-        setGroupCol: F,
-        numericCols: V,
-        categoricalCols: O,
+        setYCol: F,
+        groupCol: S,
+        setGroupCol: T,
+        numericCols: Z,
+        categoricalCols: z,
         setStep: p,
       }),
     t === "plot" &&
-      s &&
+      r &&
       React.createElement(PlotStep, {
-        parsed: s,
+        parsed: r,
         fileName: a,
         series: C,
         statsRows: te,
-        xCol: c,
-        setXCol: w,
+        xCol: d,
+        setXCol: k,
         yCol: y,
-        setYCol: E,
-        groupCol: b,
-        setGroupCol: F,
-        numericCols: V,
-        categoricalCols: O,
+        setYCol: F,
+        groupCol: S,
+        setGroupCol: T,
+        numericCols: Z,
+        categoricalCols: z,
         setGroupColor: ee,
-        vis: L,
-        updVis: P,
-        autoAxis: X,
-        effAxis: ne,
-        errorType: W,
-        setErrorType: H,
-        showStars: z,
+        vis: W,
+        updVis: I,
+        autoAxis: j,
+        effAxis: le,
+        errorType: L,
+        setErrorType: Y,
+        showStars: X,
         setShowStars: K,
         svgRef: U,
         svgLegend: e,
-        resetAll: Y,
+        resetAll: H,
       })
   );
 }

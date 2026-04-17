@@ -507,15 +507,175 @@ function UploadStep({
   onLoadExample,
 }) {
   return (
-    <UploadPanel
-      sepOverride={sepOverride}
-      setSepOverride={setSepOverride}
-      rawText={rawText}
-      doParse={doParse}
-      handleFileLoad={handleFileLoad}
-      onLoadExample={onLoadExample}
-      tip="Expects long-format data: one row per observation. You'll pick which columns are X, Y, and the grouping variable."
-    />
+    <div>
+      <UploadPanel
+        sepOverride={sepOverride}
+        onSepChange={(v) => {
+          setSepOverride(v);
+          if (rawText) doParse(rawText, v);
+        }}
+        onFileLoad={handleFileLoad}
+        onLoadExample={onLoadExample}
+        exampleLabel="Bacterial growth curves (3 strains × 5 timepoints × 3 reps)"
+        hint="CSV · TSV · TXT — one row per observation, columns for X, Y, and grouping variable"
+      />
+      <p
+        style={{
+          margin: "4px 0 12px",
+          fontSize: 11,
+          color: "var(--text-faint)",
+          textAlign: "right",
+        }}
+      >
+        Max file size: 2 MB
+      </p>
+      <div
+        style={{
+          marginTop: 24,
+          borderRadius: 14,
+          overflow: "hidden",
+          border: "2px solid var(--howto-border)",
+          boxShadow: "var(--howto-shadow)",
+        }}
+      >
+        <div
+          style={{
+            background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
+            padding: "14px 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          {toolIcon("lineplot", 24, { circle: true })}
+          <div>
+            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+              Line Plot — How to use
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+              Upload → Preview &amp; pick X / Y / Group → Plot with per-x statistics
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            background: "var(--info-bg)",
+            padding: "20px 24px",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+              gridColumn: "1/-1",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 8,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              }}
+            >
+              Data layout
+            </div>
+            <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
+              <strong>Long format</strong> — one <strong>row</strong> per observation, with a
+              numeric <strong>X</strong>, a numeric <strong>Y</strong>, and a categorical{" "}
+              <strong>group</strong> column. Replicates share the same (X, group) pair. Replicates
+              are averaged to build the line; their spread becomes the error bar.
+            </p>
+          </div>
+
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              }}
+            >
+              Error bars
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+              Pick <strong>SEM</strong> (default), <strong>SD</strong>, or <strong>95% CI</strong>.
+              CI uses the <em>t</em> quantile at <em>n−1</em> degrees of freedom. Error bars only
+              render when a group has ≥ 2 replicates at that X.
+            </p>
+          </div>
+
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: 10,
+              padding: "14px 18px",
+              border: "1.5px solid var(--info-border)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--accent-primary)",
+                marginBottom: 10,
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+              }}
+            >
+              Per-x statistics
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+              At every X shared by ≥ 2 groups, the right test is picked automatically (<em>t</em> /
+              Welch / Mann-Whitney; ANOVA / Welch-ANOVA / Kruskal-Wallis). P-values are{" "}
+              <strong>BH-adjusted</strong> across the X-axis; stars mark significant points.
+            </p>
+          </div>
+
+          <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[
+              "Long-format (x, y, group)",
+              "SEM / SD / 95% CI",
+              "Per-x test auto-routing",
+              "BH-adjusted significance stars",
+              "Decision trace & R export",
+              "100% browser-side",
+            ].map((t) => (
+              <span
+                key={t}
+                style={{
+                  fontSize: 10,
+                  padding: "3px 10px",
+                  borderRadius: 20,
+                  background: "var(--surface)",
+                  border: "1px solid var(--info-border)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
