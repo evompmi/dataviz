@@ -23,7 +23,7 @@
   --border: #dddddd;
   --border-strong: #cccccc;
 
-  /* Accents — kept identical in both themes */
+  /* Accents */
   --accent-primary: #648fff;
   --accent-plot: #2ec4b6;
   --accent-dna: #785ef0;
@@ -164,6 +164,7 @@
      glow from the light-mode rgba() reads too loud against the dark UI.
      The accent color itself (--accent-warning) stays identical across
      themes like all other --accent-* vars. */
+  --accent-primary: #5070d9;
   --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -228,6 +229,7 @@
 
     --cta-dna-bg: #5a45b8;
 
+    --accent-primary: #5070d9;
     --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }
