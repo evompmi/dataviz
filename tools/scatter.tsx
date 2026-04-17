@@ -2008,7 +2008,7 @@ function App() {
   // Regression line
   const [regression, setRegression] = useState({
     on: false,
-    color: "var(--danger-text)",
+    color: "#dc2626",
     strokeWidth: 1.5,
     dashed: false,
     showStats: true,
