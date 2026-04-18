@@ -2,32 +2,75 @@
 // Do NOT edit the .js file directly.
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
-// ── Stats summary SVG helper ──────────────────────────────────────────────
+// ── Stats summary SVG helpers ─────────────────────────────────────────────
 const STATS_LINE_H = 11;
 const STATS_FONT = 8;
 function statsSummaryHeight(summary: string | null): number {
   if (!summary) return 0;
   return summary.split("\n").length * STATS_LINE_H + 14; // 14 = top/bottom padding
 }
+function statsTextLines(
+  lines: string[],
+  x: number,
+  yStart: number,
+  anchor: "start" | "middle" | "end" = "start",
+  baseline?: "middle" | "central" | "hanging"
+) {
+  return lines.map((line, i) => (
+    <text
+      key={i}
+      x={x}
+      y={yStart + i * STATS_LINE_H}
+      textAnchor={anchor}
+      dominantBaseline={baseline}
+      fontSize={STATS_FONT}
+      fill="#aaa"
+      fontFamily="monospace"
+    >
+      {line}
+    </text>
+  ));
+}
 function renderStatsSummary(summary: string | null, y: number, x: number) {
   if (!summary) return null;
-  const lines = summary.split("\n");
-  return (
-    <g id="stats-summary">
-      {lines.map((line, i) => (
-        <text
-          key={i}
-          x={x}
-          y={y + 10 + i * STATS_LINE_H}
-          fontSize={STATS_FONT}
-          fill="#aaa"
-          fontFamily="monospace"
-        >
-          {line}
-        </text>
-      ))}
-    </g>
-  );
+  return <g id="stats-summary">{statsTextLines(summary.split("\n"), x, y + 10)}</g>;
+}
+function renderSubgroupSummaries({
+  subgroups,
+  summaries,
+  hz,
+  bx,
+  bandW,
+  separatorGap,
+  M,
+  w,
+  summaryY,
+}: any) {
+  return subgroups.map((sg: any, sgIdx: number) => {
+    const txt = summaries[sg.name];
+    if (!txt) return null;
+    const lines = txt.split("\n");
+    const gid = `stats-summary-${svgSafeId(sg.name)}`;
+    if (hz) {
+      const firstPos = bx(sg.startIndex);
+      const lastPos = bx(sg.startIndex + sg.count - 1);
+      const centerPos = (firstPos + lastPos) / 2;
+      const startY = centerPos - (lines.length * STATS_LINE_H) / 2;
+      return (
+        <g key={sg.name} id={gid}>
+          {statsTextLines(lines, M.left + w + 12, startY, "start", "middle")}
+        </g>
+      );
+    }
+    // Anchor each block at the left edge of its subgroup band: the plot
+    // frame for the first subgroup, the dashed separator line for the rest.
+    const leftEdge = sgIdx === 0 ? M.left : bx(sg.startIndex) - bandW / 2 - separatorGap / 2;
+    return (
+      <g key={sg.name} id={gid}>
+        {statsTextLines(lines, leftEdge + 4, summaryY + 10)}
+      </g>
+    );
+  });
 }
 
 const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
@@ -1049,60 +1092,16 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
       {_hasSgSummaries
-        ? subgroups.map((sg, sgIdx) => {
-            const txt = subgroupSummaries[sg.name];
-            if (!txt) return null;
-            const lines = txt.split("\n");
-            const firstPos = bx(sg.startIndex);
-            const lastPos = bx(sg.startIndex + sg.count - 1);
-            const centerPos = (firstPos + lastPos) / 2;
-            if (hz) {
-              const summaryX = M.left + w + 12;
-              const blockH = lines.length * STATS_LINE_H;
-              const startY = centerPos - blockH / 2;
-              return (
-                <g key={`sg-summary-${sg.name}`} id={`stats-summary-${svgSafeId(sg.name)}`}>
-                  {lines.map((line, i) => (
-                    <text
-                      key={i}
-                      x={summaryX}
-                      y={startY + i * STATS_LINE_H}
-                      textAnchor="start"
-                      dominantBaseline="middle"
-                      fontSize={STATS_FONT}
-                      fill="#aaa"
-                      fontFamily="monospace"
-                    >
-                      {line}
-                    </text>
-                  ))}
-                </g>
-              );
-            }
-            const summaryY = vbH_chart + _legH;
-            // Anchor each block at the left edge of its subgroup band: the
-            // plot frame for the first subgroup, the dashed separator line
-            // to its left for the rest. Matches the separator geometry at
-            // line ~720 (sepPos = bx(startIndex) - bandW/2 - separatorGap/2).
-            const leftEdge =
-              sgIdx === 0 ? M.left : bx(sg.startIndex) - bandW / 2 - separatorGap / 2;
-            return (
-              <g key={`sg-summary-${sg.name}`} id={`stats-summary-${svgSafeId(sg.name)}`}>
-                {lines.map((line, i) => (
-                  <text
-                    key={i}
-                    x={leftEdge + 4}
-                    y={summaryY + 10 + i * STATS_LINE_H}
-                    textAnchor="start"
-                    fontSize={STATS_FONT}
-                    fill="#aaa"
-                    fontFamily="monospace"
-                  >
-                    {line}
-                  </text>
-                ))}
-              </g>
-            );
+        ? renderSubgroupSummaries({
+            subgroups,
+            summaries: subgroupSummaries,
+            hz,
+            bx,
+            bandW,
+            separatorGap,
+            M,
+            w,
+            summaryY: vbH_chart + _legH,
           })
         : renderStatsSummary(statsSummary, vbH_chart + _legH, M.left)}
     </svg>
@@ -2666,21 +2665,16 @@ function PlotArea({
   categoryColors,
   facetByCol,
   facetedData,
-  facetRefs,
   chartRef,
   displayBoxplotGroups,
   vis,
   yMinVal,
   yMaxVal,
-  plotGroupRenames,
-  boxplotColors,
-  facetStatsAnnotations,
-  facetStatsSummary,
+  chartAnnotations,
+  chartSummary,
   subgroups,
   subgroupSummaries,
 }) {
-  const globalAnnotations = facetStatsAnnotations["_global"] || null;
-  const globalSummary = facetStatsSummary["_global"] || null;
   if (displayBoxplotGroups.length === 0 && (facetByCol < 0 || facetedData.length === 0)) {
     return (
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2782,8 +2776,8 @@ function PlotArea({
             horizontal={vis.horizontal}
             subgroups={subgroups}
             subgroupSummaries={subgroupSummaries}
-            annotations={globalAnnotations}
-            statsSummary={globalSummary}
+            annotations={chartAnnotations}
+            statsSummary={chartSummary}
             svgLegend={
               colorByCol >= 0 && colorByCategories.length > 0
                 ? [
@@ -2800,73 +2794,6 @@ function PlotArea({
                 : null
             }
           />
-        </div>
-      )}
-      {facetByCol >= 0 && facetedData.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-          {facetedData.map((fd) => {
-            const displayFdGroups = fd.groups.map((g) => ({
-              ...g,
-              name: plotGroupRenames[g.name] ?? g.name,
-              color: boxplotColors[g.name] ?? g.color,
-            }));
-            const chartProps = {
-              groups: displayFdGroups,
-              annotations: facetStatsAnnotations[fd.category] || null,
-              statsSummary: facetStatsSummary[fd.category] || null,
-              yLabel: vis.yLabel,
-              plotTitle: [vis.plotTitle, fd.category].filter(Boolean).join(" — "),
-              plotBg: vis.plotBg,
-              showGrid: vis.showGrid,
-              gridColor: vis.gridColor,
-              boxWidth: vis.boxWidth,
-              boxFillOpacity: vis.boxFillOpacity,
-              pointSize: vis.pointSize,
-              showPoints: vis.showPoints,
-              jitterWidth: vis.jitterWidth,
-              pointOpacity: vis.pointOpacity,
-              xLabelAngle: vis.xLabelAngle,
-              yMin: yMinVal,
-              yMax: yMaxVal,
-              yScale: vis.yScale,
-              categoryColors,
-              colorByCol,
-              boxGap: vis.boxGap,
-              showCompPie: vis.showCompPie,
-              plotStyle: vis.plotStyle,
-              barOpacity: vis.barOpacity,
-              errorType: vis.errorType,
-              errStrokeWidth: vis.errStrokeWidth,
-              showBarOutline: vis.showBarOutline,
-              barOutlineWidth: vis.barOutlineWidth,
-              barOutlineColor: vis.barOutlineColor,
-              horizontal: vis.horizontal,
-              subgroups: null,
-              svgLegend:
-                colorByCol >= 0 && colorByCategories.length > 0
-                  ? [
-                      {
-                        id: "legend-color",
-                        title: `Points colored by: ${colNames[colorByCol]}`,
-                        items: colorByCategories.map((c) => ({
-                          label: c,
-                          color: categoryColors[c] || "#999",
-                          shape: "dot",
-                        })),
-                      },
-                    ]
-                  : null,
-            };
-            return (
-              <FacetBoxplotItem
-                key={fd.category}
-                fd={fd}
-                facetRefs={facetRefs}
-                chartProps={chartProps}
-                categoryColors={categoryColors}
-              />
-            );
-          })}
         </div>
       )}
     </div>
@@ -2886,12 +2813,13 @@ function PlotArea({
 // controls (show on plot, Letters vs Brackets, show ns, print summary
 // below plot) live in the panel header and apply to every set in lockstep.
 //
-// Annotation emission keeps the old per-key contract so the plot wiring
-// below the panel stays untouched:
-//   - Facet mode:    per-facet spec keyed on `fd.category`
-//   - Subgroup mode: App merges per-subgroup specs into one `_global` spec
-//                    with offset indices (see `mergeSubgroupAnnotations`)
-//   - Flat mode:     single spec keyed on `_global`
+// The panel emits per-row annotation + summary via `onAnnotationForKey(key, …)`
+// and `onSummaryForKey(key, …)`. App routes these into mode-specific stores:
+//   - Facet mode:    `facetStats*` maps keyed on `fd.category`
+//   - Subgroup mode: `subgroup*` maps keyed on `sg.name`, then merged
+//                    (annotations only) into a single spec via
+//                    `mergeSubgroupAnnotations` for the shared chart
+//   - Flat mode:     scalar `flatStats*` state (the key is ignored)
 // ─────────────────────────────────────────────────────────────────────────
 
 const TEST_LABELS_BP = {
@@ -4054,6 +3982,68 @@ function FacetPlotList({
   );
 }
 
+/* ── Stats state reducer ───────────────────────────────────────────────────── */
+
+const statsInit = {
+  displayMode: "none" as "none" | "cld" | "brackets",
+  showNs: false,
+  showSummary: false,
+  flatSummary: null as string | null,
+  flatAnnotation: null as any,
+  facetAnnotations: {} as Record<string, any>,
+  facetSummaries: {} as Record<string, string | null>,
+  subgroupSummaries: {} as Record<string, string | null>,
+  subgroupAnnotSpecs: {} as Record<string, any>,
+};
+function statsReducer(state: typeof statsInit, a: any): typeof statsInit {
+  switch (a.type) {
+    case "reset":
+      return statsInit;
+    case "setDisplayMode":
+      if (a.value === "none") {
+        return {
+          ...state,
+          displayMode: "none",
+          flatAnnotation: null,
+          facetAnnotations: {},
+          subgroupAnnotSpecs: {},
+        };
+      }
+      return { ...state, displayMode: a.value };
+    case "setShowNs":
+      return { ...state, showNs: a.value };
+    case "setShowSummary":
+      if (!a.value) {
+        return {
+          ...state,
+          showSummary: false,
+          flatSummary: null,
+          facetSummaries: {},
+          subgroupSummaries: {},
+        };
+      }
+      return { ...state, showSummary: true };
+    case "setFlatSummary":
+      return { ...state, flatSummary: a.value };
+    case "setFlatAnnotation":
+      return { ...state, flatAnnotation: a.value };
+    case "setFacetAnnotation":
+      if (state.facetAnnotations[a.key] === a.value) return state;
+      return { ...state, facetAnnotations: { ...state.facetAnnotations, [a.key]: a.value } };
+    case "setFacetSummary":
+      if (state.facetSummaries[a.key] === a.value) return state;
+      return { ...state, facetSummaries: { ...state.facetSummaries, [a.key]: a.value } };
+    case "setSubgroupAnnotSpec":
+      if (state.subgroupAnnotSpecs[a.key] === a.value) return state;
+      return { ...state, subgroupAnnotSpecs: { ...state.subgroupAnnotSpecs, [a.key]: a.value } };
+    case "setSubgroupSummary":
+      if (state.subgroupSummaries[a.key] === a.value) return state;
+      return { ...state, subgroupSummaries: { ...state.subgroupSummaries, [a.key]: a.value } };
+    default:
+      return state;
+  }
+}
+
 /* ── Main App (orchestrator) ───────────────────────────────────────────────── */
 
 function App() {
@@ -4124,82 +4114,34 @@ function App() {
   const [dragState, setDragState] = useState(null);
   const [facetByCol, _setFacetByCol] = useState(-1);
   const [subgroupByCol, _setSubgroupByCol] = useState(-1);
-  // Don't clear facetStatsSummary / subgroupSummaries / facetStatsAnnotations /
-  // subgroupAnnotSpecs on a mode or column switch: the chart only reads keys
-  // that exist in the *current* facets / subgroups, so stale keys are
-  // harmless, and clearing them races with the child BoxplotStatsPanel's
-  // onSummaryForKey emission (child effects fire before parent effects, so a
-  // useEffect-based reset would overwrite the fresh summaries the panel just
-  // emitted — which is what made the summary text disappear after a
-  // subgroup→facet or facet→subgroup switch).
-  const handleSetFacetByCol = useCallback((v) => {
+  // Facet and subgroup are mutually exclusive. Flipping one on turns the
+  // other off.
+  const handleSetFacetByCol = (v) => {
     _setFacetByCol(v);
     if (v >= 0) _setSubgroupByCol(-1);
-  }, []);
-  const handleSetSubgroupByCol = useCallback((v) => {
+  };
+  const handleSetSubgroupByCol = (v) => {
     _setSubgroupByCol(v);
     if (v >= 0) _setFacetByCol(-1);
-  }, []);
-  // Stats annotations + summary are keyed by facet category so each facet
-  // subplot gets its own on-plot CLD/brackets and its own summary text.
-  // The non-facet path uses the literal key "_global" so the same maps drive
-  // both modes.
-  const [facetStatsAnnotations, setFacetStatsAnnotations] = useState<Record<string, any>>({});
-  const [facetStatsSummary, setFacetStatsSummary] = useState<Record<string, string | null>>({});
-  const [subgroupSummaries, setSubgroupSummaries] = useState<Record<string, string | null>>({});
-  // Subgroup mode: per-subgroup annotation specs emitted by the panel, merged
-  // into a single `_global` spec with offset indices so the shared chart
-  // renders all of them as one continuous axis. Summaries emit directly into
-  // `subgroupSummaries` (already per-key) which the chart renders inline.
-  const [subgroupAnnotSpecs, setSubgroupAnnotSpecs] = useState<Record<string, any>>({});
-  // Panel-level display preferences are lifted here so they survive when the
-  // user switches between flat / subgroup / facet modes (each mode renders a
-  // different BoxplotStatsPanel instance, which would otherwise reset its
-  // local state on mount).
-  const [statsDisplayMode, setStatsDisplayMode] = useState<"none" | "cld" | "brackets">("none");
-  const [statsShowNs, setStatsShowNs] = useState(false);
-  const [statsShowSummary, setStatsShowSummary] = useState(false);
-  // Turning "Print summary below plot" off should wipe every previously
-  // emitted key, not just the current mode's keys. The panel's
-  // onSummaryForKey only ever nulls entries for sets it currently sees, so
-  // without this cleanup stale keys from an earlier facet / flat visit
-  // survive and reappear after a mode switch (e.g. a facet-mode text comes
-  // back when returning to facet mode; a flat-mode "_global" text falls
-  // through as the subgroup-mode chart's fallback at the left edge).
-  const handleStatsShowSummaryChange = useCallback((v) => {
-    setStatsShowSummary(v);
-    if (!v) {
-      setFacetStatsSummary({});
-      setSubgroupSummaries({});
-    }
-  }, []);
-  // Same reasoning for annotations: turning "Display on plot" back to Off
-  // should drop every per-key annotation spec, not just the currently
-  // visible ones, otherwise stale brackets / CLD letters re-appear after a
-  // mode switch.
-  const handleStatsDisplayModeChange = useCallback((v) => {
-    setStatsDisplayMode(v);
-    if (v === "none") {
-      setFacetStatsAnnotations({});
-      setSubgroupAnnotSpecs({});
-    }
-  }, []);
+  };
+  // Flat / facet / subgroup each own their own summary + annotation state so
+  // nothing leaks across modes. Panel display prefs live in the same reducer
+  // so their reset semantics (mode="none" clears annotations; showSummary=off
+  // clears summaries) stay co-located with the state they drive.
+  const [statsUi, dispatchStats] = useReducer(statsReducer, statsInit);
+  const setFlatStatsSummary = (v) => dispatchStats({ type: "setFlatSummary", value: v });
+  const setFlatStatsAnnotation = (v) => dispatchStats({ type: "setFlatAnnotation", value: v });
+  const handleStatsShowSummaryChange = (v) => dispatchStats({ type: "setShowSummary", value: v });
+  const handleStatsDisplayModeChange = (v) => dispatchStats({ type: "setDisplayMode", value: v });
+  const setStatsShowNs = (v) => dispatchStats({ type: "setShowNs", value: v });
   // Stable references so `FacetTrio`'s shallow-compare memo can skip
-  // re-rendering unaffected facets when one facet's stats map entry updates.
+  // re-rendering unaffected facets when one facet's map entry updates.
   const setAnnotationsFor = useCallback(
-    (key, spec) =>
-      setFacetStatsAnnotations((prev) => {
-        if (prev[key] === spec) return prev;
-        return { ...prev, [key]: spec };
-      }),
+    (key, spec) => dispatchStats({ type: "setFacetAnnotation", key, value: spec }),
     []
   );
   const setSummaryFor = useCallback(
-    (key, txt) =>
-      setFacetStatsSummary((prev) => {
-        if (prev[key] === txt) return prev;
-        return { ...prev, [key]: txt };
-      }),
+    (key, txt) => dispatchStats({ type: "setFacetSummary", key, value: txt }),
     []
   );
 
@@ -4216,10 +4158,7 @@ function App() {
     setCategoryColors({});
     _setFacetByCol(-1);
     _setSubgroupByCol(-1);
-    setFacetStatsAnnotations({});
-    setFacetStatsSummary({});
-    setSubgroupSummaries({});
-    setSubgroupAnnotSpecs({});
+    dispatchStats({ type: "reset" });
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
 
@@ -4676,12 +4615,17 @@ function App() {
       ...g,
       name: plotGroupRenames[g.name] ?? g.name,
     }));
-    return mergeSubgroupAnnotations(subgroupedData.subgroups, renamedFlat, subgroupAnnotSpecs);
-  }, [subgroupedData, subgroupAnnotSpecs, plotGroupRenames]);
-  useEffect(() => {
-    if (subgroupByCol < 0) return;
-    setAnnotationsFor("_global", mergedSubgroupAnnot);
-  }, [mergedSubgroupAnnot, subgroupByCol, setAnnotationsFor]);
+    return mergeSubgroupAnnotations(
+      subgroupedData.subgroups,
+      renamedFlat,
+      statsUi.subgroupAnnotSpecs
+    );
+  }, [subgroupedData, statsUi.subgroupAnnotSpecs, plotGroupRenames]);
+  // The non-facet chart gets a single annotation spec and a single summary
+  // line chosen by the active mode.
+  const chartAnnotations =
+    subgroupByCol >= 0 && subgroupedData ? mergedSubgroupAnnot : statsUi.flatAnnotation;
+  const chartSummary = subgroupByCol >= 0 && subgroupedData ? null : statsUi.flatSummary;
 
   const toggleFilter = (ci, v) =>
     setFilters((p) => {
@@ -4913,7 +4857,6 @@ function App() {
                   categoryColors={categoryColors}
                   facetByCol={facetByCol}
                   facetedData={facetedData}
-                  facetRefs={facetRefs}
                   chartRef={chartRef}
                   displayBoxplotGroups={
                     subgroupByCol >= 0 && subgroupedData
@@ -4927,12 +4870,10 @@ function App() {
                   vis={vis}
                   yMinVal={yMinVal}
                   yMaxVal={yMaxVal}
-                  plotGroupRenames={plotGroupRenames}
-                  boxplotColors={boxplotColors}
-                  facetStatsAnnotations={facetStatsAnnotations}
-                  facetStatsSummary={facetStatsSummary}
+                  chartAnnotations={chartAnnotations}
+                  chartSummary={chartSummary}
                   subgroups={subgroupByCol >= 0 && subgroupedData ? subgroupedData.subgroups : null}
-                  subgroupSummaries={subgroupByCol >= 0 ? subgroupSummaries : null}
+                  subgroupSummaries={subgroupByCol >= 0 ? statsUi.subgroupSummaries : null}
                 />
                 {subgroupByCol >= 0 && subgroupedData
                   ? (() => {
@@ -4960,22 +4901,16 @@ function App() {
                           setLabel="Subgroup"
                           fileStem={fileStem}
                           onAnnotationForKey={(key, spec) =>
-                            setSubgroupAnnotSpecs((prev) => {
-                              if (prev[key] === spec) return prev;
-                              return { ...prev, [key]: spec };
-                            })
+                            dispatchStats({ type: "setSubgroupAnnotSpec", key, value: spec })
                           }
                           onSummaryForKey={(key, txt) =>
-                            setSubgroupSummaries((prev) => {
-                              if (prev[key] === txt) return prev;
-                              return { ...prev, [key]: txt };
-                            })
+                            dispatchStats({ type: "setSubgroupSummary", key, value: txt })
                           }
-                          displayMode={statsDisplayMode}
+                          displayMode={statsUi.displayMode}
                           onDisplayModeChange={handleStatsDisplayModeChange}
-                          showNs={statsShowNs}
+                          showNs={statsUi.showNs}
                           onShowNsChange={setStatsShowNs}
-                          showSummary={statsShowSummary}
+                          showSummary={statsUi.showSummary}
                           onShowSummaryChange={handleStatsShowSummaryChange}
                         />
                       );
@@ -4985,7 +4920,7 @@ function App() {
                         key="stats-panel-flat"
                         sets={[
                           {
-                            key: "_global",
+                            key: "flat",
                             name: "",
                             groups: displayBoxplotGroups.map((g) => ({
                               name: g.name,
@@ -4996,13 +4931,13 @@ function App() {
                         setLabel=""
                         fileStem={`${fileStem}_stats`}
                         singletonAutoExpand
-                        onAnnotationForKey={(_key, spec) => setAnnotationsFor("_global", spec)}
-                        onSummaryForKey={(_key, txt) => setSummaryFor("_global", txt)}
-                        displayMode={statsDisplayMode}
+                        onAnnotationForKey={(_key, spec) => setFlatStatsAnnotation(spec)}
+                        onSummaryForKey={(_key, txt) => setFlatStatsSummary(txt)}
+                        displayMode={statsUi.displayMode}
                         onDisplayModeChange={handleStatsDisplayModeChange}
-                        showNs={statsShowNs}
+                        showNs={statsUi.showNs}
                         onShowNsChange={setStatsShowNs}
-                        showSummary={statsShowSummary}
+                        showSummary={statsUi.showSummary}
                         onShowSummaryChange={handleStatsShowSummaryChange}
                       />
                     )}
@@ -5021,8 +4956,8 @@ function App() {
                   colorByCol={colorByCol}
                   colorByCategories={colorByCategories}
                   colNames={colNames}
-                  facetStatsAnnotations={facetStatsAnnotations}
-                  facetStatsSummary={facetStatsSummary}
+                  facetStatsAnnotations={statsUi.facetAnnotations}
+                  facetStatsSummary={statsUi.facetSummaries}
                 />
                 {facetedData && facetedData.length > 0 && (
                   <BoxplotStatsPanel
@@ -5041,11 +4976,11 @@ function App() {
                     fileStem={fileStem}
                     onAnnotationForKey={(key, spec) => setAnnotationsFor(key, spec)}
                     onSummaryForKey={(key, txt) => setSummaryFor(key, txt)}
-                    displayMode={statsDisplayMode}
+                    displayMode={statsUi.displayMode}
                     onDisplayModeChange={handleStatsDisplayModeChange}
-                    showNs={statsShowNs}
+                    showNs={statsUi.showNs}
                     onShowNsChange={setStatsShowNs}
-                    showSummary={statsShowSummary}
+                    showSummary={statsUi.showSummary}
                     onShowSummaryChange={handleStatsShowSummaryChange}
                   />
                 )}
