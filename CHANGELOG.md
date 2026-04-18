@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Power Analysis curve fills the plot card instead of sticking to the top** — the `PowerCurve` SVG was sized with `height: auto` on top of a `flex: 1` card, so any extra vertical space in the right-hand column (notably when the "Result" panel below was short) left a white gap under the curve. The SVG now renders at `height: 100%` with `preserveAspectRatio="xMidYMid meet"` inside a flex-centered card, so it stretches to use the available real estate while keeping its 2:1 aspect and centering when one axis has slack.
+
 ## [2.2.0] - 2026-04-18
 
 ### Changed
