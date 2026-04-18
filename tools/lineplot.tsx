@@ -24,6 +24,7 @@ const ERROR_KINDS = [
 // ── Small helpers ──────────────────────────────────────────────────────────
 
 const round4 = (v) => Math.round(v * 10000) / 10000;
+const round2 = (v) => Math.round(v * 100) / 100;
 
 function buildLineD(pts) {
   const valid = pts.filter((p) => p.y != null);
@@ -960,8 +961,8 @@ function PlotControls({
             <span className="dv-label">X min</span>
             <NumberInput
               value={vis.xMin != null ? vis.xMin : autoAxis.xMin}
-              onChange={(e) => updVis({ xMin: Number(e.target.value) })}
-              step="any"
+              onChange={(e) => updVis({ xMin: round2(Number(e.target.value)) })}
+              step="0.1"
               style={{ width: "100%" }}
             />
           </label>
@@ -969,8 +970,8 @@ function PlotControls({
             <span className="dv-label">X max</span>
             <NumberInput
               value={vis.xMax != null ? vis.xMax : autoAxis.xMax}
-              onChange={(e) => updVis({ xMax: Number(e.target.value) })}
-              step="any"
+              onChange={(e) => updVis({ xMax: round2(Number(e.target.value)) })}
+              step="0.1"
               style={{ width: "100%" }}
             />
           </label>
@@ -980,8 +981,8 @@ function PlotControls({
             <span className="dv-label">Y min</span>
             <NumberInput
               value={vis.yMin != null ? vis.yMin : autoAxis.yMin}
-              onChange={(e) => updVis({ yMin: Number(e.target.value) })}
-              step="any"
+              onChange={(e) => updVis({ yMin: round2(Number(e.target.value)) })}
+              step="0.1"
               style={{ width: "100%" }}
             />
           </label>
@@ -989,8 +990,8 @@ function PlotControls({
             <span className="dv-label">Y max</span>
             <NumberInput
               value={vis.yMax != null ? vis.yMax : autoAxis.yMax}
-              onChange={(e) => updVis({ yMax: Number(e.target.value) })}
-              step="any"
+              onChange={(e) => updVis({ yMax: round2(Number(e.target.value)) })}
+              step="0.1"
               style={{ width: "100%" }}
             />
           </label>
@@ -1999,10 +2000,10 @@ function App() {
     const xPad = xMin === xMax ? 0.5 : (xMax - xMin) * 0.05;
     const yPad = yLo === yHi ? 0.5 : (yHi - yLo) * 0.08;
     return {
-      xMin: round4(xMin - xPad),
-      xMax: round4(xMax + xPad),
-      yMin: round4(yLo - yPad),
-      yMax: round4(yHi + yPad),
+      xMin: round2(xMin - xPad),
+      xMax: round2(xMax + xPad),
+      yMin: round2(yLo - yPad),
+      yMax: round2(yHi + yPad),
     };
   }, [series, errorType]);
 
