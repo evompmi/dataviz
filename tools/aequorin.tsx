@@ -694,6 +694,13 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
             const baseline = sy(Math.max(0, yMin2));
             const errVal = errBars[i] || 0;
             const capW = halfBar * 0.4;
+            const hiVal = val + errVal;
+            const loVal = val - errVal;
+            const hiValC = Math.min(hiVal, yMax2);
+            const loValC = Math.max(loVal, yMin2);
+            const drawErrBar = insetErrorType !== "none" && errVal > 0 && hiValC > loValC;
+            const drawHiCap = drawErrBar && hiVal <= yMax2;
+            const drawLoCap = drawErrBar && loVal >= yMin2;
             return (
               <g key={b.prefix} id={`bar-${svgSafeId(b.prefix)}`}>
                 <rect
@@ -707,32 +714,36 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
                   strokeWidth={insetShowBarOutline ? insetBarStrokeWidth || 1 : 0}
                   rx="1"
                 />
-                {insetErrorType !== "none" && errVal > 0 && (
+                {drawErrBar && (
                   <>
                     <line
                       x1={bx(i)}
                       x2={bx(i)}
-                      y1={sy(val + errVal)}
-                      y2={sy(val - errVal)}
+                      y1={sy(hiValC)}
+                      y2={sy(loValC)}
                       stroke="#333"
                       strokeWidth={insetErrorStrokeWidth}
                     />
-                    <line
-                      x1={bx(i) - capW}
-                      x2={bx(i) + capW}
-                      y1={sy(val + errVal)}
-                      y2={sy(val + errVal)}
-                      stroke="#333"
-                      strokeWidth={insetErrorStrokeWidth}
-                    />
-                    <line
-                      x1={bx(i) - capW}
-                      x2={bx(i) + capW}
-                      y1={sy(val - errVal)}
-                      y2={sy(val - errVal)}
-                      stroke="#333"
-                      strokeWidth={insetErrorStrokeWidth}
-                    />
+                    {drawHiCap && (
+                      <line
+                        x1={bx(i) - capW}
+                        x2={bx(i) + capW}
+                        y1={sy(hiValC)}
+                        y2={sy(hiValC)}
+                        stroke="#333"
+                        strokeWidth={insetErrorStrokeWidth}
+                      />
+                    )}
+                    {drawLoCap && (
+                      <line
+                        x1={bx(i) - capW}
+                        x2={bx(i) + capW}
+                        y1={sy(loValC)}
+                        y2={sy(loValC)}
+                        stroke="#333"
+                        strokeWidth={insetErrorStrokeWidth}
+                      />
+                    )}
                   </>
                 )}
                 {showPoints &&
