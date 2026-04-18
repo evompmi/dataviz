@@ -2975,7 +2975,8 @@ function summariseEqualVariance(lev) {
   if (!lev || lev.F == null) return "—";
   return lev.equalVar ? "yes" : "no";
 }
-function computeBpSummaryText(row, showSummary) {
+const ERROR_BAR_LABELS = { none: "None", sd: "SD", sem: "SEM", ci95: "95% CI" };
+function computeBpSummaryText(row, showSummary, errorBarLabel) {
   if (!showSummary || !row || row.skip) return null;
   const { chosenTest, testResult, k, postHocName, rec } = row;
   if (!chosenTest || !testResult || testResult.error) return null;
@@ -2987,6 +2988,7 @@ function computeBpSummaryText(row, showSummary) {
   if (k > 2 && postHocName) {
     lines.push(`Post-hoc: ${POSTHOC_LABELS_BP[postHocName] || postHocName}`);
   }
+  if (errorBarLabel) lines.push(`Error bars: ${errorBarLabel}`);
   return lines.join("\n");
 }
 
@@ -3455,6 +3457,7 @@ function BoxplotStatsPanel({
   onShowNsChange,
   showSummary,
   onShowSummaryChange,
+  errorBarLabel,
 }: any) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(
     singletonAutoExpand && sets.length === 1 ? { [sets[0].key]: true } : {}
@@ -3520,10 +3523,10 @@ function BoxplotStatsPanel({
   const summaryByKey = useMemo(() => {
     const out: Record<string, string | null> = {};
     for (const r of enriched) {
-      out[r.key] = r.skip ? null : computeBpSummaryText(r, showSummary);
+      out[r.key] = r.skip ? null : computeBpSummaryText(r, showSummary, errorBarLabel);
     }
     return out;
-  }, [enriched, showSummary]);
+  }, [enriched, showSummary, errorBarLabel]);
   const summaryKey = JSON.stringify(summaryByKey);
   const onSummaryForKeyRef = useRef(onSummaryForKey);
   onSummaryForKeyRef.current = onSummaryForKey;
@@ -4958,6 +4961,9 @@ function App() {
                           onShowNsChange={setStatsShowNs}
                           showSummary={statsUi.showSummary}
                           onShowSummaryChange={handleStatsShowSummaryChange}
+                          errorBarLabel={
+                            vis.plotStyle === "bar" ? ERROR_BAR_LABELS[vis.errorType] : null
+                          }
                         />
                       );
                     })()
@@ -4985,6 +4991,9 @@ function App() {
                         onShowNsChange={setStatsShowNs}
                         showSummary={statsUi.showSummary}
                         onShowSummaryChange={handleStatsShowSummaryChange}
+                        errorBarLabel={
+                          vis.plotStyle === "bar" ? ERROR_BAR_LABELS[vis.errorType] : null
+                        }
                       />
                     )}
               </>
@@ -5028,6 +5037,7 @@ function App() {
                     onShowNsChange={setStatsShowNs}
                     showSummary={statsUi.showSummary}
                     onShowSummaryChange={handleStatsShowSummaryChange}
+                    errorBarLabel={vis.plotStyle === "bar" ? ERROR_BAR_LABELS[vis.errorType] : null}
                   />
                 )}
               </>

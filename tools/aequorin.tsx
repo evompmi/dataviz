@@ -1043,7 +1043,8 @@ function summariseAqEqualVariance(lev) {
   if (!lev || lev.F == null) return "—";
   return lev.equalVar ? "yes" : "no";
 }
-function computeAqSummaryText(row, showSummary) {
+const AQ_ERROR_BAR_LABELS = { none: "None", sd: "SD", sem: "SEM", ci95: "95% CI" };
+function computeAqSummaryText(row, showSummary, errorBarLabel) {
   if (!showSummary || !row || row.skip) return null;
   const { chosenTest, testResult, k, postHocName, rec } = row;
   if (!chosenTest || !testResult || testResult.error) return null;
@@ -1055,6 +1056,7 @@ function computeAqSummaryText(row, showSummary) {
   if (k > 2 && postHocName) {
     lines.push(`Post-hoc: ${POSTHOC_LABELS_AQ[postHocName] || postHocName}`);
   }
+  if (errorBarLabel) lines.push(`Error bars: ${errorBarLabel}`);
   return lines.join("\n");
 }
 
@@ -1455,7 +1457,13 @@ function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
   );
 }
 
-function AequorinStatsPanel({ groups, fileStem, onAnnotationChange, onSummaryChange }: any) {
+function AequorinStatsPanel({
+  groups,
+  fileStem,
+  onAnnotationChange,
+  onSummaryChange,
+  errorBarLabel,
+}: any) {
   const singleKey = "_global";
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ [singleKey]: true });
   const [hovered, setHovered] = useState<string | null>(null);
@@ -1508,8 +1516,8 @@ function AequorinStatsPanel({ groups, fileStem, onAnnotationChange, onSummaryCha
   }, [annotKey]);
 
   const summaryText = useMemo(
-    () => (enriched.skip ? null : computeAqSummaryText(enriched, showSummary)),
-    [enriched, showSummary]
+    () => (enriched.skip ? null : computeAqSummaryText(enriched, showSummary, errorBarLabel)),
+    [enriched, showSummary, errorBarLabel]
   );
   const onSummaryRef = useRef(onSummaryChange);
   onSummaryRef.current = onSummaryChange;
@@ -2199,6 +2207,7 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 fileStem={`${baseName}_stats`}
                 onAnnotationChange={setStatsAnnotations}
                 onSummaryChange={setStatsSummary}
+                errorBarLabel={AQ_ERROR_BAR_LABELS[insetErrorType]}
               />
             </div>
           )}
