@@ -152,9 +152,8 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
               ? g.stats.ci95
               : g.stats.sem;
       const top = g.stats.mean + errVal;
-      const bot = g.stats.mean - errVal;
       if (top > dMax) dMax = top;
-      if (bot < dMin) dMin = bot;
+      if (g.stats.mean < dMin) dMin = g.stats.mean;
       if (g.stats.max > dMax) dMax = g.stats.max;
       if (g.stats.min < dMin) dMin = g.stats.min;
     }
@@ -488,8 +487,15 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
             const baselinePos = sy(isLog ? yMin : Math.max(0, yMin));
             const meanPos = sy(mean);
             const capSize = halfBox * 0.4;
-            const errHi = sy(mean + errVal);
-            const errLo = sy(mean - errVal);
+            const hiVal = mean + errVal;
+            const loVal = mean - errVal;
+            const hiValC = Math.min(hiVal, yMax);
+            const loValC = Math.max(loVal, yMin);
+            const drawWhisker = showErr && hiValC > loValC;
+            const drawHiCap = drawWhisker && hiVal <= yMax;
+            const drawLoCap = drawWhisker && loVal >= yMin;
+            const errHi = sy(hiValC);
+            const errLo = sy(loValC);
             const barR = hz
               ? {
                   x: Math.min(baselinePos, meanPos),
@@ -518,7 +524,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                   strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
                   rx="1"
                 />
-                {showErr && (
+                {drawWhisker && (
                   <>
                     <line
                       x1={hz ? errLo : cx}
@@ -528,22 +534,26 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                       stroke="#333"
                       strokeWidth={errStrokeWidth || 1.2}
                     />
-                    <line
-                      x1={hz ? errHi : cx - capSize}
-                      x2={hz ? errHi : cx + capSize}
-                      y1={hz ? cx - capSize : errHi}
-                      y2={hz ? cx + capSize : errHi}
-                      stroke="#333"
-                      strokeWidth={errStrokeWidth || 1.2}
-                    />
-                    <line
-                      x1={hz ? errLo : cx - capSize}
-                      x2={hz ? errLo : cx + capSize}
-                      y1={hz ? cx - capSize : errLo}
-                      y2={hz ? cx + capSize : errLo}
-                      stroke="#333"
-                      strokeWidth={errStrokeWidth || 1.2}
-                    />
+                    {drawHiCap && (
+                      <line
+                        x1={hz ? errHi : cx - capSize}
+                        x2={hz ? errHi : cx + capSize}
+                        y1={hz ? cx - capSize : errHi}
+                        y2={hz ? cx + capSize : errHi}
+                        stroke="#333"
+                        strokeWidth={errStrokeWidth || 1.2}
+                      />
+                    )}
+                    {drawLoCap && (
+                      <line
+                        x1={hz ? errLo : cx - capSize}
+                        x2={hz ? errLo : cx + capSize}
+                        y1={hz ? cx - capSize : errLo}
+                        y2={hz ? cx + capSize : errLo}
+                        stroke="#333"
+                        strokeWidth={errStrokeWidth || 1.2}
+                      />
+                    )}
                   </>
                 )}
                 {showPoints &&

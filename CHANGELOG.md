@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Error-bar whiskers on bar charts no longer extend past the axis frame** — in Group Plot (bar style) and Aequorin (inset barplot) auto-y mode, when the lower whisker (`mean − err`) dropped below the baseline (typically 0), the line kept drawing down into the x-axis tick labels. Two changes: (1) Group Plot's auto-y calculation no longer extends `yMin` to include `mean − err`; it only extends for actually-negative means or data points, so bars stay anchored at 0 by default (matches Aequorin's existing behavior). (2) Both tools now clip the whisker to `[yMin, yMax]` in data-space before projecting to pixels, and drop the end-cap on a clipped end (matplotlib / `coord_cartesian` convention) so the truncation is visible — the line remains but the cap disappears, signalling that the error extends beyond the plot range.
+
 ### Added
 
 - **"None" error-bar option on Group Plot barplot** — the Group Plot (bar style) error-bar selector now reads `None / SEM / SD / 95% CI`, matching Aequorin's inset barplot. Picking "None" suppresses the three whisker lines, drops the error-bar stroke-width slider (nothing to style), and removes the error term from each bar's aria-label. The auto y-axis path treats the error magnitude as `0` in this case so bars no longer reserve headroom for whiskers that won't render.
