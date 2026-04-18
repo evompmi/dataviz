@@ -182,6 +182,21 @@ function buildRScript(ctx) {
   parts.push(_longFormatDataFrame(names, values, "df"));
   parts.push("");
 
+  // Descriptive statistics mirror the Groups section of the StatsTile: n, mean,
+  // SD, SEM, and 95% CI half-width (t-critical × SEM) per group. Built with
+  // base R so no extra package is needed.
+  parts.push("# --- Descriptive statistics --------------------------------------------------");
+  parts.push("desc <- do.call(rbind, by(df$value, df$group, function(v) {");
+  parts.push("  n    <- length(v)");
+  parts.push("  m    <- mean(v)");
+  parts.push("  s    <- if (n > 1) sd(v) else 0");
+  parts.push("  sem  <- if (n > 1) s / sqrt(n) else 0");
+  parts.push("  ci95 <- if (n > 1) qt(0.975, n - 1) * sem else 0");
+  parts.push("  data.frame(n = n, mean = m, sd = s, sem = sem, ci95 = ci95)");
+  parts.push("}))");
+  parts.push("print(desc)");
+  parts.push("");
+
   // Assumption checks mirror what the StatsTile reports: per-group Shapiro-Wilk
   // for normality, then Brown-Forsythe Levene for variance homogeneity.
   parts.push("# --- Assumptions -------------------------------------------------------------");

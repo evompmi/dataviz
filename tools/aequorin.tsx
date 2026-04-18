@@ -563,6 +563,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     const variance = n > 1 ? vals.reduce((a, v) => a + (v - barMean) ** 2, 0) / (n - 1) : 0;
     const sd = Math.sqrt(variance);
     const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 && typeof tinv === "function" ? tinv(0.975, n - 1) * sem : 0;
     return {
       label: s.label,
       prefix: s.prefix,
@@ -570,6 +571,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
       barMean,
       sd,
       sem,
+      ci95,
       n,
       vals,
     };
@@ -578,6 +580,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   const errBars = bars.map((b) => {
     if (insetErrorType === "sd") return b.sd;
     if (insetErrorType === "sem") return b.sem;
+    if (insetErrorType === "ci95") return b.ci95;
     return 0;
   });
 
@@ -1052,9 +1055,16 @@ function buildAqSetTextBlock(row) {
   lines.push("Groups:");
   for (let i = 0; i < names.length; i++) {
     const vs = values[i];
+    const n = vs.length;
     const mean = sampleMean(vs);
-    const sd = vs.length > 1 ? sampleSD(vs) : 0;
-    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+    const sd = n > 1 ? sampleSD(vs) : 0;
+    const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
+    const semStr = n > 1 ? sem.toFixed(3) : "—";
+    const ciStr = n > 1 ? `±${ci95.toFixed(3)}` : "—";
+    lines.push(
+      `  ${names[i]}: n=${n}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}, SEM=${semStr}, 95% CI=${ciStr}`
+    );
   }
   lines.push("");
   const rec = row.rec;
@@ -1206,19 +1216,26 @@ function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
             <th style={thS}>n</th>
             <th style={thS}>Mean</th>
             <th style={thS}>SD</th>
+            <th style={thS}>SEM</th>
+            <th style={thS}>95% CI</th>
           </tr>
         </thead>
         <tbody>
           {names.map((name, i) => {
             const vs = values[i];
+            const n = vs.length;
             const m = sampleMean(vs);
-            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            const sd = n > 1 ? sampleSD(vs) : 0;
+            const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+            const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
             return (
               <tr key={i}>
                 <td style={tdS}>{name}</td>
-                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{n}</td>
                 <td style={tdS}>{m.toFixed(3)}</td>
                 <td style={tdS}>{sd.toFixed(3)}</td>
+                <td style={tdS}>{n > 1 ? sem.toFixed(3) : "—"}</td>
+                <td style={tdS}>{n > 1 ? `±${ci95.toFixed(3)}` : "—"}</td>
               </tr>
             );
           })}
@@ -3034,7 +3051,6 @@ function PlotControls({
   downloadCalibrated,
   resetAll,
 }) {
-  const sv = (k) => (v) => updVis({ [k]: v });
   return (
     <div
       style={{
@@ -3118,7 +3134,7 @@ function PlotControls({
           min={0}
           max={20}
           step={1}
-          onChange={sv("smoothWidth")}
+          onChange={(v) => updVis({ smoothWidth: v })}
         />
         <label style={{ display: "block" }}>
           <span className="dv-label">Display unit</span>
@@ -3163,11 +3179,11 @@ function PlotControls({
       <ControlSection title="Style">
         <BaseStyleControls
           plotBg={vis.plotBg}
-          onPlotBgChange={sv("plotBg")}
+          onPlotBgChange={(v) => updVis({ plotBg: v })}
           showGrid={vis.showGrid}
-          onShowGridChange={sv("showGrid")}
+          onShowGridChange={(v) => updVis({ showGrid: v })}
           gridColor={vis.gridColor}
-          onGridColorChange={sv("gridColor")}
+          onGridColorChange={(v) => updVis({ gridColor: v })}
         />
         <SliderControl
           label="Line width"
@@ -3175,7 +3191,7 @@ function PlotControls({
           min={0.5}
           max={5}
           step={0.5}
-          onChange={sv("lineWidth")}
+          onChange={(v) => updVis({ lineWidth: v })}
         />
         <SliderControl
           label="SD opacity"
@@ -3184,7 +3200,7 @@ function PlotControls({
           min={0}
           max={1}
           step={0.05}
-          onChange={sv("ribbonOpacity")}
+          onChange={(v) => updVis({ ribbonOpacity: v })}
         />
       </ControlSection>
 
@@ -3292,7 +3308,7 @@ function PlotControls({
                   <span className="dv-label">Grid color</span>
                   <ColorInput
                     value={vis.insetGridColor}
-                    onChange={sv("insetGridColor")}
+                    onChange={(v) => updVis({ insetGridColor: v })}
                     size={24}
                   />
                 </label>
@@ -3304,7 +3320,7 @@ function PlotControls({
                 min={-90}
                 max={0}
                 step={5}
-                onChange={sv("insetXLabelAngle")}
+                onChange={(v) => updVis({ insetXLabelAngle: v })}
               />
             </div>
 
@@ -3315,7 +3331,7 @@ function PlotControls({
               min={20}
               max={100}
               step={5}
-              onChange={sv("insetBarWidth")}
+              onChange={(v) => updVis({ insetBarWidth: v })}
             />
             <SliderControl
               label="Bar gap"
@@ -3324,7 +3340,7 @@ function PlotControls({
               min={0}
               max={80}
               step={5}
-              onChange={sv("insetBarGap")}
+              onChange={(v) => updVis({ insetBarGap: v })}
             />
             <SliderControl
               label="Bar fill opacity"
@@ -3333,7 +3349,7 @@ function PlotControls({
               min={0}
               max={1}
               step={0.05}
-              onChange={sv("insetFillOpacity")}
+              onChange={(v) => updVis({ insetFillOpacity: v })}
             />
             <div>
               <span className="dv-label">Bar outline</span>
@@ -3380,13 +3396,13 @@ function PlotControls({
                   min={0.2}
                   max={4}
                   step={0.1}
-                  onChange={sv("insetBarStrokeWidth")}
+                  onChange={(v) => updVis({ insetBarStrokeWidth: v })}
                 />
                 <label style={{ display: "block" }}>
                   <span className="dv-label">Outline color</span>
                   <ColorInput
                     value={vis.insetBarOutlineColor}
-                    onChange={sv("insetBarOutlineColor")}
+                    onChange={(v) => updVis({ insetBarOutlineColor: v })}
                     size={24}
                   />
                 </label>
@@ -3405,8 +3421,16 @@ function PlotControls({
                     border: "1px solid var(--border-strong)",
                   }}
                 >
-                  {(["none", "sem", "sd"] as const).map((mode) => {
+                  {(["none", "sem", "sd", "ci95"] as const).map((mode) => {
                     const active = vis.insetErrorType === mode;
+                    const label =
+                      mode === "none"
+                        ? "None"
+                        : mode === "sem"
+                          ? "SEM"
+                          : mode === "sd"
+                            ? "SD"
+                            : "95% CI";
                     return (
                       <button
                         key={mode}
@@ -3425,7 +3449,7 @@ function PlotControls({
                           transition: "background 120ms ease, color 120ms ease",
                         }}
                       >
-                        {mode === "none" ? "None" : mode === "sem" ? "SEM" : "SD"}
+                        {label}
                       </button>
                     );
                   })}
@@ -3438,7 +3462,7 @@ function PlotControls({
                   min={0.2}
                   max={3}
                   step={0.1}
-                  onChange={sv("insetErrorStrokeWidth")}
+                  onChange={(v) => updVis({ insetErrorStrokeWidth: v })}
                 />
               )}
             </div>
@@ -3487,7 +3511,7 @@ function PlotControls({
                     <span className="dv-label">Color</span>
                     <ColorInput
                       value={vis.insetPointColor}
-                      onChange={sv("insetPointColor")}
+                      onChange={(v) => updVis({ insetPointColor: v })}
                       size={24}
                     />
                   </label>
@@ -3498,7 +3522,7 @@ function PlotControls({
                     min={1}
                     max={6}
                     step={0.5}
-                    onChange={sv("insetPointSize")}
+                    onChange={(v) => updVis({ insetPointSize: v })}
                   />
                 </>
               )}
