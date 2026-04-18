@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Aequorin's Pool-by-name / Individual selector promoted out of the Sample-selection popover, and the Sample-selection pill restyled to match** — this control decides the _shape_ of every series that follows (pooled means one line per condition with a ribbon; individual means one line per replicate), so it affects the chart, the inset barplot, the stats tile, and every export. It used to be tucked inside the Sample-selection overlay where it only surfaced once the popover was open. It now lives as a top-right pill group next to the Combined / Faceted toggle, labelled `SERIES · Pool by name / Individual`. All three groups (`SAMPLES`, `SERIES`, `LAYOUT`) now share the same visual weight: tiny uppercase captions, 12 px font, 600 weight, 1 px accent-coloured border, and the same padding, so they read as three independent axes rather than one dominant button plus two secondary toggles. Accents stay distinct — amber (`--accent-warning`) for Samples, purple (`--cta-dna-bg`, matching the DNA/molarity token family) for Series, blue (`--step-active-bg`) for Layout. Sample selection keeps its sticky scroll-tracking behavior; Series and Layout still scroll away with the chart. No behavior change; `handlePoolChange` is the same callback that used to sit in the popover.
+
 ### Fixed
 
 - **Venn diagram no longer collides with title and legend** — `fitCirclesToViewport` used a flat 15 px margin on every edge, so 3-set classic and 3-set proportional layouts pushed the circles within ~10 px of the topmost legend entry (legend rows sit at `VH − 20 − (n − 1)·22`) and ~27 px of the title. Replaced the symmetric margin with asymmetric reserves: `marginTop = max(margin, 40)` to clear the 16 px title line, `marginBottom = max(margin, circles.length · 22 + 20)` to clear the stacked legend. The fit now squeezes vertically against the reduced `availH` and recentres the diagram on the remaining band, so circles visibly shrink (3 sets on a 600 × 500 viewport: radius down ~6 %) and gain clear air above and below. Left/right margin unchanged.

@@ -3558,7 +3558,6 @@ function SampleSelectionOverlay({
   showColumnOverlay,
   setShowColumnOverlay,
   poolReplicates,
-  handlePoolChange,
   colInfo,
   columnEnabled,
   handleColumnToggle,
@@ -3569,21 +3568,33 @@ function SampleSelectionOverlay({
     if (c && c.prefix != null) labelByPrefix[c.prefix] = c.label ?? c.prefix;
   });
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+      <span
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--text-faint)",
+          marginBottom: 2,
+        }}
+      >
+        Samples
+      </span>
       <div style={{ position: "relative", display: "inline-block" }}>
         <button
           onClick={() => setShowColumnOverlay(!showColumnOverlay)}
+          aria-pressed={showColumnOverlay}
           style={{
-            padding: "7px 16px",
+            padding: "6px 14px",
             borderRadius: 8,
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 600,
             fontFamily: "inherit",
             cursor: "pointer",
-            background: showColumnOverlay ? "var(--accent-warning)" : "var(--warning-bg)",
+            background: showColumnOverlay ? "var(--accent-warning)" : "var(--surface)",
             color: showColumnOverlay ? "var(--on-accent)" : "var(--warning-text)",
-            border: "2px solid var(--accent-warning)",
-            boxShadow: "var(--accent-warning-shadow)",
+            border: "1px solid var(--accent-warning)",
           }}
         >
           {showColumnOverlay ? "✕ Close" : "🔬 Sample selection"}
@@ -3605,43 +3616,6 @@ function SampleSelectionOverlay({
               overflowY: "auto",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
-                Column grouping
-              </p>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[
-                  { val: true, label: "Pool by name" },
-                  { val: false, label: "Individual" },
-                ].map(({ val, label }) => (
-                  <button
-                    key={label}
-                    onClick={() => handlePoolChange(val)}
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 5,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      background:
-                        poolReplicates === val ? "var(--accent-warning)" : "var(--surface)",
-                      color: poolReplicates === val ? "var(--on-accent)" : "var(--text-faint)",
-                      border: `1px solid ${poolReplicates === val ? "var(--accent-warning)" : "var(--border-strong)"}`,
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div
               style={{
                 display: "flex",
@@ -4189,62 +4163,143 @@ function App() {
 
             {/* RIGHT: chart area */}
             <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-              {/* Non-sticky Combined / Faceted toggle — absolutely positioned
-                  at the top-right so on landing it shares a row with the
-                  sticky Sample-selection pill, but scrolls away normally
-                  while Sample selection alone continues to stick. */}
+              {/* Non-sticky Series (Pool/Individual) + Layout (Combined/Faceted)
+                  toggles — absolutely positioned at the top-right so on landing
+                  they share a row with the sticky Sample-selection pill, but
+                  scroll away normally while Sample selection alone continues
+                  to stick. The two groups are separated by a gap and carry
+                  tiny captions because they're orthogonal axes: Series is a
+                  data-shape decision (how replicates are pooled), Layout is a
+                  visual decision (one plot vs. one per condition). Different
+                  accent colours (purple vs. blue) reinforce the distinction. */}
               <div
                 style={{
                   position: "absolute",
                   top: 0,
                   right: 0,
                   zIndex: 19,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 18,
                 }}
               >
-                <div
-                  role="group"
-                  aria-label="Plot view"
-                  style={{
-                    display: "inline-flex",
-                    border: "1px solid var(--step-active-border)",
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    background: "var(--surface)",
-                  }}
-                >
-                  <button
-                    onClick={() => updVis({ faceted: false })}
-                    aria-pressed={!vis.faceted}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                  <span
                     style={{
-                      padding: "6px 14px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                      background: !vis.faceted ? "var(--step-active-bg)" : "transparent",
-                      color: !vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
-                      border: "none",
-                      borderRight: "1px solid var(--step-active-border)",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      color: "var(--text-faint)",
+                      marginBottom: 2,
                     }}
                   >
-                    Combined
-                  </button>
-                  <button
-                    onClick={() => updVis({ faceted: true })}
-                    aria-pressed={vis.faceted}
+                    Series
+                  </span>
+                  <div
+                    role="group"
+                    aria-label="Series definition"
                     style={{
-                      padding: "6px 14px",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                      cursor: "pointer",
-                      background: vis.faceted ? "var(--step-active-bg)" : "transparent",
-                      color: vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
-                      border: "none",
+                      display: "inline-flex",
+                      border: "1px solid var(--cta-dna-bg)",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      background: "var(--surface)",
                     }}
                   >
-                    Faceted
-                  </button>
+                    <button
+                      onClick={() => handlePoolChange(true)}
+                      aria-pressed={poolReplicates}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        background: poolReplicates ? "var(--cta-dna-bg)" : "transparent",
+                        color: poolReplicates ? "var(--on-accent)" : "var(--text-faint)",
+                        border: "none",
+                        borderRight: "1px solid var(--cta-dna-bg)",
+                      }}
+                    >
+                      Pool by name
+                    </button>
+                    <button
+                      onClick={() => handlePoolChange(false)}
+                      aria-pressed={!poolReplicates}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        background: !poolReplicates ? "var(--cta-dna-bg)" : "transparent",
+                        color: !poolReplicates ? "var(--on-accent)" : "var(--text-faint)",
+                        border: "none",
+                      }}
+                    >
+                      Individual
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      textTransform: "uppercase",
+                      color: "var(--text-faint)",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Layout
+                  </span>
+                  <div
+                    role="group"
+                    aria-label="Plot layout"
+                    style={{
+                      display: "inline-flex",
+                      border: "1px solid var(--step-active-border)",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      background: "var(--surface)",
+                    }}
+                  >
+                    <button
+                      onClick={() => updVis({ faceted: false })}
+                      aria-pressed={!vis.faceted}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        background: !vis.faceted ? "var(--step-active-bg)" : "transparent",
+                        color: !vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
+                        border: "none",
+                        borderRight: "1px solid var(--step-active-border)",
+                      }}
+                    >
+                      Combined
+                    </button>
+                    <button
+                      onClick={() => updVis({ faceted: true })}
+                      aria-pressed={vis.faceted}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        background: vis.faceted ? "var(--step-active-bg)" : "transparent",
+                        color: vis.faceted ? "var(--on-accent)" : "var(--text-faint)",
+                        border: "none",
+                      }}
+                    >
+                      Faceted
+                    </button>
+                  </div>
                 </div>
               </div>
               {/* Sticky row: Sample selection. `width: fit-content` keeps
@@ -4268,7 +4323,6 @@ function App() {
                   showColumnOverlay={vis.showColumnOverlay}
                   setShowColumnOverlay={(v) => updVis({ showColumnOverlay: v })}
                   poolReplicates={poolReplicates}
-                  handlePoolChange={handlePoolChange}
                   colInfo={colInfo}
                   columnEnabled={columnEnabled}
                   handleColumnToggle={handleColumnToggle}
