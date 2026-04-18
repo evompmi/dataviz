@@ -1013,26 +1013,35 @@ function computeAqAnnotationSpec(row, displayMode, showNs) {
   return { kind: "brackets", pairs, groupNames: names };
 }
 
+function summariseAqNormality(norm) {
+  if (!Array.isArray(norm) || norm.length === 0) return "—";
+  let hasTrue = false;
+  let hasFalse = false;
+  for (const r of norm) {
+    if (r.normal === true) hasTrue = true;
+    else if (r.normal === false) hasFalse = true;
+  }
+  if (hasFalse) return "no";
+  if (hasTrue) return "yes";
+  return "—";
+}
+function summariseAqEqualVariance(lev) {
+  if (!lev || lev.F == null) return "—";
+  return lev.equalVar ? "yes" : "no";
+}
 function computeAqSummaryText(row, showSummary) {
   if (!showSummary || !row || row.skip) return null;
-  const { chosenTest, testResult, k, postHocResult, postHocName, names, values, powerResult } = row;
+  const { chosenTest, testResult, k, postHocName, rec } = row;
   if (!chosenTest || !testResult || testResult.error) return null;
-  const parts = [];
-  parts.push(
-    `${TEST_LABELS_AQ[chosenTest] || chosenTest}: ${formatAqResultLine(chosenTest, testResult)}`
-  );
-  if (k > 2 && postHocResult && !postHocResult.error) {
-    parts.push("Post-hoc: " + (POSTHOC_LABELS_AQ[postHocName] || postHocName));
-    for (const pr of postHocResult.pairs) {
-      const p = pr.pAdj != null ? pr.pAdj : pr.p;
-      parts.push(`  ${names[pr.i]} vs ${names[pr.j]}: p = ${formatP(p)} ${pStars(p)}`);
-    }
+  const lines = [
+    `Normality: ${summariseAqNormality(rec && rec.normality)}`,
+    `Equal variance: ${summariseAqEqualVariance(rec && rec.levene)}`,
+    `Test: ${TEST_LABELS_AQ[chosenTest] || chosenTest}`,
+  ];
+  if (k > 2 && postHocName) {
+    lines.push(`Post-hoc: ${POSTHOC_LABELS_AQ[postHocName] || postHocName}`);
   }
-  if (powerResult) {
-    parts.push(`Effect size: ${powerResult.effectLabel} = ${powerResult.effect.toFixed(3)}`);
-  }
-  parts.push(`n per group: ${names.map((n, i) => `${n}=${values[i].length}`).join(", ")}`);
-  return parts.join("\n");
+  return lines.join("\n");
 }
 
 function buildAqSetTextBlock(row) {

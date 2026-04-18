@@ -1612,11 +1612,37 @@ function PerXStatsPanel({ rows, xLabel, fileName }) {
       return next;
     });
 
+  const xSlug = (row, i) => {
+    const raw = formatX(row.x);
+    const clean =
+      typeof svgSafeId === "function"
+        ? svgSafeId(String(raw)).replace(/^-+|-+$/g, "")
+        : String(raw)
+            .replace(/[^A-Za-z0-9._-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+    return clean || `x-${i + 1}`;
+  };
   const downloadReport = () => {
-    downloadText(buildAggregateReport(enriched, xLabel), `${stem}_stats.txt`);
+    if (enriched.length <= 1) {
+      downloadText(buildAggregateReport(enriched, xLabel), `${stem}_stats.txt`);
+      return;
+    }
+    enriched.forEach((row, i) => {
+      const content = buildAggregateReport([row], xLabel);
+      const name = `${stem}_${xSlug(row, i)}_stats.txt`;
+      setTimeout(() => downloadText(content, name), i * 120);
+    });
   };
   const downloadR = () => {
-    downloadText(buildAggregateRScript(enriched, xLabel), `${stem}_stats.R`);
+    if (enriched.length <= 1) {
+      downloadText(buildAggregateRScript(enriched, xLabel), `${stem}_stats.R`);
+      return;
+    }
+    enriched.forEach((row, i) => {
+      const content = buildAggregateRScript([row], xLabel);
+      const name = `${stem}_${xSlug(row, i)}_stats.R`;
+      setTimeout(() => downloadText(content, name), i * 120);
+    });
   };
 
   const thS: React.CSSProperties = {

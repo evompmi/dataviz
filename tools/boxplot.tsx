@@ -1049,7 +1049,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
       {renderSvgLegend(svgLegend, vbH_chart + 10, M.left, vbW - M.left - M.right, 88, 14)}
       {_hasSgSummaries
-        ? subgroups.map((sg) => {
+        ? subgroups.map((sg, sgIdx) => {
             const txt = subgroupSummaries[sg.name];
             if (!txt) return null;
             const lines = txt.split("\n");
@@ -1080,14 +1080,20 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
               );
             }
             const summaryY = vbH_chart + _legH;
+            // Anchor each block at the left edge of its subgroup band: the
+            // plot frame for the first subgroup, the dashed separator line
+            // to its left for the rest. Matches the separator geometry at
+            // line ~720 (sepPos = bx(startIndex) - bandW/2 - separatorGap/2).
+            const leftEdge =
+              sgIdx === 0 ? M.left : bx(sg.startIndex) - bandW / 2 - separatorGap / 2;
             return (
               <g key={`sg-summary-${sg.name}`} id={`stats-summary-${svgSafeId(sg.name)}`}>
                 {lines.map((line, i) => (
                   <text
                     key={i}
-                    x={centerPos}
+                    x={leftEdge + 4}
                     y={summaryY + 10 + i * STATS_LINE_H}
-                    textAnchor="middle"
+                    textAnchor="start"
                     fontSize={STATS_FONT}
                     fill="#aaa"
                     fontFamily="monospace"
@@ -2990,28 +2996,38 @@ function computeBpAnnotationSpec(row, displayMode, showNs) {
   return { kind: "brackets", pairs, groupNames: names };
 }
 
-// Plain-text "print summary below plot" string. Matches the StatsTile
-// output used by the old per-facet tile so chart exports line up.
+// Plain-text "print summary below plot" string — a lean four-line recap
+// (normality / equal variance / test / post-hoc). Detailed per-pair stats
+// live in the TXT / R downloads.
+function summariseNormality(norm) {
+  if (!Array.isArray(norm) || norm.length === 0) return "—";
+  let hasTrue = false;
+  let hasFalse = false;
+  for (const r of norm) {
+    if (r.normal === true) hasTrue = true;
+    else if (r.normal === false) hasFalse = true;
+  }
+  if (hasFalse) return "no";
+  if (hasTrue) return "yes";
+  return "—";
+}
+function summariseEqualVariance(lev) {
+  if (!lev || lev.F == null) return "—";
+  return lev.equalVar ? "yes" : "no";
+}
 function computeBpSummaryText(row, showSummary) {
   if (!showSummary || !row || row.skip) return null;
-  const { chosenTest, testResult, k, postHocResult, postHocName, names, values, powerResult } = row;
+  const { chosenTest, testResult, k, postHocName, rec } = row;
   if (!chosenTest || !testResult || testResult.error) return null;
-  const parts = [];
-  parts.push(
-    `${TEST_LABELS_BP[chosenTest] || chosenTest}: ${formatBpResultLine(chosenTest, testResult)}`
-  );
-  if (k > 2 && postHocResult && !postHocResult.error) {
-    parts.push("Post-hoc: " + (POSTHOC_LABELS_BP[postHocName] || postHocName));
-    for (const pr of postHocResult.pairs) {
-      const p = pr.pAdj != null ? pr.pAdj : pr.p;
-      parts.push(`  ${names[pr.i]} vs ${names[pr.j]}: p = ${formatP(p)} ${pStars(p)}`);
-    }
+  const lines = [
+    `Normality: ${summariseNormality(rec && rec.normality)}`,
+    `Equal variance: ${summariseEqualVariance(rec && rec.levene)}`,
+    `Test: ${TEST_LABELS_BP[chosenTest] || chosenTest}`,
+  ];
+  if (k > 2 && postHocName) {
+    lines.push(`Post-hoc: ${POSTHOC_LABELS_BP[postHocName] || postHocName}`);
   }
-  if (powerResult) {
-    parts.push(`Effect size: ${powerResult.effectLabel} = ${powerResult.effect.toFixed(3)}`);
-  }
-  parts.push(`n per group: ${names.map((n, i) => `${n}=${values[i].length}`).join(", ")}`);
-  return parts.join("\n");
+  return lines.join("\n");
 }
 
 function buildBpSetTextBlock(row, setLabel) {
@@ -3459,15 +3475,21 @@ function BoxplotStatsPanel({
   onAnnotationForKey,
   onSummaryForKey,
   singletonAutoExpand = false,
+  displayMode,
+  onDisplayModeChange,
+  showNs,
+  onShowNsChange,
+  showSummary,
+  onShowSummaryChange,
 }: any) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(
     singletonAutoExpand && sets.length === 1 ? { [sets[0].key]: true } : {}
   );
   const [hovered, setHovered] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
-  const [displayMode, setDisplayMode] = useState<"none" | "cld" | "brackets">("none");
-  const [showNs, setShowNs] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
+  const setDisplayMode = onDisplayModeChange;
+  const setShowNs = onShowNsChange;
+  const setShowSummary = onShowSummaryChange;
 
   const enriched = useMemo(
     () =>
@@ -3554,12 +3576,38 @@ function BoxplotStatsPanel({
     typeof fileStem === "string" && fileStem.trim()
       ? (typeof svgSafeId === "function" ? svgSafeId(fileStem) : fileStem).replace(/^-+|-+$/g, "")
       : "stats_report";
+  const rowSlug = (row: any, i: number) => {
+    const raw = row.name || `set-${i + 1}`;
+    const clean =
+      typeof svgSafeId === "function"
+        ? svgSafeId(String(raw)).replace(/^-+|-+$/g, "")
+        : String(raw)
+            .replace(/[^A-Za-z0-9._-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+    return clean || `set-${i + 1}`;
+  };
   const downloadReport = (e: any) => {
-    downloadText(buildBpAggregateReport(eligible, setLabel), `${stem}_stats.txt`);
+    if (eligible.length === 1) {
+      downloadText(buildBpAggregateReport(eligible, setLabel), `${stem}_stats.txt`);
+    } else {
+      eligible.forEach((row: any, i: number) => {
+        const content = buildBpAggregateReport([row], setLabel);
+        const name = `${stem}_${rowSlug(row, i)}_stats.txt`;
+        setTimeout(() => downloadText(content, name), i * 120);
+      });
+    }
     flashSaved(e.currentTarget);
   };
   const downloadR = (e: any) => {
-    downloadText(buildBpAggregateRScript(eligible, setLabel), `${stem}_stats.R`);
+    if (eligible.length === 1) {
+      downloadText(buildBpAggregateRScript(eligible, setLabel), `${stem}_stats.R`);
+    } else {
+      eligible.forEach((row: any, i: number) => {
+        const content = buildBpAggregateRScript([row], setLabel);
+        const name = `${stem}_${rowSlug(row, i)}_stats.R`;
+        setTimeout(() => downloadText(content, name), i * 120);
+      });
+    }
     flashSaved(e.currentTarget);
   };
 
@@ -4076,6 +4124,14 @@ function App() {
   const [dragState, setDragState] = useState(null);
   const [facetByCol, _setFacetByCol] = useState(-1);
   const [subgroupByCol, _setSubgroupByCol] = useState(-1);
+  // Don't clear facetStatsSummary / subgroupSummaries / facetStatsAnnotations /
+  // subgroupAnnotSpecs on a mode or column switch: the chart only reads keys
+  // that exist in the *current* facets / subgroups, so stale keys are
+  // harmless, and clearing them races with the child BoxplotStatsPanel's
+  // onSummaryForKey emission (child effects fire before parent effects, so a
+  // useEffect-based reset would overwrite the fresh summaries the panel just
+  // emitted — which is what made the summary text disappear after a
+  // subgroup→facet or facet→subgroup switch).
   const handleSetFacetByCol = useCallback((v) => {
     _setFacetByCol(v);
     if (v >= 0) _setSubgroupByCol(-1);
@@ -4096,6 +4152,38 @@ function App() {
   // renders all of them as one continuous axis. Summaries emit directly into
   // `subgroupSummaries` (already per-key) which the chart renders inline.
   const [subgroupAnnotSpecs, setSubgroupAnnotSpecs] = useState<Record<string, any>>({});
+  // Panel-level display preferences are lifted here so they survive when the
+  // user switches between flat / subgroup / facet modes (each mode renders a
+  // different BoxplotStatsPanel instance, which would otherwise reset its
+  // local state on mount).
+  const [statsDisplayMode, setStatsDisplayMode] = useState<"none" | "cld" | "brackets">("none");
+  const [statsShowNs, setStatsShowNs] = useState(false);
+  const [statsShowSummary, setStatsShowSummary] = useState(false);
+  // Turning "Print summary below plot" off should wipe every previously
+  // emitted key, not just the current mode's keys. The panel's
+  // onSummaryForKey only ever nulls entries for sets it currently sees, so
+  // without this cleanup stale keys from an earlier facet / flat visit
+  // survive and reappear after a mode switch (e.g. a facet-mode text comes
+  // back when returning to facet mode; a flat-mode "_global" text falls
+  // through as the subgroup-mode chart's fallback at the left edge).
+  const handleStatsShowSummaryChange = useCallback((v) => {
+    setStatsShowSummary(v);
+    if (!v) {
+      setFacetStatsSummary({});
+      setSubgroupSummaries({});
+    }
+  }, []);
+  // Same reasoning for annotations: turning "Display on plot" back to Off
+  // should drop every per-key annotation spec, not just the currently
+  // visible ones, otherwise stale brackets / CLD letters re-appear after a
+  // mode switch.
+  const handleStatsDisplayModeChange = useCallback((v) => {
+    setStatsDisplayMode(v);
+    if (v === "none") {
+      setFacetStatsAnnotations({});
+      setSubgroupAnnotSpecs({});
+    }
+  }, []);
   // Stable references so `FacetTrio`'s shallow-compare memo can skip
   // re-rendering unaffected facets when one facet's stats map entry updates.
   const setAnnotationsFor = useCallback(
@@ -4134,13 +4222,6 @@ function App() {
     setSubgroupAnnotSpecs({});
     updVis({ yMinCustom: "", yMaxCustom: "" });
   };
-
-  useEffect(() => {
-    setFacetStatsAnnotations({});
-    setFacetStatsSummary({});
-    setSubgroupSummaries({});
-    setSubgroupAnnotSpecs({});
-  }, [subgroupByCol]);
 
   const buildFilters = (hdrs, rws) => {
     const f = {};
@@ -4874,6 +4955,7 @@ function App() {
                       if (sets.length === 0) return null;
                       return (
                         <BoxplotStatsPanel
+                          key="stats-panel-subgroup"
                           sets={sets}
                           setLabel="Subgroup"
                           fileStem={fileStem}
@@ -4889,11 +4971,18 @@ function App() {
                               return { ...prev, [key]: txt };
                             })
                           }
+                          displayMode={statsDisplayMode}
+                          onDisplayModeChange={handleStatsDisplayModeChange}
+                          showNs={statsShowNs}
+                          onShowNsChange={setStatsShowNs}
+                          showSummary={statsShowSummary}
+                          onShowSummaryChange={handleStatsShowSummaryChange}
                         />
                       );
                     })()
                   : displayBoxplotGroups.length >= 2 && (
                       <BoxplotStatsPanel
+                        key="stats-panel-flat"
                         sets={[
                           {
                             key: "_global",
@@ -4909,6 +4998,12 @@ function App() {
                         singletonAutoExpand
                         onAnnotationForKey={(_key, spec) => setAnnotationsFor("_global", spec)}
                         onSummaryForKey={(_key, txt) => setSummaryFor("_global", txt)}
+                        displayMode={statsDisplayMode}
+                        onDisplayModeChange={handleStatsDisplayModeChange}
+                        showNs={statsShowNs}
+                        onShowNsChange={setStatsShowNs}
+                        showSummary={statsShowSummary}
+                        onShowSummaryChange={handleStatsShowSummaryChange}
                       />
                     )}
               </>
@@ -4931,6 +5026,7 @@ function App() {
                 />
                 {facetedData && facetedData.length > 0 && (
                   <BoxplotStatsPanel
+                    key="stats-panel-facet"
                     sets={facetedData
                       .filter((fd) => fd.groups.length >= 2)
                       .map((fd) => ({
@@ -4945,6 +5041,12 @@ function App() {
                     fileStem={fileStem}
                     onAnnotationForKey={(key, spec) => setAnnotationsFor(key, spec)}
                     onSummaryForKey={(key, txt) => setSummaryFor(key, txt)}
+                    displayMode={statsDisplayMode}
+                    onDisplayModeChange={handleStatsDisplayModeChange}
+                    showNs={statsShowNs}
+                    onShowNsChange={setStatsShowNs}
+                    showSummary={statsShowSummary}
+                    onShowSummaryChange={handleStatsShowSummaryChange}
                   />
                 )}
               </>
