@@ -479,12 +479,18 @@ function fitCirclesToViewport(circles, viewW, viewH, margin = 15) {
   const maxY = Math.max(...circles.map((c) => c.cy + c.r));
   const bw = maxX - minX,
     bh = maxY - minY;
-  const s = Math.min((viewW - 2 * margin) / bw, (viewH - 2 * margin) / bh, 1);
+  // Reserve vertical space for title (top) and stacked legend (bottom); legend
+  // rows sit every 22px starting at viewH-20, so n rows need ≈ n*22+20 px.
+  const marginTop = Math.max(margin, 40);
+  const marginBottom = Math.max(margin, circles.length * 22 + 20);
+  const availH = viewH - marginTop - marginBottom;
+  const s = Math.min((viewW - 2 * margin) / bw, availH / bh, 1);
   const bcx = (minX + maxX) / 2,
     bcy = (minY + maxY) / 2;
+  const centerY = marginTop + availH / 2;
   return circles.map((c) => ({
     cx: viewW / 2 + (c.cx - bcx) * s,
-    cy: viewH / 2 + (c.cy - bcy) * s,
+    cy: centerY + (c.cy - bcy) * s,
     r: c.r * s,
   }));
 }
