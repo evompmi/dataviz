@@ -379,11 +379,15 @@ function computeStats(arr) {
   const variance = arr.reduce((s, v) => s + (v - mean) ** 2, 0) / (n > 1 ? n - 1 : 1);
   const sd = Math.sqrt(variance);
   const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+  // 95% CI half-width (two-sided t-critical × SEM). Matches lineplot's per-x
+  // CI at line 86. Falls back to 0 when n<2 or tinv is unavailable (shared.js
+  // loads before stats.js, but this runs at call time when tinv is global).
+  const ci95 = n > 1 && typeof tinv === "function" ? tinv(0.975, n - 1) * sem : 0;
   const sorted = [...arr].sort((a, b) => a - b);
   const min = sorted[0];
   const max = sorted[n - 1];
   const median = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
-  return { mean, sd, sem, n, min, max, median };
+  return { mean, sd, sem, ci95, n, min, max, median };
 }
 
 function quartiles(arr) {

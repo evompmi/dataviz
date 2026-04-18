@@ -563,6 +563,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
     const variance = n > 1 ? vals.reduce((a, v) => a + (v - barMean) ** 2, 0) / (n - 1) : 0;
     const sd = Math.sqrt(variance);
     const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 && typeof tinv === "function" ? tinv(0.975, n - 1) * sem : 0;
     return {
       label: s.label,
       prefix: s.prefix,
@@ -570,6 +571,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
       barMean,
       sd,
       sem,
+      ci95,
       n,
       vals,
     };
@@ -578,6 +580,7 @@ const InsetBarplot = forwardRef<SVGSVGElement, any>(function InsetBarplot(
   const errBars = bars.map((b) => {
     if (insetErrorType === "sd") return b.sd;
     if (insetErrorType === "sem") return b.sem;
+    if (insetErrorType === "ci95") return b.ci95;
     return 0;
   });
 
@@ -1052,9 +1055,16 @@ function buildAqSetTextBlock(row) {
   lines.push("Groups:");
   for (let i = 0; i < names.length; i++) {
     const vs = values[i];
+    const n = vs.length;
     const mean = sampleMean(vs);
-    const sd = vs.length > 1 ? sampleSD(vs) : 0;
-    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+    const sd = n > 1 ? sampleSD(vs) : 0;
+    const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
+    const semStr = n > 1 ? sem.toFixed(3) : "—";
+    const ciStr = n > 1 ? `±${ci95.toFixed(3)}` : "—";
+    lines.push(
+      `  ${names[i]}: n=${n}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}, SEM=${semStr}, 95% CI=${ciStr}`
+    );
   }
   lines.push("");
   const rec = row.rec;
@@ -1206,19 +1216,26 @@ function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
             <th style={thS}>n</th>
             <th style={thS}>Mean</th>
             <th style={thS}>SD</th>
+            <th style={thS}>SEM</th>
+            <th style={thS}>95% CI</th>
           </tr>
         </thead>
         <tbody>
           {names.map((name, i) => {
             const vs = values[i];
+            const n = vs.length;
             const m = sampleMean(vs);
-            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            const sd = n > 1 ? sampleSD(vs) : 0;
+            const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+            const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
             return (
               <tr key={i}>
                 <td style={tdS}>{name}</td>
-                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{n}</td>
                 <td style={tdS}>{m.toFixed(3)}</td>
                 <td style={tdS}>{sd.toFixed(3)}</td>
+                <td style={tdS}>{n > 1 ? sem.toFixed(3) : "—"}</td>
+                <td style={tdS}>{n > 1 ? `±${ci95.toFixed(3)}` : "—"}</td>
               </tr>
             );
           })}
@@ -3404,8 +3421,16 @@ function PlotControls({
                     border: "1px solid var(--border-strong)",
                   }}
                 >
-                  {(["none", "sem", "sd"] as const).map((mode) => {
+                  {(["none", "sem", "sd", "ci95"] as const).map((mode) => {
                     const active = vis.insetErrorType === mode;
+                    const label =
+                      mode === "none"
+                        ? "None"
+                        : mode === "sem"
+                          ? "SEM"
+                          : mode === "sd"
+                            ? "SD"
+                            : "95% CI";
                     return (
                       <button
                         key={mode}
@@ -3424,7 +3449,7 @@ function PlotControls({
                           transition: "background 120ms ease, color 120ms ease",
                         }}
                       >
-                        {mode === "none" ? "None" : mode === "sem" ? "SEM" : "SD"}
+                        {label}
                       </button>
                     );
                   })}

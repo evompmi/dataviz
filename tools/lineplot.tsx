@@ -1163,9 +1163,16 @@ function buildPerXTextBlock(row, xLabel) {
   lines.push("Groups:");
   for (let i = 0; i < names.length; i++) {
     const vs = values[i];
+    const n = vs.length;
     const mean = sampleMean(vs);
-    const sd = vs.length > 1 ? sampleSD(vs) : 0;
-    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+    const sd = n > 1 ? sampleSD(vs) : 0;
+    const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
+    const semStr = n > 1 ? sem.toFixed(3) : "—";
+    const ciStr = n > 1 ? `±${ci95.toFixed(3)}` : "—";
+    lines.push(
+      `  ${names[i]}: n=${n}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}, SEM=${semStr}, 95% CI=${ciStr}`
+    );
   }
   lines.push("");
   const rec = row.rec;
@@ -1346,19 +1353,26 @@ function PerXDetail({ row, onOverrideTest, isOverridden }) {
             <th style={thS}>n</th>
             <th style={thS}>Mean</th>
             <th style={thS}>SD</th>
+            <th style={thS}>SEM</th>
+            <th style={thS}>95% CI</th>
           </tr>
         </thead>
         <tbody>
           {names.map((name, i) => {
             const vs = values[i];
+            const n = vs.length;
             const m = sampleMean(vs);
-            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            const sd = n > 1 ? sampleSD(vs) : 0;
+            const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+            const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
             return (
               <tr key={i}>
                 <td style={tdS}>{name}</td>
-                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{n}</td>
                 <td style={tdS}>{m.toFixed(3)}</td>
                 <td style={tdS}>{sd.toFixed(3)}</td>
+                <td style={tdS}>{n > 1 ? sem.toFixed(3) : "—"}</td>
+                <td style={tdS}>{n > 1 ? `±${ci95.toFixed(3)}` : "—"}</td>
               </tr>
             );
           })}

@@ -143,7 +143,14 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     dMax = 0;
     for (const g of groups) {
       if (!g.stats) continue;
-      const errVal = errorType === "sd" ? g.stats.sd : g.stats.sem;
+      const errVal =
+        errorType === "none"
+          ? 0
+          : errorType === "sd"
+            ? g.stats.sd
+            : errorType === "ci95"
+              ? g.stats.ci95
+              : g.stats.sem;
       const top = g.stats.mean + errVal;
       const bot = g.stats.mean - errVal;
       if (top > dMax) dMax = top;
@@ -468,9 +475,16 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           const cx = bx(gi);
 
           if (isBar) {
-            const { mean, sd, sem } = g.stats;
+            const { mean, sd, sem, ci95 } = g.stats;
             if (mean < yMin || mean > yMax) return null;
-            const errVal = errorType === "sd" ? sd : sem;
+            const showErr = errorType !== "none";
+            const errVal = !showErr
+              ? 0
+              : errorType === "sd"
+                ? sd
+                : errorType === "ci95"
+                  ? ci95
+                  : sem;
             const baselinePos = sy(isLog ? yMin : Math.max(0, yMin));
             const meanPos = sy(mean);
             const capSize = halfBox * 0.4;
@@ -494,7 +508,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                 key={g.name}
                 id={_grpId("bar", gi, g.name)}
                 role="group"
-                aria-label={`${g.name}: mean ${mean.toFixed(2)}, ${errorType === "sd" ? "SD" : "SEM"} ${errVal.toFixed(2)}, n=${g.stats.n}`}
+                aria-label={`${g.name}: mean ${mean.toFixed(2)}${showErr ? `, ${errorType === "sd" ? "SD" : errorType === "ci95" ? "95% CI" : "SEM"} ${errVal.toFixed(2)}` : ""}, n=${g.stats.n}`}
               >
                 <rect
                   {...barR}
@@ -504,30 +518,34 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                   strokeWidth={showBarOutline ? barOutlineWidth || 1.5 : 0}
                   rx="1"
                 />
-                <line
-                  x1={hz ? errLo : cx}
-                  x2={hz ? errHi : cx}
-                  y1={hz ? cx : errHi}
-                  y2={hz ? cx : errLo}
-                  stroke="#333"
-                  strokeWidth={errStrokeWidth || 1.2}
-                />
-                <line
-                  x1={hz ? errHi : cx - capSize}
-                  x2={hz ? errHi : cx + capSize}
-                  y1={hz ? cx - capSize : errHi}
-                  y2={hz ? cx + capSize : errHi}
-                  stroke="#333"
-                  strokeWidth={errStrokeWidth || 1.2}
-                />
-                <line
-                  x1={hz ? errLo : cx - capSize}
-                  x2={hz ? errLo : cx + capSize}
-                  y1={hz ? cx - capSize : errLo}
-                  y2={hz ? cx + capSize : errLo}
-                  stroke="#333"
-                  strokeWidth={errStrokeWidth || 1.2}
-                />
+                {showErr && (
+                  <>
+                    <line
+                      x1={hz ? errLo : cx}
+                      x2={hz ? errHi : cx}
+                      y1={hz ? cx : errHi}
+                      y2={hz ? cx : errLo}
+                      stroke="#333"
+                      strokeWidth={errStrokeWidth || 1.2}
+                    />
+                    <line
+                      x1={hz ? errHi : cx - capSize}
+                      x2={hz ? errHi : cx + capSize}
+                      y1={hz ? cx - capSize : errHi}
+                      y2={hz ? cx + capSize : errHi}
+                      stroke="#333"
+                      strokeWidth={errStrokeWidth || 1.2}
+                    />
+                    <line
+                      x1={hz ? errLo : cx - capSize}
+                      x2={hz ? errLo : cx + capSize}
+                      y1={hz ? cx - capSize : errLo}
+                      y2={hz ? cx + capSize : errLo}
+                      stroke="#333"
+                      strokeWidth={errStrokeWidth || 1.2}
+                    />
+                  </>
+                )}
                 {showPoints &&
                   g.sources.map((src, si) => {
                     const rng = seededRandom(gi * 1000 + si * 100 + 42);
@@ -2245,8 +2263,10 @@ function PlotControls({
                   border: "1px solid var(--border-strong)",
                 }}
               >
-                {(["sem", "sd"] as const).map((mode) => {
+                {(["none", "sem", "sd", "ci95"] as const).map((mode) => {
                   const active = vis.errorType === mode;
+                  const label =
+                    mode === "none" ? "None" : mode === "ci95" ? "95% CI" : mode.toUpperCase();
                   return (
                     <button
                       key={mode}
@@ -2265,21 +2285,23 @@ function PlotControls({
                         transition: "background 120ms ease, color 120ms ease",
                       }}
                     >
-                      {mode.toUpperCase()}
+                      {label}
                     </button>
                   );
                 })}
               </div>
             </div>
-            <SliderControl
-              label="Error bar stroke"
-              value={vis.errStrokeWidth}
-              displayValue={vis.errStrokeWidth.toFixed(1)}
-              min={0.5}
-              max={4}
-              step={0.1}
-              onChange={sv("errStrokeWidth")}
-            />
+            {vis.errorType !== "none" && (
+              <SliderControl
+                label="Error bar stroke"
+                value={vis.errStrokeWidth}
+                displayValue={vis.errStrokeWidth.toFixed(1)}
+                min={0.5}
+                max={4}
+                step={0.1}
+                onChange={sv("errStrokeWidth")}
+              />
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span className="dv-label">Bar outline</span>
               <input
@@ -2970,9 +2992,16 @@ function buildBpSetTextBlock(row, setLabel) {
   lines.push("Groups:");
   for (let i = 0; i < names.length; i++) {
     const vs = values[i];
+    const n = vs.length;
     const mean = sampleMean(vs);
-    const sd = vs.length > 1 ? sampleSD(vs) : 0;
-    lines.push(`  ${names[i]}: n=${vs.length}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}`);
+    const sd = n > 1 ? sampleSD(vs) : 0;
+    const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+    const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
+    const semStr = n > 1 ? sem.toFixed(3) : "—";
+    const ciStr = n > 1 ? `±${ci95.toFixed(3)}` : "—";
+    lines.push(
+      `  ${names[i]}: n=${n}, mean=${mean.toFixed(3)}, SD=${sd.toFixed(3)}, SEM=${semStr}, 95% CI=${ciStr}`
+    );
   }
   lines.push("");
   const rec = row.rec;
@@ -3175,19 +3204,26 @@ function BoxplotStatsDetail({ row, onOverrideTest, isOverridden }) {
             <th style={thS}>n</th>
             <th style={thS}>Mean</th>
             <th style={thS}>SD</th>
+            <th style={thS}>SEM</th>
+            <th style={thS}>95% CI</th>
           </tr>
         </thead>
         <tbody>
           {names.map((name, i) => {
             const vs = values[i];
+            const n = vs.length;
             const m = sampleMean(vs);
-            const sd = vs.length > 1 ? sampleSD(vs) : 0;
+            const sd = n > 1 ? sampleSD(vs) : 0;
+            const sem = n > 1 ? sd / Math.sqrt(n) : 0;
+            const ci95 = n > 1 ? tinv(0.975, n - 1) * sem : 0;
             return (
               <tr key={i}>
                 <td style={tdS}>{name}</td>
-                <td style={tdS}>{vs.length}</td>
+                <td style={tdS}>{n}</td>
                 <td style={tdS}>{m.toFixed(3)}</td>
                 <td style={tdS}>{sd.toFixed(3)}</td>
+                <td style={tdS}>{n > 1 ? sem.toFixed(3) : "—"}</td>
+                <td style={tdS}>{n > 1 ? `±${ci95.toFixed(3)}` : "—"}</td>
               </tr>
             );
           })}
