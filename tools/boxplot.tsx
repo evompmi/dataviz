@@ -305,7 +305,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     return getPointColors(g.color, g.sources.length)[si] || g.color;
   };
 
-  const renderCompPie = (g, px, py) => {
+  const renderCompPie = (g, px, py, gi = 0) => {
     if (cbc < 0 || !g.sources || !showCompPie) return null;
     const total = g.allValues.length;
     if (!total) return null;
@@ -358,7 +358,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
     });
 
     return (
-      <g key={`cb-${g.name}`}>
+      <g key={`cb-${gi}-${g.name}`}>
         {slices}
         <circle cx={px} cy={py} r={r} fill="none" stroke="#000" strokeWidth="0.5" />
         {labels}
@@ -511,7 +511,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                 };
             return (
               <g
-                key={g.name}
+                key={`${gi}-${g.name}`}
                 id={_grpId("bar", gi, g.name)}
                 role="group"
                 aria-label={`${g.name}: mean ${mean.toFixed(2)}${showErr ? `, ${errorType === "sd" ? "SD" : errorType === "ci95" ? "95% CI" : "SEM"} ${errVal.toFixed(2)}` : ""}, n=${g.stats.n}`}
@@ -564,7 +564,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                       const jitter = (rng() - 0.5) * jitterWidth * halfBox * 2;
                       return (
                         <circle
-                          key={`${g.name}-${si}-${vi}`}
+                          key={`${gi}-${si}-${vi}`}
                           cx={hz ? sy(v) : cx + jitter}
                           cy={hz ? cx + jitter : sy(v)}
                           r={pointSize}
@@ -733,7 +733,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
                   : (rng() - 0.5) * jitterWidth * halfBox * 2;
                 return (
                   <circle
-                    key={`${g.name}-${si}-${vi}`}
+                    key={`${gi}-${si}-${vi}`}
                     cx={hz ? sy(v) : cx + j}
                     cy={hz ? cx + j : sy(v)}
                     r={pointSize}
@@ -754,7 +754,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
               .filter((v) => v < wLo || v > wHi)
               .map((v, oi) => (
                 <circle
-                  key={`out-${g.name}-${si}-${oi}`}
+                  key={`out-${gi}-${si}-${oi}`}
                   cx={hz ? sy(v) : outlierCx}
                   cy={hz ? outlierCx : sy(v)}
                   r={2.5}
@@ -767,7 +767,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
 
           return (
             <g
-              key={g.name}
+              key={`${gi}-${g.name}`}
               id={_grpId("group", gi, g.name)}
               role="group"
               aria-label={`${g.name}: median ${med.toFixed(2)}, Q1 ${q1.toFixed(2)}, Q3 ${q3.toFixed(2)}, n=${g.stats.n}`}
@@ -871,9 +871,9 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           if (hz) {
             const labelX = M.left - 8;
             const pieX = M.left - labelZone - pieSpace / 2;
-            const hzPie = renderCompPie(g, pieX, gp);
+            const hzPie = renderCompPie(g, pieX, gp, gi);
             return (
-              <React.Fragment key={`xl-${g.name}`}>
+              <React.Fragment key={`xl-${gi}-${g.name}`}>
                 <g>
                   <text
                     x={labelX}
@@ -904,9 +904,9 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
             );
           }
           const ly = M.top + h + 16;
-          const compBar = renderCompPie(g, gp, vbH_chart - 20 - 12);
+          const compBar = renderCompPie(g, gp, vbH_chart - 20 - 12, gi);
           return (
-            <React.Fragment key={`xl-${g.name}`}>
+            <React.Fragment key={`xl-${gi}-${g.name}`}>
               {angle === 0 ? (
                 <g>
                   <text
