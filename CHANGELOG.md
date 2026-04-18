@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-04-18
+
 ### Changed
 
 - **Line Plot's X / Y min & max now round to 2 decimals and step by 0.1** — the auto-computed axis bounds that pre-fill all four axis inputs were rounded to 4 decimals, which produced noisy readouts like `0.3724` for typical physiological data. Three changes applied symmetrically to X min / X max / Y min / Y max: (1) the auto path now rounds to 2 decimals; (2) the onChange handler also rounds to 2 decimals so typing, pasting, or stepping can never leak float artefacts like `0.30000000000000004` into state; (3) the +/− buttons now step by `0.1` (was `1`) so adjusting the axis walks the first decimal instead of jumping whole units — a typical lineplot range is a fraction of a unit, so stepping by 1 always over-shoots the visible data.
