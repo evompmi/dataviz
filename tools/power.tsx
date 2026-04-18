@@ -529,7 +529,8 @@ const PowerCurve = forwardRef<SVGSVGElement, any>(function PowerCurve(
     <svg
       ref={ref}
       viewBox={`0 0 ${VBW} ${VBH}`}
-      style={{ width: "100%", height: "auto", display: "block" }}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ width: "100%", height: "100%", display: "block" }}
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label="Power curve"
@@ -964,6 +965,10 @@ function App() {
               borderRadius: 10,
               padding: 12,
               flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 0,
             }}
           >
             <PowerCurve
