@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        var t = localStorage.getItem("dataviz-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+    <title>Heatmap</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='4' y='4' width='8' height='8' fill='%23440154'/><rect x='12' y='4' width='8' height='8' fill='%233b528b'/><rect x='20' y='4' width='8' height='8' fill='%2321908c'/><rect x='4' y='12' width='8' height='8' fill='%233b528b'/><rect x='12' y='12' width='8' height='8' fill='%2321908c'/><rect x='20' y='12' width='8' height='8' fill='%235dc963'/><rect x='4' y='20' width='8' height='8' fill='%2321908c'/><rect x='12' y='20' width='8' height='8' fill='%235dc963'/><rect x='20' y='20' width='8' height='8' fill='%23fde725'/></svg>"
+    />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="components.css" />
+    <script src="../vendor/react.production.min.js"></script>
+    <script src="../vendor/react-dom.production.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: monospace;
+        background: var(--page-bg);
+        background-image: radial-gradient(circle, var(--page-bg-dot) 0.8px, transparent 0.8px);
+        background-size: 20px 20px;
+        color: var(--text);
+      }
+    </style>
+    <script src="theme.js"></script>
+    <script src="shared.js"></script>
+    <script src="stats.js"></script>
+    <script src="shared-color-input.js"></script>
+    <script src="shared-file-drop.js"></script>
+    <script src="shared-svg-legend.js"></script>
+    <script src="shared-core.js"></script>
+    <script src="shared-ui.js"></script>
+    <script src="shared-r-export.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="heatmap.js"></script>
+  </body>
+</html>

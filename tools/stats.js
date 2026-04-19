@@ -1592,3 +1592,209 @@ function formatP(p) {
   if (p < 1e-3) return p.toExponential(2);
   return p.toFixed(4);
 }
+
+// ── 14. Hierarchical clustering ─────────────────────────────────────────────
+
+// Pairwise row-wise distance matrix for a 2-D numeric array.
+// metric: "euclidean" | "manhattan" | "correlation" (1 − Pearson r).
+// NaN cells are ignored pairwise (only rows' shared finite columns contribute).
+// Returns an N×N symmetric array of distances (0 on the diagonal).
+function pairwiseDistance(matrix, metric) {
+  const n = matrix.length;
+  const D = Array.from({ length: n }, () => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const d = rowDistance(matrix[i], matrix[j], metric);
+      D[i][j] = d;
+      D[j][i] = d;
+    }
+  }
+  return D;
+}
+
+function rowDistance(a, b, metric) {
+  const n = Math.min(a.length, b.length);
+  const xs = [];
+  const ys = [];
+  for (let k = 0; k < n; k++) {
+    if (Number.isFinite(a[k]) && Number.isFinite(b[k])) {
+      xs.push(a[k]);
+      ys.push(b[k]);
+    }
+  }
+  if (xs.length === 0) return NaN;
+  if (metric === "manhattan") {
+    let s = 0;
+    for (let k = 0; k < xs.length; k++) s += Math.abs(xs[k] - ys[k]);
+    return s;
+  }
+  if (metric === "correlation") {
+    // 1 − Pearson correlation; collapses to 0 for identical vectors,
+    // 2 for perfectly anti-correlated ones.
+    if (xs.length < 2) return NaN;
+    let mx = 0,
+      my = 0;
+    for (let k = 0; k < xs.length; k++) {
+      mx += xs[k];
+      my += ys[k];
+    }
+    mx /= xs.length;
+    my /= xs.length;
+    let sxy = 0,
+      sxx = 0,
+      syy = 0;
+    for (let k = 0; k < xs.length; k++) {
+      const dx = xs[k] - mx;
+      const dy = ys[k] - my;
+      sxy += dx * dy;
+      sxx += dx * dx;
+      syy += dy * dy;
+    }
+    if (sxx === 0 || syy === 0) return 1;
+    return 1 - sxy / Math.sqrt(sxx * syy);
+  }
+  // euclidean (default)
+  let s = 0;
+  for (let k = 0; k < xs.length; k++) {
+    const d = xs[k] - ys[k];
+    s += d * d;
+  }
+  return Math.sqrt(s);
+}
+
+// Agglomerative hierarchical clustering. Naive O(n³) merge loop — clear,
+// easy to verify, adequate for the ≤500-leaf range the heatmap tool targets.
+// linkage: "average" (UPGMA) | "complete" | "single".
+// Returns { tree, order }:
+//   tree — nested { index, left, right, height, size }; leaves have index ≥ 0
+//          and left/right null; internal nodes have index = -1.
+//   order — array of leaf indices in dendrogram left-to-right order.
+function hclust(distMatrix, linkage) {
+  const n = distMatrix.length;
+  if (n === 0) return { tree: null, order: [] };
+  if (n === 1)
+    return { tree: { index: 0, left: null, right: null, height: 0, size: 1 }, order: [0] };
+
+  // Working copies: active cluster metadata + mutable distance matrix.
+  const clusters = new Array(n);
+  const D = new Array(n);
+  for (let i = 0; i < n; i++) {
+    clusters[i] = { index: i, left: null, right: null, height: 0, size: 1 };
+    D[i] = distMatrix[i].slice();
+  }
+  const active = new Set();
+  for (let i = 0; i < n; i++) active.add(i);
+
+  const mergeFn =
+    linkage === "complete"
+      ? (d1, d2) => Math.max(d1, d2)
+      : linkage === "single"
+        ? (d1, d2) => Math.min(d1, d2)
+        : null; // signals UPGMA (size-weighted average)
+
+  while (active.size > 1) {
+    // Find the closest pair among active clusters.
+    let best = Infinity;
+    let bi = -1,
+      bj = -1;
+    const act = Array.from(active);
+    for (let ai = 0; ai < act.length; ai++) {
+      for (let aj = ai + 1; aj < act.length; aj++) {
+        const i = act[ai],
+          j = act[aj];
+        const d = D[i][j];
+        if (d < best) {
+          best = d;
+          bi = i;
+          bj = j;
+        }
+      }
+    }
+    if (bi < 0) break;
+
+    // Merge j into i — the new cluster keeps index bi, bj becomes inactive.
+    const merged = {
+      index: -1,
+      left: clusters[bi],
+      right: clusters[bj],
+      height: best,
+      size: clusters[bi].size + clusters[bj].size,
+    };
+    const sizeI = clusters[bi].size;
+    const sizeJ = clusters[bj].size;
+
+    active.delete(bj);
+    for (const k of active) {
+      if (k === bi) continue;
+      const dik = D[bi][k];
+      const djk = D[bj][k];
+      let nd;
+      if (mergeFn) {
+        nd = mergeFn(dik, djk);
+      } else {
+        // UPGMA: weighted average by cluster size.
+        nd = (sizeI * dik + sizeJ * djk) / (sizeI + sizeJ);
+      }
+      D[bi][k] = nd;
+      D[k][bi] = nd;
+    }
+    clusters[bi] = merged;
+  }
+
+  const rootId = Array.from(active)[0];
+  const tree = clusters[rootId];
+
+  // Leaf order by in-order traversal.
+  const order = [];
+  (function walk(node) {
+    if (!node) return;
+    if (node.left === null && node.right === null) {
+      order.push(node.index);
+    } else {
+      walk(node.left);
+      walk(node.right);
+    }
+  })(tree);
+
+  return { tree, order };
+}
+
+// Flatten a hclust tree into SVG-friendly L-shaped segments.
+// Each leaf is placed at integer x = position-in-order; internal nodes
+// at the mean of their subtree leaves' positions. Returns:
+//   { segments, maxHeight }
+// where segments is an array of { x1, y1, x2, y2 } in DATA space
+// (y = merge height, 0 at leaves). The caller scales x, y into pixels.
+function dendrogramLayout(tree) {
+  if (!tree) return { segments: [], maxHeight: 0 };
+  const segments = [];
+  let maxHeight = 0;
+  function place(node) {
+    if (node.left === null && node.right === null) {
+      return { x: node._leafPos, h: 0 };
+    }
+    const L = place(node.left);
+    const R = place(node.right);
+    const h = node.height;
+    if (h > maxHeight) maxHeight = h;
+    // Vertical stems from each child up to the merge height.
+    segments.push({ x1: L.x, y1: L.h, x2: L.x, y2: h });
+    segments.push({ x1: R.x, y1: R.h, x2: R.x, y2: h });
+    // Horizontal bar joining them.
+    segments.push({ x1: L.x, y1: h, x2: R.x, y2: h });
+    return { x: (L.x + R.x) / 2, h };
+  }
+  // Annotate leaves with their left-to-right position.
+  let leafIdx = 0;
+  (function num(node) {
+    if (!node) return;
+    if (node.left === null && node.right === null) {
+      node._leafPos = leafIdx++;
+    } else {
+      num(node.left);
+      num(node.right);
+    }
+  })(tree);
+  place(tree);
+  return { segments, maxHeight };
+}

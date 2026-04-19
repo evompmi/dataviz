@@ -3,27 +3,8 @@
 
 const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
 
-const COLOR_PALETTES = {
-  viridis: ["#440154", "#3b528b", "#21908c", "#5dc963", "#fde725"],
-  plasma: ["#0d0887", "#7e03a8", "#cc4778", "#f89540", "#f0f921"],
-  rdbu: ["#b2182b", "#ef8a62", "#fddbc7", "#f7f7f7", "#d1e5f0", "#67a9cf", "#2166ac"],
-  bwr: ["#0000ff", "#8888ff", "#ffffff", "#ff8888", "#ff0000"],
-  reds: ["#fff5f0", "#fcbba1", "#fb6a4a", "#cb181d", "#67000d"],
-  blues: ["#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b"],
-  greens: ["#f7fcf5", "#c7e9c0", "#74c476", "#238b45", "#00441b"],
-  spectral: ["#9e0142", "#f46d43", "#fee08b", "#e6f598", "#66c2a5", "#3288bd", "#5e4fa2"],
-};
-
-function interpolateColor(stops, t) {
-  if (t <= 0) return stops[0];
-  if (t >= 1) return stops[stops.length - 1];
-  const seg = (stops.length - 1) * t;
-  const i = Math.floor(seg),
-    f = seg - i;
-  const [r1, g1, b1] = hexToRgb(stops[i]);
-  const [r2, g2, b2] = hexToRgb(stops[i + 1]);
-  return rgbToHex(r1 + (r2 - r1) * f, g1 + (g2 - g1) * f, b1 + (b2 - b1) * f);
-}
+// COLOR_PALETTES and interpolateColor are now globals from shared.js so that
+// heatmap and scatter share the exact same colour-scale definitions.
 
 function fmtTick(t) {
   if (t === 0) return "0";

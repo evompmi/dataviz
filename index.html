@@ -461,6 +461,22 @@
             <span class="tile-label">Aequorin Ca&#xB2;&#x207A;</span>
             <span class="tile-desc">RLU time-courses<br />Ca&#xB2;&#x207A; calibration</span>
           </button>
+          <button class="tile" data-tool="heatmap">
+            <span class="tile-icon"
+              ><svg viewBox="0 0 44 44" fill="none" stroke="none">
+                <rect x="6" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.2" />
+                <rect x="17" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.5" />
+                <rect x="28" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.8" />
+                <rect x="6" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.5" />
+                <rect x="17" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.8" />
+                <rect x="28" y="17" width="10" height="10" fill="#785EF0" fill-opacity="0.6" />
+                <rect x="6" y="28" width="10" height="10" fill="#648FFF" fill-opacity="0.8" />
+                <rect x="17" y="28" width="10" height="10" fill="#785EF0" fill-opacity="0.6" />
+                <rect x="28" y="28" width="10" height="10" fill="#785EF0" /></svg
+            ></span>
+            <span class="tile-label">Heatmap</span>
+            <span class="tile-desc">Matrix view<br />with clustering</span>
+          </button>
         </div>
         <span class="tile-group-label">Statistics &amp; Calculators</span>
         <div class="tiles">
@@ -545,6 +561,10 @@
     <div class="tool-view" id="view-venn">
       <div class="tool-topbar" data-topbar-for="venn"></div>
       <iframe id="frame-venn" src="tools/venn.html"></iframe>
+    </div>
+    <div class="tool-view" id="view-heatmap">
+      <div class="tool-topbar" data-topbar-for="heatmap"></div>
+      <iframe id="frame-heatmap" src="tools/heatmap.html"></iframe>
     </div>
     <div class="tool-view" id="view-molarity">
       <div class="tool-topbar" data-topbar-for="molarity"></div>
@@ -651,6 +671,10 @@
             label: "Aequorin Ca\u00B2\u207A",
             svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 36 C8 36, 10 36, 12 34 C14 30, 15 8, 17 6 C19 4, 20 14, 22 22 C24 28, 25 32, 27 34 C29 36, 32 36, 40 36"/></svg>',
           },
+          heatmap: {
+            label: "Heatmap",
+            svg: '<svg viewBox="0 0 44 44" fill="none" stroke="none" aria-hidden="true"><rect x="6" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.2"/><rect x="17" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="28" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="6" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="17" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="28" y="17" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="6" y="28" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="17" y="28" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="28" y="28" width="10" height="10" fill="#785EF0"/></svg>',
+          },
           lineplot: {
             label: "Line Plot",
             svg: '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,34 16,24 26,28 36,12"/><circle cx="6" cy="34" r="2.5" fill="currentColor"/><circle cx="16" cy="24" r="2.5" fill="currentColor"/><circle cx="26" cy="28" r="2.5" fill="currentColor"/><circle cx="36" cy="12" r="2.5" fill="currentColor"/></svg>',
@@ -671,6 +695,7 @@
           "venn",
           "lineplot",
           "aequorin",
+          "heatmap",
           "power",
           "molarity",
         ];

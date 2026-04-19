@@ -9,6 +9,7 @@ const {
   detectWideFormat,
   parseData,
   dataToColumns,
+  parseWideMatrix,
 } = require("./helpers/parsing-fns");
 
 // ── detectHeader ─────────────────────────────────────────────────────────────
@@ -331,6 +332,58 @@ test("converts row-oriented data to column arrays, filtering nulls", () => {
 test("returns empty columns for empty data", () => {
   const cols = dataToColumns([], 2);
   eq(cols, [[], []]);
+});
+
+// ── parseWideMatrix ──────────────────────────────────────────────────────────
+
+suite("parseWideMatrix");
+
+test("parses a 3×3 numeric matrix with row and column labels", () => {
+  const text = "gene,s1,s2,s3\ngA,1,2,3\ngB,4,5,6\ngC,7,8,9";
+  const out = parseWideMatrix(text);
+  eq(out.colLabels, ["s1", "s2", "s3"]);
+  eq(out.rowLabels, ["gA", "gB", "gC"]);
+  eq(out.matrix, [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9],
+  ]);
+  eq(out.warnings.nonNumeric, 0);
+});
+
+test("marks non-numeric cells as NaN and counts them in warnings", () => {
+  const text = "x,a,b\nr1,1,foo\nr2,bar,4";
+  const out = parseWideMatrix(text);
+  assert(Number.isNaN(out.matrix[0][1]));
+  assert(Number.isNaN(out.matrix[1][0]));
+  eq(out.matrix[0][0], 1);
+  eq(out.matrix[1][1], 4);
+  eq(out.warnings.nonNumeric, 2);
+});
+
+test("empty cells become NaN without counting as non-numeric", () => {
+  const text = "x,a,b\nr1,1,\nr2,,4";
+  const out = parseWideMatrix(text);
+  assert(Number.isNaN(out.matrix[0][1]));
+  assert(Number.isNaN(out.matrix[1][0]));
+  eq(out.warnings.nonNumeric, 0);
+});
+
+test("returns empty result when input has too few columns or rows", () => {
+  const out = parseWideMatrix("only_one_column");
+  eq(out.rowLabels, []);
+  eq(out.colLabels, []);
+  eq(out.matrix, []);
+});
+
+test("handles TSV separator auto-detection", () => {
+  const text = "gene\ts1\ts2\ngA\t1\t2\ngB\t3\t4";
+  const out = parseWideMatrix(text);
+  eq(out.colLabels, ["s1", "s2"]);
+  eq(out.matrix, [
+    [1, 2],
+    [3, 4],
+  ]);
 });
 
 summary();

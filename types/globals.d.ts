@@ -97,6 +97,19 @@ declare global {
 
   function dataToColumns<T>(data: T[][], nCols: number): T[][];
 
+  interface ParseWideMatrixResult {
+    rowLabels: string[];
+    colLabels: string[];
+    matrix: number[][];
+    warnings: { nonNumeric: number };
+  }
+  function parseWideMatrix(text: string, sepOv?: string): ParseWideMatrixResult;
+
+  // ── Colour palettes ────────────────────────────────────────────────────────
+  const COLOR_PALETTES: Record<string, string[]>;
+  const DIVERGING_PALETTES: Set<string>;
+  function interpolateColor(stops: string[], t: number): string;
+
   function wideToLong(
     headers: string[],
     rows: string[][]
@@ -413,6 +426,27 @@ declare global {
   };
   function pStars(p: number): string;
   function formatP(p: number | null | undefined): string;
+
+  // ── Clustering (stats.js) ──────────────────────────────────────────────────
+  function pairwiseDistance(matrix: number[][], metric: string): number[][];
+  interface HClustNode {
+    index?: number;
+    left?: HClustNode;
+    right?: HClustNode;
+    height: number;
+    size: number;
+  }
+  function hclust(distMatrix: number[][], linkage: string): { tree: HClustNode; order: number[] };
+  interface DendrogramSegment {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }
+  function dendrogramLayout(tree: HClustNode): {
+    segments: DendrogramSegment[];
+    maxHeight: number;
+  };
 }
 
 export {};

@@ -51,6 +51,9 @@ const {
   powerAnova,
   chi2inv,
   chi2cdf,
+  pairwiseDistance,
+  hclust,
+  dendrogramLayout,
 } = ctx;
 
 // ── Primitives smoke test ──────────────────────────────────────────────────
@@ -1338,6 +1341,174 @@ test("alphaNormality override loosens the normality gate", () => {
   // strict should flag non-normal, loose should not
   assert(strict.allNormal === false, "strict rejects normality");
   assert(loose.allNormal === true, "loose accepts normality");
+});
+
+// ── Hierarchical clustering ────────────────────────────────────────────────
+
+suite("pairwiseDistance — metrics");
+
+test("Euclidean distance on identical rows is 0", () => {
+  const D = pairwiseDistance(
+    [
+      [1, 2, 3],
+      [1, 2, 3],
+    ],
+    "euclidean"
+  );
+  approx(D[0][1], 0, 1e-12);
+  approx(D[1][0], 0, 1e-12);
+});
+
+test("Euclidean distance — hand-worked case", () => {
+  // row_a = [0,0,0], row_b = [3,4,0]  → d = √(9+16) = 5
+  const D = pairwiseDistance(
+    [
+      [0, 0, 0],
+      [3, 4, 0],
+    ],
+    "euclidean"
+  );
+  approx(D[0][1], 5, 1e-12);
+});
+
+test("Manhattan distance — |a - b| sum", () => {
+  const D = pairwiseDistance(
+    [
+      [0, 0, 0],
+      [3, 4, 0],
+    ],
+    "manhattan"
+  );
+  approx(D[0][1], 7, 1e-12);
+});
+
+test("Correlation distance is 0 for perfectly correlated rows", () => {
+  // Two rows with identical shape but different scale → r = 1 → d = 0.
+  const D = pairwiseDistance(
+    [
+      [1, 2, 3, 4],
+      [2, 4, 6, 8],
+    ],
+    "correlation"
+  );
+  approx(D[0][1], 0, 1e-10);
+});
+
+test("Correlation distance is 2 for perfectly anti-correlated rows", () => {
+  const D = pairwiseDistance(
+    [
+      [1, 2, 3, 4],
+      [4, 3, 2, 1],
+    ],
+    "correlation"
+  );
+  approx(D[0][1], 2, 1e-10);
+});
+
+test("Distance matrix is symmetric and zero on diagonal", () => {
+  const D = pairwiseDistance(
+    [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ],
+    "euclidean"
+  );
+  for (let i = 0; i < 3; i++) {
+    approx(D[i][i], 0, 1e-12);
+    for (let j = 0; j < 3; j++) approx(D[i][j], D[j][i], 1e-12);
+  }
+});
+
+suite("hclust — tree structure and ordering");
+
+test("single leaf returns trivial tree", () => {
+  const res = hclust([[0]], "average");
+  assert(res.order.length === 1 && res.order[0] === 0, "single leaf in order");
+  assert(res.tree && res.tree.left === null, "single leaf tree");
+});
+
+test("UPGMA on a textbook 5-point matrix produces a valid binary tree", () => {
+  // Simple 5-point distance matrix; exact leaf order depends on tie-breaking,
+  // so we assert structural invariants rather than a specific permutation.
+  const D = [
+    [0, 2, 4, 6, 8],
+    [2, 0, 3, 5, 7],
+    [4, 3, 0, 4, 6],
+    [6, 5, 4, 0, 3],
+    [8, 7, 6, 3, 0],
+  ];
+  const res = hclust(D, "average");
+  assert(res.order.length === 5, "all 5 leaves present in order");
+  // Every index should appear exactly once.
+  const seen = new Set(res.order);
+  assert(seen.size === 5, "no duplicate leaves");
+  for (let i = 0; i < 5; i++) assert(seen.has(i), `leaf ${i} in order`);
+  // Root size should equal leaf count.
+  assert(res.tree.size === 5, "tree size == 5");
+  // Heights should be non-decreasing from leaves to root.
+  function checkHeights(n, parentH) {
+    if (!n || (n.left === null && n.right === null)) return;
+    assert(n.height <= parentH + 1e-9, `height ${n.height} not > parent ${parentH}`);
+    checkHeights(n.left, n.height);
+    checkHeights(n.right, n.height);
+  }
+  checkHeights(res.tree, Infinity);
+});
+
+test("single linkage merges the closest pair first", () => {
+  // Points along a line: 0, 1, 10, 11. Single linkage should merge
+  // {0,1} and {10,11} before joining the two clusters.
+  const D = [
+    [0, 1, 10, 11],
+    [1, 0, 9, 10],
+    [10, 9, 0, 1],
+    [11, 10, 1, 0],
+  ];
+  const res = hclust(D, "single");
+  // The resulting order should keep {0,1} contiguous and {2,3} contiguous.
+  const posOf = new Map();
+  res.order.forEach((v, i) => posOf.set(v, i));
+  const gap01 = Math.abs(posOf.get(0) - posOf.get(1));
+  const gap23 = Math.abs(posOf.get(2) - posOf.get(3));
+  assert(gap01 === 1, `indices 0 and 1 adjacent (gap ${gap01})`);
+  assert(gap23 === 1, `indices 2 and 3 adjacent (gap ${gap23})`);
+});
+
+test("complete linkage on the same input also keeps close pairs adjacent", () => {
+  const D = [
+    [0, 1, 10, 11],
+    [1, 0, 9, 10],
+    [10, 9, 0, 1],
+    [11, 10, 1, 0],
+  ];
+  const res = hclust(D, "complete");
+  const posOf = new Map();
+  res.order.forEach((v, i) => posOf.set(v, i));
+  assert(Math.abs(posOf.get(0) - posOf.get(1)) === 1, "0 and 1 adjacent");
+  assert(Math.abs(posOf.get(2) - posOf.get(3)) === 1, "2 and 3 adjacent");
+});
+
+suite("dendrogramLayout — SVG segments");
+
+test("trivial leaf produces no segments", () => {
+  const { tree } = hclust([[0]], "average");
+  const { segments, maxHeight } = dendrogramLayout(tree);
+  assert(segments.length === 0, "no segments for single leaf");
+  assert(maxHeight === 0, "zero height");
+});
+
+test("three-leaf tree produces two merges with 3 segments each", () => {
+  const D = [
+    [0, 1, 10],
+    [1, 0, 9],
+    [10, 9, 0],
+  ];
+  const { tree } = hclust(D, "average");
+  const { segments, maxHeight } = dendrogramLayout(tree);
+  // 2 merges × (2 vertical + 1 horizontal) = 6 segments total.
+  assert(segments.length === 6, `got ${segments.length} segments`);
+  assert(maxHeight > 0, "maxHeight positive");
 });
 
 summary();

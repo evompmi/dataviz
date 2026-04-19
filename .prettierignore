@@ -3,6 +3,7 @@ vendor
 tools/aequorin.js
 tools/bargraph.js
 tools/boxplot.js
+tools/heatmap.js
 tools/lineplot.js
 tools/molarity.js
 tools/power.js

@@ -48,6 +48,40 @@ const PALETTE = [
   "#AA4499",
 ];
 
+// ── Continuous colour palettes (shared by scatter + heatmap) ──────────────────
+
+const COLOR_PALETTES = {
+  viridis: ["#440154", "#3b528b", "#21908c", "#5dc963", "#fde725"],
+  plasma: ["#0d0887", "#7e03a8", "#cc4778", "#f89540", "#f0f921"],
+  magma: ["#000004", "#3b0f70", "#8c2981", "#de4968", "#fe9f6d", "#fcfdbf"],
+  inferno: ["#000004", "#420a68", "#932667", "#dd513a", "#fca50a", "#fcffa4"],
+  cividis: ["#00204c", "#213d6b", "#555b6c", "#7b7a77", "#a59c74", "#d3c064", "#ffe945"],
+  rdbu: ["#b2182b", "#ef8a62", "#fddbc7", "#f7f7f7", "#d1e5f0", "#67a9cf", "#2166ac"],
+  bwr: ["#0000ff", "#8888ff", "#ffffff", "#ff8888", "#ff0000"],
+  rdylbu: ["#a50026", "#f46d43", "#fee090", "#ffffbf", "#e0f3f8", "#74add1", "#313695"],
+  reds: ["#fff5f0", "#fcbba1", "#fb6a4a", "#cb181d", "#67000d"],
+  blues: ["#f7fbff", "#c6dbef", "#6baed6", "#2171b5", "#08306b"],
+  greens: ["#f7fcf5", "#c7e9c0", "#74c476", "#238b45", "#00441b"],
+  spectral: ["#9e0142", "#f46d43", "#fee08b", "#e6f598", "#66c2a5", "#3288bd", "#5e4fa2"],
+};
+
+// Diverging palettes should be anchored at 0 when rendered (symmetric vmin/vmax).
+const DIVERGING_PALETTES = new Set(["rdbu", "bwr", "rdylbu", "spectral"]);
+
+// Linear interpolation along a palette's colour stops. t in [0, 1].
+function interpolateColor(stops, t) {
+  if (!stops || stops.length === 0) return "#000000";
+  if (stops.length === 1) return stops[0];
+  if (t <= 0 || !Number.isFinite(t)) return stops[0];
+  if (t >= 1) return stops[stops.length - 1];
+  const seg = (stops.length - 1) * t;
+  const i = Math.floor(seg);
+  const f = seg - i;
+  const [r1, g1, b1] = hexToRgb(stops[i]);
+  const [r2, g2, b2] = hexToRgb(stops[i + 1]);
+  return rgbToHex(r1 + (r2 - r1) * f, g1 + (g2 - g1) * f, b1 + (b2 - b1) * f);
+}
+
 // ── Tool icons (raw SVG strings) ─────────────────────────────────────────────
 
 const TOOL_ICONS = {
@@ -64,6 +98,8 @@ const TOOL_ICONS = {
     '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="38" x2="6" y2="6"/><line x1="6" y1="38" x2="38" y2="38"/><path d="M8 34 C12 33, 16 28, 20 20 C24 12, 28 8, 36 7" stroke="#648FFF" stroke-width="2.5"/><line x1="6" y1="14" x2="38" y2="14" stroke-dasharray="3,3" stroke-width="1" opacity="0.5"/></svg>',
   lineplot:
     '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,34 16,24 26,28 36,12"/><circle cx="6" cy="34" r="2.5" fill="#648FFF"/><circle cx="16" cy="24" r="2.5" fill="#648FFF"/><circle cx="26" cy="28" r="2.5" fill="#648FFF"/><circle cx="36" cy="12" r="2.5" fill="#648FFF"/></svg>',
+  heatmap:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="none"><rect x="6" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.2"/><rect x="17" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="28" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="6" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="17" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="28" y="17" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="6" y="28" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="17" y="28" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="28" y="28" width="10" height="10" fill="#785EF0"/></svg>',
 };
 
 function toolIcon(name, size, opts) {
@@ -307,6 +343,48 @@ function detectWideFormat(headers, rows) {
     return vals.length > 0 && vals.filter((v) => isNumericValue(v)).length / vals.length > 0.8;
   });
   return numericCols.every(Boolean);
+}
+
+// Wide-matrix parser for heatmap-style data:
+//   first row     = column labels (the leading cell is the row-label-column
+//                   heading and may be blank or any token — we drop it)
+//   first column  = row labels
+//   everything else = numeric values (non-numeric cells become NaN and are
+//                   counted in warnings.nonNumeric so the UI can surface them)
+// Returns { rowLabels, colLabels, matrix, warnings } where matrix is a
+// 2-D array shaped [rowLabels.length][colLabels.length].
+function parseWideMatrix(text, sepOv = "") {
+  const { headers, rows } = parseRaw(text, sepOv);
+  if (headers.length < 2 || rows.length < 1) {
+    return {
+      rowLabels: [],
+      colLabels: [],
+      matrix: [],
+      warnings: { nonNumeric: 0, emptyRows: 0, emptyCols: 0 },
+    };
+  }
+  const colLabels = headers.slice(1);
+  const rowLabels = [];
+  const matrix = [];
+  let nonNumeric = 0;
+  rows.forEach((r) => {
+    const label = r[0] == null ? "" : String(r[0]);
+    const values = new Array(colLabels.length);
+    for (let ci = 0; ci < colLabels.length; ci++) {
+      const raw = r[ci + 1];
+      if (raw == null || raw === "") {
+        values[ci] = NaN;
+      } else if (isNumericValue(raw)) {
+        values[ci] = Number(raw);
+      } else {
+        values[ci] = NaN;
+        nonNumeric++;
+      }
+    }
+    rowLabels.push(label);
+    matrix.push(values);
+  });
+  return { rowLabels, colLabels, matrix, warnings: { nonNumeric } };
 }
 
 // ── Unified data parsing ─────────────────────────────────────────────────────
