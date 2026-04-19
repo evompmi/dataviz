@@ -4153,7 +4153,14 @@ function App() {
     barOutlineColor: "#333333",
     barOpacity: 0.25,
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("boxplot", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("boxplot", vis);
+  }, [vis]);
 
   // Plot state
   const [boxplotColors, setBoxplotColors] = useState({});
@@ -4774,6 +4781,7 @@ function App() {
         toolName="boxplot"
         title="Group Plot"
         subtitle={`Load → label columns → filter → plot & export${dataFormat === "wide" ? " · Wide format auto-detected" : ""}`}
+        right={<PrefsPanel tool="boxplot" vis={vis} visInit={visInit} updVis={updVis} />}
       />
       <StepNavBar
         steps={["upload", "configure", "filter", "output", "plot"]}

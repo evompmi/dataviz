@@ -335,18 +335,40 @@ function PageHeader(props) {
       },
     },
     React.createElement(
-      "h1",
-      { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
-      toolIcon(props.toolName),
-      props.title
-    ),
-    props.subtitle
-      ? React.createElement(
-          "p",
-          { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
-          props.subtitle
-        )
-      : null
+      "div",
+      {
+        style: {
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+        },
+      },
+      React.createElement(
+        "div",
+        { style: { flex: "1 1 auto", minWidth: 0 } },
+        React.createElement(
+          "h1",
+          { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
+          toolIcon(props.toolName),
+          props.title
+        ),
+        props.subtitle
+          ? React.createElement(
+              "p",
+              { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
+              props.subtitle
+            )
+          : null
+      ),
+      props.right
+        ? React.createElement(
+            "div",
+            { style: { flex: "0 0 auto", display: "flex", alignItems: "center" } },
+            props.right
+          )
+        : null
+    )
   );
 }
 

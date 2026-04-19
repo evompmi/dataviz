@@ -1805,7 +1805,14 @@ function App() {
     fillOpacity: 0.25,
     readabilityBlend: VENN_CONFIG.DEFAULT_READABILITY_BLEND,
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("venn", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("venn", vis);
+  }, [vis]);
 
   const chartRef = useRef();
   const [layoutInfo, setLayoutInfo] = useState({
@@ -1951,6 +1958,7 @@ function App() {
         toolName="venn"
         title="Venn Diagram"
         subtitle="Set overlaps with data extraction (2–3 sets)"
+        right={<PrefsPanel tool="venn" vis={vis} visInit={visInit} updVis={updVis} />}
       />
 
       <StepNavBar

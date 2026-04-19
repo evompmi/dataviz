@@ -1940,7 +1940,14 @@ function App() {
     errorStrokeWidth: 1,
     errorCapWidth: 6,
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("lineplot", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("lineplot", vis);
+  }, [vis]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const sepRef = useRef("");
@@ -2110,6 +2117,7 @@ function App() {
         toolName="lineplot"
         title="Line Plot"
         subtitle="Profile plot — mean ± error per group at each x, with per-x statistics"
+        right={<PrefsPanel tool="lineplot" vis={vis} visInit={visInit} updVis={updVis} />}
       />
 
       <StepNavBar
