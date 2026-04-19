@@ -23,10 +23,46 @@ Each tool ships with an in-app **How to** panel documenting input format, column
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Aequorin Ca²⁺**  | Luminescence time-course visualisation with optional Ca²⁺ calibration (Allen & Blinks equation, Hill model). Supports baseline correction, per-replicate integral computation, and an inline statistical analysis of the integrals.                                                                   |
 | **Group Plot**     | Box plots, violin plots, raincloud plots and bar charts from long- or wide-format data. Automatic selection of Student's t, Welch's t, Mann–Whitney U, one-way / Welch ANOVA, or Kruskal–Wallis, with Tukey HSD, Games–Howell, or Dunn post-hocs and compact-letter display or significance brackets. |
+| **Line Plot**      | Profile plot showing the mean ± error (SEM, SD, or 95 % CI) per group across a shared x-axis (time, dose, position…), with per-x statistical comparison and significance markers above each x value.                                                                                                  |
 | **Scatter Plot**   | XY scatter with per-row colour, size and shape mapping, user-defined reference lines, row filtering, and optional linear regression overlay with slope / intercept / R² reporting.                                                                                                                    |
 | **Venn Diagram**   | Two- and three-set Venn diagrams in either equal-size or area-proportional layout. Proportional layouts are refined by minimising region-area error against the observed intersection sizes. Click any region to extract the underlying members and export them as CSV.                               |
 | **Power Analysis** | A-priori and post-hoc statistical power calculations for Student's t (independent, paired, one-sample), one-way ANOVA, χ² goodness-of-fit / independence, and correlation tests.                                                                                                                      |
 | **Calculator**     | Molarity and dilution (C₁V₁ = C₂V₂) computations, ligation ratio helper, and batch preparation sheets for routine wet-lab work.                                                                                                                                                                       |
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/aequorin.png" alt="Aequorin Ca²⁺ time-course with calibration overlay">
+      <br><sub><b>Aequorin Ca²⁺</b> — luminescence time-course with Allen &amp; Blinks calibration and per-replicate integral barplot.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/boxplot.png" alt="Group plot with significance brackets">
+      <br><sub><b>Group Plot</b> — box / violin / raincloud / bar with auto-selected test and significance annotations.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/lineplot.png" alt="Line plot with per-x significance markers">
+      <br><sub><b>Line Plot</b> — mean ± error per group across a shared x, with per-x significance markers.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/screenshot.png" alt="Scatter plot with colour and size mapping">
+      <br><sub><b>Scatter Plot</b> — XY with colour / size / shape mapping and optional regression overlay.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/venn.png" alt="Area-proportional Venn diagram">
+      <br><sub><b>Venn Diagram</b> — area-proportional layout with click-to-extract region members.</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/power.png" alt="Power analysis curve">
+      <br><sub><b>Power Analysis</b> — a-priori and post-hoc power for t, ANOVA, χ² and correlation tests.</sub>
+    </td>
+  </tr>
+</table>
 
 ## Shared features
 
