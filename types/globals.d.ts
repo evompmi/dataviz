@@ -447,6 +447,17 @@ declare global {
     segments: DendrogramSegment[];
     maxHeight: number;
   };
+  function kmeans(
+    matrix: number[][],
+    k: number,
+    opts?: { seed?: number; maxIter?: number; restarts?: number }
+  ): {
+    clusters: number[];
+    centroids: number[][];
+    inertia: number;
+    iterations: number;
+    order: number[];
+  };
 }
 
 export {};

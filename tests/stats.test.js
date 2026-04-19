@@ -54,6 +54,7 @@ const {
   pairwiseDistance,
   hclust,
   dendrogramLayout,
+  kmeans,
 } = ctx;
 
 // ── Primitives smoke test ──────────────────────────────────────────────────
@@ -1509,6 +1510,98 @@ test("three-leaf tree produces two merges with 3 segments each", () => {
   // 2 merges × (2 vertical + 1 horizontal) = 6 segments total.
   assert(segments.length === 6, `got ${segments.length} segments`);
   assert(maxHeight > 0, "maxHeight positive");
+});
+
+suite("kmeans — partitioning and order");
+
+test("trivial 1-row matrix returns single-cluster result", () => {
+  const res = kmeans([[1, 2, 3]], 3, { seed: 1, restarts: 1 });
+  assert(res.clusters.length === 1, "one clusters entry");
+  assert(res.centroids.length === 1, "k clamped to n=1");
+  assert(res.order.length === 1 && res.order[0] === 0, "order is [0]");
+});
+
+test("two well-separated blobs partition cleanly with k=2", () => {
+  const rows = [
+    [0, 0],
+    [0.1, 0.1],
+    [0, 0.2],
+    [10, 10],
+    [10.1, 10.1],
+    [10, 9.9],
+  ];
+  const res = kmeans(rows, 2, { seed: 42, restarts: 4 });
+  const labelA = res.clusters[0];
+  const labelB = res.clusters[3];
+  assert(labelA !== labelB, "two clusters separate the blobs");
+  assert(res.clusters[1] === labelA && res.clusters[2] === labelA, "blob A grouped");
+  assert(res.clusters[4] === labelB && res.clusters[5] === labelB, "blob B grouped");
+});
+
+test("deterministic with the same seed", () => {
+  const rows = [
+    [0, 0],
+    [1, 1],
+    [5, 5],
+    [5.5, 4.5],
+    [10, 10],
+    [11, 9],
+  ];
+  const a = kmeans(rows, 3, { seed: 7, restarts: 4 });
+  const b = kmeans(rows, 3, { seed: 7, restarts: 4 });
+  assert(JSON.stringify(a.clusters) === JSON.stringify(b.clusters), "clusters match");
+  assert(JSON.stringify(a.order) === JSON.stringify(b.order), "order matches");
+});
+
+test("order groups rows by cluster id and permutes all n rows", () => {
+  const rows = [
+    [0, 0],
+    [10, 10],
+    [0.1, 0],
+    [10, 9.9],
+    [0, 0.2],
+    [9.8, 10],
+  ];
+  const res = kmeans(rows, 2, { seed: 3, restarts: 4 });
+  assert(res.order.length === rows.length, "order covers every row");
+  const seen = new Set(res.order);
+  assert(seen.size === rows.length, "order has no duplicates");
+  // Within `order`, once the cluster id changes it must not change back.
+  let transitions = 0;
+  for (let i = 1; i < res.order.length; i++) {
+    if (res.clusters[res.order[i]] !== res.clusters[res.order[i - 1]]) transitions++;
+  }
+  assert(transitions <= 1, "order groups same-cluster rows together");
+});
+
+test("inertia decreases (or matches) a worse initialisation", () => {
+  const rows = [
+    [0, 0],
+    [0.1, 0.2],
+    [0.2, 0],
+    [5, 5],
+    [5.1, 4.9],
+    [5, 5.2],
+    [10, 0],
+    [10.2, 0.1],
+  ];
+  const res = kmeans(rows, 3, { seed: 99, restarts: 8 });
+  // Sum of squared spreads within 3 centred blobs is small.
+  assert(res.inertia < 1, `inertia should be small, got ${res.inertia}`);
+});
+
+test("handles NaN entries pairwise without crashing", () => {
+  const rows = [
+    [0, 0, NaN],
+    [0.2, NaN, 0],
+    [5, 5, 5],
+    [5.1, 4.9, 5.2],
+  ];
+  const res = kmeans(rows, 2, { seed: 1, restarts: 2 });
+  assert(res.clusters.length === 4, "all rows assigned");
+  assert(res.clusters[0] === res.clusters[1], "row 0 and 1 in same cluster");
+  assert(res.clusters[2] === res.clusters[3], "row 2 and 3 in same cluster");
+  assert(res.clusters[0] !== res.clusters[2], "the two pairs split");
 });
 
 summary();

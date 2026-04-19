@@ -154,8 +154,8 @@
   </header>
 
   <div class="summary summary-pass">
-    <div><span class="k">comparisons</span><span class="v">285</span></div>
-    <div><span class="k">passing</span><span class="v v-pass">285 (100.0%)</span></div>
+    <div><span class="k">comparisons</span><span class="v">293</span></div>
+    <div><span class="k">passing</span><span class="v v-pass">293 (100.0%)</span></div>
     <div><span class="k">failing</span><span class="v v-pass">0</span></div>
     <div><span class="k">max |Δ|</span><span class="v">8.23e-7</span></div>
   </div>
@@ -3023,8 +3023,134 @@
       </table>
     </section>
 
+    <section class="category">
+      <h2>pairwise distance <span class="badge badge-pass">3/3 pass</span></h2>
+      <table>
+        <colgroup>
+          <col class="c-dataset" />
+          <col class="c-n" />
+          <col class="c-metric" />
+          <col class="c-r" />
+          <col class="c-js" />
+          <col class="c-delta" />
+          <col class="c-ok" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>dataset</th>
+            <th class="num">n</th>
+            <th>metric</th>
+            <th class="num">R</th>
+            <th class="num">Toolbox</th>
+            <th class="num">|Δ|</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+      <tr class="row-pass">
+        <td>100x15 Gaussian · euclidean</td>
+        <td class="num">100</td>
+        <td>sorted d (max |Δ|)</td>
+        <td class="num">7.1485</td>
+        <td class="num">7.1485</td>
+        <td class="num">1.35e-10</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 Gaussian · manhattan</td>
+        <td class="num">100</td>
+        <td>sorted d (max |Δ|)</td>
+        <td class="num">18.6404</td>
+        <td class="num">18.6404</td>
+        <td class="num">3.34e-10</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 Gaussian · correlation</td>
+        <td class="num">100</td>
+        <td>sorted d (max |Δ|)</td>
+        <td class="num">1.32192</td>
+        <td class="num">1.32192</td>
+        <td class="num">6.28e-11</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr></tbody>
+      </table>
+    </section>
+
+    <section class="category">
+      <h2>hclust heights <span class="badge badge-pass">5/5 pass</span></h2>
+      <table>
+        <colgroup>
+          <col class="c-dataset" />
+          <col class="c-n" />
+          <col class="c-metric" />
+          <col class="c-r" />
+          <col class="c-js" />
+          <col class="c-delta" />
+          <col class="c-ok" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>dataset</th>
+            <th class="num">n</th>
+            <th>metric</th>
+            <th class="num">R</th>
+            <th class="num">Toolbox</th>
+            <th class="num">|Δ|</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+      <tr class="row-pass">
+        <td>100x15 · euclidean · average</td>
+        <td class="num">100</td>
+        <td>sorted h (max |Δ|)</td>
+        <td class="num">3.51606</td>
+        <td class="num">3.51606</td>
+        <td class="num">8.34e-11</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 · euclidean · complete</td>
+        <td class="num">100</td>
+        <td>sorted h (max |Δ|)</td>
+        <td class="num">8.40898</td>
+        <td class="num">8.40898</td>
+        <td class="num">9.18e-11</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 · euclidean · single</td>
+        <td class="num">100</td>
+        <td>sorted h (max |Δ|)</td>
+        <td class="num">3.33828</td>
+        <td class="num">3.33828</td>
+        <td class="num">8.37e-11</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 · manhattan · average</td>
+        <td class="num">100</td>
+        <td>sorted h (max |Δ|)</td>
+        <td class="num">13.5989</td>
+        <td class="num">13.5989</td>
+        <td class="num">1.99e-10</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr>
+      <tr class="row-pass">
+        <td>100x15 · correlation · average</td>
+        <td class="num">100</td>
+        <td>sorted h (max |Δ|)</td>
+        <td class="num">1.03312</td>
+        <td class="num">1.03312</td>
+        <td class="num">4.09e-11</td>
+        <td class="ok-cell ok-pass">✓</td>
+      </tr></tbody>
+      </table>
+    </section>
+
   <footer>
-    R reference generated 2026-04-15 18:55:24 UTC.
+    R reference generated 2026-04-19 12:12:37 UTC.
     Tolerance 0.005. Tool source: <code>tools/stats.js</code>.
   </footer>
 </div>

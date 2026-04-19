@@ -30,6 +30,8 @@ const {
   tukeyHSD,
   gamesHowell,
   dunnTest,
+  pairwiseDistance,
+  hclust,
 } = ctx;
 
 // ── Load R reference output ────────────────────────────────────────────────
@@ -172,6 +174,69 @@ for (const t of data.tests) {
         ...cmp(j.H, t.r.statistic),
       });
       pushRow({ category: cat, label: lbl, n, metric: "p", r: t.r.p, js: j.p, ...cmp(j.p, t.r.p) });
+    } else if (cat === "pairwise distance") {
+      const mat = t.inputs.matrix.map((row) => row.slice());
+      const metric = t.inputs.metric;
+      const D = pairwiseDistance(mat, metric);
+      const nPoints = D.length;
+      const js = [];
+      for (let i = 0; i < nPoints; i++) {
+        for (let j = i + 1; j < nPoints; j++) js.push(D[i][j]);
+      }
+      js.sort((a, b) => a - b);
+      const rSorted = t.r.sorted;
+      let maxDelta = 0;
+      let failIdx = -1;
+      for (let k = 0; k < rSorted.length; k++) {
+        const diff = Math.abs(js[k] - rSorted[k]);
+        if (diff > maxDelta) {
+          maxDelta = diff;
+          failIdx = k;
+        }
+      }
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "sorted d (max |Δ|)",
+        r: failIdx >= 0 ? rSorted[failIdx] : rSorted[0],
+        js: failIdx >= 0 ? js[failIdx] : js[0],
+        delta: maxDelta,
+        pass: maxDelta <= TOL,
+      });
+    } else if (cat === "hclust heights") {
+      const mat = t.inputs.matrix.map((row) => row.slice());
+      const D = pairwiseDistance(mat, t.inputs.metric);
+      const h = hclust(D, t.inputs.linkage);
+      const heights = [];
+      (function walk(node) {
+        if (!node) return;
+        if (node.left === null && node.right === null) return;
+        heights.push(node.height);
+        walk(node.left);
+        walk(node.right);
+      })(h.tree);
+      heights.sort((a, b) => a - b);
+      const rSorted = t.r.sorted;
+      let maxDelta = 0;
+      let failIdx = -1;
+      for (let k = 0; k < rSorted.length; k++) {
+        const diff = Math.abs(heights[k] - rSorted[k]);
+        if (diff > maxDelta) {
+          maxDelta = diff;
+          failIdx = k;
+        }
+      }
+      pushRow({
+        category: cat,
+        label: lbl,
+        n,
+        metric: "sorted h (max |Δ|)",
+        r: failIdx >= 0 ? rSorted[failIdx] : rSorted[0],
+        js: failIdx >= 0 ? heights[failIdx] : heights[0],
+        delta: maxDelta,
+        pass: maxDelta <= TOL,
+      });
     } else if (cat === "Tukey HSD" || cat === "Games-Howell" || cat === "Dunn (BH)") {
       const { keys, arrays } = groupsToArrays(t.inputs.groups);
       const fn = cat === "Tukey HSD" ? tukeyHSD : cat === "Games-Howell" ? gamesHowell : dunnTest;
