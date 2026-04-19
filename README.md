@@ -34,31 +34,31 @@ Each tool ships with an in-app **How to** panel documenting input format, column
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/screenshots/aequorin.png" alt="Aequorin Ca²⁺ time-course with calibration overlay">
+      <img src="docs/screenshots/aequorin.png?v=2" alt="Aequorin Ca²⁺ time-course with calibration overlay">
       <br><sub><b>Aequorin Ca²⁺</b> — luminescence time-course with Allen &amp; Blinks calibration and per-replicate integral barplot.</sub>
     </td>
     <td width="50%" align="center">
-      <img src="docs/screenshots/boxplot.png" alt="Group plot with significance brackets">
+      <img src="docs/screenshots/boxplot.png?v=2" alt="Group plot with significance brackets">
       <br><sub><b>Group Plot</b> — box / violin / raincloud / bar with auto-selected test and significance annotations.</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/lineplot.png" alt="Line plot with per-x significance markers">
+      <img src="docs/screenshots/lineplot.png?v=2" alt="Line plot with per-x significance markers">
       <br><sub><b>Line Plot</b> — mean ± error per group across a shared x, with per-x significance markers.</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/screenshot.png" alt="Scatter plot with colour and size mapping">
+      <img src="docs/screenshots/screenshot.png?v=2" alt="Scatter plot with colour and size mapping">
       <br><sub><b>Scatter Plot</b> — XY with colour / size / shape mapping and optional regression overlay.</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/venn.png" alt="Area-proportional Venn diagram">
+      <img src="docs/screenshots/venn.png?v=2" alt="Area-proportional Venn diagram">
       <br><sub><b>Venn Diagram</b> — area-proportional layout with click-to-extract region members.</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/power.png" alt="Power analysis curve">
+      <img src="docs/screenshots/power.png?v=2" alt="Power analysis curve">
       <br><sub><b>Power Analysis</b> — a-priori and post-hoc power for t, ANOVA, χ² and correlation tests.</sub>
     </td>
   </tr>
