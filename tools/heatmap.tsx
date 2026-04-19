@@ -113,6 +113,19 @@ function autoRange(matrix, diverging) {
 
 const DENDRO_STROKE = "#555555";
 const NAN_FILL = "#e0e0e0";
+// Okabe-Ito categorical palette for k-means cluster-id colour strips.
+const CLUSTER_PALETTE = [
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#999999",
+  "#88CCEE",
+  "#AA4499",
+];
 
 const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   {
@@ -121,10 +134,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     matrix,
     rowOrder,
     colOrder,
-    rowTree,
-    colTree,
-    showRowDendro,
-    showColDendro,
+    rowCluster,
+    colCluster,
     vmin,
     vmax,
     palette,
@@ -151,8 +162,13 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   const plotW = cellW * nCols;
   const plotH = cellH * nRows;
 
-  const DENDRO_SIZE_TOP = showColDendro && colTree ? 60 : 0;
-  const DENDRO_SIZE_LEFT = showRowDendro && rowTree ? 60 : 0;
+  const rowIsHier = rowCluster && rowCluster.mode === "hierarchical" && rowCluster.tree;
+  const rowIsKmeans = rowCluster && rowCluster.mode === "kmeans";
+  const colIsHier = colCluster && colCluster.mode === "hierarchical" && colCluster.tree;
+  const colIsKmeans = colCluster && colCluster.mode === "kmeans";
+
+  const DENDRO_SIZE_TOP = colIsHier ? 60 : colIsKmeans ? 14 : 0;
+  const DENDRO_SIZE_LEFT = rowIsHier ? 60 : rowIsKmeans ? 14 : 0;
   const LABEL_GAP = 6;
   const ROW_LABEL_W = Math.min(160, longestRowLabel * 6 + 12);
   const COL_LABEL_H = Math.min(120, Math.round(longestColLabel * 5.5) + 16);
@@ -206,8 +222,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
 
   // Dendrogram helpers — scale from data space into pixel space.
   function renderColDendrogram() {
-    if (!showColDendro || !colTree) return null;
-    const { segments, maxHeight } = dendrogramLayout(colTree);
+    if (!colIsHier) return null;
+    const { segments, maxHeight } = dendrogramLayout(colCluster.tree);
     if (maxHeight === 0 || segments.length === 0) return null;
     const yBase = MARGIN.top - LABEL_GAP - COL_LABEL_H - LABEL_GAP;
     const yTop = yBase - DENDRO_SIZE_TOP + 4;
@@ -229,8 +245,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   }
 
   function renderRowDendrogram() {
-    if (!showRowDendro || !rowTree) return null;
-    const { segments, maxHeight } = dendrogramLayout(rowTree);
+    if (!rowIsHier) return null;
+    const { segments, maxHeight } = dendrogramLayout(rowCluster.tree);
     if (maxHeight === 0 || segments.length === 0) return null;
     const xRight = MARGIN.left - LABEL_GAP;
     const xLeft = xRight - DENDRO_SIZE_LEFT + 4;
@@ -249,6 +265,54 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
           y2: scaleY(s.x2),
         })
       )
+    );
+  }
+
+  function clusterColor(id) {
+    return CLUSTER_PALETTE[
+      ((id % CLUSTER_PALETTE.length) + CLUSTER_PALETTE.length) % CLUSTER_PALETTE.length
+    ];
+  }
+
+  function renderColClusterStrip() {
+    if (!colIsKmeans) return null;
+    const y = MARGIN.top - LABEL_GAP - COL_LABEL_H - LABEL_GAP - DENDRO_SIZE_TOP + 2;
+    return (
+      <g id="col-cluster-strip">
+        {colOrder.map((origCi, ci) => (
+          <rect
+            key={ci}
+            x={MARGIN.left + cellX(ci)}
+            y={y}
+            width={cellWPx(ci)}
+            height={DENDRO_SIZE_TOP - 4}
+            fill={clusterColor(colCluster.clusters[origCi])}
+            stroke="none"
+            shapeRendering="crispEdges"
+          />
+        ))}
+      </g>
+    );
+  }
+
+  function renderRowClusterStrip() {
+    if (!rowIsKmeans) return null;
+    const x = MARGIN.left - LABEL_GAP - DENDRO_SIZE_LEFT + 2;
+    return (
+      <g id="row-cluster-strip">
+        {rowOrder.map((origRi, ri) => (
+          <rect
+            key={ri}
+            x={x}
+            y={MARGIN.top + cellY(ri)}
+            width={DENDRO_SIZE_LEFT - 4}
+            height={cellHPx(ri)}
+            fill={clusterColor(rowCluster.clusters[origRi])}
+            stroke="none"
+            shapeRendering="crispEdges"
+          />
+        ))}
+      </g>
     );
   }
 
@@ -326,6 +390,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
 
       {renderColDendrogram()}
       {renderRowDendrogram()}
+      {renderColClusterStrip()}
+      {renderRowClusterStrip()}
 
       <g id="chart" transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
         <g id="plot-area-background">
@@ -573,6 +639,48 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
 
 // ── Plot controls ────────────────────────────────────────────────────────────
 
+function ClusterModeControl({ label, mode, setMode, k, setK }) {
+  const OPTIONS = [
+    { k: "none", label: "None" },
+    { k: "hierarchical", label: "Hier." },
+    { k: "kmeans", label: "K-means" },
+  ];
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>{label}</div>
+      <div className="dv-seg" role="group" aria-label={`${label} clustering mode`}>
+        {OPTIONS.map((o) => (
+          <button
+            key={o.k}
+            type="button"
+            className={"dv-seg-btn" + (mode === o.k ? " dv-seg-btn-active" : "")}
+            onClick={() => setMode(o.k)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {mode === "kmeans" && (
+        <label style={{ fontSize: 11, display: "block", marginTop: 6 }}>
+          k
+          <input
+            type="number"
+            value={k}
+            step="1"
+            min="2"
+            max="10"
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              setK(Math.max(2, Math.min(10, Number.isFinite(v) ? v : 3)));
+            }}
+            style={{ width: "100%", fontSize: 11, marginTop: 2 }}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
 function PlotControls({
   vis,
   updVis,
@@ -585,10 +693,16 @@ function PlotControls({
   fileName,
   normalization,
   setNormalization,
-  clusterRows,
-  setClusterRows,
-  clusterCols,
-  setClusterCols,
+  rowMode,
+  setRowMode,
+  colMode,
+  setColMode,
+  rowK,
+  setRowK,
+  colK,
+  setColK,
+  kmeansSeed,
+  setKmeansSeed,
   distanceMetric,
   setDistanceMetric,
   linkageMethod,
@@ -596,7 +710,8 @@ function PlotControls({
   autoVRange,
 }) {
   const paletteKeys = Object.keys(COLOR_PALETTES);
-  const anyClustering = clusterRows || clusterCols;
+  const anyHier = rowMode === "hierarchical" || colMode === "hierarchical";
+  const anyKmeans = rowMode === "kmeans" || colMode === "kmeans";
   const baseName = fileBaseName(fileName, "heatmap");
   const sectionLabel = {
     margin: "0 0 8px",
@@ -652,8 +767,11 @@ function PlotControls({
               const script = buildHeatmapRScript({
                 rawMatrix,
                 normalization,
-                clusterRows,
-                clusterCols,
+                rowMode,
+                colMode,
+                rowK,
+                colK,
+                kmeansSeed,
                 distanceMetric,
                 linkageMethod,
                 palette: vis.palette,
@@ -685,49 +803,25 @@ function PlotControls({
       </div>
 
       <div className="dv-panel">
-        <p style={sectionLabel}>Hierarchical clustering</p>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
-          Cluster rows
-        </div>
-        <div className="dv-seg" role="group" aria-label="Cluster rows">
-          <button
-            type="button"
-            className={"dv-seg-btn" + (!clusterRows ? " dv-seg-btn-active" : "")}
-            onClick={() => setClusterRows(false)}
-          >
-            Off
-          </button>
-          <button
-            type="button"
-            className={"dv-seg-btn" + (clusterRows ? " dv-seg-btn-active" : "")}
-            onClick={() => setClusterRows(true)}
-          >
-            On
-          </button>
-        </div>
-        <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "8px 0 4px" }}>
-          Cluster columns
-        </div>
-        <div className="dv-seg" role="group" aria-label="Cluster columns">
-          <button
-            type="button"
-            className={"dv-seg-btn" + (!clusterCols ? " dv-seg-btn-active" : "")}
-            onClick={() => setClusterCols(false)}
-          >
-            Off
-          </button>
-          <button
-            type="button"
-            className={"dv-seg-btn" + (clusterCols ? " dv-seg-btn-active" : "")}
-            onClick={() => setClusterCols(true)}
-          >
-            On
-          </button>
-        </div>
-        {anyClustering && (
+        <p style={sectionLabel}>Clustering</p>
+        <ClusterModeControl
+          label="Rows"
+          mode={rowMode}
+          setMode={setRowMode}
+          k={rowK}
+          setK={setRowK}
+        />
+        <ClusterModeControl
+          label="Columns"
+          mode={colMode}
+          setMode={setColMode}
+          k={colK}
+          setK={setColK}
+        />
+        {anyHier && (
           <div style={{ marginTop: 10 }}>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
-              Distance
+              Hierarchical · Distance
             </div>
             <div className="dv-seg" role="group" aria-label="Distance metric">
               {DIST_OPTIONS.map((o) => (
@@ -742,7 +836,7 @@ function PlotControls({
               ))}
             </div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", margin: "8px 0 4px" }}>
-              Linkage
+              Hierarchical · Linkage
             </div>
             <div className="dv-seg" role="group" aria-label="Linkage method">
               {LINK_OPTIONS.map((o) => (
@@ -755,6 +849,24 @@ function PlotControls({
                   {o.label}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+        {anyKmeans && (
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontSize: 11, display: "block" }}>
+              K-means · Seed
+              <input
+                type="number"
+                value={kmeansSeed}
+                step="1"
+                min="1"
+                onChange={(e) => setKmeansSeed(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                style={{ width: "100%", fontSize: 11, marginTop: 2 }}
+              />
+            </label>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
+              Change the seed to try a different k-means++ initialisation.
             </div>
           </div>
         )}
@@ -895,8 +1007,11 @@ function PlotControls({
 function buildHeatmapRScript({
   rawMatrix,
   normalization,
-  clusterRows,
-  clusterCols,
+  rowMode,
+  colMode,
+  rowK,
+  colK,
+  kmeansSeed,
   distanceMetric,
   linkageMethod,
   palette,
@@ -971,13 +1086,44 @@ function buildHeatmapRScript({
   }
   lines.push("");
   lines.push("# ── Clustering ─────────────────────────────────────────────────────────────");
-  lines.push(
-    '# Toolbox settings: distance = "' +
-      (distanceMetric || "euclidean") +
-      '", linkage = "' +
-      (linkageMethod || "average") +
-      '"'
-  );
+  const rowUsesK = rowMode === "kmeans";
+  const colUsesK = colMode === "kmeans";
+  lines.push("# Rows: " + rowMode + (rowUsesK ? ` (k = ${rowK})` : ""));
+  lines.push("# Columns: " + colMode + (colUsesK ? ` (k = ${colK})` : ""));
+  if (rowUsesK || colUsesK) {
+    lines.push("# K-means reorders the matrix by cluster id before plotting; pheatmap then");
+    lines.push("# renders the rows/columns as-is (cluster_rows = FALSE for the k-means axis).");
+    lines.push("set.seed(" + (kmeansSeed || 1) + ")");
+    if (rowUsesK) {
+      lines.push(
+        "row_km <- kmeans(mat, centers = " +
+          rowK +
+          ', nstart = 8, iter.max = 100, algorithm = "Hartigan-Wong")'
+      );
+      lines.push("row_order <- order(row_km$cluster)");
+      lines.push("mat <- mat[row_order, , drop = FALSE]");
+      lines.push("row_clusters <- row_km$cluster[row_order]");
+    }
+    if (colUsesK) {
+      lines.push(
+        "col_km <- kmeans(t(mat), centers = " +
+          colK +
+          ', nstart = 8, iter.max = 100, algorithm = "Hartigan-Wong")'
+      );
+      lines.push("col_order <- order(col_km$cluster)");
+      lines.push("mat <- mat[, col_order, drop = FALSE]");
+      lines.push("col_clusters <- col_km$cluster[col_order]");
+    }
+  }
+  if (rowMode === "hierarchical" || colMode === "hierarchical") {
+    lines.push(
+      '# Hierarchical settings: distance = "' +
+        (distanceMetric || "euclidean") +
+        '", linkage = "' +
+        (linkageMethod || "average") +
+        '"'
+    );
+  }
   lines.push("");
   lines.push("# ── Colour scale ───────────────────────────────────────────────────────────");
   lines.push(
@@ -992,17 +1138,28 @@ function buildHeatmapRScript({
   lines.push("# ── Plot ───────────────────────────────────────────────────────────────────");
   lines.push("pheatmap(");
   lines.push("  mat,");
-  lines.push("  cluster_rows = " + (clusterRows ? "TRUE" : "FALSE") + ",");
-  lines.push("  cluster_cols = " + (clusterCols ? "TRUE" : "FALSE") + ",");
-  lines.push('  clustering_distance_rows = "' + pheatmapDist + '",');
-  lines.push('  clustering_distance_cols = "' + pheatmapDist + '",');
-  lines.push('  clustering_method = "' + (linkageMethod || "average") + '",');
+  // K-means already reordered the matrix — let pheatmap render that axis as-is.
+  lines.push("  cluster_rows = " + (rowMode === "hierarchical" ? "TRUE" : "FALSE") + ",");
+  lines.push("  cluster_cols = " + (colMode === "hierarchical" ? "TRUE" : "FALSE") + ",");
+  if (rowMode === "hierarchical" || colMode === "hierarchical") {
+    lines.push('  clustering_distance_rows = "' + pheatmapDist + '",');
+    lines.push('  clustering_distance_cols = "' + pheatmapDist + '",');
+    lines.push('  clustering_method = "' + (linkageMethod || "average") + '",');
+  }
   lines.push("  color = heat_colors,");
   lines.push("  breaks = breaks,");
   const borderR = cellBorder && cellBorder.on ? `"${cellBorder.color}"` : "NA";
   lines.push("  border_color = " + borderR + ",");
   if (plotTitle) {
     lines.push('  main = "' + sanitizeRString(plotTitle) + '",');
+  }
+  if (rowUsesK) {
+    lines.push("  annotation_row = data.frame(cluster = factor(row_clusters),");
+    lines.push("                              row.names = rownames(mat)),");
+  }
+  if (colUsesK) {
+    lines.push("  annotation_col = data.frame(cluster = factor(col_clusters),");
+    lines.push("                              row.names = colnames(mat)),");
   }
   lines.push("  show_rownames = TRUE,");
   lines.push("  show_colnames = TRUE");
@@ -1053,8 +1210,11 @@ function App() {
   const [warnings, setWarnings] = useState({ nonNumeric: 0 });
 
   const [normalization, setNormalization] = useState("none");
-  const [clusterRows, setClusterRows] = useState(true);
-  const [clusterCols, setClusterCols] = useState(true);
+  const [rowMode, setRowMode] = useState("hierarchical");
+  const [colMode, setColMode] = useState("hierarchical");
+  const [rowK, setRowK] = useState(3);
+  const [colK, setColK] = useState(3);
+  const [kmeansSeed, setKmeansSeed] = useState(1);
   const [distanceMetric, setDistanceMetric] = useState("euclidean");
   const [linkageMethod, setLinkageMethod] = useState("average");
 
@@ -1086,14 +1246,24 @@ function App() {
 
   // Clustering — expensive; only recompute when relevant inputs change.
   const rowCluster = useMemo(() => {
-    if (!clusterRows || normalized.length < 2) return null;
-    const D = pairwiseDistance(normalized, distanceMetric);
-    return hclust(D, linkageMethod);
-  }, [clusterRows, normalized, distanceMetric, linkageMethod]);
+    if (rowMode === "hierarchical") {
+      if (normalized.length < 2) return null;
+      const D = pairwiseDistance(normalized, distanceMetric);
+      const h = hclust(D, linkageMethod);
+      return { mode: "hierarchical", tree: h.tree, order: h.order };
+    }
+    if (rowMode === "kmeans") {
+      if (normalized.length < 2) return null;
+      const k = Math.max(2, Math.min(rowK, normalized.length));
+      const res = kmeans(normalized, k, { seed: kmeansSeed });
+      return { mode: "kmeans", clusters: res.clusters, order: res.order, k };
+    }
+    return null;
+  }, [rowMode, normalized, distanceMetric, linkageMethod, rowK, kmeansSeed]);
 
   const colCluster = useMemo(() => {
-    if (!clusterCols || normalized.length < 1 || normalized[0].length < 2) return null;
-    // Transpose for column clustering.
+    if (normalized.length < 1 || normalized[0].length < 2) return null;
+    // Transpose once — both hierarchical and k-means need column-as-observation.
     const nRows = normalized.length;
     const nCols = normalized[0].length;
     const T = Array.from({ length: nCols }, (_, c) => {
@@ -1101,9 +1271,18 @@ function App() {
       for (let r = 0; r < nRows; r++) row[r] = normalized[r][c];
       return row;
     });
-    const D = pairwiseDistance(T, distanceMetric);
-    return hclust(D, linkageMethod);
-  }, [clusterCols, normalized, distanceMetric, linkageMethod]);
+    if (colMode === "hierarchical") {
+      const D = pairwiseDistance(T, distanceMetric);
+      const h = hclust(D, linkageMethod);
+      return { mode: "hierarchical", tree: h.tree, order: h.order };
+    }
+    if (colMode === "kmeans") {
+      const k = Math.max(2, Math.min(colK, nCols));
+      const res = kmeans(T, k, { seed: kmeansSeed });
+      return { mode: "kmeans", clusters: res.clusters, order: res.order, k };
+    }
+    return null;
+  }, [colMode, normalized, distanceMetric, linkageMethod, colK, kmeansSeed]);
 
   const rowOrder = useMemo(() => {
     if (rowCluster) return rowCluster.order;
@@ -1189,8 +1368,11 @@ function App() {
     setRawMatrix({ rowLabels: [], colLabels: [], matrix: [] });
     setWarnings({ nonNumeric: 0 });
     setNormalization("none");
-    setClusterRows(true);
-    setClusterCols(true);
+    setRowMode("hierarchical");
+    setColMode("hierarchical");
+    setRowK(3);
+    setColK(3);
+    setKmeansSeed(1);
     setDistanceMetric("euclidean");
     setLinkageMethod("average");
     setParseError(null);
@@ -1318,10 +1500,16 @@ function App() {
               fileName={fileName}
               normalization={normalization}
               setNormalization={setNormalization}
-              clusterRows={clusterRows}
-              setClusterRows={setClusterRows}
-              clusterCols={clusterCols}
-              setClusterCols={setClusterCols}
+              rowMode={rowMode}
+              setRowMode={setRowMode}
+              colMode={colMode}
+              setColMode={setColMode}
+              rowK={rowK}
+              setRowK={setRowK}
+              colK={colK}
+              setColK={setColK}
+              kmeansSeed={kmeansSeed}
+              setKmeansSeed={setKmeansSeed}
               distanceMetric={distanceMetric}
               setDistanceMetric={setDistanceMetric}
               linkageMethod={linkageMethod}
@@ -1348,10 +1536,8 @@ function App() {
                   matrix={normalized}
                   rowOrder={rowOrder}
                   colOrder={colOrder}
-                  rowTree={rowCluster ? rowCluster.tree : null}
-                  colTree={colCluster ? colCluster.tree : null}
-                  showRowDendro={clusterRows}
-                  showColDendro={clusterCols}
+                  rowCluster={rowCluster}
+                  colCluster={colCluster}
                   vmin={vis.vmin}
                   vmax={vis.vmax}
                   palette={vis.palette}

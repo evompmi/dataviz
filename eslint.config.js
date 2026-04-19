@@ -137,6 +137,7 @@ const sharedGlobals = {
   pairwiseDistance: "readonly",
   hclust: "readonly",
   dendrogramLayout: "readonly",
+  kmeans: "readonly",
   // shared-r-export.js
   buildRScript: "readonly",
   buildRScriptForPower: "readonly",

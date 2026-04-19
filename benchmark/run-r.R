@@ -481,6 +481,71 @@ for (c in dunn_cases) {
   )
 }
 
+# ── 10. Pairwise distance + hierarchical clustering ───────────────────────
+# Cross-checks the heatmap tool's clustering primitives against R's dist() and
+# hclust(). A random 100 × 15 matrix (fixed seed) is big enough to shake out
+# off-by-one bugs without bloating results-r.json. Distances and heights are
+# compared after sorting each vector — sort() is robust to tie-handling
+# differences between implementations while still catching any real bug.
+
+set.seed(20260419)
+clust_matrix <- matrix(rnorm(100 * 15), nrow = 100, ncol = 15)
+clust_inputs <- list(
+  matrix = lapply(seq_len(nrow(clust_matrix)), function(i) as.list(clust_matrix[i, ]))
+)
+
+dist_methods <- list(
+  list(toolbox = "euclidean", r = "euclidean"),
+  list(toolbox = "manhattan", r = "manhattan")
+)
+
+for (dm in dist_methods) {
+  d <- dist(clust_matrix, method = dm$r)
+  add(
+    category = "pairwise distance",
+    label    = paste0("100x15 Gaussian · ", dm$toolbox),
+    n        = nrow(clust_matrix),
+    inputs   = c(clust_inputs, list(metric = dm$toolbox)),
+    r        = list(sorted = as.list(sort(as.vector(d))))
+  )
+}
+
+# Correlation distance: 1 - Pearson r on the rows.
+cor_d <- as.dist(1 - cor(t(clust_matrix)))
+add(
+  category = "pairwise distance",
+  label    = "100x15 Gaussian · correlation",
+  n        = nrow(clust_matrix),
+  inputs   = c(clust_inputs, list(metric = "correlation")),
+  r        = list(sorted = as.list(sort(as.vector(cor_d))))
+)
+
+# Hierarchical clustering heights, one case per distance × linkage combo.
+hclust_combos <- list(
+  list(distance = "euclidean", linkage = "average",  rLink = "average"),
+  list(distance = "euclidean", linkage = "complete", rLink = "complete"),
+  list(distance = "euclidean", linkage = "single",   rLink = "single"),
+  list(distance = "manhattan", linkage = "average",  rLink = "average"),
+  list(distance = "correlation", linkage = "average", rLink = "average")
+)
+
+for (hc in hclust_combos) {
+  if (hc$distance == "correlation") {
+    d_obj <- as.dist(1 - cor(t(clust_matrix)))
+  } else {
+    d_obj <- dist(clust_matrix, method = hc$distance)
+  }
+  h <- hclust(d_obj, method = hc$rLink)
+  add(
+    category = "hclust heights",
+    label    = paste0("100x15 · ", hc$distance, " · ", hc$linkage),
+    n        = nrow(clust_matrix),
+    inputs   = c(clust_inputs,
+                 list(metric = hc$distance, linkage = hc$linkage)),
+    r        = list(sorted = as.list(sort(h$height)))
+  )
+}
+
 # ── Write out ──────────────────────────────────────────────────────────────
 
 out <- list(

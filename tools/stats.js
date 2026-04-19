@@ -1798,3 +1798,197 @@ function dendrogramLayout(tree) {
   place(tree);
   return { segments, maxHeight };
 }
+
+// ── 15. K-means (non-hierarchical) clustering ───────────────────────────────
+
+// K-means with k-means++ seeded init. Rows of `matrix` are the observations;
+// columns are features. Missing values (NaN) are handled pairwise per-feature
+// when computing squared distances, and are skipped when averaging centroids.
+// opts: { seed=1, maxIter=100, restarts=8 } — `restarts` independent runs
+// from different seeded inits; the lowest-inertia run is returned.
+// Returns { clusters, centroids, inertia, iterations, order }:
+//   clusters   — array of length n with cluster id (0..k-1) per row
+//   centroids  — k × d array (NaN if a feature had no finite values in a cluster)
+//   inertia    — sum of squared distances from each row to its centroid
+//   iterations — iterations the winning restart took to converge
+//   order      — row-index permutation: rows grouped by cluster id, within each
+//                cluster sorted by distance-to-centroid ascending. Clusters
+//                themselves are ordered by cluster-id.
+function kmeans(matrix, k, opts) {
+  const options = opts || {};
+  const seed = options.seed != null ? options.seed : 1;
+  const maxIter = options.maxIter != null ? options.maxIter : 100;
+  const restarts = options.restarts != null ? options.restarts : 8;
+  const n = matrix.length;
+  if (n === 0) return { clusters: [], centroids: [], inertia: 0, iterations: 0, order: [] };
+  const d = matrix[0].length;
+  const kEff = Math.max(1, Math.min(k, n));
+
+  const baseRng = kmeansRng(seed);
+  let best = null;
+  for (let r = 0; r < restarts; r++) {
+    const rng = kmeansRng(Math.floor(baseRng() * 2147483646) + 1);
+    const attempt = kmeansOnce(matrix, kEff, d, rng, maxIter);
+    if (!best || attempt.inertia < best.inertia) best = attempt;
+  }
+
+  // Within-cluster ordering by distance to centroid (ascending).
+  const distToCentroid = new Array(n);
+  for (let i = 0; i < n; i++) {
+    distToCentroid[i] = sqDistPartial(matrix[i], best.centroids[best.clusters[i]]);
+  }
+  const order = [];
+  for (let c = 0; c < kEff; c++) {
+    const members = [];
+    for (let i = 0; i < n; i++) if (best.clusters[i] === c) members.push(i);
+    members.sort((a, b) => distToCentroid[a] - distToCentroid[b]);
+    for (const m of members) order.push(m);
+  }
+
+  return {
+    clusters: best.clusters,
+    centroids: best.centroids,
+    inertia: best.inertia,
+    iterations: best.iterations,
+    order,
+  };
+}
+
+function kmeansOnce(matrix, k, d, rng, maxIter) {
+  const n = matrix.length;
+  const centroids = kmeansPlusPlusInit(matrix, k, rng);
+  const clusters = new Array(n).fill(0);
+
+  let iterations = 0;
+  for (let iter = 0; iter < maxIter; iter++) {
+    iterations = iter + 1;
+    let changed = false;
+    for (let i = 0; i < n; i++) {
+      let best = 0;
+      let bestD = sqDistPartial(matrix[i], centroids[0]);
+      for (let c = 1; c < k; c++) {
+        const dist = sqDistPartial(matrix[i], centroids[c]);
+        if (dist < bestD) {
+          bestD = dist;
+          best = c;
+        }
+      }
+      if (clusters[i] !== best) {
+        clusters[i] = best;
+        changed = true;
+      }
+    }
+
+    // Recompute centroids as per-feature means over finite values.
+    const sums = Array.from({ length: k }, () => new Array(d).fill(0));
+    const counts = Array.from({ length: k }, () => new Array(d).fill(0));
+    const clusterSizes = new Array(k).fill(0);
+    for (let i = 0; i < n; i++) {
+      const c = clusters[i];
+      clusterSizes[c]++;
+      for (let j = 0; j < d; j++) {
+        const v = matrix[i][j];
+        if (Number.isFinite(v)) {
+          sums[c][j] += v;
+          counts[c][j]++;
+        }
+      }
+    }
+    for (let c = 0; c < k; c++) {
+      if (clusterSizes[c] === 0) {
+        // Empty cluster: reseed to the row farthest from its current centroid.
+        let worst = -1;
+        let worstD = -Infinity;
+        for (let i = 0; i < n; i++) {
+          const dist = sqDistPartial(matrix[i], centroids[clusters[i]]);
+          if (dist > worstD) {
+            worstD = dist;
+            worst = i;
+          }
+        }
+        if (worst >= 0) {
+          for (let j = 0; j < d; j++) centroids[c][j] = matrix[worst][j];
+          clusters[worst] = c;
+          changed = true;
+        }
+        continue;
+      }
+      for (let j = 0; j < d; j++) {
+        centroids[c][j] = counts[c][j] > 0 ? sums[c][j] / counts[c][j] : NaN;
+      }
+    }
+    if (!changed) break;
+  }
+
+  let inertia = 0;
+  for (let i = 0; i < n; i++) inertia += sqDistPartial(matrix[i], centroids[clusters[i]]);
+
+  return { clusters, centroids, inertia, iterations };
+}
+
+function kmeansPlusPlusInit(matrix, k, rng) {
+  const n = matrix.length;
+  const d = matrix[0].length;
+  const centroids = [];
+  const first = Math.floor(rng() * n);
+  centroids.push(matrix[first].slice());
+
+  const dists = new Array(n).fill(Infinity);
+  for (let c = 1; c < k; c++) {
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+      const dist = sqDistPartial(matrix[i], centroids[c - 1]);
+      if (dist < dists[i]) dists[i] = dist;
+      if (Number.isFinite(dists[i])) total += dists[i];
+    }
+    if (total <= 0 || !Number.isFinite(total)) {
+      // Degenerate: fall back to a random distinct-ish row.
+      let pick = Math.floor(rng() * n);
+      centroids.push(matrix[pick].slice());
+      continue;
+    }
+    let target = rng() * total;
+    let pick = 0;
+    for (let i = 0; i < n; i++) {
+      if (!Number.isFinite(dists[i])) continue;
+      target -= dists[i];
+      if (target <= 0) {
+        pick = i;
+        break;
+      }
+      pick = i;
+    }
+    centroids.push(matrix[pick].slice());
+  }
+  // Ensure every centroid has length d (for rows that had trailing NaN columns).
+  for (const c of centroids) {
+    while (c.length < d) c.push(NaN);
+  }
+  return centroids;
+}
+
+// Park-Miller LCG — kept local so stats.js has no cross-file dependency.
+function kmeansRng(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return s / 2147483647;
+  };
+}
+
+function sqDistPartial(row, centroid) {
+  const n = Math.min(row.length, centroid.length);
+  let s = 0;
+  let any = false;
+  for (let k = 0; k < n; k++) {
+    const a = row[k];
+    const b = centroid[k];
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      const diff = a - b;
+      s += diff * diff;
+      any = true;
+    }
+  }
+  return any ? s : Infinity;
+}
