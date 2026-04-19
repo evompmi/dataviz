@@ -211,7 +211,7 @@ function PrefsPanel(props) {
         onClick: handleSave,
         className: "dv-btn dv-btn-dl",
         style: compactBtnStyle,
-        title: "Download current settings as a JSON file",
+        title: "Download current visual plot settings as a JSON file",
       },
       "Save"
     ),
@@ -222,7 +222,7 @@ function PrefsPanel(props) {
         onClick: handleLoad,
         className: "dv-btn dv-btn-dl",
         style: compactBtnStyle,
-        title: "Apply settings from a previously saved JSON file",
+        title: "Apply visual plot settings from a previously saved JSON file",
       },
       "Load"
     ),
@@ -233,7 +233,7 @@ function PrefsPanel(props) {
         onClick: handleReset,
         className: "dv-btn dv-btn-danger",
         style: compactBtnStyle,
-        title: "Restore default settings and clear stored preferences",
+        title: "Restore default visual plot settings and clear stored preferences",
       },
       "Reset"
     )
