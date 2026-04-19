@@ -146,11 +146,14 @@
 }
 
 /* ── Disclosure indicator ──────────────────────────────────────────────
-   Prominent collapsible marker used by StatsTile, Scatter's Filters
-   panel, and Aequorin's chart collapse button. A solid accent-colored
-   circle with a bold ">" glyph that rotates 90° when the section is
-   open — deliberately loud so it reads from across the panel. Meant
-   to be dropped in anywhere an old "▸"/"▾" unicode caret used to live. */
+   Neutral collapsible marker used by StatsTile, Scatter's Filters panel,
+   and Aequorin's chart / inset / replicate-table collapse buttons. A
+   soft neutral-surface circle with a crisp SVG chevron that rotates 90°
+   when the section is open — deliberately quiet so it melts into the
+   surrounding panel chrome in both light and dark modes. The glyph is
+   painted as a CSS mask so it honours `currentColor`, stays pixel-sharp
+   at any DPR, and doesn't depend on which font the browser picked to
+   render a ">" character. */
 .dv-disclosure {
   display: inline-flex;
   align-items: center;
@@ -158,20 +161,34 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--cta-primary-bg);
-  color: var(--on-accent);
-  font-weight: 900;
-  font-size: 15px;
-  line-height: 1;
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
   flex-shrink: 0;
   user-select: none;
-  transition: transform 180ms ease;
+  transition:
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 120ms ease;
+}
+.dv-disclosure:hover {
+  background: var(--border);
 }
 .dv-disclosure::before {
-  content: ">";
+  content: "";
   display: block;
-  /* Optical centering: the character's baseline sits a hair below center. */
-  transform: translate(0.5px, -0.5px);
+  width: 10px;
+  height: 10px;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 5l7 7-7 7' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 5l7 7-7 7' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  /* Optical centering: the chevron's tip sits a hair left of geometric
+     center because the SVG path is slightly asymmetric. */
+  transform: translateX(0.5px);
 }
 .dv-disclosure.dv-disclosure-open {
   transform: rotate(90deg);
