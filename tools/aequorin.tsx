@@ -2449,7 +2449,7 @@ function HowToSection() {
           <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
             Aequorin Ca²⁺ Calibration — How to use
           </div>
-          <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+          <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
             RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots
           </div>
         </div>
@@ -4076,7 +4076,7 @@ function App() {
           <span
             style={{
               fontSize: 12,
-              color: parseError.startsWith("⚠️") ? "#92400e" : "#dc2626",
+              color: parseError.startsWith("⚠️") ? "var(--warning-text)" : "var(--danger-text)",
               fontWeight: 600,
               whiteSpace: "pre-line",
             }}

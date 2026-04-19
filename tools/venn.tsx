@@ -1198,7 +1198,7 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
             <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
               Venn Diagram — How to use
             </div>
-            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
               Upload wide-format data → review sets → plot
             </div>
           </div>

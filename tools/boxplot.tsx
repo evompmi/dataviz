@@ -1195,7 +1195,7 @@ function UploadStep({
             <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
               Group Plot — How to use
             </div>
-            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
               Long or wide data → auto-detect → box / violin / raincloud / bar charts
             </div>
           </div>
@@ -1423,7 +1423,7 @@ function UploadStep({
               style={{
                 fontSize: 10,
                 fontWeight: 700,
-                color: "#E07B39",
+                color: "var(--accent-warning)",
                 marginBottom: 10,
                 textTransform: "uppercase",
                 letterSpacing: "1px",
@@ -1445,7 +1445,14 @@ function UploadStep({
                 { step: "3.", text: "Tick the Composition pies checkbox that appears next to it." },
               ].map(({ step, text }) => (
                 <div key={step} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#E07B39", flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "var(--accent-warning)",
+                      flexShrink: 0,
+                    }}
+                  >
                     {step}
                   </span>
                   <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>

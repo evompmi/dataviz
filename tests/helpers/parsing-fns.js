@@ -9,6 +9,7 @@ const {
   detectWideFormat,
   parseData,
   dataToColumns,
+  parseWideMatrix,
 } = require("./shared-loader");
 module.exports = {
   detectHeader,
@@ -17,4 +18,5 @@ module.exports = {
   detectWideFormat,
   parseData,
   dataToColumns,
+  parseWideMatrix,
 };
