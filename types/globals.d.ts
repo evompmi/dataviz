@@ -198,6 +198,31 @@ declare global {
   const BaseStyleControls: FC<any>;
   const ErrorBoundary: FC<{ toolName?: string; children?: ReactNode }>;
   const StatsTile: FC<any>;
+
+  // ── Preferences persistence (shared-prefs.js) ──────────────────────────────
+  function loadAutoPrefs<T extends Record<string, any>>(toolName: string, visInit: T): T;
+  function saveAutoPrefs(toolName: string, vis: Record<string, any>): void;
+  function flushAutoPrefs(toolName: string, vis: Record<string, any>): void;
+  function clearAutoPrefs(toolName: string): void;
+  function exportPrefsFile(toolName: string, vis: Record<string, any>): void;
+  function importPrefsFile(
+    toolName: string,
+    visInit: Record<string, any>,
+    cb: (merged: Record<string, any> | null, error: string | null) => void
+  ): void;
+  function mergePrefsSettings(
+    settings: Record<string, any>,
+    visInit: Record<string, any>,
+    opts?: { onlyStyle?: boolean }
+  ): Record<string, any>;
+  function extractStylePrefs(vis: Record<string, any>): Record<string, any>;
+  function isLabelKey(key: string): boolean;
+  const PrefsPanel: FC<{
+    tool: string;
+    vis: Record<string, any>;
+    visInit: Record<string, any>;
+    updVis: (patch: Record<string, any>) => void;
+  }>;
   interface SubgroupMeta {
     name: string;
     startIndex: number;

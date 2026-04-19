@@ -87,6 +87,17 @@ const sharedGlobals = {
   GroupColorEditor: "readonly",
   BaseStyleControls: "readonly",
   ErrorBoundary: "readonly",
+  // shared-prefs.js
+  loadAutoPrefs: "readonly",
+  saveAutoPrefs: "readonly",
+  flushAutoPrefs: "readonly",
+  clearAutoPrefs: "readonly",
+  exportPrefsFile: "readonly",
+  importPrefsFile: "readonly",
+  mergePrefsSettings: "readonly",
+  extractStylePrefs: "readonly",
+  isLabelKey: "readonly",
+  PrefsPanel: "readonly",
   // stats.js
   normcdf: "readonly",
   norminv: "readonly",

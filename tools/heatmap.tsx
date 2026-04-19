@@ -1,7 +1,7 @@
 // heatmap.tsx — editable source. Run `npm run build` to compile to heatmap.js.
 // Do NOT edit the .js file directly.
 
-const { useState, useReducer, useMemo, useCallback, useRef, forwardRef } = React;
+const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
 // ── Palette strip (same shape as scatter.tsx's local helper) ─────────────────
 
@@ -897,18 +897,20 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
             >
               {plotTitle}
             </text>
-            {plotSubtitle && (
-              <text
-                x={vbW / 2}
-                y={34}
-                textAnchor="middle"
-                fontFamily="sans-serif"
-                fontSize="11"
-                fill="#555555"
-              >
-                {plotSubtitle}
-              </text>
-            )}
+          </g>
+        )}
+        {plotSubtitle && (
+          <g id="subtitle">
+            <text
+              x={vbW / 2}
+              y={plotTitle ? 34 : 18}
+              textAnchor="middle"
+              fontFamily="sans-serif"
+              fontSize="11"
+              fill="#555555"
+            >
+              {plotSubtitle}
+            </text>
           </g>
         )}
 
@@ -1917,7 +1919,14 @@ function App() {
     showRowLabels: false,
     showColLabels: true,
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("heatmap", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("heatmap", vis);
+  }, [vis]);
 
   const cellBorderInit = { on: false, color: "#ffffff", width: 0.5 };
   const [cellBorder, updCellBorder] = useReducer(
@@ -2150,6 +2159,7 @@ function App() {
         toolName="heatmap"
         title="Heatmap"
         subtitle="Matrix view with hierarchical clustering"
+        right={<PrefsPanel tool="heatmap" vis={vis} visInit={visInit} updVis={updVis} />}
       />
 
       <StepNavBar

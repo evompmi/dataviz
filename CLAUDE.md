@@ -46,6 +46,7 @@ Each tool HTML loads vendored React/ReactDOM and shared scripts in `<head>`, the
   - `tools/shared-svg-legend.js` — `computeLegendHeight`, `renderSvgLegend` (boxplot, aequorin, scatter)
   - `tools/shared-core.js` — `DataPreview`, `ErrorBoundary` (all tools)
   - `tools/shared-ui.js` — `SliderControl`, `StepNavBar`, `CommaFixBanner`, `ParseErrorBanner`, `PageHeader`, `UploadPanel`, `ActionsPanel` (all tools; depends on `shared-file-drop.js`)
+  - `tools/shared-prefs.js` — `loadAutoPrefs`, `saveAutoPrefs`, `exportPrefsFile`, `importPrefsFile`, `clearAutoPrefs`, `PrefsPanel` — persists per-tool plot render settings to `localStorage` and to a portable `.json` file (all plot tools: boxplot, aequorin, lineplot, scatter, venn, heatmap; load after `shared-ui.js`)
   - `tools/shared-long-format.js` — `ColumnRoleEditor`, `FilterCheckboxPanel`, `RenameReorderPanel`, `StatsTable`, `GroupColorEditor`, `BaseStyleControls` (boxplot, aequorin, scatter; depends on `shared-color-input.js`)
   - `tools/shared-stats-tile.js` — `assignBracketLevels`, `StatsTile` (boxplot, aequorin only; depends on `stats.js`)
 - `tools/stats.js` — plain JS statistical functions (loaded as `<script>` global):
@@ -84,14 +85,15 @@ Exported SVGs are routinely re-opened in Inkscape for touch-ups, so **every char
 
 Conventional ids already used across tools — reuse them for consistency:
 
-- **Structure** — `background`, `plot-area-background`, `plot-frame`, `chart`
+- **Structure** — `background` (full SVG canvas rect, wrapped in a group), `plot-area-background` (inner rect inside the chart margins), `plot-frame` (border around the data area), `chart` (transformed wrapper holding the data + axes)
 - **Axes** — `grid`, `axis-x`, `axis-y`, `x-axis-label`, `y-axis-label`
-- **Data** — `data-points`, `groups`, `bars`, `traces`, `ribbons`, `set-circles`, `region-counts`, `power-curve`, `marker`
-- **Overlays** — `regression-line`, `regression-stats`, `reference-line`, `reference-lines`, `reference-line-labels`, `selected-region`
-- **Annotations** — `cld-annotations`, `significance-brackets`, `stats-summary`
-- **Text** — `title`, `subtitle`, `legend`
+- **Data** — `data-points`, `groups`, `bars`, `traces`, `ribbons`, `set-circles`, `region-counts`, `power-curve`, `marker`, `error-bars`, `cells` (heatmap)
+- **Overlays** — `regression-line`, `regression-stats`, `reference-line`, `reference-lines`, `reference-line-labels`, `selected-region`, `selection-mask` (heatmap)
+- **Annotations** — `cld-annotations`, `significance-brackets`, `significance-stars`, `stats-summary`, `subgroup-separators`, `subgroup-labels`
+- **Text** — `title`, `subtitle`, `legend`, `row-labels` (heatmap), `col-labels` (heatmap)
+- **Heatmap-specific** — `col-dendrogram`, `row-dendrogram`, `col-cluster-strip`, `row-cluster-strip`, `colorbar`
 
-For per-series / per-group elements, build individual ids with `svgSafeId(name)` (defined in `shared.js` and available as a global to all compiled tools): e.g. `set-${svgSafeId(setName)}`, `group-${svgSafeId(g.name)}`, `bar-${svgSafeId(prefix)}`, `trace-${svgSafeId(prefix)}`. `svgSafeId` sanitizes arbitrary strings into valid SVG NCNames (letters/digits/hyphens/underscores/periods, no leading digit), so it's safe to pass raw user-entered labels.
+For per-series / per-group elements, build individual ids with `svgSafeId(name)` (defined in `shared.js` and available as a global to all compiled tools): e.g. `set-${svgSafeId(setName)}`, `group-${svgSafeId(g.name)}`, `bar-${svgSafeId(prefix)}`, `trace-${svgSafeId(prefix)}`, `ribbon-${svgSafeId(prefix)}`, `points-${svgSafeId(name)}`, `errbars-${svgSafeId(name)}`, `cell-${svgSafeId(rowLabel)}-${svgSafeId(colLabel)}`. `svgSafeId` sanitizes arbitrary strings into valid SVG NCNames (letters/digits/hyphens/underscores/periods, no leading digit), so it's safe to pass raw user-entered labels.
 
 ## Testing helpers
 

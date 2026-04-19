@@ -3740,7 +3740,14 @@ function App() {
     insetPointSize: 3,
     insetPointColor: "#333333",
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("aequorin", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("aequorin", vis);
+  }, [vis]);
   const [step, setStep] = useState("upload");
 
   const parsed = useMemo(() => (rawText ? parseData(rawText) : null), [rawText]);
@@ -4049,6 +4056,7 @@ function App() {
         toolName="aequorin"
         title="Aequorin Ca²⁺ Calibration"
         subtitle={`${FORMULA_DEFS[formula].label} — ${FORMULA_DEFS[formula].eq}`}
+        right={<PrefsPanel tool="aequorin" vis={vis} visInit={visInit} updVis={updVis} />}
       />
 
       <StepNavBar

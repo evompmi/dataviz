@@ -251,15 +251,12 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
         </clipPath>
       </defs>
 
-      <rect id="background" width={VBW} height={VBH} fill={plotBg || "#fff"} />
-      <rect
-        id="plot-area-background"
-        x={MARGIN.left}
-        y={MARGIN.top}
-        width={w}
-        height={h}
-        fill={plotBg || "#fff"}
-      />
+      <g id="background">
+        <rect x={0} y={0} width={VBW} height={VBH} fill={plotBg || "#fff"} />
+      </g>
+      <g id="plot-area-background">
+        <rect x={MARGIN.left} y={MARGIN.top} width={w} height={h} fill={plotBg || "#fff"} />
+      </g>
 
       {showGrid && (
         <g id="grid">
@@ -1987,7 +1984,14 @@ function App() {
     showGrid: false,
     gridColor: "#e0e0e0",
   };
-  const [vis, updVis] = useReducer((s, a) => (a._reset ? { ...visInit } : { ...s, ...a }), visInit);
+  const [vis, updVis] = useReducer(
+    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
+    visInit,
+    (init) => loadAutoPrefs("scatter", init)
+  );
+  useEffect(() => {
+    saveAutoPrefs("scatter", vis);
+  }, [vis]);
 
   const [refLines, setRefLines] = useState([]);
 
@@ -2434,6 +2438,7 @@ function App() {
         toolName="scatter"
         title="Scatter Plot"
         subtitle="XY scatter — one row per data point, one column per variable"
+        right={<PrefsPanel tool="scatter" vis={vis} visInit={visInit} updVis={updVis} />}
       />
 
       <StepNavBar
