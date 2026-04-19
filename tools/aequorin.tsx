@@ -2360,33 +2360,6 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
               },
             ]}
           />
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 16,
-              justifyContent: "center",
-              marginTop: 8,
-              alignItems: "center",
-            }}
-          >
-            {displaySeries.map((s) => (
-              <div
-                key={s.prefix}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 12,
-                  color: "var(--text-muted)",
-                }}
-              >
-                <div style={{ width: 16, height: 4, background: s.color, borderRadius: 2 }} />
-                {s.label}{" "}
-                <span style={{ color: "var(--text-faint)" }}>number of repeats used = {s.n}</span>
-              </div>
-            ))}
-          </div>
         </>
       )}
       {IntegralTile}
