@@ -425,7 +425,7 @@ const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
           const s = regressionStats.slope;
           const b = regressionStats.intercept;
           const eq = `y = ${fmtTick(s)}·x ${b >= 0 ? "+" : "−"} ${fmtTick(Math.abs(b))}`;
-          const r2 = `R² = ${regressionStats.r2.toFixed(4)}`;
+          const r2 = `R² = ${Number.isFinite(regressionStats.r2) ? regressionStats.r2.toFixed(4) : "undefined"}`;
           const nTxt = `n = ${regressionStats.n}`;
           return (
             <g
@@ -683,7 +683,7 @@ function UploadStep({
             <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
               Scatter Plot — How to use
             </div>
-            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
               Upload → Pick X & Y → Map color, size, shape
             </div>
           </div>
@@ -1102,8 +1102,13 @@ function PlotStep({
                     intercept: <strong>{fmtTick(regressionStats.intercept)}</strong>
                   </div>
                   <div>
-                    R²: <strong>{regressionStats.r2.toFixed(4)}</strong> &nbsp; n ={" "}
-                    {regressionStats.n}
+                    R²:{" "}
+                    <strong>
+                      {Number.isFinite(regressionStats.r2)
+                        ? regressionStats.r2.toFixed(4)
+                        : "undefined"}
+                    </strong>{" "}
+                    &nbsp; n = {regressionStats.n}
                   </div>
                 </div>
               )}
@@ -2239,7 +2244,7 @@ function App() {
     const slope = (n * sxy - sx * sy) / denomX;
     const intercept = (sy - slope * sx) / n;
     const denomY = n * syy - sy * sy;
-    const r2 = denomY === 0 ? 1 : Math.pow(n * sxy - sx * sy, 2) / (denomX * denomY);
+    const r2 = denomY === 0 ? NaN : Math.pow(n * sxy - sx * sy, 2) / (denomX * denomY);
     return { valid: true, slope, intercept, r2, n };
   }, [filteredData, xCol, yCol]);
 

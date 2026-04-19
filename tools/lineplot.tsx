@@ -550,10 +550,10 @@ function UploadStep({
         >
           {toolIcon("lineplot", 24, { circle: true })}
           <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
+            <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
               Line Plot — How to use
             </div>
-            <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
               Upload → Preview &amp; pick X / Y / Group → Plot with per-x statistics
             </div>
           </div>
