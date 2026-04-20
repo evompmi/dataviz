@@ -1728,11 +1728,11 @@ function FilterStep({
         />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setStep("output")} className="dv-btn dv-btn-primary">
+        <button onClick={() => setStep("output")} className="dv-btn dv-btn-secondary">
           Output →
         </button>
         {canPlot && (
-          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-plot">
+          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
             Plot →
           </button>
         )}
@@ -1849,7 +1849,7 @@ function OutputStep({
           ← Filter
         </button>
         {canPlot && (
-          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-plot">
+          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
             Plot →
           </button>
         )}

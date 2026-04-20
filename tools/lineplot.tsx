@@ -705,29 +705,10 @@ function ConfigureStep({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="dv-panel" style={{ marginBottom: 0 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 8,
-            flexWrap: "wrap",
-            gap: 8,
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
-            Loaded <strong style={{ color: "var(--text)" }}>{fileName || "pasted data"}</strong> —{" "}
-            {parsed.rawData.length} rows × {parsed.headers.length} columns
-          </p>
-          <button
-            type="button"
-            className="dv-btn dv-btn-plot"
-            disabled={!canPlot}
-            onClick={() => setStep("plot")}
-          >
-            Plot →
-          </button>
-        </div>
+        <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--text-muted)" }}>
+          Loaded <strong style={{ color: "var(--text)" }}>{fileName || "pasted data"}</strong> —{" "}
+          {parsed.rawData.length} rows × {parsed.headers.length} columns
+        </p>
         <DataPreview headers={parsed.headers} rows={parsed.rawData} maxRows={10} />
       </div>
 
@@ -797,6 +778,15 @@ function ConfigureStep({
           </p>
         )}
       </div>
+      <button
+        type="button"
+        className="dv-btn dv-btn-primary"
+        disabled={!canPlot}
+        onClick={() => setStep("plot")}
+        style={{ alignSelf: "flex-start" }}
+      >
+        Plot →
+      </button>
     </div>
   );
 }
