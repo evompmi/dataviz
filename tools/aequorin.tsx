@@ -3571,9 +3571,9 @@ function SampleSelectionOverlay({
             fontWeight: 600,
             fontFamily: "inherit",
             cursor: "pointer",
-            background: showColumnOverlay ? "var(--accent-warning)" : "var(--surface)",
-            color: showColumnOverlay ? "var(--on-accent)" : "var(--warning-text)",
-            border: "1px solid var(--accent-warning)",
+            background: showColumnOverlay ? "var(--warning-bg)" : "var(--surface)",
+            color: "var(--warning-text)",
+            border: `1px solid ${showColumnOverlay ? "var(--warning-text)" : "var(--warning-border)"}`,
           }}
         >
           {showColumnOverlay ? "✕ Close" : "🔬 Sample selection"}
@@ -3588,7 +3588,7 @@ function SampleSelectionOverlay({
               width: 420,
               background: "var(--surface)",
               borderRadius: 10,
-              border: "2px solid var(--accent-warning)",
+              border: "1px solid var(--warning-border)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
               padding: "12px 14px",
               maxHeight: 360,
@@ -3667,7 +3667,7 @@ function SampleSelectionOverlay({
                                 checked={enabled}
                                 onChange={(e) => handleColumnToggle(i, e.target.checked)}
                                 style={{
-                                  accentColor: "var(--accent-warning)",
+                                  accentColor: "var(--warning-text)",
                                   width: 12,
                                   height: 12,
                                 }}
