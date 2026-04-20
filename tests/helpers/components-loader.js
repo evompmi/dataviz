@@ -70,6 +70,7 @@ const ctx = {
     useRef: () => ({ current: null }),
     useId: () => ":r0:",
     createElement: () => null,
+    memo: (fn) => fn,
     Component: class {
       constructor(props) {
         this.props = props;

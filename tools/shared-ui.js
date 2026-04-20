@@ -170,8 +170,20 @@ function NumberInput(props) {
   );
 }
 
-// Slider with label + value display on top, range input below
-function SliderControl(props) {
+// Slider with label + value display on top, range input below.
+//
+// Wrapped in React.memo with a custom comparator that intentionally ignores
+// the `onChange` prop. Without this, dragging one slider re-renders every
+// other slider in the same sidebar (sliders all live under the same parent
+// reducer), because each call site passes an inline `onChange={(v) => updVis(
+// {...})}` that gets a fresh function reference every render.
+//
+// Ignoring onChange is safe HERE because every call site closes the inline
+// arrow over a `useReducer` dispatch (or other stable setter) plus a literal
+// patch object — no captured state that could go stale between renders. If a
+// future caller ever needs onChange to capture mutable state, switch back to
+// React's default shallow compare and useCallback at the call sites.
+function _SliderControlImpl(props) {
   const label = props.label,
     value = props.value,
     displayValue = props.displayValue,
@@ -209,6 +221,20 @@ function SliderControl(props) {
     })
   );
 }
+// `var` (not `const`) so the binding lands on the script-tag global, the same
+// way every other shared-*.js export does. Tools consume SliderControl as a
+// global symbol; a top-level `const` would scope it to the script and break
+// downstream tool .tsx files.
+var SliderControl = React.memo(_SliderControlImpl, function (prev, next) {
+  return (
+    prev.value === next.value &&
+    prev.min === next.min &&
+    prev.max === next.max &&
+    prev.step === next.step &&
+    prev.label === next.label &&
+    prev.displayValue === next.displayValue
+  );
+});
 
 // Step navigation bar
 function StepNavBar(props) {

@@ -136,6 +136,24 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   const allV = groups.flatMap((g) => g.allValues);
   if (allV.length === 0) return null;
 
+  // Cache kde() across renders, keyed on the underlying allValues array. The
+  // chart wrapper rebuilds `groups` on every aesthetic tweak (sliders, colors)
+  // but each group's `allValues` reference is preserved from the upstream
+  // useMemo, so a WeakMap on that reference reuses the kde points until the
+  // user actually changes the data. kde is the dominant render-time cost on
+  // violin/raincloud plots (O(nPoints × n) Gaussian evaluations per group),
+  // and it is invoked twice per group per render — once for axis bounds, once
+  // for the path geometry — so this also dedupes within a single render.
+  const kdeCacheRef = useRef<WeakMap<number[], Array<{ x: number; d: number }>>>(new WeakMap());
+  const getKde = (allValues: number[]) => {
+    let pts = kdeCacheRef.current.get(allValues);
+    if (!pts) {
+      pts = kde(allValues, 60);
+      kdeCacheRef.current.set(allValues, pts);
+    }
+    return pts;
+  };
+
   let dMin = Math.min(...allV);
   let dMax = Math.max(...allV);
   if (isBar) {
@@ -160,7 +178,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
   } else if (plotStyle === "violin" || plotStyle === "raincloud") {
     for (const g of groups) {
       if (g.allValues.length >= 2) {
-        const pts = kde(g.allValues, 60);
+        const pts = getKde(g.allValues);
         const kMin = pts[0].x,
           kMax = pts[pts.length - 1].x;
         if (kMin < dMin) dMin = kMin;
@@ -588,7 +606,7 @@ const BoxplotChart = forwardRef<SVGSVGElement, any>(function BoxplotChart(
           /* ── Violin / raincloud KDE shape ── */
           let violinPath = null;
           if (isViolin && g.allValues.length >= 2) {
-            const pts = kde(g.allValues, 60);
+            const pts = getKde(g.allValues);
             const maxD = Math.max(...pts.map((p) => p.d));
             if (maxD > 0) {
               const sc = (d) => (d / maxD) * halfBox;

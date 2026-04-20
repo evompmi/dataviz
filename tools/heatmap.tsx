@@ -259,22 +259,32 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   // changes between adjacent cells in display order, so the k groups read as
   // discrete bands instead of one contiguous colour strip.
   const K_GAP = 10;
-  const colGapOffsets = new Array(nCols).fill(0);
-  if (colIsKmeans) {
-    for (let ci = 1; ci < nCols; ci++) {
-      const prev = colCluster.clusters[colOrder[ci - 1]];
-      const cur = colCluster.clusters[colOrder[ci]];
-      colGapOffsets[ci] = colGapOffsets[ci - 1] + (cur !== prev ? K_GAP : 0);
+  // Memoize the per-axis gap arrays so the cells useMemo below sees stable
+  // references when only hover/brush state changes — without this the cells
+  // JSX would rebuild on every mousemove because `new Array(...)` is a fresh
+  // reference each render.
+  const colGapOffsets = useMemo(() => {
+    const arr = new Array(nCols).fill(0);
+    if (colIsKmeans) {
+      for (let ci = 1; ci < nCols; ci++) {
+        const prev = colCluster.clusters[colOrder[ci - 1]];
+        const cur = colCluster.clusters[colOrder[ci]];
+        arr[ci] = arr[ci - 1] + (cur !== prev ? K_GAP : 0);
+      }
     }
-  }
-  const rowGapOffsets = new Array(nRows).fill(0);
-  if (rowIsKmeans) {
-    for (let ri = 1; ri < nRows; ri++) {
-      const prev = rowCluster.clusters[rowOrder[ri - 1]];
-      const cur = rowCluster.clusters[rowOrder[ri]];
-      rowGapOffsets[ri] = rowGapOffsets[ri - 1] + (cur !== prev ? K_GAP : 0);
+    return arr;
+  }, [nCols, colIsKmeans, colCluster, colOrder]);
+  const rowGapOffsets = useMemo(() => {
+    const arr = new Array(nRows).fill(0);
+    if (rowIsKmeans) {
+      for (let ri = 1; ri < nRows; ri++) {
+        const prev = rowCluster.clusters[rowOrder[ri - 1]];
+        const cur = rowCluster.clusters[rowOrder[ri]];
+        arr[ri] = arr[ri - 1] + (cur !== prev ? K_GAP : 0);
+      }
     }
-  }
+    return arr;
+  }, [nRows, rowIsKmeans, rowCluster, rowOrder]);
   const totalColGap = nCols > 0 ? colGapOffsets[nCols - 1] : 0;
   const totalRowGap = nRows > 0 ? rowGapOffsets[nRows - 1] : 0;
 
@@ -889,6 +899,53 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     return <g id="selection-mask">{rects}</g>;
   }
 
+  // Memoize the cell rects — on a 100×100 heatmap that's 10k <rect> elements,
+  // and the chart re-renders on every hover/brush mousemove. Cells depend only
+  // on data + geometry + color scale, none of which change during interaction,
+  // so the memoized JSX is reused until the user actually edits something.
+  const cells = useMemo(
+    () =>
+      rowOrder.map((origRi, ri) =>
+        colOrder.map((origCi, ci) => {
+          const v = matrix[origRi][origCi];
+          const fill = valueToColor(v);
+          return (
+            <rect
+              key={`${ri}-${ci}`}
+              id={`cell-${svgSafeId(rowLabels[origRi])}-${svgSafeId(colLabels[origCi])}`}
+              x={cellX(ci)}
+              y={cellY(ri)}
+              width={cellWPx(ci)}
+              height={cellHPx(ri)}
+              fill={fill}
+              stroke={bordersOn ? cellBorder.color : "none"}
+              strokeWidth={bordersOn ? cellBorder.width : 0}
+            />
+          );
+        })
+      ),
+    [
+      rowOrder,
+      colOrder,
+      matrix,
+      rowLabels,
+      colLabels,
+      bordersOn,
+      cellBorder,
+      vmin,
+      vmax,
+      palette,
+      cellW,
+      cellH,
+      cellOffsetCols,
+      cellOffsetRows,
+      colGapStartPx,
+      rowGapStartPx,
+      colGapOffsets,
+      rowGapOffsets,
+    ]
+  );
+
   return (
     <div style={{ position: "relative" }}>
       <svg
@@ -974,25 +1031,7 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
             <rect x={0} y={0} width={plotW} height={plotH} fill="#ffffff" />
           </g>
           <g id="cells" shapeRendering={bordersOn ? "auto" : "crispEdges"}>
-            {rowOrder.map((origRi, ri) =>
-              colOrder.map((origCi, ci) => {
-                const v = matrix[origRi][origCi];
-                const fill = valueToColor(v);
-                return (
-                  <rect
-                    key={`${ri}-${ci}`}
-                    id={`cell-${svgSafeId(rowLabels[origRi])}-${svgSafeId(colLabels[origCi])}`}
-                    x={cellX(ci)}
-                    y={cellY(ri)}
-                    width={cellWPx(ci)}
-                    height={cellHPx(ri)}
-                    fill={fill}
-                    stroke={bordersOn ? cellBorder.color : "none"}
-                    strokeWidth={bordersOn ? cellBorder.width : 0}
-                  />
-                );
-              })
-            )}
+            {cells}
           </g>
         </g>
 
