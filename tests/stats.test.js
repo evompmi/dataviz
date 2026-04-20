@@ -1490,6 +1490,21 @@ test("complete linkage on the same input also keeps close pairs adjacent", () =>
   assert(Math.abs(posOf.get(2) - posOf.get(3)) === 1, "2 and 3 adjacent");
 });
 
+test("all-NaN distance matrix still returns a complete leaf permutation", () => {
+  // Happens in practice when pairwiseDistance runs correlation on rows
+  // whose finite values don't overlap (1-finite-pair rows, all-NaN rows,
+  // etc.). Before the fix hclust broke out of the merge loop early and
+  // returned only one leaf in `order`, corrupting the heatmap row order.
+  const n = 5;
+  const D = Array.from({ length: n }, () => new Array(n).fill(NaN));
+  for (let i = 0; i < n; i++) D[i][i] = 0;
+  const res = hclust(D, "average");
+  assert(res.tree, "tree is non-null");
+  assert(res.order.length === n, `order length ${res.order.length} === ${n}`);
+  const unique = new Set(res.order);
+  assert(unique.size === n, `order is a permutation of all ${n} leaves`);
+});
+
 suite("dendrogramLayout — SVG segments");
 
 test("trivial leaf produces no segments", () => {
