@@ -1312,6 +1312,54 @@ function ClusterModeControl({ label, mode, setMode, k, setK }) {
   );
 }
 
+// Collapsible section wrapper for sidebar tiles. Mirrors the ControlSection
+// pattern in boxplot / lineplot / aequorin so expanding a section auto-scrolls
+// (via scrollDisclosureIntoView) to reveal the content plus the next
+// section's header. Heatmap's sidebar is NOT its own scroll container — the
+// page scrolls — so the helper's window-scroll fallback does the work here.
+function ControlSection({ title, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(rootRef.current));
+  }, [open]);
+  return (
+    <div ref={rootRef} className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "7px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          textTransform: "uppercase" as const,
+          letterSpacing: 0.5,
+          textAlign: "left",
+        }}
+      >
+        <span
+          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+          aria-hidden="true"
+        />
+        {title}
+      </button>
+      {open && (
+        <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlotControls({
   vis,
   updVis,
@@ -1344,14 +1392,6 @@ function PlotControls({
   const anyHier = rowMode === "hierarchical" || colMode === "hierarchical";
   const anyKmeans = rowMode === "kmeans" || colMode === "kmeans";
   const baseName = fileBaseName(fileName, "heatmap");
-  const sectionLabel = {
-    margin: "0 0 8px",
-    fontSize: 12,
-    fontWeight: 600,
-    color: "var(--text-muted)",
-    textTransform: "uppercase" as const,
-    letterSpacing: 0.5,
-  };
   const NORM_OPTIONS = [
     { k: "none", label: "None" },
     { k: "zrow", label: "Z row" },
@@ -1417,8 +1457,7 @@ function PlotControls({
         ]}
       />
 
-      <div className="dv-panel">
-        <p style={sectionLabel}>Normalisation</p>
+      <ControlSection title="Normalisation" defaultOpen={true}>
         <div className="dv-seg" role="group" aria-label="Normalisation">
           {NORM_OPTIONS.map((o) => (
             <button
@@ -1431,10 +1470,9 @@ function PlotControls({
             </button>
           ))}
         </div>
-      </div>
+      </ControlSection>
 
-      <div className="dv-panel">
-        <p style={sectionLabel}>Clustering</p>
+      <ControlSection title="Clustering" defaultOpen={true}>
         <ClusterModeControl
           label="Rows"
           mode={rowMode}
@@ -1497,10 +1535,9 @@ function PlotControls({
             </div>
           </div>
         )}
-      </div>
+      </ControlSection>
 
-      <div className="dv-panel">
-        <p style={sectionLabel}>Colour scale</p>
+      <ControlSection title="Colour scale">
         <label style={{ fontSize: 11, display: "block", marginBottom: 6 }}>
           Palette
           <select
@@ -1540,10 +1577,9 @@ function PlotControls({
         <button onClick={autoVRange} className="dv-btn dv-btn-secondary" style={{ fontSize: 11 }}>
           Auto from data
         </button>
-      </div>
+      </ControlSection>
 
-      <div className="dv-panel">
-        <p style={sectionLabel}>Cell borders</p>
+      <ControlSection title="Cell borders">
         <div className="dv-seg" role="group" aria-label="Cell borders">
           <button
             type="button"
@@ -1581,10 +1617,9 @@ function PlotControls({
             </label>
           </div>
         )}
-      </div>
+      </ControlSection>
 
-      <div className="dv-panel">
-        <p style={sectionLabel}>Labels</p>
+      <ControlSection title="Labels">
         <label style={{ fontSize: 11, display: "block", marginBottom: 4 }}>
           Title
           <input
@@ -1661,7 +1696,7 @@ function PlotControls({
             </button>
           </div>
         </div>
-      </div>
+      </ControlSection>
     </div>
   );
 }

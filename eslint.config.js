@@ -80,6 +80,8 @@ const sharedGlobals = {
   PageHeader: "readonly",
   UploadPanel: "readonly",
   ActionsPanel: "readonly",
+  scrollIntoViewWithinAncestor: "readonly",
+  scrollDisclosureIntoView: "readonly",
   ColumnRoleEditor: "readonly",
   FilterCheckboxPanel: "readonly",
   RenameReorderPanel: "readonly",

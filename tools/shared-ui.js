@@ -558,3 +558,83 @@ function ActionsPanel(props) {
     )
   );
 }
+
+// scrollIntoViewWithinAncestor — after a collapsible section expands, scroll
+// just enough to bring `el`'s bottom (plus optional `extraBottom` px) into
+// view, padded by `pad` px. Prefers the nearest scrollable ancestor (typically
+// a sticky control-panel sidebar with its own overflow-y); falls back to
+// scrolling the window when no such ancestor exists, so the helper works for
+// tools like heatmap whose sidebar rides the page's own scroll.
+//
+// Deliberately does NOT use Element.scrollIntoView() — that bubbles up and
+// scrolls every scrollable ancestor including the page even when the sidebar
+// alone could satisfy the request. This helper picks ONE scroll container and
+// only moves that one.
+//
+// Clamps the scroll so the panel's own top never moves out of view.
+function scrollIntoViewWithinAncestor(el, pad, extraBottom) {
+  if (!el) return;
+  const padding = pad == null ? 8 : pad;
+  const extra = extraBottom || 0;
+  let parent = el.parentElement;
+  while (parent) {
+    const style = getComputedStyle(parent);
+    const ov = style.overflowY;
+    if ((ov === "auto" || ov === "scroll") && parent.scrollHeight > parent.clientHeight) {
+      const parentRect = parent.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const revealBottom = elRect.bottom + extra;
+      if (revealBottom > parentRect.bottom - padding) {
+        const delta = revealBottom - parentRect.bottom + padding;
+        const maxDelta = elRect.top - parentRect.top - padding;
+        parent.scrollBy({ top: Math.min(delta, Math.max(0, maxDelta)), behavior: "smooth" });
+      } else if (elRect.top < parentRect.top + padding) {
+        parent.scrollBy({ top: elRect.top - parentRect.top - padding, behavior: "smooth" });
+      }
+      return;
+    }
+    parent = parent.parentElement;
+  }
+  // No scrollable ancestor — the page itself is what scrolls (heatmap case).
+  const elRect = el.getBoundingClientRect();
+  const viewportBottom = window.innerHeight;
+  const revealBottom = elRect.bottom + extra;
+  if (revealBottom > viewportBottom - padding) {
+    const delta = revealBottom - viewportBottom + padding;
+    const maxDelta = Math.max(0, elRect.top - padding);
+    window.scrollBy({ top: Math.min(delta, maxDelta), behavior: "smooth" });
+  } else if (elRect.top < padding) {
+    window.scrollBy({ top: elRect.top - padding, behavior: "smooth" });
+  }
+}
+
+// scrollDisclosureIntoView — the disclosure-specific wrapper around
+// scrollIntoViewWithinAncestor. Measures where the next section's header
+// actually sits relative to the expanded section (accounting for whatever
+// gap / margin sits between sibling tiles — varies from 0 to 10px across
+// tools), and reveals its bottom edge PLUS ~14 px of clearance below so the
+// next header lands comfortably inside the viewport instead of flush at the
+// bottom. This is the shared "norm" for every ControlSection across the
+// toolbox — callers just pass their section's root element.
+//
+// The trailing clearance is sized so the next header lands inside the
+// viewport's comfortable reading zone rather than flush at the bottom edge.
+// Combined with the default 8 px `pad`, the next header's bottom sits
+// 40 + 8 = 48 px above the viewport bottom — enough empty space below the
+// title to unambiguously read as "there's another tile below, click its
+// header to open it" rather than "header partially clipped".
+const DISCLOSURE_TRAILING_CLEARANCE = 40;
+function scrollDisclosureIntoView(el, pad) {
+  if (!el) return;
+  const next = el.nextElementSibling;
+  const nextHeader = next && next.firstElementChild;
+  let extra = 0;
+  if (nextHeader) {
+    const elRect = el.getBoundingClientRect();
+    const nhRect = nextHeader.getBoundingClientRect();
+    // Reveal through nextHeader's bottom + a trailing clearance. Covers the
+    // inter-tile gap exactly (whatever it is) plus margin for legibility.
+    extra = Math.max(0, nhRect.bottom + DISCLOSURE_TRAILING_CLEARANCE - elRect.bottom);
+  }
+  scrollIntoViewWithinAncestor(el, pad == null ? 8 : pad, extra);
+}

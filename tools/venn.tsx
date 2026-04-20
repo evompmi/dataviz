@@ -1375,7 +1375,38 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
   );
 }
 
-function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
+function ConfigureStep({
+  fileName,
+  parsedHeaders,
+  parsedRows,
+  allColumnNames,
+  allColumnSets,
+  pendingSelection,
+  setPendingSelection,
+  onCommit,
+}) {
+  const needsPicker = allColumnNames.length > 3;
+  const selectedCount = pendingSelection.length;
+  const canPlot = selectedCount === 2 || selectedCount === 3;
+
+  const toggle = (name) => {
+    setPendingSelection((prev) => {
+      if (prev.includes(name)) return prev.filter((n) => n !== name);
+      if (prev.length >= 3) return prev;
+      return [...prev, name];
+    });
+  };
+
+  let pickerStatusText = "Pick 2 or 3 sets to overlap.";
+  let pickerStatusColor = "var(--text-muted)";
+  if (selectedCount === 1) {
+    pickerStatusText = "1 selected — pick at least one more.";
+    pickerStatusColor = "var(--warning-text)";
+  } else if (selectedCount === 2 || selectedCount === 3) {
+    pickerStatusText = `${selectedCount} selected — ready to plot.`;
+    pickerStatusColor = "var(--success-text)";
+  }
+
   return (
     <div>
       <div className="dv-panel">
@@ -1389,7 +1420,82 @@ function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
         <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
       </div>
 
-      <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
+      {needsPicker && (
+        <div className="dv-panel" style={{ marginTop: 16 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+            Choose sets to overlap
+          </p>
+          <p style={{ margin: "0 0 10px", fontSize: 11, color: pickerStatusColor }}>
+            {pickerStatusText}
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: 6,
+            }}
+          >
+            {allColumnNames.map((name) => {
+              const checked = pendingSelection.includes(name);
+              const atCap = !checked && pendingSelection.length >= 3;
+              const size = allColumnSets.get(name)?.size ?? 0;
+              return (
+                <label
+                  key={name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    border: `1px solid ${checked ? "var(--accent-primary)" : "var(--border)"}`,
+                    background: checked ? "var(--info-bg)" : "var(--surface-subtle)",
+                    cursor: atCap ? "not-allowed" : "pointer",
+                    opacity: atCap ? 0.5 : 1,
+                    fontSize: 12,
+                    color: "var(--text)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={atCap}
+                    onChange={() => toggle(name)}
+                  />
+                  <span
+                    style={{
+                      fontWeight: 600,
+                      flex: "1 1 auto",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {name}
+                  </span>
+                  <span
+                    style={{ color: "var(--text-faint)", fontFamily: "monospace", fontSize: 11 }}
+                  >
+                    {size}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => canPlot && onCommit(pendingSelection)}
+        disabled={!canPlot}
+        className="dv-btn dv-btn-primary"
+        style={{
+          marginTop: 16,
+          opacity: canPlot ? 1 : 0.5,
+          cursor: canPlot ? "pointer" : "not-allowed",
+        }}
+      >
         Plot →
       </button>
     </div>
@@ -1397,6 +1503,7 @@ function ConfigureStep({ fileName, setStep, parsedHeaders, parsedRows }) {
 }
 
 function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect }) {
+  const [hoveredMask, setHoveredMask] = useState(null);
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ borderCollapse: "collapse", fontSize: 12, width: "100%" }}>
@@ -1439,10 +1546,18 @@ function IntersectionTable({ intersections, allSetNames, selectedMask, onSelect 
             <tr
               key={inter.mask}
               onClick={() => onSelect(inter.mask)}
+              onMouseEnter={() => setHoveredMask(inter.mask)}
+              onMouseLeave={() => setHoveredMask((m) => (m === inter.mask ? null : m))}
               style={{
                 borderBottom: "1px solid var(--border)",
                 cursor: "pointer",
-                background: selectedMask === inter.mask ? "var(--info-bg)" : "transparent",
+                background:
+                  selectedMask === inter.mask
+                    ? "var(--row-hover-bg)"
+                    : hoveredMask === inter.mask
+                      ? "var(--surface-subtle)"
+                      : "transparent",
+                transition: "background 120ms ease",
               }}
             >
               <td style={{ padding: "6px 10px", color: "var(--text)", fontWeight: 500 }}>
@@ -1795,6 +1910,9 @@ function App() {
   const [parsedRows, setParsedRows] = useState([]);
   const [selectedMask, setSelectedMask] = useState(null);
   const [activeSets, setActiveSets] = useState(new Set());
+  const [allColumnNames, setAllColumnNames] = useState([]);
+  const [allColumnSets, setAllColumnSets] = useState(new Map());
+  const [pendingSelection, setPendingSelection] = useState([]);
 
   const [proportional, setProportional] = useState(false);
 
@@ -1840,48 +1958,67 @@ function App() {
   const canNavigate = useCallback(
     (target) => {
       if (target === "upload") return true;
-      if (target === "configure") return setNames.length >= 2;
+      if (target === "configure") return allColumnNames.length >= 2;
       if (target === "plot") return setNames.length >= 2;
       return false;
     },
-    [setNames]
+    [allColumnNames, setNames]
   );
 
-  const doParse = useCallback((text, sep) => {
-    const dc = fixDecimalCommas(text, sep);
-    setCommaFixed(dc.commaFixed);
-    setCommaFixCount(dc.count);
-    const { headers, rows } = parseRaw(dc.text, sep);
-    if (!headers.length || !rows.length) {
-      setParseError("The file appears to be empty or has no data rows.");
-      return;
-    }
-
-    const { setNames: sn, sets: ss } = parseSetData(headers, rows);
-
-    if (sn.length < 2) {
-      setParseError("Need at least 2 sets — each column header becomes a set name.");
-      return;
-    }
-    if (sn.length > 3) {
-      setParseError(`Detected ${sn.length} sets (columns) — this tool supports 2–3 sets.`);
-      return;
-    }
-
-    setParseError(null);
-    setParsedHeaders(headers);
-    setParsedRows(rows);
-    setSetNames(sn);
-    setSets(ss);
-    setActiveSets(new Set(sn));
+  const commitSelection = useCallback((names, allSets) => {
+    const chosen = new Map();
+    names.forEach((n) => chosen.set(n, allSets.get(n)));
+    setSetNames(names);
+    setSets(chosen);
+    setActiveSets(new Set(names));
     const cols = {};
-    sn.forEach((n, i) => {
+    names.forEach((n, i) => {
       cols[n] = PALETTE[i % PALETTE.length];
     });
     setSetColors(cols);
     setSelectedMask(null);
-    setStep("configure");
   }, []);
+
+  const doParse = useCallback(
+    (text, sep) => {
+      const dc = fixDecimalCommas(text, sep);
+      setCommaFixed(dc.commaFixed);
+      setCommaFixCount(dc.count);
+      const { headers, rows } = parseRaw(dc.text, sep);
+      if (!headers.length || !rows.length) {
+        setParseError("The file appears to be empty or has no data rows.");
+        return;
+      }
+
+      const { setNames: sn, sets: ss } = parseSetData(headers, rows);
+
+      if (sn.length < 2) {
+        setParseError("Need at least 2 sets — each column header becomes a set name.");
+        return;
+      }
+
+      setParseError(null);
+      setParsedHeaders(headers);
+      setParsedRows(rows);
+      setAllColumnNames(sn);
+      setAllColumnSets(ss);
+
+      if (sn.length <= 3) {
+        setPendingSelection(sn);
+        commitSelection(sn, ss);
+        setStep("plot");
+      } else {
+        setPendingSelection([]);
+        setSetNames([]);
+        setSets(new Map());
+        setActiveSets(new Set());
+        setSetColors({});
+        setSelectedMask(null);
+        setStep("configure");
+      }
+    },
+    [commitSelection]
+  );
 
   const handleFileLoad = useCallback(
     (text, name) => {
@@ -2005,12 +2142,19 @@ function App() {
         />
       )}
 
-      {step === "configure" && setNames.length >= 2 && (
+      {step === "configure" && allColumnNames.length >= 2 && (
         <ConfigureStep
           fileName={fileName}
-          setStep={setStep}
           parsedHeaders={parsedHeaders}
           parsedRows={parsedRows}
+          allColumnNames={allColumnNames}
+          allColumnSets={allColumnSets}
+          pendingSelection={pendingSelection}
+          setPendingSelection={setPendingSelection}
+          onCommit={(names) => {
+            commitSelection(names, allColumnSets);
+            setStep("plot");
+          }}
         />
       )}
 

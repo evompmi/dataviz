@@ -146,10 +146,12 @@ function exportPrefsFile(toolName, vis) {
   downloadText(text, toolName + "-settings.json");
 }
 
-// Compact inline Save / Load / Reset buttons for plot render settings.
-// Designed to sit on the right side of PageHeader (small footprint, no panel
-// chrome). Style tweaks still auto-persist to localStorage in the background;
-// these buttons cover the explicit save-to-file / load-from-file / reset flow.
+// Save / Load / Reset controls for plot render settings — rendered as a
+// single gear icon in PageHeader that toggles a small popover with the three
+// actions + any error message. The click-to-reveal design keeps power-user
+// chrome out of the header until asked for. Style tweaks still auto-persist
+// to localStorage in the background; these buttons cover the explicit
+// save-to-file / load-from-file / reset flow.
 // Props:
 //   tool    : string — tool name, matches loadAutoPrefs key
 //   vis     : object — current render state
@@ -161,103 +163,194 @@ function PrefsPanel(props) {
   const visInit = props.visInit;
   const updVis = props.updVis;
   const [error, setError] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const wrapRef = React.useRef(null);
+
+  // Close on outside-click or Escape while the popover is open.
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (ev) => {
+      if (wrapRef.current && !wrapRef.current.contains(ev.target)) setOpen(false);
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   const handleSave = () => {
     exportPrefsFile(tool, vis);
     setError("");
+    setOpen(false);
   };
   const handleLoad = () => {
     importPrefsFile(tool, visInit, (merged, errMsg) => {
       if (errMsg) {
+        // Keep popover open to show the error inline.
         setError(errMsg);
+        setOpen(true);
         return;
       }
       updVis(merged);
       setError("");
+      setOpen(false);
     });
   };
   const handleReset = () => {
     updVis({ _reset: true });
     clearAutoPrefs(tool);
     setError("");
+    setOpen(false);
   };
 
-  const compactBtnStyle = {
-    padding: "4px 10px",
+  const menuBtnStyle = {
+    padding: "6px 10px",
     fontSize: 12,
     lineHeight: 1.2,
+    textAlign: "left",
   };
 
-  const row = React.createElement(
-    "div",
-    { style: { display: "flex", alignItems: "center", gap: 6 } },
-    React.createElement(
-      "span",
-      {
-        style: {
-          fontSize: 11,
-          color: "var(--text-faint)",
-          marginRight: 4,
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-        },
-      },
-      "Settings"
-    ),
-    React.createElement(
-      "button",
-      {
-        key: "save",
-        onClick: handleSave,
-        className: "dv-btn dv-btn-dl",
-        style: compactBtnStyle,
-        title: "Download current visual plot settings as a JSON file",
-      },
-      "Save"
-    ),
-    React.createElement(
-      "button",
-      {
-        key: "load",
-        onClick: handleLoad,
-        className: "dv-btn dv-btn-dl",
-        style: compactBtnStyle,
-        title: "Apply visual plot settings from a previously saved JSON file",
-      },
-      "Load"
-    ),
-    React.createElement(
-      "button",
-      {
-        key: "reset",
-        onClick: handleReset,
-        className: "dv-btn dv-btn-danger",
-        style: compactBtnStyle,
-        title: "Restore default visual plot settings and clear stored preferences",
-      },
-      "Reset"
-    )
+  // Gear icon — 16 px feather-style "settings" glyph painted through
+  // currentColor so it inherits the button's themed text color.
+  const gearSvg = React.createElement(
+    "svg",
+    {
+      width: 16,
+      height: 16,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true",
+    },
+    React.createElement("circle", { key: "c", cx: 12, cy: 12, r: 3 }),
+    React.createElement("path", {
+      key: "p",
+      d: "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
+    })
   );
+
+  const iconBtn = React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setOpen((x) => !x),
+      "aria-label": "Visual plot settings",
+      "aria-expanded": open,
+      "aria-haspopup": "menu",
+      title: "Visual plot settings",
+      style: {
+        width: 30,
+        height: 30,
+        padding: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: open ? "var(--surface-sunken)" : "transparent",
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+        cursor: "pointer",
+        color: "var(--text-muted)",
+      },
+    },
+    gearSvg
+  );
+
+  const popover = open
+    ? React.createElement(
+        "div",
+        {
+          role: "menu",
+          style: {
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            boxShadow: "0 6px 20px rgba(0, 0, 0, 0.14)",
+            padding: 8,
+            zIndex: 30,
+            minWidth: 200,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          },
+        },
+        React.createElement(
+          "span",
+          {
+            style: {
+              fontSize: 10,
+              color: "var(--text-faint)",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              padding: "2px 4px 4px",
+            },
+          },
+          "Visual plot settings"
+        ),
+        React.createElement(
+          "button",
+          {
+            role: "menuitem",
+            onClick: handleSave,
+            className: "dv-btn dv-btn-dl",
+            style: menuBtnStyle,
+            title: "Download current visual plot settings as a JSON file",
+          },
+          "Save to file"
+        ),
+        React.createElement(
+          "button",
+          {
+            role: "menuitem",
+            onClick: handleLoad,
+            className: "dv-btn dv-btn-dl",
+            style: menuBtnStyle,
+            title: "Apply visual plot settings from a previously saved JSON file",
+          },
+          "Load from file"
+        ),
+        React.createElement(
+          "button",
+          {
+            role: "menuitem",
+            onClick: handleReset,
+            className: "dv-btn dv-btn-danger",
+            style: menuBtnStyle,
+            title: "Restore default visual plot settings and clear stored preferences",
+          },
+          "Reset to defaults"
+        ),
+        error
+          ? React.createElement(
+              "p",
+              {
+                style: {
+                  margin: "4px 4px 0",
+                  fontSize: 11,
+                  color: "var(--danger-text)",
+                },
+              },
+              error
+            )
+          : null
+      )
+    : null;
 
   return React.createElement(
     "div",
-    { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 } },
-    row,
-    error
-      ? React.createElement(
-          "p",
-          {
-            style: {
-              margin: 0,
-              fontSize: 11,
-              color: "var(--danger-text)",
-              maxWidth: 320,
-              textAlign: "right",
-            },
-          },
-          error
-        )
-      : null
+    { ref: wrapRef, style: { position: "relative", display: "inline-flex" } },
+    iconBtn,
+    popover
   );
 }
 

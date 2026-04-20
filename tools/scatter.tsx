@@ -857,6 +857,11 @@ function PlotStep({
   const hasSizeMap = sizeMapCol != null;
   const hasShapeMap = shapeMapCol != null;
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersPanelRef = useRef(null);
+  useEffect(() => {
+    if (!filtersOpen) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(filtersPanelRef.current));
+  }, [filtersOpen]);
   const handleFilterToggle = (ci, v, vals, checked) => {
     setFilterState((prev) => {
       const curr = prev[ci] || [];
@@ -1781,7 +1786,7 @@ function PlotStep({
 
         {/* Filters (collapsible) */}
         {filterableCols.length > 0 && (
-          <div className="dv-panel">
+          <div ref={filtersPanelRef} className="dv-panel">
             <div
               style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
               onClick={() => setFiltersOpen(!filtersOpen)}

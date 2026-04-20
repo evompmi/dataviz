@@ -463,8 +463,13 @@ const Chart = forwardRef<SVGSVGElement, any>(function Chart(
 
 function ControlSection({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(rootRef.current));
+  }, [open]);
   return (
-    <div className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
+    <div ref={rootRef} className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
       <button
         onClick={() => setOpen(!open)}
         style={{

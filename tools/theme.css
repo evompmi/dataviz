@@ -2,6 +2,21 @@
    Theme variables — edit this file to tune either palette.
    Plot cards (--plot-card-*) are intentionally white in both themes so that
    exported SVG/PNG charts always sit on a white background.
+
+   Primary chrome accent is ink / slate-blue — near-greyscale with a faint
+   cool tint, deliberately chosen over any saturated hue to let chart
+   colours carry all the expression. Buttons and active pills use a very
+   soft slate-400-ish tone in light (#939eae) and a near-surface muted tone
+   in dark (#2c3646); both sit close to their surface so neither punches
+   against the chrome. Contrast for white pill/button text is deliberately
+   low (~2.9:1 in light) — a conscious trade-off picked by the user over
+   louder selector hues. Maximally editorial, journal-adjacent.
+
+   Dark-mode rule: every accent in dark mode is EQUAL or DIMMER than its
+   light-mode counterpart — never brighter. Dark mode is supposed to be
+   easier on the eyes, and a high-contrast glowing accent defeats that.
+   Chart colour palettes, DNA/molarity purple, and warning amber are left
+   alone; they're functional, not chrome.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
@@ -13,7 +28,7 @@
   --surface: #ffffff;
   --surface-subtle: #f8f8fa;
   --surface-sunken: #f0f0f5;
-  --row-hover-bg: #d6deef;
+  --row-hover-bg: #e2e8f0;
 
   /* Text */
   --text: #222222;
@@ -26,7 +41,7 @@
   --slider-track: #d1d5db;
 
   /* Accents */
-  --accent-primary: #648fff;
+  --accent-primary: #939eae;
   --accent-plot: #2ec4b6;
   --accent-dna: #785ef0;
   --accent-warning: #f59e0b;
@@ -39,9 +54,9 @@
   --warning-bg: #fffbeb;
   --warning-text: #92400e;
   --warning-border: #fbbf24;
-  --info-bg: #eef2ff;
-  --info-text: #1d4ed8;
-  --info-border: #b0c4ff;
+  --info-bg: #f1f5f9;
+  --info-text: #475569;
+  --info-border: #cbd5e1;
   --success-bg: #dcfce7;
   --success-text: #166534;
   --success-border: #86efac;
@@ -59,9 +74,9 @@
   --on-accent-muted: rgba(255, 255, 255, 0.75);
 
   /* Scatter aesthetic boxes — Color / Size / Shape selectors */
-  --aes-color-bg: #eef2ff;
-  --aes-color-border: #b0c4ff;
-  --aes-color-header: #4f6bff;
+  --aes-color-bg: #f1f5f9;
+  --aes-color-border: #cbd5e1;
+  --aes-color-header: #475569;
   --aes-size-bg: #f0fdf4;
   --aes-size-border: #86efac;
   --aes-size-header: #16a34a;
@@ -69,22 +84,28 @@
   --aes-shape-border: #d8b4fe;
   --aes-shape-header: #9333ea;
 
-  /* "How to use" tiles — outer border, gradient header, soft blue shadow */
-  --howto-border: #648fff;
-  --howto-header-from: #4a6cf7;
-  --howto-header-to: #648fff;
-  --howto-shadow: 0 4px 20px rgba(100, 143, 255, 0.12);
+  /* "How to use" tiles — outer border, gradient header, soft slate shadow.
+     Gradient keeps the darker end (slate-700) so white header text stays
+     readable; the lighter end softens to slate-600. */
+  --howto-border: #475569;
+  --howto-header-from: #334155;
+  --howto-header-to: #475569;
+  --howto-shadow: 0 4px 20px rgba(71, 85, 105, 0.12);
 
-  /* Active step-nav pill (Upload / Configure / Filter / Output / Plot) */
-  --step-active-bg: #648fff;
-  --step-active-border: #648fff;
+  /* Active step-nav pill (Upload / Configure / Filter / Output / Plot).
+     Softened ~30% further toward white for a calmer nav chrome. White
+     text on this bg is ~2.9:1 — below WCAG AA for body text but acceptable
+     for short, bolded pill labels where the user opted in to low-contrast
+     UI chrome over loud selectors. */
+  --step-active-bg: #939eae;
+  --step-active-border: #939eae;
 
   /* Primary CTA button (`.dv-btn-primary` — Compute effect size, Continue to
-     plot, …). Same bright blue as the accent in light mode; in dark mode it
-     resolves to a stronger blue than `--step-active-bg` so the CTA still
-     reads as "press me", just without the neon glow of the raw accent. */
-  --cta-primary-bg: #648fff;
-  --cta-primary-shadow: 0 4px 12px -2px rgba(100, 143, 255, 0.45);
+     plot, …). Softened ~30% further toward white from slate-500 so the
+     buttons stop punching against the chrome. Dark mode softens by the
+     mirror-image amount toward the dark surface. */
+  --cta-primary-bg: #939eae;
+  --cta-primary-shadow: 0 4px 12px -2px rgba(147, 158, 174, 0.2);
 
   /* Toggle-pill teal (aequorin Σ Baseline-corrected). Mirrors the
      --cta-primary-bg pattern: same as --accent-plot in light mode, dimmed in
@@ -92,13 +113,15 @@
   --cta-plot-bg: #2ec4b6;
 
   /* Chrome-safe purple (molarity DNA mode cards). Same pattern as the
-     blue/teal CTA tokens: identical to --accent-dna in light, dimmed in
+     teal CTA tokens: identical to --accent-dna in light, dimmed in
      dark so the ModeButton border/text doesn't glow. */
   --cta-dna-bg: #785ef0;
 }
 
 /* Dark overrides — shared by the OS-follow media query and the explicit
-   [data-theme="dark"] selector. Keep them in sync. */
+   [data-theme="dark"] selector. Keep them in sync.
+
+   Every accent below is EQUAL or DIMMER than its light-mode counterpart. */
 :root[data-theme="dark"] {
   --page-bg: #12131a;
   --page-bg-dot: #1e1f28;
@@ -106,7 +129,7 @@
   --surface: #1a1b23;
   --surface-subtle: #23242e;
   --surface-sunken: #16171f;
-  --row-hover-bg: #2a3766;
+  --row-hover-bg: #334155;
 
   --text: #e8e8ef;
   --text-muted: #a8a8b5;
@@ -122,9 +145,9 @@
   --warning-bg: #2a1f0a;
   --warning-text: #fbbf24;
   --warning-border: #78350f;
-  --info-bg: #1a1f3a;
-  --info-text: #a5b4fc;
-  --info-border: #3b4680;
+  --info-bg: #1e293b;
+  --info-text: #94a3b8;
+  --info-border: #334155;
   --success-bg: #0f2a1a;
   --success-text: #86efac;
   --success-border: #166534;
@@ -133,9 +156,9 @@
   --subhead-bg: #334155;
   --subhead-text: #e8e8ef;
 
-  --aes-color-bg: #1a1f2e;
-  --aes-color-border: #2e3a5c;
-  --aes-color-header: #3a4a8a;
+  --aes-color-bg: #1e293b;
+  --aes-color-border: #334155;
+  --aes-color-header: #64748b;
   --aes-size-bg: #15241b;
   --aes-size-border: #254a33;
   --aes-size-header: #2d6a3f;
@@ -143,24 +166,24 @@
   --aes-shape-border: #3d2a55;
   --aes-shape-header: #5e3a85;
 
-  --howto-border: #2e3a5c;
-  --howto-header-from: #1f2a4a;
-  --howto-header-to: #2e3a5c;
+  --howto-border: #334155;
+  --howto-header-from: #0f172a;
+  --howto-header-to: #1e293b;
   --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 
-  --step-active-bg: #3b4680;
-  --step-active-border: #4a5a9a;
+  --step-active-bg: #1e293b;
+  --step-active-border: #334155;
 
-  /* Primary CTA dims in dark mode but sits noticeably brighter than
-     --step-active-bg so it still reads as a deliberate "press me" affordance
-     above the regular pill toggles. Shadow drops most of its alpha because
-     the bright-blue glow from the light-mode rgba() reads too loud here. */
-  --cta-primary-bg: #4d62cc;
-  --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+  /* Primary CTA in dark is softened another ~30% toward the dark surface,
+     mirroring the light-mode softening. Still visibly brighter than the
+     step-nav pill above so it reads as "press me", and never brighter
+     than the light-mode primary. */
+  --cta-primary-bg: #2c3646;
+  --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.35);
 
   /* Dimmed teal for toggle pills in dark mode (same role as --cta-primary-bg
-     for blue). Roughly matches the ~0.75× brightness drop applied to the
-     primary CTA so the two pills read as a matched pair. */
+     for the primary CTA). Roughly matches the ~0.75× brightness drop applied
+     to the primary CTA so the two pills read as a matched pair. */
   --cta-plot-bg: #1d7a6d;
 
   --cta-dna-bg: #5a45b8;
@@ -169,7 +192,7 @@
      glow from the light-mode rgba() reads too loud against the dark UI.
      The accent color itself (--accent-warning) stays identical across
      themes like all other --accent-* vars. */
-  --accent-primary: #5070d9;
+  --accent-primary: #3a4454;
   --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -184,7 +207,7 @@
     --surface: #1a1b23;
     --surface-subtle: #23242e;
     --surface-sunken: #16171f;
-    --row-hover-bg: #2a3766;
+    --row-hover-bg: #334155;
 
     --text: #e8e8ef;
     --text-muted: #a8a8b5;
@@ -200,9 +223,9 @@
     --warning-bg: #2a1f0a;
     --warning-text: #fbbf24;
     --warning-border: #78350f;
-    --info-bg: #1a1f3a;
-    --info-text: #a5b4fc;
-    --info-border: #3b4680;
+    --info-bg: #1e293b;
+    --info-text: #94a3b8;
+    --info-border: #334155;
     --success-bg: #0f2a1a;
     --success-text: #86efac;
     --success-border: #166534;
@@ -211,9 +234,9 @@
     --subhead-bg: #334155;
     --subhead-text: #e8e8ef;
 
-    --aes-color-bg: #1a1f2e;
-    --aes-color-border: #2e3a5c;
-    --aes-color-header: #3a4a8a;
+    --aes-color-bg: #1e293b;
+    --aes-color-border: #334155;
+    --aes-color-header: #64748b;
     --aes-size-bg: #15241b;
     --aes-size-border: #254a33;
     --aes-size-header: #2d6a3f;
@@ -221,22 +244,22 @@
     --aes-shape-border: #3d2a55;
     --aes-shape-header: #5e3a85;
 
-    --howto-border: #2e3a5c;
-    --howto-header-from: #1f2a4a;
-    --howto-header-to: #2e3a5c;
+    --howto-border: #334155;
+    --howto-header-from: #0f172a;
+    --howto-header-to: #1e293b;
     --howto-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 
-    --step-active-bg: #3b4680;
-    --step-active-border: #4a5a9a;
+    --step-active-bg: #1e293b;
+    --step-active-border: #334155;
 
-    --cta-primary-bg: #4d62cc;
-    --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.45);
+    --cta-primary-bg: #2c3646;
+    --cta-primary-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.35);
 
     --cta-plot-bg: #1d7a6d;
 
     --cta-dna-bg: #5a45b8;
 
-    --accent-primary: #5070d9;
+    --accent-primary: #3a4454;
     --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }

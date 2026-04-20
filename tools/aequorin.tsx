@@ -2047,9 +2047,10 @@ const PlotPanel = React.forwardRef<any, any>(function PlotPanel(
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                background: statsDataMode === "corrected" ? "var(--cta-plot-bg)" : "var(--surface)",
+                background:
+                  statsDataMode === "corrected" ? "var(--cta-primary-bg)" : "var(--surface)",
                 color: statsDataMode === "corrected" ? "var(--on-accent)" : "var(--text-faint)",
-                border: `1px solid ${statsDataMode === "corrected" ? "var(--cta-plot-bg)" : "var(--border-strong)"}`,
+                border: `1px solid ${statsDataMode === "corrected" ? "var(--cta-primary-bg)" : "var(--border-strong)"}`,
                 cursor: "pointer",
                 fontFamily: "inherit",
               }}
@@ -2973,8 +2974,13 @@ function ControlSection({
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(rootRef.current));
+  }, [open]);
   return (
-    <div className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
+    <div ref={rootRef} className="dv-panel" style={{ marginBottom: 0, padding: 0 }}>
       <div
         style={{
           display: "flex",
@@ -4151,8 +4157,10 @@ function App() {
                   to stick. The two groups are separated by a gap and carry
                   tiny captions because they're orthogonal axes: Series is a
                   data-shape decision (how replicates are pooled), Layout is a
-                  visual decision (one plot vs. one per condition). Different
-                  accent colours (purple vs. blue) reinforce the distinction. */}
+                  visual decision (one plot vs. one per condition). Both use
+                  the shared --step-active-* slate accent to match the rest
+                  of the app chrome — the caption + grouping carries the
+                  distinction, not a bespoke hue. */}
               <div
                 style={{
                   position: "absolute",
@@ -4182,7 +4190,7 @@ function App() {
                     aria-label="Series definition"
                     style={{
                       display: "inline-flex",
-                      border: "1px solid var(--cta-dna-bg)",
+                      border: "1px solid var(--step-active-border)",
                       borderRadius: 8,
                       overflow: "hidden",
                       background: "var(--surface)",
@@ -4197,10 +4205,10 @@ function App() {
                         fontWeight: 600,
                         fontFamily: "inherit",
                         cursor: "pointer",
-                        background: poolReplicates ? "var(--cta-dna-bg)" : "transparent",
+                        background: poolReplicates ? "var(--step-active-bg)" : "transparent",
                         color: poolReplicates ? "var(--on-accent)" : "var(--text-faint)",
                         border: "none",
-                        borderRight: "1px solid var(--cta-dna-bg)",
+                        borderRight: "1px solid var(--step-active-border)",
                       }}
                     >
                       Pool by name
@@ -4214,7 +4222,7 @@ function App() {
                         fontWeight: 600,
                         fontFamily: "inherit",
                         cursor: "pointer",
-                        background: !poolReplicates ? "var(--cta-dna-bg)" : "transparent",
+                        background: !poolReplicates ? "var(--step-active-bg)" : "transparent",
                         color: !poolReplicates ? "var(--on-accent)" : "var(--text-faint)",
                         border: "none",
                       }}
