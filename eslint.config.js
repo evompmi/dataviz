@@ -206,6 +206,9 @@ module.exports = [
       "react/jsx-uses-react": "error",
       "react/jsx-uses-vars": "error",
       "no-unused-vars": "off",
+      // TypeScript handles undefined-identifier checks (and understands type-only
+      // references like `ColumnRole` from globals.d.ts that ESLint cannot see).
+      "no-undef": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },

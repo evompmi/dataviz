@@ -4126,7 +4126,7 @@ function App() {
   const [hasHeader, setHasHeader] = useState(true);
 
   // Column config & filtering
-  const [colRoles, setColRoles] = useState([]);
+  const [colRoles, setColRoles] = useState<ColumnRole[]>([]);
   const [colNames, setColNames] = useState([]);
   const [filters, setFilters] = useState({});
   const [valueRenames, setValueRenames] = useState({});
@@ -4728,7 +4728,7 @@ function App() {
   // instead of silently ending up with two columns whose role select says
   // the same thing but only the first one actually drives the plot
   // (valueColIdx / groupColIdx are both `colRoles.indexOf(...)`).
-  const updateRole = (i, role) =>
+  const updateRole = (i: number, role: ColumnRole) =>
     setColRoles((p) =>
       p.map((r, j) => {
         if (j === i) return role;

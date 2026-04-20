@@ -85,7 +85,14 @@ declare global {
   }
   function parseRaw(text: string, sepOv?: string): ParseRawResult;
 
-  function guessColumnType(vals: string[]): "ignore" | "value" | "group" | "text";
+  // Long-format column role assigned to each parsed column. "group" picks the
+  // x-axis categorical column, "value" picks the numeric column, "filter" keeps
+  // the column visible in the filter/rename UI without driving the plot, "text"
+  // is a free-text annotation column, and "ignore" hides the column entirely.
+  // `guessColumnType` only ever returns the four non-"filter" roles; the boxplot
+  // configure step demotes duplicates to "filter" before the user sees them.
+  type ColumnRole = "group" | "value" | "filter" | "text" | "ignore";
+  function guessColumnType(vals: string[]): Exclude<ColumnRole, "filter">;
   function detectWideFormat(headers: string[], rows: string[][]): boolean;
 
   interface ParseDataResult {
@@ -190,9 +197,46 @@ declare global {
   const ActionsPanel: FC<any>;
   const CommaFixBanner: FC<any>;
   const ParseErrorBanner: FC<any>;
-  const ColumnRoleEditor: FC<any>;
-  const FilterCheckboxPanel: FC<any>;
-  const RenameReorderPanel: FC<any>;
+  interface FilterEntry {
+    unique: string[];
+    included: Set<string>;
+  }
+  interface ColumnRoleEditorProps {
+    headers: string[];
+    rows: string[][];
+    colRoles: ColumnRole[];
+    colNames: string[];
+    onRoleChange: (i: number, role: ColumnRole) => void;
+    onNameChange: (i: number, name: string) => void;
+  }
+  const ColumnRoleEditor: FC<ColumnRoleEditorProps>;
+
+  interface FilterCheckboxPanelProps {
+    headers: string[];
+    colNames: string[];
+    colRoles: ColumnRole[];
+    filters: Record<number, FilterEntry>;
+    filteredCount: number;
+    totalCount: number;
+    onToggle: (i: number, value: string) => void;
+    onToggleAll: (i: number, allOn: boolean) => void;
+  }
+  const FilterCheckboxPanel: FC<FilterCheckboxPanelProps>;
+
+  interface RenameReorderPanelProps {
+    headers: string[];
+    colNames: string[];
+    colRoles: ColumnRole[];
+    filters: Record<number, FilterEntry>;
+    valueRenames: Record<number, Record<string, string>>;
+    orderableCols?: Record<number, { order: string[]; onReorder: (newOrder: string[]) => void }>;
+    applyRename: (i: number, value: string) => string;
+    onRenameVal: (i: number, origValue: string, newValue: string) => void;
+    dragState: { col: number; idx: number } | null;
+    onDragStart: (state: { col: number; idx: number }) => void;
+    onDragEnd: () => void;
+  }
+  const RenameReorderPanel: FC<RenameReorderPanelProps>;
   const StatsTable: FC<any>;
   const GroupColorEditor: FC<any>;
   const BaseStyleControls: FC<any>;
