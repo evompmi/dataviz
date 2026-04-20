@@ -150,6 +150,39 @@ function buildDendroLayout(tree) {
   walk(tree);
   return { segments, nodes, maxHeight };
 }
+
+// Prune an hclust tree down to the leaves whose original indices are in
+// `keepSet`. Returns the pruned subtree, or `null` if pruning leaves fewer
+// than two leaves (a single-leaf "tree" has no internal merges, so there's
+// no dendrogram to draw). Internal nodes that retain only one child are
+// collapsed to that child, so the returned tree has no unary internals;
+// original merge heights are preserved, giving a true subtree dendrogram
+// of the selection — edges skip over elided sibling clades but the
+// heights still reflect the original clustering distances.
+function pruneDendroTree(tree, keepSet) {
+  function rec(node) {
+    if (!node) return null;
+    if (node.left === null && node.right === null) {
+      return keepSet.has(node.index) ? node : null;
+    }
+    const L = rec(node.left);
+    const R = rec(node.right);
+    if (!L && !R) return null;
+    if (!L) return R;
+    if (!R) return L;
+    return {
+      index: -1,
+      left: L,
+      right: R,
+      height: node.height,
+      size: (L.size || 1) + (R.size || 1),
+    };
+  }
+  const pruned = rec(tree);
+  if (!pruned || (pruned.left === null && pruned.right === null)) return null;
+  return pruned;
+}
+
 // Okabe-Ito categorical palette for k-means cluster-id colour strips.
 const CLUSTER_PALETTE = [
   "#E69F00",
@@ -235,6 +268,12 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     // k-means group colours carry over so each zoomed row/column still shows
     // which cluster it belongs to.
     showKmeansStrip = undefined,
+    // Stroke width for dendrogram lines in the default (non-hovered) state.
+    // The main plot uses the literal 1 that was previously hard-coded; the
+    // detail view bumps this up so the pruned subtree reads at a smaller
+    // tile. Hover stroke scales with it (hoverFactor * base) so the hover
+    // highlight stays visually distinct.
+    dendrogramStrokeWidth = 1,
   },
   ref
 ) {
@@ -557,7 +596,7 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                 x2={scaleX(s.x2)}
                 y2={scaleY(s.y2)}
                 stroke={active ? DENDRO_HOVER_STROKE : DENDRO_STROKE}
-                strokeWidth={active ? 2.5 : 1}
+                strokeWidth={active ? 2.5 * dendrogramStrokeWidth : dendrogramStrokeWidth}
               />
             );
           })}
@@ -623,7 +662,7 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                 x2={scaleX(s.y2)}
                 y2={scaleY(s.x2)}
                 stroke={active ? DENDRO_HOVER_STROKE : DENDRO_STROKE}
-                strokeWidth={active ? 2.5 : 1}
+                strokeWidth={active ? 2.5 * dendrogramStrokeWidth : dendrogramStrokeWidth}
               />
             );
           })}
@@ -2044,6 +2083,12 @@ function App() {
     cellBorderInit
   );
 
+  // Detail-only dendrogram stroke preset. Three fixed sizes so the zoom
+  // tile's pruned dendrogram can be bumped up to read clearly at a smaller
+  // plot size; the main plot keeps its default stroke width. Not persisted —
+  // session-local.
+  const [detailDendroStroke, setDetailDendroStroke] = useState("medium");
+
   const chartRef = useRef();
   const detailChartRef = useRef();
   const matrixRef = useRef(null);
@@ -2479,6 +2524,8 @@ function App() {
                     cellBorder={cellBorder}
                     detailChartRef={detailChartRef}
                     fileName={fileName}
+                    detailDendroStroke={detailDendroStroke}
+                    setDetailDendroStroke={setDetailDendroStroke}
                   />
                 )}
               </div>
@@ -2499,6 +2546,8 @@ function App() {
   );
 }
 
+const DETAIL_DENDRO_STROKE_WIDTHS = { thin: 0.75, medium: 1.5, bold: 2.5 };
+
 function DetailView({
   rawMatrix,
   normalized,
@@ -2510,6 +2559,8 @@ function DetailView({
   cellBorder,
   detailChartRef,
   fileName,
+  detailDendroStroke,
+  setDetailDendroStroke,
 }) {
   // Detail tile is now an independent sibling next to the main plot rather
   // than stacked beneath it, so it no longer mirrors the main's width,
@@ -2520,13 +2571,37 @@ function DetailView({
   const detailRowCount = detailRowOrder.length;
   const baseCellH = Math.max(14, Math.min(28, Math.floor(720 / Math.max(1, detailRowCount))));
   const base = fileBaseName(fileName || "heatmap") || "heatmap";
-  // Forward cluster objects ONLY when mode is k-means: the detail's
-  // inter-cluster gap math and the k-means colour strip both rely on them,
-  // but a forwarded hierarchical tree would make HeatmapChart reserve 60 px
-  // of dendrogram band in the detail for no reason (the dendrogram itself
-  // belongs to the main view and isn't redrawn here).
   const mainRowIsKmeans = mainRowCluster && mainRowCluster.mode === "kmeans";
   const mainColIsKmeans = mainColCluster && mainColCluster.mode === "kmeans";
+  const mainRowIsHier =
+    mainRowCluster && mainRowCluster.mode === "hierarchical" && mainRowCluster.tree;
+  const mainColIsHier =
+    mainColCluster && mainColCluster.mode === "hierarchical" && mainColCluster.tree;
+  // Build per-axis cluster objects to forward to the detail HeatmapChart.
+  // For hierarchical mode: prune the main's tree down to just the selected
+  // leaves, so the detail draws a proper subtree dendrogram at its own cell
+  // width — merge heights preserved, elided sibling clades skipped. For
+  // k-means: forward as-is (the strip + inter-cluster gap math both need
+  // the original `clusters` array, which is indexed by original leaf idx).
+  // Null when neither applies (so HeatmapChart reserves no dendro band).
+  const detailRowCluster = useMemo(() => {
+    if (mainRowIsKmeans) return mainRowCluster;
+    if (mainRowIsHier) {
+      const pruned = pruneDendroTree(mainRowCluster.tree, new Set(detailRowOrder));
+      return pruned ? { mode: "hierarchical", tree: pruned } : null;
+    }
+    return null;
+  }, [mainRowCluster, mainRowIsKmeans, mainRowIsHier, detailRowOrder]);
+  const detailColCluster = useMemo(() => {
+    if (mainColIsKmeans) return mainColCluster;
+    if (mainColIsHier) {
+      const pruned = pruneDendroTree(mainColCluster.tree, new Set(detailColOrder));
+      return pruned ? { mode: "hierarchical", tree: pruned } : null;
+    }
+    return null;
+  }, [mainColCluster, mainColIsKmeans, mainColIsHier, detailColOrder]);
+  const detailShowDendrogram =
+    (mainRowIsHier && detailRowCluster) || (mainColIsHier && detailColCluster);
   const nR = detailRowOrder.length;
   const nC = detailColOrder.length;
 
@@ -2569,13 +2644,35 @@ function DetailView({
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
           Detail — {nR} row{nR === 1 ? "" : "s"} × {nC} col{nC === 1 ? "" : "s"}
         </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {downloadButton("SVG", () =>
-            downloadSvg(detailChartRef.current, `${base}_heatmap_detail.svg`)
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          {detailShowDendrogram && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Dendrogram</span>
+              <div className="dv-seg" role="group" aria-label="Dendrogram stroke width">
+                {["thin", "medium", "bold"].map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className={
+                      "dv-seg-btn" + (detailDendroStroke === k ? " dv-seg-btn-active" : "")
+                    }
+                    onClick={() => setDetailDendroStroke(k)}
+                    style={{ fontSize: 11, padding: "3px 8px" }}
+                  >
+                    {k.charAt(0).toUpperCase() + k.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-          {downloadButton("PNG", () =>
-            downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
-          )}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {downloadButton("SVG", () =>
+              downloadSvg(detailChartRef.current, `${base}_heatmap_detail.svg`)
+            )}
+            {downloadButton("PNG", () =>
+              downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
+            )}
+          </div>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
@@ -2587,10 +2684,13 @@ function DetailView({
           rawMatrix={rawMatrix.matrix}
           rowOrder={detailRowOrder}
           colOrder={detailColOrder}
-          rowCluster={mainRowIsKmeans ? mainRowCluster : null}
-          colCluster={mainColIsKmeans ? mainColCluster : null}
-          showClusterStrip={false}
+          rowCluster={detailRowCluster}
+          colCluster={detailColCluster}
+          showClusterStrip={detailShowDendrogram}
           showKmeansStrip={mainRowIsKmeans || mainColIsKmeans}
+          dendrogramStrokeWidth={
+            DETAIL_DENDRO_STROKE_WIDTHS[detailDendroStroke] || DETAIL_DENDRO_STROKE_WIDTHS.medium
+          }
           vmin={vis.vmin}
           vmax={vis.vmax}
           palette={vis.palette}
