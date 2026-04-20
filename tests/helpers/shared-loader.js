@@ -57,6 +57,9 @@ module.exports = {
   wideToLong: ctx.wideToLong,
   reshapeWide: ctx.reshapeWide,
   parseWideMatrix: ctx.parseWideMatrix,
+  // Set-membership helpers (Venn / UpSet)
+  parseSetData: ctx.parseSetData,
+  parseLongFormatSets: ctx.parseLongFormatSets,
   // Colour palettes (shared between scatter + heatmap)
   COLOR_PALETTES: ctx.COLOR_PALETTES,
   DIVERGING_PALETTES: ctx.DIVERGING_PALETTES,

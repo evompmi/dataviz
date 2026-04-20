@@ -2,21 +2,7 @@
 // Do NOT edit the .js file directly.
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
-// ── Set Parsing ──────────────────────────────────────────────────────────────
-
-function parseSetData(headers, rows) {
-  const sets = new Map();
-  for (let ci = 0; ci < headers.length; ci++) {
-    const s = new Set();
-    for (const r of rows) {
-      const v = (r[ci] || "").trim();
-      if (v) s.add(v);
-    }
-    if (s.size > 0) sets.set(headers[ci], s);
-  }
-  const setNames = [...sets.keys()];
-  return { setNames, sets };
-}
+// parseSetData lives in tools/shared.js (shared with the UpSet tool).
 
 // ── Set Computation ──────────────────────────────────────────────────────────
 
@@ -1383,6 +1369,8 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
   );
 }
 
+const UPSET_NUDGE_KEY = "venn-upset-nudge-dismissed";
+
 function ConfigureStep({
   fileName,
   parsedHeaders,
@@ -1396,6 +1384,37 @@ function ConfigureStep({
   const needsPicker = allColumnNames.length > 3;
   const selectedCount = pendingSelection.length;
   const canPlot = selectedCount === 2 || selectedCount === 3;
+
+  // Non-blocking nudge to the UpSet tool when the dataset has 4+ sets.
+  // Venn still renders 2–3 of them; the banner is dismissible and remembers
+  // that choice in localStorage so it never nags the same user twice.
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(UPSET_NUDGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const dismissNudge = () => {
+    setNudgeDismissed(true);
+    try {
+      localStorage.setItem(UPSET_NUDGE_KEY, "1");
+    } catch {
+      /* storage disabled — dismissal only lasts this session */
+    }
+  };
+  const openUpset = (e) => {
+    e.preventDefault();
+    // Sent to index.html's message listener, which switches the active
+    // tool-view iframe. When Venn is opened outside the landing (direct URL),
+    // fall back to navigating the top frame to the UpSet HTML.
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "openTool", tool: "upset" }, "*");
+    } else {
+      window.location.href = "upset.html";
+    }
+  };
+  const showNudge = allColumnNames.length >= 4 && !nudgeDismissed;
 
   const toggle = (name) => {
     setPendingSelection((prev) => {
@@ -1417,6 +1436,51 @@ function ConfigureStep({
 
   return (
     <div>
+      {showNudge && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 14px",
+            borderRadius: 8,
+            background: "var(--info-bg)",
+            border: "1px solid var(--info-border)",
+            color: "var(--info-text)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            fontSize: 12,
+          }}
+        >
+          <span style={{ fontSize: 16 }}>💡</span>
+          <span style={{ flex: 1 }}>
+            <strong>{allColumnNames.length} sets detected</strong> — UpSet plots read better than
+            Venn diagrams above 3 sets.{" "}
+            <a
+              href="upset.html"
+              onClick={openUpset}
+              style={{ color: "var(--accent-primary)", fontWeight: 700 }}
+            >
+              Open in UpSet tool →
+            </a>
+          </span>
+          <button
+            type="button"
+            onClick={dismissNudge}
+            aria-label="Dismiss"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              fontSize: 16,
+              lineHeight: 1,
+              padding: "0 4px",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="dv-panel">
         <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
           <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols

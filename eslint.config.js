@@ -14,6 +14,7 @@ const compiledTools = [
   "tools/power.js",
   "tools/scatter.js",
   "tools/venn.js",
+  "tools/upset.js",
   "tools/version.js",
 ];
 
@@ -44,6 +45,8 @@ const sharedGlobals = {
   wideToLong: "readonly",
   reshapeWide: "readonly",
   parseWideMatrix: "readonly",
+  parseSetData: "readonly",
+  parseLongFormatSets: "readonly",
   COLOR_PALETTES: "readonly",
   DIVERGING_PALETTES: "readonly",
   interpolateColor: "readonly",

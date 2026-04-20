@@ -127,6 +127,16 @@ declare global {
     vi: number
   ): { headers: string[]; rows: string[][] };
 
+  // ── Set-membership parsing (Venn / UpSet) ───────────────────────────────────
+  function parseSetData(
+    headers: string[],
+    rows: string[][]
+  ): { setNames: string[]; sets: Map<string, Set<string>> };
+  function parseLongFormatSets(
+    headers: string[],
+    rows: string[][]
+  ): { setNames: string[]; sets: Map<string, Set<string>> };
+
   // ── Statistics ─────────────────────────────────────────────────────────────
   interface Stats {
     mean: number;
