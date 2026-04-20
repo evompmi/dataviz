@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **UpSet — sidebar tiles now collapsible with disclosure arrows** — the `Columns` (sort + min filters) and `Display` (titles, opacity, sizes, background) tiles in the Plot-step sidebar were always-expanded, even when the user was only adjusting one of them. Wrapped both in a local `ControlSection` component (mirroring the scatter / boxplot pattern: header row with a `dv-disclosure` arrow, content only mounted when open, `scrollDisclosureIntoView` called after opening so the revealed content isn't hidden below the fold). `Columns` defaults to open (the two filter sliders are the primary tweaks); `Display` defaults to closed. Panel styling matches the rest of the app — no new CSS, just reuses the existing `dv-panel` + `dv-disclosure` classes.
+
 ### Removed
 
 - **UpSet — dropped the "Top N" slider** — capping the number of plotted intersections by list order after sorting was confusing: a `Top N = 20` with sort mode "size-asc" would plot the twenty smallest intersections, which is almost never what the user wanted, and changing the sort mode silently changed which intersections survived the cap. Min size and Min degree already express the two filters that actually matter (intersection magnitude and overlap depth), and both apply independently of sort order. Removed the `Top N` control from the plot-controls sidebar, `vis.topN` from `visInit`, the `topN` parameter from `truncateIntersections` (now just a `{ minSize, minDegree }` filter), and the four `topN` unit tests in `tests/upset.test.js`. Sidebar hint and empty-state / overcrowded banners rewritten to reference Min size + Min degree instead.

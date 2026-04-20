@@ -1035,6 +1035,49 @@ function ItemListPanel({ intersection, setNames, fileName }) {
 
 // ── Plot controls sidebar ────────────────────────────────────────────────────
 
+// Matches the collapsible sidebar tiles used by scatter / boxplot: header
+// row with a disclosure arrow, and the content block only mounts when open.
+function ControlSection({ title, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(rootRef.current));
+  }, [open]);
+  return (
+    <div ref={rootRef} className="dv-panel" style={{ padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "7px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          fontFamily: "inherit",
+        }}
+      >
+        <span
+          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+          aria-hidden="true"
+        />
+        {title}
+      </button>
+      {open && (
+        <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlotControls({
   activeSetNames,
   allSets,
@@ -1100,98 +1143,88 @@ function PlotControls({
         ]}
       />
 
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Columns
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div>
-            <span className="dv-label">Sort by</span>
-            <select
-              value={vis.sortMode}
-              onChange={(e) => updVis({ sortMode: e.target.value })}
-              className="dv-input"
-              style={{ width: "100%" }}
-            >
-              <option value="size-desc">Size (largest first)</option>
-              <option value="size-asc">Size (smallest first)</option>
-              <option value="degree-desc">Degree (highest first)</option>
-              <option value="degree-asc">Degree (lowest first)</option>
-              <option value="sets">Set order</option>
-            </select>
-          </div>
-          <SliderControl
-            label="Min size"
-            value={vis.minSize}
-            min={0}
-            max={20}
-            step={1}
-            onChange={sv("minSize")}
-          />
-          <SliderControl
-            label="Min degree"
-            value={vis.minDegree}
-            min={1}
-            max={Math.max(1, activeSetNames.length)}
-            step={1}
-            onChange={sv("minDegree")}
-          />
+      <ControlSection title="Columns" defaultOpen>
+        <div>
+          <span className="dv-label">Sort by</span>
+          <select
+            value={vis.sortMode}
+            onChange={(e) => updVis({ sortMode: e.target.value })}
+            className="dv-input"
+            style={{ width: "100%" }}
+          >
+            <option value="size-desc">Size (largest first)</option>
+            <option value="size-asc">Size (smallest first)</option>
+            <option value="degree-desc">Degree (highest first)</option>
+            <option value="degree-asc">Degree (lowest first)</option>
+            <option value="sets">Set order</option>
+          </select>
         </div>
-      </div>
+        <SliderControl
+          label="Min size"
+          value={vis.minSize}
+          min={0}
+          max={20}
+          step={1}
+          onChange={sv("minSize")}
+        />
+        <SliderControl
+          label="Min degree"
+          value={vis.minDegree}
+          min={1}
+          max={Math.max(1, activeSetNames.length)}
+          step={1}
+          onChange={sv("minDegree")}
+        />
+      </ControlSection>
 
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-          Display
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div>
-            <div className="dv-label">Title</div>
-            <input
-              value={vis.plotTitle}
-              onChange={(e) => updVis({ plotTitle: e.target.value })}
-              className="dv-input"
-              style={{ width: "100%" }}
-            />
-          </div>
-          <div>
-            <div className="dv-label">Subtitle</div>
-            <input
-              value={vis.plotSubtitle}
-              onChange={(e) => updVis({ plotSubtitle: e.target.value })}
-              className="dv-input"
-              style={{ width: "100%" }}
-            />
-          </div>
-          <SliderControl
-            label="Bar opacity"
-            value={vis.barOpacity}
-            min={0.3}
-            max={1}
-            step={0.05}
-            onChange={sv("barOpacity")}
+      <ControlSection title="Display">
+        <div>
+          <div className="dv-label">Title</div>
+          <input
+            value={vis.plotTitle}
+            onChange={(e) => updVis({ plotTitle: e.target.value })}
+            className="dv-input"
+            style={{ width: "100%" }}
           />
-          <SliderControl
-            label="Dot size"
-            value={vis.dotSize}
-            min={3}
-            max={12}
-            step={1}
-            onChange={sv("dotSize")}
-          />
-          <SliderControl
-            label="Font size"
-            value={vis.fontSize}
-            min={8}
-            max={20}
-            step={1}
-            onChange={sv("fontSize")}
-          />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span className="dv-label">Background</span>
-            <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
-          </div>
         </div>
-      </div>
+        <div>
+          <div className="dv-label">Subtitle</div>
+          <input
+            value={vis.plotSubtitle}
+            onChange={(e) => updVis({ plotSubtitle: e.target.value })}
+            className="dv-input"
+            style={{ width: "100%" }}
+          />
+        </div>
+        <SliderControl
+          label="Bar opacity"
+          value={vis.barOpacity}
+          min={0.3}
+          max={1}
+          step={0.05}
+          onChange={sv("barOpacity")}
+        />
+        <SliderControl
+          label="Dot size"
+          value={vis.dotSize}
+          min={3}
+          max={12}
+          step={1}
+          onChange={sv("dotSize")}
+        />
+        <SliderControl
+          label="Font size"
+          value={vis.fontSize}
+          min={8}
+          max={20}
+          step={1}
+          onChange={sv("fontSize")}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span className="dv-label">Background</span>
+          <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
+        </div>
+      </ControlSection>
     </div>
   );
 }
