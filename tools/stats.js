@@ -1703,14 +1703,23 @@ function hclust(distMatrix, linkage) {
         const i = act[ai],
           j = act[aj];
         const d = D[i][j];
-        if (d < best) {
+        if (Number.isFinite(d) && d < best) {
           best = d;
           bi = i;
           bj = j;
         }
       }
     }
-    if (bi < 0) break;
+    if (bi < 0) {
+      // No finite distances remain — happens when rows have no overlap
+      // in finite values (e.g. correlation on a matrix where most cells
+      // are NaN). Force-merge the two lowest-index active clusters at a
+      // sentinel height so the returned tree still covers every leaf,
+      // instead of silently truncating to the first active singleton.
+      bi = act[0];
+      bj = act[1];
+      best = 0;
+    }
 
     // Merge j into i — the new cluster keeps index bi, bj becomes inactive.
     const merged = {
