@@ -229,6 +229,12 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     // are NOT redrawn over the detail (they belong to the main view), even
     // though the cluster objects are still passed through for gap math.
     showClusterStrip = true,
+    // Independent gate for the k-means colour strip. Defaults to
+    // `showClusterStrip` so main-view behaviour is unchanged, but the detail
+    // view enables it on its own — dendrograms stay suppressed while the
+    // k-means group colours carry over so each zoomed row/column still shows
+    // which cluster it belongs to.
+    showKmeansStrip = undefined,
   },
   ref
 ) {
@@ -1023,8 +1029,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
 
         {showClusterStrip && renderColDendrogram()}
         {showClusterStrip && renderRowDendrogram()}
-        {showClusterStrip && renderColClusterStrip()}
-        {showClusterStrip && renderRowClusterStrip()}
+        {(showKmeansStrip != null ? showKmeansStrip : showClusterStrip) && renderColClusterStrip()}
+        {(showKmeansStrip != null ? showKmeansStrip : showClusterStrip) && renderRowClusterStrip()}
 
         <g id="chart" transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
           <g id="plot-area-background">
@@ -2395,76 +2401,93 @@ function App() {
               style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}
             >
               <div
-                className="dv-panel dv-plot-card"
                 style={{
-                  padding: 20,
-                  background: "var(--plot-card-bg)",
-                  borderColor: "var(--plot-card-border)",
                   display: "flex",
-                  flexDirection: "column",
                   gap: 12,
-                  alignItems: "center",
+                  alignItems: "flex-start",
+                  flexWrap: "wrap",
                 }}
               >
-                {hasSelection && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      alignSelf: "stretch",
-                    }}
-                  >
-                    <button
-                      onClick={clearSelection}
-                      className="dv-btn dv-btn-secondary"
-                      style={{ padding: "4px 10px", fontSize: 11 }}
+                <div
+                  className="dv-panel dv-plot-card"
+                  style={{
+                    padding: 20,
+                    background: "var(--plot-card-bg)",
+                    borderColor: "var(--plot-card-border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                    alignItems: "center",
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {hasSelection && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignSelf: "stretch",
+                      }}
                     >
-                      Clear
-                    </button>
-                  </div>
-                )}
-                <HeatmapChart
-                  ref={chartRef}
-                  rowLabels={rawMatrix.rowLabels}
-                  colLabels={rawMatrix.colLabels}
-                  matrix={normalized}
-                  rawMatrix={rawMatrix.matrix}
-                  rowOrder={rowOrder}
-                  colOrder={colOrder}
-                  rowCluster={rowCluster}
-                  colCluster={colCluster}
-                  vmin={vis.vmin}
-                  vmax={vis.vmax}
-                  palette={vis.palette}
-                  cellBorder={cellBorder}
-                  plotTitle={vis.plotTitle}
-                  plotSubtitle={vis.plotSubtitle}
-                  rowAxisLabel={vis.rowAxisLabel}
-                  colAxisLabel={vis.colAxisLabel}
-                  showRowLabels={vis.showRowLabels}
-                  showColLabels={vis.showColLabels}
-                  interactive={true}
-                  selection={selection}
-                  onBrushEnd={onBrushEnd}
-                  onAxisSelect={selectAxis}
-                  onClearSelection={clearSelection}
-                />
-              </div>
+                      <button
+                        onClick={clearSelection}
+                        className="dv-btn dv-btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: 11 }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                  <HeatmapChart
+                    ref={chartRef}
+                    rowLabels={rawMatrix.rowLabels}
+                    colLabels={rawMatrix.colLabels}
+                    matrix={normalized}
+                    rawMatrix={rawMatrix.matrix}
+                    rowOrder={rowOrder}
+                    colOrder={colOrder}
+                    rowCluster={rowCluster}
+                    colCluster={colCluster}
+                    vmin={vis.vmin}
+                    vmax={vis.vmax}
+                    palette={vis.palette}
+                    cellBorder={cellBorder}
+                    plotTitle={vis.plotTitle}
+                    plotSubtitle={vis.plotSubtitle}
+                    rowAxisLabel={vis.rowAxisLabel}
+                    colAxisLabel={vis.colAxisLabel}
+                    showRowLabels={vis.showRowLabels}
+                    showColLabels={vis.showColLabels}
+                    interactive={true}
+                    selection={selection}
+                    onBrushEnd={onBrushEnd}
+                    onAxisSelect={selectAxis}
+                    onClearSelection={clearSelection}
+                  />
+                </div>
 
+                {hasSelection && (
+                  <DetailView
+                    rawMatrix={rawMatrix}
+                    normalized={normalized}
+                    detailRowOrder={detailRowOrder}
+                    detailColOrder={detailColOrder}
+                    mainRowCluster={rowCluster}
+                    mainColCluster={colCluster}
+                    vis={vis}
+                    cellBorder={cellBorder}
+                    detailChartRef={detailChartRef}
+                    fileName={fileName}
+                  />
+                )}
+              </div>
               {hasSelection && (
-                <DetailView
+                <DetailPreviewCard
                   rawMatrix={rawMatrix}
                   normalized={normalized}
                   detailRowOrder={detailRowOrder}
                   detailColOrder={detailColOrder}
-                  mainRowOrder={rowOrder}
-                  mainColOrder={colOrder}
-                  mainRowCluster={rowCluster}
-                  mainColCluster={colCluster}
-                  vis={vis}
-                  cellBorder={cellBorder}
-                  clearSelection={clearSelection}
-                  detailChartRef={detailChartRef}
                   fileName={fileName}
                 />
               )}
@@ -2481,103 +2504,31 @@ function DetailView({
   normalized,
   detailRowOrder,
   detailColOrder,
-  mainRowOrder,
-  mainColOrder,
   mainRowCluster,
   mainColCluster,
   vis,
   cellBorder,
-  clearSelection,
   detailChartRef,
   fileName,
 }) {
-  // Match the main chart's cell size and colourbar length so cells read at the
-  // same visual scale and the legend gradients line up. Horizontally we align
-  // cells to the main plot so the selection sits directly under its source
-  // columns (column counts stay small, so gutters are harmless). Vertically we
-  // stay compact — a tall main plot would otherwise leave a huge blank gutter
-  // above a selection near the bottom.
-  const mainRowCount = mainRowOrder.length;
-  const mainColCount = mainColOrder.length;
+  // Detail tile is now an independent sibling next to the main plot rather
+  // than stacked beneath it, so it no longer mirrors the main's width,
+  // column offsets, dendrogram band, or legend length. Row height is still
+  // enlarged — that's the "zoom" semantic, giving each selected row enough
+  // pixels for a readable label (floor 14 px, cap 28 px). Cell width is
+  // left to HeatmapChart's default (based on detail's own column count).
   const detailRowCount = detailRowOrder.length;
-  // Column width stays locked to the main's cellW so cells align vertically
-  // between the two plots. Row height, on the other hand, is enlarged in the
-  // detail view — that's the whole point of zooming: each selected row gets
-  // more pixels, and the row labels (10 px text) stop colliding when the
-  // names toggle is on. We floor at 14 px (enough for a clean label) and cap
-  // at 28 px so a tiny selection doesn't blow up into a giant ribbon.
-  const baseCellW = Math.max(2, Math.min(28, Math.floor(720 / Math.max(1, mainColCount))));
-  const mainCellH = Math.max(2, Math.min(28, Math.floor(480 / Math.max(1, mainRowCount))));
   const baseCellH = Math.max(14, Math.min(28, Math.floor(720 / Math.max(1, detailRowCount))));
-  // Colourbar length mirrors the MAIN plot's legend so the two gradients read
-  // at the same scale, independent of the detail's enlarged row height.
-  const baseColorbarH = Math.min(180, Math.max(60, Math.round(mainCellH * mainRowCount * 0.6)));
-  // Column-only alignment: pad the detail's plot width to the main's, and
-  // offset the detail columns so they render at the same x-positions as in the
-  // main plot. Only applied when the selected columns are a contiguous run in
-  // the main's display order (otherwise absolute positioning makes no sense).
-  const mainColIndex = new Map(mainColOrder.map((c, i) => [c, i]));
-  const detailColPositions = detailColOrder.map((c) => mainColIndex.get(c));
-  let colsContiguous = detailColPositions.length > 0 && detailColPositions.every((p) => p != null);
-  if (colsContiguous) {
-    for (let i = 1; i < detailColPositions.length; i++) {
-      if (detailColPositions[i] !== detailColPositions[i - 1] + 1) {
-        colsContiguous = false;
-        break;
-      }
-    }
-  }
-  const cellOffsetCols = colsContiguous ? detailColPositions[0] : 0;
-  // Mirror the main's reserved dendrogram space so the detail's left margin
-  // equals the main's — without this, detail (no dendrograms) would shift
-  // left by DENDRO_SIZE_LEFT and its columns wouldn't line up with main's.
-  const mainRowIsHier =
-    mainRowCluster && mainRowCluster.mode === "hierarchical" && mainRowCluster.tree;
-  const mainRowIsKmeans = mainRowCluster && mainRowCluster.mode === "kmeans";
-  const mainColIsHier =
-    mainColCluster && mainColCluster.mode === "hierarchical" && mainColCluster.tree;
-  const mainColIsKmeans = mainColCluster && mainColCluster.mode === "kmeans";
-  const baseDendroSizeLeft = mainRowIsHier ? 60 : mainRowIsKmeans ? 14 : 0;
-  const baseDendroSizeTop = mainColIsHier ? 60 : mainColIsKmeans ? 14 : 0;
-  // Replicate the main HeatmapChart's k-means gap math so the detail can
-  // (1) include the main's totalColGap in its plot width — keeping the
-  // detail SVG the same width as the main — and (2) push detail cells
-  // right by the cumulative gap that sits to the LEFT of the selection's
-  // first column in the main, so contiguous detail columns land at the
-  // exact x positions of their originating main columns.
-  const K_GAP = 10;
-  let mainTotalColGap = 0;
-  let mainColGapStartPx = 0;
-  if (mainColIsKmeans) {
-    let acc = 0;
-    for (let ci = 1; ci < mainColOrder.length; ci++) {
-      const prev = mainColCluster.clusters[mainColOrder[ci - 1]];
-      const cur = mainColCluster.clusters[mainColOrder[ci]];
-      if (cur !== prev) acc += K_GAP;
-      if (ci === cellOffsetCols) mainColGapStartPx = acc;
-    }
-    mainTotalColGap = acc;
-  }
-  const basePlotW = baseCellW * mainColCount + mainTotalColGap;
   const base = fileBaseName(fileName || "heatmap") || "heatmap";
-  const detailMatrixRef = useRef(null);
-  detailMatrixRef.current = {
-    rowLabels: rawMatrix.rowLabels,
-    colLabels: rawMatrix.colLabels,
-    matrix: normalized,
-    rowOrder: detailRowOrder,
-    colOrder: detailColOrder,
-  };
+  // Forward cluster objects ONLY when mode is k-means: the detail's
+  // inter-cluster gap math and the k-means colour strip both rely on them,
+  // but a forwarded hierarchical tree would make HeatmapChart reserve 60 px
+  // of dendrogram band in the detail for no reason (the dendrogram itself
+  // belongs to the main view and isn't redrawn here).
+  const mainRowIsKmeans = mainRowCluster && mainRowCluster.mode === "kmeans";
+  const mainColIsKmeans = mainColCluster && mainColCluster.mode === "kmeans";
   const nR = detailRowOrder.length;
   const nC = detailColOrder.length;
-  const tableHeaders = [""].concat(detailColOrder.map((ci) => rawMatrix.colLabels[ci]));
-  const tableRows = detailRowOrder.map((ri) => {
-    const cells = detailColOrder.map((ci) => {
-      const v = rawMatrix.matrix[ri][ci];
-      return Number.isFinite(v) ? String(v) : "";
-    });
-    return [rawMatrix.rowLabels[ri]].concat(cells);
-  });
 
   const downloadButton = (label, onClick) => (
     <button
@@ -2602,6 +2553,8 @@ function DetailView({
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        flex: 1,
+        minWidth: 0,
       }}
     >
       <div
@@ -2623,18 +2576,6 @@ function DetailView({
           {downloadButton("PNG", () =>
             downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
           )}
-          {downloadButton("CSV", () => {
-            if (!detailMatrixRef.current) return;
-            const { headers, rows } = buildCsvExport(detailMatrixRef.current);
-            downloadCsv(headers, rows, `${base}_heatmap_detail.csv`);
-          })}
-          <button
-            onClick={clearSelection}
-            className="dv-btn dv-btn-secondary"
-            style={{ padding: "4px 10px", fontSize: 11 }}
-          >
-            Clear
-          </button>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
@@ -2646,37 +2587,85 @@ function DetailView({
           rawMatrix={rawMatrix.matrix}
           rowOrder={detailRowOrder}
           colOrder={detailColOrder}
-          // Forward main's cluster objects so the detail's gap math matches
-          // (same K_GAP between cluster boundaries inside the selection); the
-          // dendrograms / cluster strips themselves are suppressed via
-          // `showClusterStrip={false}` because they belong to the main view.
-          rowCluster={mainRowCluster}
-          colCluster={mainColCluster}
+          rowCluster={mainRowIsKmeans ? mainRowCluster : null}
+          colCluster={mainColIsKmeans ? mainColCluster : null}
           showClusterStrip={false}
+          showKmeansStrip={mainRowIsKmeans || mainColIsKmeans}
           vmin={vis.vmin}
           vmax={vis.vmax}
           palette={vis.palette}
           cellBorder={cellBorder}
-          plotTitle={vis.plotTitle ? `${vis.plotTitle} — detail` : "Detail"}
+          plotTitle={vis.plotTitle ? `${vis.plotTitle} — detail` : undefined}
           plotSubtitle={vis.plotSubtitle}
           rowAxisLabel={vis.rowAxisLabel}
           colAxisLabel={vis.colAxisLabel}
           showRowLabels={vis.showRowLabels}
           showColLabels={vis.showColLabels}
           interactive={false}
-          baseCellW={baseCellW}
           baseCellH={baseCellH}
-          baseColorbarH={baseColorbarH}
-          // basePlotW now includes the main's totalColGap so the detail SVG
-          // matches the main's width; the leading cumulative gap before the
-          // selection is forwarded as colGapStartPx so contiguous detail
-          // columns land at the exact x positions of their originating cells.
-          basePlotW={colsContiguous ? basePlotW : undefined}
-          cellOffsetCols={colsContiguous ? cellOffsetCols : 0}
-          colGapStartPx={colsContiguous ? mainColGapStartPx : 0}
-          baseDendroSizeLeft={baseDendroSizeLeft}
-          baseDendroSizeTop={baseDendroSizeTop}
         />
+      </div>
+    </div>
+  );
+}
+
+function DetailPreviewCard({ rawMatrix, normalized, detailRowOrder, detailColOrder, fileName }) {
+  const base = fileBaseName(fileName || "heatmap") || "heatmap";
+  const nR = detailRowOrder.length;
+  const nC = detailColOrder.length;
+  const tableHeaders = [""].concat(detailColOrder.map((ci) => rawMatrix.colLabels[ci]));
+  const tableRows = detailRowOrder.map((ri) => {
+    const cells = detailColOrder.map((ci) => {
+      const v = rawMatrix.matrix[ri][ci];
+      return Number.isFinite(v) ? String(v) : "";
+    });
+    return [rawMatrix.rowLabels[ri]].concat(cells);
+  });
+  const detailMatrixRef = useRef(null);
+  detailMatrixRef.current = {
+    rowLabels: rawMatrix.rowLabels,
+    colLabels: rawMatrix.colLabels,
+    matrix: normalized,
+    rowOrder: detailRowOrder,
+    colOrder: detailColOrder,
+  };
+
+  return (
+    <div
+      className="dv-panel dv-plot-card"
+      style={{
+        padding: 16,
+        background: "var(--plot-card-bg)",
+        borderColor: "var(--plot-card-border)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+          Selection data — {nR} row{nR === 1 ? "" : "s"} × {nC} col{nC === 1 ? "" : "s"}
+        </div>
+        <button
+          onClick={(e) => {
+            if (!detailMatrixRef.current) return;
+            const { headers, rows } = buildCsvExport(detailMatrixRef.current);
+            downloadCsv(headers, rows, `${base}_heatmap_detail.csv`);
+            flashSaved(e.currentTarget);
+          }}
+          className="dv-btn dv-btn-dl"
+          style={{ padding: "4px 10px", fontSize: 11 }}
+        >
+          ⬇ CSV
+        </button>
       </div>
       <DataPreview headers={tableHeaders} rows={tableRows} maxRows={50} />
       {nR > 50 && (
