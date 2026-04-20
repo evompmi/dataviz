@@ -566,10 +566,36 @@ function flashSaved(btn) {
   }, 1500);
 }
 
+// Produce a standalone SVG string suitable for a file export.
+//
+// Two transformations vs the live DOM, both Inkscape workarounds:
+//
+//   1. Strip the root <svg> inline `style="max-width:100%;height:auto;..."`
+//      (responsive-layout sugar that only makes sense inside an HTML flow;
+//      Inkscape's CSS engine can collapse the computed viewport when it sees
+//      `height: auto` on a root <svg>).
+//
+//   2. Strip every `shape-rendering="crispEdges"` attribute. This matters for
+//      the heatmap, where the cells group carries crispEdges to keep browser
+//      PNG rasterisation seamless. Inkscape ≥1.1 has a cairo-renderer bug
+//      where crispEdges on a group containing thousands of small rects (esp.
+//      sub-pixel-height ones like heatmap cells at 2 px tall) collapses the
+//      whole group to default-fill (black). Our cell rects are already on
+//      integer pixel coordinates via Math.round in the layout code, so
+//      crispEdges is redundant for seam avoidance in the exported file — we
+//      just drop it on export.
+function serializeSvgForExport(svgEl) {
+  const clone = svgEl.cloneNode(true);
+  clone.removeAttribute("style");
+  clone.querySelectorAll("[shape-rendering]").forEach((el) => {
+    el.removeAttribute("shape-rendering");
+  });
+  return new XMLSerializer().serializeToString(clone);
+}
+
 function downloadSvg(svgEl, filename) {
   if (!svgEl) return;
-  const serializer = new XMLSerializer();
-  const svgStr = serializer.serializeToString(svgEl);
+  const svgStr = serializeSvgForExport(svgEl);
   const blob = new Blob([svgStr], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -584,8 +610,7 @@ function downloadSvg(svgEl, filename) {
 function downloadPng(svgEl, filename, scale) {
   if (!svgEl) return;
   scale = scale || 2;
-  const serializer = new XMLSerializer();
-  const svgStr = serializer.serializeToString(svgEl);
+  const svgStr = serializeSvgForExport(svgEl);
   const vb = svgEl.getAttribute("viewBox");
   const parts = vb ? vb.split(/[\s,]+/) : [];
   const w = parts.length >= 4 ? parseFloat(parts[2]) : svgEl.clientWidth || 800;
