@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Scatter — reference-line color picker no longer shows a broken "var(--danger-text)" value** — the `addRefLine` factory and the `resetAll` handler both seeded the line's `color` with the CSS-variable string `"var(--danger-text)"`, which is not a valid SVG `stroke` value nor a hex the `ColorInput` can parse. Result: the shared color swatch rendered empty and the in-SVG stroke fell back to the `|| "#444"` literal elsewhere in the render path. Replaced both with the hex literal `#dc2626` (the same red the Regression line defaults to, matching the regression `useState` init), so the picker now displays a valid swatch and the SVG stroke matches what the user sees.
+
+### Changed
+
+- **Scatter — "Ref lines" tile renamed to "Reference line" and moved next to "Regression line"** — the former "Ref lines" tile lived several slots below Regression (after the three aesthetic boxes and the Axes / Style sections), which split two conceptually-related overlays. Renamed to the more descriptive "Reference line" and moved to sit directly below Regression, so both line-overlay controls are adjacent.
+
+- **Scatter — collapsible sidebar tiles with disclosure arrows** — the Plot step's controls sidebar matches the boxplot convention: `Point style`, `Style`, `Axes`, and `Ref lines` are now wrapped in a shared `ControlSection` that renders a disclosure arrow (the existing `.dv-disclosure` CSS) in its header. `Point style` and `Style` default to open (primary tweaks), `Axes` and `Ref lines` default to closed (power-user / on-demand). Variables (X/Y pickers), the three aesthetic `AesBox` tiles, and Regression keep their always-visible design because each already exposes its content through a built-in control (selects that reveal extras, an Off/On toggle for regression). Filters retains its pre-existing inline disclosure. Scrolls the opened section into view via the shared `scrollDisclosureIntoView` helper, same as boxplot and the filters panel.
+
+- **Scatter — dropped the filename header from the controls sidebar** — the Plot step's sidebar started with a 32 px-tall panel showing `<filename> · N rows · M cols`, which duplicated information already visible in `DataPreview` on the Configure step and ate vertical space above the Actions panel (on short viewports, the controls immediately below it fell below the fold). Removed the panel; the file context stays reachable via the step-nav bar returning to Configure.
+
+- **Settings gear button — bumped to a 40 × 40 px hit target** — the visual-plot-settings gear in `PageHeader` (all six plot tools) was 30 × 30 px with a 16 px glyph, which read as cramped next to the 40 px-tall theme toggle next to it. Enlarged to 40 × 40 px with a 20 px glyph so the two header buttons sit at matching heights and the gear is easier to hit with a trackpad tap.
+
+### Removed
+
+- **Venn — redundant "← Configure" back-button removed from the Plot step** — the top-of-plot secondary button duplicated the navigation already available via the step-nav bar, so it was taking vertical space (and a user-visible control slot) without adding functionality. Removed the button and its wrapper row; step navigation stays routed through the existing `StepNavBar`.
+
 ### Added
 
 - **Actions panel — every download button now carries a descriptive tooltip explaining what the file contains** — the six plot tools (boxplot, aequorin, lineplot, scatter, venn, heatmap) share a single `ActionsPanel` (`tools/shared-ui.js:494-576`) that renders the `⬇ SVG` / `⬇ PNG` / extra-download chips plus a `↺ Start over` button. Until now every chip was a bare label — new users couldn't tell at a glance whether `CSV` meant the raw data, the plotted-and-filtered data, a summary-statistics table, or a membership matrix. Added native `title` tooltips: SVG / PNG / Start-over have fixed strings in `ActionsPanel` (same output everywhere), and each tool's extra-download entry now carries its own `title` describing what the file holds and how it's formatted — e.g. aequorin CSV is "calibrated [Ca²⁺] over time — one row per time-point, one column per sample", scatter CSV is "the filtered data table — only columns and rows currently drawn", lineplot Stats CSV is "per-x summary statistics (n, mean, SD, SEM, 95% CI) for every group", venn CSV is "membership matrix — one row per item, a 0/1 column for each active set", venn Regions is "one CSV per non-empty region (fires multiple saves — your browser may ask once to allow them)", heatmap CSV is "the plotted matrix — normalisation and row/column reordering applied", heatmap R script is "runnable R script that reproduces this plot with pheatmap". Boxplot has no extras, so only the shared SVG / PNG / Start-over tooltips apply there.
