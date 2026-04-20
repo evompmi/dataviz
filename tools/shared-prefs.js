@@ -220,8 +220,8 @@ function PrefsPanel(props) {
   const gearSvg = React.createElement(
     "svg",
     {
-      width: 16,
-      height: 16,
+      width: 20,
+      height: 20,
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
@@ -247,8 +247,8 @@ function PrefsPanel(props) {
       "aria-haspopup": "menu",
       title: "Visual plot settings",
       style: {
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
         padding: 0,
         display: "inline-flex",
         alignItems: "center",

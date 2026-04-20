@@ -583,6 +583,55 @@ const aesTheme = {
   },
 };
 
+function ControlSection({
+  title,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children?: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  const rootRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    requestAnimationFrame(() => scrollDisclosureIntoView(rootRef.current));
+  }, [open]);
+  return (
+    <div ref={rootRef} className="dv-panel" style={{ padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          width: "100%",
+          padding: "7px 10px",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--text-muted)",
+          fontFamily: "inherit",
+        }}
+      >
+        <span
+          className={"dv-disclosure" + (open ? " dv-disclosure-open" : "")}
+          aria-hidden="true"
+        />
+        {title}
+      </button>
+      {open && (
+        <div style={{ padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AesBox({ theme, children }) {
   const t = aesTheme[theme];
   return (
@@ -892,16 +941,6 @@ function PlotStep({
           gap: 10,
         }}
       >
-        {/* File info */}
-        <div className="dv-panel" style={{ padding: "10px 12px" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-            <strong style={{ color: "var(--text)" }}>{fileName}</strong>
-            <span style={{ color: "var(--text-faint)", marginLeft: 6 }}>
-              {parsed.data.length} rows · {parsed.headers.length} cols
-            </span>
-          </div>
-        </div>
-
         {/* Actions */}
         <ActionsPanel
           onDownloadSvg={() =>
@@ -968,14 +1007,9 @@ function PlotStep({
         </div>
 
         {/* Point defaults */}
-        <div className="dv-panel">
-          <p
-            style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
-          >
-            Point style
-          </p>
+        <ControlSection title="Point style" defaultOpen>
           {!hasColorMap && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Color</span>
               <ColorInput value={pointColor} onChange={setPointColor} size={22} />
             </div>
@@ -999,7 +1033,7 @@ function PlotStep({
             step={0.05}
             onChange={setPointOpacity}
           />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Stroke</span>
             <ColorInput value={strokeColor} onChange={setStrokeColor} size={20} />
           </div>
@@ -1011,7 +1045,7 @@ function PlotStep({
             step={0.25}
             onChange={setStrokeWidth}
           />
-        </div>
+        </ControlSection>
 
         {/* Regression / trend line */}
         <div className="dv-panel">
@@ -1250,6 +1284,180 @@ function PlotStep({
           )}
         </div>
 
+        {/* Reference lines */}
+        <ControlSection title="Reference line">
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              onClick={() => addRefLine("h")}
+              className="dv-btn dv-btn-secondary"
+              style={{ fontSize: 11, padding: "4px 10px" }}
+            >
+              + H
+            </button>
+            <button
+              onClick={() => addRefLine("v")}
+              className="dv-btn dv-btn-secondary"
+              style={{ fontSize: 11, padding: "4px 10px" }}
+            >
+              + V
+            </button>
+          </div>
+          {refLines.length === 0 && (
+            <p style={{ margin: 0, fontSize: 12, color: "var(--text-faint)" }}>
+              No reference lines.
+            </p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {refLines.map((rl) => (
+              <div
+                key={rl.id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  padding: "8px 10px",
+                  background: "var(--surface-subtle)",
+                  borderRadius: 8,
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "2px 7px",
+                      borderRadius: 4,
+                      background: "var(--info-bg)",
+                      color: "var(--info-text)",
+                    }}
+                  >
+                    {rl.dir === "h" ? "Y =" : "X ="}
+                  </span>
+                  <NumberInput
+                    value={rl.value}
+                    step="any"
+                    onChange={(e) => updateRefLine(rl.id, "value", Number(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    onClick={() => removeRefLine(rl.id)}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: 5,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      background: "var(--surface)",
+                      border: "1px solid var(--danger-border)",
+                      color: "var(--danger-text)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <ColorInput
+                  value={rl.color}
+                  onChange={(v) => updateRefLine(rl.id, "color", v)}
+                  size={22}
+                />
+                <SliderControl
+                  label="Width"
+                  value={rl.strokeWidth}
+                  min={0.5}
+                  max={6}
+                  step={0.25}
+                  onChange={(v) => updateRefLine(rl.id, "strokeWidth", v)}
+                />
+                <div>
+                  <span className="dv-label">Dashed</span>
+                  <div
+                    style={{
+                      display: "flex",
+                      borderRadius: 6,
+                      overflow: "hidden",
+                      border: "1px solid var(--border-strong)",
+                    }}
+                  >
+                    {(["off", "on"] as const).map((mode) => {
+                      const active = mode === "on" ? rl.dashed : !rl.dashed;
+                      return (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => updateRefLine(rl.id, "dashed", mode === "on")}
+                          style={{
+                            flex: 1,
+                            padding: "4px 0",
+                            fontSize: 11,
+                            fontWeight: active ? 700 : 400,
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            border: "none",
+                            background: active ? "var(--accent-primary)" : "var(--surface)",
+                            color: active ? "var(--on-accent)" : "var(--text-muted)",
+                            transition: "background 120ms ease, color 120ms ease",
+                          }}
+                        >
+                          {mode === "off" ? "Off" : "On"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {rl.dashed && (
+                  <select
+                    value={rl.dashArray}
+                    onChange={(e) => updateRefLine(rl.id, "dashArray", e.target.value)}
+                    className="dv-select"
+                    style={{ fontSize: 11, width: "100%" }}
+                  >
+                    <option value="7,4">— — —</option>
+                    <option value="3,3">· · · ·</option>
+                    <option value="12,4">—— ——</option>
+                    <option value="10,4,2,4">— · — ·</option>
+                    <option value="2,2">·· ··</option>
+                  </select>
+                )}
+                <input
+                  value={rl.label}
+                  placeholder="label"
+                  onChange={(e) => updateRefLine(rl.id, "label", e.target.value)}
+                  className="dv-input-num"
+                  style={{ width: "100%", textAlign: "left" }}
+                />
+                {rl.label && (
+                  <select
+                    value={rl.labelSide}
+                    onChange={(e) => updateRefLine(rl.id, "labelSide", e.target.value)}
+                    className="dv-select"
+                    style={{ fontSize: 11, width: "100%" }}
+                  >
+                    {rl.dir === "h" ? (
+                      <>
+                        <option value="right">right</option>
+                        <option value="left">left</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="top">top</option>
+                        <option value="bottom">bottom</option>
+                      </>
+                    )}
+                  </select>
+                )}
+              </div>
+            ))}
+          </div>
+        </ControlSection>
+
         {/* ── Color aesthetic ── */}
         <AesBox theme="color">
           <select
@@ -1484,17 +1692,7 @@ function PlotStep({
         </AesBox>
 
         {/* Axes */}
-        <div className="dv-panel">
-          <p
-            style={{
-              margin: "0 0 10px",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--text-muted)",
-            }}
-          >
-            Axes
-          </p>
+        <ControlSection title="Axes">
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", gap: 8 }}>
               <div style={{ flex: 1 }}>
@@ -1588,18 +1786,10 @@ function PlotStep({
               />
             </div>
           </div>
-        </div>
+        </ControlSection>
 
         {/* Style */}
-        <div
-          className="dv-panel"
-          style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          <p
-            style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}
-          >
-            Style
-          </p>
+        <ControlSection title="Style" defaultOpen>
           <BaseStyleControls
             plotBg={vis.plotBg}
             onPlotBgChange={(v) => updVis({ plotBg: v })}
@@ -1608,183 +1798,7 @@ function PlotStep({
             gridColor={vis.gridColor}
             onGridColorChange={(v) => updVis({ gridColor: v })}
           />
-        </div>
-
-        {/* Reference lines */}
-        <div className="dv-panel">
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              marginBottom: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-              Ref lines
-            </p>
-            <button
-              onClick={() => addRefLine("h")}
-              className="dv-btn dv-btn-secondary"
-              style={{ fontSize: 11, padding: "4px 10px" }}
-            >
-              + H
-            </button>
-            <button
-              onClick={() => addRefLine("v")}
-              className="dv-btn dv-btn-secondary"
-              style={{ fontSize: 11, padding: "4px 10px" }}
-            >
-              + V
-            </button>
-          </div>
-          {refLines.length === 0 && (
-            <p style={{ fontSize: 12, color: "var(--text-faint)" }}>No reference lines.</p>
-          )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {refLines.map((rl) => (
-              <div
-                key={rl.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                  padding: "8px 10px",
-                  background: "var(--surface-subtle)",
-                  borderRadius: 8,
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: "2px 7px",
-                      borderRadius: 4,
-                      background: "var(--info-bg)",
-                      color: "var(--info-text)",
-                    }}
-                  >
-                    {rl.dir === "h" ? "Y =" : "X ="}
-                  </span>
-                  <NumberInput
-                    value={rl.value}
-                    step="any"
-                    onChange={(e) => updateRefLine(rl.id, "value", Number(e.target.value))}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    onClick={() => removeRefLine(rl.id)}
-                    style={{
-                      padding: "3px 9px",
-                      borderRadius: 5,
-                      fontSize: 12,
-                      cursor: "pointer",
-                      background: "var(--surface)",
-                      border: "1px solid var(--danger-border)",
-                      color: "var(--danger-text)",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <ColorInput
-                  value={rl.color}
-                  onChange={(v) => updateRefLine(rl.id, "color", v)}
-                  size={22}
-                />
-                <SliderControl
-                  label="Width"
-                  value={rl.strokeWidth}
-                  min={0.5}
-                  max={6}
-                  step={0.25}
-                  onChange={(v) => updateRefLine(rl.id, "strokeWidth", v)}
-                />
-                <div>
-                  <span className="dv-label">Dashed</span>
-                  <div
-                    style={{
-                      display: "flex",
-                      borderRadius: 6,
-                      overflow: "hidden",
-                      border: "1px solid var(--border-strong)",
-                    }}
-                  >
-                    {(["off", "on"] as const).map((mode) => {
-                      const active = mode === "on" ? rl.dashed : !rl.dashed;
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => updateRefLine(rl.id, "dashed", mode === "on")}
-                          style={{
-                            flex: 1,
-                            padding: "4px 0",
-                            fontSize: 11,
-                            fontWeight: active ? 700 : 400,
-                            fontFamily: "inherit",
-                            cursor: "pointer",
-                            border: "none",
-                            background: active ? "var(--accent-primary)" : "var(--surface)",
-                            color: active ? "var(--on-accent)" : "var(--text-muted)",
-                            transition: "background 120ms ease, color 120ms ease",
-                          }}
-                        >
-                          {mode === "off" ? "Off" : "On"}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                {rl.dashed && (
-                  <select
-                    value={rl.dashArray}
-                    onChange={(e) => updateRefLine(rl.id, "dashArray", e.target.value)}
-                    className="dv-select"
-                    style={{ fontSize: 11, width: "100%" }}
-                  >
-                    <option value="7,4">— — —</option>
-                    <option value="3,3">· · · ·</option>
-                    <option value="12,4">—— ——</option>
-                    <option value="10,4,2,4">— · — ·</option>
-                    <option value="2,2">·· ··</option>
-                  </select>
-                )}
-                <input
-                  value={rl.label}
-                  placeholder="label"
-                  onChange={(e) => updateRefLine(rl.id, "label", e.target.value)}
-                  className="dv-input-num"
-                  style={{ width: "100%", textAlign: "left" }}
-                />
-                {rl.label && (
-                  <select
-                    value={rl.labelSide}
-                    onChange={(e) => updateRefLine(rl.id, "labelSide", e.target.value)}
-                    className="dv-select"
-                    style={{ fontSize: 11, width: "100%" }}
-                  >
-                    {rl.dir === "h" ? (
-                      <>
-                        <option value="right">right</option>
-                        <option value="left">left</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="top">top</option>
-                        <option value="bottom">bottom</option>
-                      </>
-                    )}
-                  </select>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        </ControlSection>
 
         {/* Filters (collapsible) */}
         {filterableCols.length > 0 && (
@@ -2370,7 +2384,7 @@ function App() {
     setRefLines([]);
     setRegression({
       on: false,
-      color: "var(--danger-text)",
+      color: "#dc2626",
       strokeWidth: 1.5,
       dashed: false,
       showStats: true,
@@ -2414,7 +2428,7 @@ function App() {
         id: ++refLineCounter,
         dir,
         value: 0,
-        color: "var(--danger-text)",
+        color: "#dc2626",
         strokeWidth: 1.5,
         dashed: true,
         dashArray: "7,4",

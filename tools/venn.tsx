@@ -2199,11 +2199,6 @@ function App() {
 
       {step === "plot" && activeSetNames.length >= 2 && (
         <div>
-          <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-            <button onClick={() => setStep("configure")} className="dv-btn dv-btn-secondary">
-              ← Configure
-            </button>
-          </div>
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
             <PlotControls
               allSetNames={setNames}
