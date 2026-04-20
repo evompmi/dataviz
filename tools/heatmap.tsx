@@ -561,7 +561,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                   y={y}
                   width={w}
                   height={8}
-                  fill="transparent"
+                  fill="none"
+                  pointerEvents="all"
                   style={{ cursor: "pointer" }}
                   onMouseEnter={() =>
                     setAxisHover({
@@ -624,7 +625,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                   y={y}
                   width={8}
                   height={h}
-                  fill="transparent"
+                  fill="none"
+                  pointerEvents="all"
                   style={{ cursor: "pointer" }}
                   onMouseEnter={() =>
                     setAxisHover({
@@ -1111,13 +1113,18 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
           />
         )}
 
-        {/* Interaction overlay — sits above cells for pointer capture + tooltip tracking. */}
+        {/* Interaction overlay — sits above cells for pointer capture + tooltip tracking.
+            `fill="none"` + `pointer-events="all"` (not `fill="transparent"`) so that
+            Inkscape, which mis-parses the CSS keyword `transparent` in the SVG `fill`
+            attribute and falls back to the default (black), doesn't paint a giant
+            opaque black rect over the exported plot. */}
         <rect
           x={MARGIN.left}
           y={MARGIN.top}
           width={plotW}
           height={plotH}
-          fill="transparent"
+          fill="none"
+          pointerEvents="all"
           style={{ cursor: interactive ? "crosshair" : "default" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
