@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **UpSet — dropped the faint border around the top intersection-size panel** — the `<g id="plot-frame">` rect (grey `stroke="#333"` at 0.5 px, 0.2 opacity) drew a thin outline around the top bar panel, but with no gridlines and no enclosing axes it read as a floating box rather than a frame, adding visual noise around the bars without orienting the eye. Removed the group entirely; the top panel now sits cleanly on the canvas, consistent with the bottom (matrix + set-size) panels which never had a frame.
+
 ### Fixed
 
 - **UpSet — set-size and intersection-size bars now reach full panel length at the max value** — both bar panels scaled against `makeTicks`'s rounded-up domain (e.g. max set size 28 → ticks `[0, 10, 20, 30]` → scale divides by 30), so the largest bar landed at ~93% of `LEFT_BAR_MAX` / `TOP_PANEL_H` and the visual "max" of each axis was a round number that never corresponded to any real data point. Changed the scale denominator to the actual max (`topAxisMax`, `setSizeMax`), so the tallest bar always reaches the full panel length; tick labels now come from a new `buildBarTicks(max, count)` helper that takes `makeTicks`'s pretty values, drops any `≥ max`, and appends the true `max` as the final tick so the axis reads `0 … 20 28` instead of `0 … 20 30`. Applies symmetrically to the top (intersection size) and left (set size) panels. Per-bar numeric labels were already correct — only the axis ticks and visual bar-length-to-panel ratio change.

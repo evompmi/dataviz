@@ -515,19 +515,6 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
           })}
         </g>
       </g>
-
-      <g id="plot-frame">
-        <rect
-          x={MATRIX_LEFT_X}
-          y={topPanelY}
-          width={SVG_W - RIGHT_MARGIN - MATRIX_LEFT_X}
-          height={TOP_PANEL_H}
-          fill="none"
-          stroke={TEXT_DARK}
-          strokeWidth="0.5"
-          strokeOpacity="0.2"
-        />
-      </g>
     </svg>
   );
 });
