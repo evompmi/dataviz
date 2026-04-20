@@ -120,12 +120,11 @@ const TITLE_H_NONE = 16;
 const SUBTITLE_H = 18;
 const TOP_PANEL_H = 200;
 const MATRIX_TOP_PAD = 8;
-const BOTTOM_H = 56;
+const BOTTOM_H = 62;
 const LEFT_MARGIN = 44;
 const LEFT_BAR_MAX = 110;
-const LEFT_LABEL_AREA = 82;
+const LEFT_LABEL_AREA_MIN = 82;
 const LEFT_GAP = 6;
-const MATRIX_LEFT_X = LEFT_MARGIN + LEFT_BAR_MAX + LEFT_GAP + LEFT_LABEL_AREA;
 const RIGHT_MARGIN = 20;
 const TOP_AXIS_LABEL_W = 6;
 const BAR_FILL = "#000000";
@@ -143,9 +142,9 @@ function computeRowHeight(nSets) {
 // Column width fits the preferred width when the column count allows it,
 // otherwise clamps to MIN_COL_W so the SVG grows wider instead of shrinking
 // columns below legibility. Callers use the returned colW to derive SVG_W.
-function computeColWidth(nCols) {
+function computeColWidth(nCols, matrixLeftX) {
   if (nCols <= 0) return 24;
-  const avail = PREFERRED_SVG_W - MATRIX_LEFT_X - RIGHT_MARGIN;
+  const avail = PREFERRED_SVG_W - matrixLeftX - RIGHT_MARGIN;
   return Math.max(MIN_COL_W, Math.min(MAX_COL_W, avail / nCols));
 }
 
@@ -173,8 +172,16 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   const barOp = barOpacity != null ? barOpacity : 1;
   const dotR = dotSize || 6;
 
+  // Label lane grows with font size and longest set name so the bars never
+  // collide with their labels at large font sizes. The 0.58 factor is a
+  // conservative average-width estimate for sans-serif glyphs.
+  const labelFontSize = Math.max(10, fSize - 1);
+  const estLabelW = Math.max(0, ...setNames.map((n) => String(n).length * labelFontSize * 0.58));
+  const leftLabelArea = Math.max(LEFT_LABEL_AREA_MIN, Math.ceil(estLabelW) + 6);
+  const matrixLeftX = LEFT_MARGIN + LEFT_BAR_MAX + LEFT_GAP + leftLabelArea;
+
   const rowH = computeRowHeight(nSets);
-  const colW = computeColWidth(nCols);
+  const colW = computeColWidth(nCols, matrixLeftX);
   const matrixH = nSets * rowH;
   const titleH = plotTitle ? TITLE_H_WITH : TITLE_H_NONE;
   const subH = plotSubtitle ? SUBTITLE_H : 0;
@@ -184,7 +191,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   // Grow the SVG when columns would otherwise spill past the preferred width;
   // the style below keeps it <=100% of the container so narrow viewports just
   // scale proportionally instead of clipping.
-  const SVG_W = Math.max(PREFERRED_SVG_W, MATRIX_LEFT_X + Math.max(0, nCols) * colW + RIGHT_MARGIN);
+  const SVG_W = Math.max(PREFERRED_SVG_W, matrixLeftX + Math.max(0, nCols) * colW + RIGHT_MARGIN);
 
   // Top (intersection-size) bar area. Ticks are evenly spaced pretty values;
   // the domain max (last tick) is strictly above the data max so the largest
@@ -201,13 +208,13 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   const leftDomainMax = leftTicks[leftTicks.length - 1];
   const leftBarScale = (v) => (v / leftDomainMax) * LEFT_BAR_MAX;
 
-  const colX = (i) => MATRIX_LEFT_X + colW * (i + 0.5);
+  const colX = (i) => matrixLeftX + colW * (i + 0.5);
   const rowY = (i) => matrixY + rowH * (i + 0.5);
 
   // Axis tick geometry for the top (intersection size) axis — rendered on the
   // *left* edge of the top panel so the numbers are readable even if there are
   // many bars. The numeric scale is reused for intersection-bar labels.
-  const topAxisX = MATRIX_LEFT_X - 4;
+  const topAxisX = matrixLeftX - 4;
 
   return (
     <svg
@@ -365,9 +372,9 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
           i % 2 === 0 ? (
             <rect
               key={`zb-${i}`}
-              x={MATRIX_LEFT_X}
+              x={matrixLeftX}
               y={matrixY + i * rowH}
-              width={SVG_W - RIGHT_MARGIN - MATRIX_LEFT_X}
+              width={SVG_W - RIGHT_MARGIN - matrixLeftX}
               height={rowH}
               fill={ZEBRA_FILL}
               fillOpacity="0.5"
@@ -381,11 +388,11 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         {setNames.map((name, i) => (
           <text
             key={`sl-${i}`}
-            x={MATRIX_LEFT_X - LEFT_GAP - 2}
+            x={matrixLeftX - LEFT_GAP - 2}
             y={rowY(i)}
             textAnchor="end"
             dominantBaseline="central"
-            fontSize={Math.max(10, fSize - 1)}
+            fontSize={labelFontSize}
             fontWeight="600"
             fill={TEXT_DARK}
             fontFamily="sans-serif"
@@ -400,7 +407,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         {setNames.map((name, i) => {
           const size = setSizes.get(name) || 0;
           const w = leftBarScale(size);
-          const barRightX = MATRIX_LEFT_X - LEFT_GAP - LEFT_LABEL_AREA;
+          const barRightX = matrixLeftX - LEFT_GAP - leftLabelArea;
           return (
             <rect
               key={`sb-${i}`}
@@ -420,7 +427,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         {setNames.map((name, i) => {
           const size = setSizes.get(name) || 0;
           const w = leftBarScale(size);
-          const barRightX = MATRIX_LEFT_X - LEFT_GAP - LEFT_LABEL_AREA;
+          const barRightX = matrixLeftX - LEFT_GAP - leftLabelArea;
           return (
             <text
               key={`sbl-${i}`}
@@ -441,7 +448,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
       {/* Set-size axis: baseline + downward ticks + labels below the matrix. */}
       <g id="axis-set-size">
         {(() => {
-          const barRightX = MATRIX_LEFT_X - LEFT_GAP - LEFT_LABEL_AREA;
+          const barRightX = matrixLeftX - LEFT_GAP - leftLabelArea;
           const axisY = matrixY + matrixH + 4;
           const axisLeftX = barRightX - LEFT_BAR_MAX;
           return (
@@ -468,7 +475,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
                     />
                     <text
                       x={x}
-                      y={axisY + 14}
+                      y={axisY + 18}
                       textAnchor="middle"
                       fontSize={Math.max(9, fSize - 3)}
                       fill={TEXT_MUTED}
@@ -481,7 +488,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
               })}
               <text
                 x={axisLeftX + LEFT_BAR_MAX / 2}
-                y={axisY + 34}
+                y={axisY + 44}
                 textAnchor="middle"
                 fontSize={Math.max(10, fSize - 2)}
                 fill={TEXT_MUTED}
@@ -1161,7 +1168,7 @@ function PlotControls({
           </select>
         </div>
         <SliderControl
-          label="Min size"
+          label="Minimum intersection size"
           value={vis.minSize}
           min={0}
           max={20}
@@ -1169,7 +1176,7 @@ function PlotControls({
           onChange={sv("minSize")}
         />
         <SliderControl
-          label="Min degree"
+          label="Minimum degree"
           value={vis.minDegree}
           min={1}
           max={Math.max(1, activeSetNames.length)}
@@ -1482,6 +1489,49 @@ function App() {
     doParse(text, ",", "wide");
   }, [doParse]);
 
+  // Hand-off from the Venn tool's "Open in UpSet" nudge: replaces whatever
+  // file the user had previously loaded so the UpSet view shows the same
+  // dataset they were just looking at in Venn. Two delivery channels:
+  //   1. postMessage from the sibling Venn iframe (when both tools live
+  //      under index.html — the common case).
+  //   2. sessionStorage one-shot (when Venn was opened standalone and the
+  //      "Open in UpSet" link navigates the same window to upset.html).
+  // Both are consumed by the same handler so behaviour is identical either
+  // way; the sessionStorage entry is removed immediately so a future page
+  // load with no fresh hand-off doesn't re-load stale data.
+  const handleHandoff = useCallback(
+    (payload) => {
+      if (!payload || typeof payload.text !== "string") return;
+      const sep = typeof payload.sep === "string" ? payload.sep : "";
+      const fmt = payload.format === "long" ? "long" : "wide";
+      setFileName(typeof payload.fileName === "string" ? payload.fileName : "");
+      setSepOverride(sep);
+      setFormat(fmt);
+      setSelectedMask(null);
+      doParse(payload.text, sep, fmt);
+    },
+    [doParse]
+  );
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("dataviz-upset-handoff");
+      if (raw) {
+        sessionStorage.removeItem("dataviz-upset-handoff");
+        handleHandoff(JSON.parse(raw));
+      }
+    } catch {
+      /* storage disabled — handoff just won't fire */
+    }
+    const onMessage = (e) => {
+      const d = e && e.data;
+      if (!d || d.type !== "dataviz-handoff") return;
+      handleHandoff(d);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [handleHandoff]);
+
   const resetAll = () => {
     setStep("upload");
     setFileName("");
@@ -1617,8 +1667,8 @@ function App() {
                     color: "var(--warning-text)",
                   }}
                 >
-                  {truncatedIntersections.length} columns — dots may overlap. Raise Min size or Min
-                  degree to reduce.
+                  {truncatedIntersections.length} columns — dots may overlap. Raise Minimum
+                  intersection size or Minimum degree to reduce.
                 </div>
               )}
 
@@ -1634,7 +1684,7 @@ function App() {
                     color: "var(--info-text)",
                   }}
                 >
-                  No intersections to show. Lower Min size or Min degree.
+                  No intersections to show. Lower Minimum intersection size or Minimum degree.
                 </div>
               )}
 

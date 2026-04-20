@@ -1405,12 +1405,45 @@ function ConfigureStep({
   };
   const openUpset = (e) => {
     e.preventDefault();
-    // Sent to index.html's message listener, which switches the active
-    // tool-view iframe. When Venn is opened outside the landing (direct URL),
-    // fall back to navigating the top frame to the UpSet HTML.
+    // Hand the currently-loaded dataset off to the UpSet tool so it doesn't
+    // open showing whatever stale file the user had loaded there before.
+    // We rebuild a TSV from the already-parsed headers/rows (rather than
+    // keeping a copy of the raw bytes around) and let UpSet re-parse it.
+    // Tabs/newlines inside cells are flattened to spaces — set-membership
+    // values are typically alphanumeric IDs so this is effectively a no-op
+    // for real data and just hardens against the rare odd cell.
+    const escape = (c) => String(c == null ? "" : c).replace(/[\t\n\r]/g, " ");
+    const tsv = [
+      parsedHeaders.map(escape).join("\t"),
+      ...parsedRows.map((r) => r.map(escape).join("\t")),
+    ].join("\n");
+    const payload = {
+      type: "dataviz-handoff",
+      text: tsv,
+      fileName: fileName || "",
+      sep: "\t",
+      format: "wide",
+    };
+    // In-iframe path: post directly into the sibling UpSet iframe (same
+    // origin, so we can reach it via parent.document) before asking the
+    // landing page to switch views. postMessage delivery is synchronous so
+    // the data arrives before the user sees the UpSet view.
     if (window.parent && window.parent !== window) {
+      try {
+        const frame = window.parent.document.getElementById("frame-upset") as HTMLIFrameElement;
+        if (frame && frame.contentWindow) frame.contentWindow.postMessage(payload, "*");
+      } catch {
+        /* cross-origin or detached — fall through to the openTool ask */
+      }
       window.parent.postMessage({ type: "openTool", tool: "upset" }, "*");
     } else {
+      // Standalone path: stash in sessionStorage and full-page navigate.
+      // UpSet's mount-time effect consumes the entry and clears it.
+      try {
+        sessionStorage.setItem("dataviz-upset-handoff", JSON.stringify(payload));
+      } catch {
+        /* storage disabled — fall back to opening UpSet without the data */
+      }
       window.location.href = "upset.html";
     }
   };
