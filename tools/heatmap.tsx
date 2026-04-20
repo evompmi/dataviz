@@ -1450,6 +1450,8 @@ function PlotControls({
         extraDownloads={[
           {
             label: "CSV",
+            title:
+              "Download the plotted matrix as CSV — normalisation and row / column reordering applied",
             onClick: () => {
               if (!matrixRef.current) return;
               const { headers, rows } = buildCsvExport(matrixRef.current);
@@ -1458,6 +1460,8 @@ function PlotControls({
           },
           {
             label: "R script",
+            title:
+              "Download a runnable R script that reproduces this plot with pheatmap (includes the raw matrix, clustering, normalisation, palette)",
             onClick: () => {
               if (!rawMatrix || !rawMatrix.rowLabels.length) return;
               const script = buildHeatmapRScript({

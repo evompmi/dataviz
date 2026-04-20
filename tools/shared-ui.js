@@ -491,13 +491,27 @@ function UploadPanel(props) {
 // Actions tile for plot step. Renders a wrapping row of unified download chips
 // (SVG / PNG / + any `extraDownloads` like CSV/TXT) followed by a full-width
 // Start-over button. Each chip flex-grows so 1/2/3 fit evenly; a 4th wraps.
+//
+// Every button gets a native `title` tooltip: SVG / PNG / Start-over carry
+// fixed built-in strings (the output is the same across tools), and each
+// `extraDownloads` entry may pass its own `title` to describe the file it
+// emits (what's inside, how it's formatted) — that's where tool-specific
+// context lives.
 function ActionsPanel(props) {
   const downloads = [];
   if (props.onDownloadSvg) {
-    downloads.push({ label: "SVG", onClick: props.onDownloadSvg });
+    downloads.push({
+      label: "SVG",
+      title: "Download the plot as SVG — vector graphics, editable in Inkscape or Illustrator",
+      onClick: props.onDownloadSvg,
+    });
   }
   if (props.onDownloadPng) {
-    downloads.push({ label: "PNG", onClick: props.onDownloadPng });
+    downloads.push({
+      label: "PNG",
+      title: "Download the plot as PNG — 2× raster at the plot's native resolution",
+      onClick: props.onDownloadPng,
+    });
   }
   if (props.extraDownloads) {
     props.extraDownloads.forEach(function (d) {
@@ -509,6 +523,7 @@ function ActionsPanel(props) {
       "button",
       {
         key: "dl" + i,
+        title: d.title || undefined,
         onClick: function (e) {
           d.onClick(e);
           flashSaved(e.currentTarget);
@@ -552,6 +567,7 @@ function ActionsPanel(props) {
       "button",
       {
         onClick: props.onReset,
+        title: "Clear all data, controls, and current session — returns to the upload step",
         className: "dv-btn dv-btn-danger",
       },
       "\u21BA Start over"

@@ -865,7 +865,16 @@ function PlotControls({
         }
         onReset={resetAll}
         extraDownloads={
-          statsRows.length > 0 ? [{ label: "Stats CSV", onClick: downloadStatsCsv }] : []
+          statsRows.length > 0
+            ? [
+                {
+                  label: "Stats CSV",
+                  title:
+                    "Download the per-x summary statistics (n, mean, SD, SEM, 95% CI) for every group",
+                  onClick: downloadStatsCsv,
+                },
+              ]
+            : []
         }
       />
 

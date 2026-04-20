@@ -914,6 +914,8 @@ function PlotStep({
           extraDownloads={[
             {
               label: "CSV",
+              title:
+                "Download the filtered data table — only the columns and rows currently drawn on the plot",
               onClick: () =>
                 downloadCsv(
                   activeColIdxs.map((i) => parsed.headers[i]),
