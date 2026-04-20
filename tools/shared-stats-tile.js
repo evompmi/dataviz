@@ -738,6 +738,7 @@ function StatsTile({
         checked: disabled ? false : checked,
         disabled,
         onChange: (e) => onChange(e.target.checked),
+        style: { accentColor: "var(--cta-primary-bg)" },
       }),
       text
     );

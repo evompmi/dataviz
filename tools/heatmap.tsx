@@ -214,9 +214,21 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     // Override for total plot-grid dimensions. Detail view sets these to the
     // main plot's plotW/plotH so its SVG spans the same horizontal/vertical
     // extent even though only a subset of cells is drawn — the detail plot
-    // then visually stacks under the main plot cell-column-aligned.
+    // then visually stacks under the main plot cell-column-aligned. When
+    // supplied these are AUTHORITATIVE (the caller has already accounted for
+    // any k-means inter-cluster gap), so we don't add `totalColGap` again.
     basePlotW,
     basePlotH,
+    // Pixel offset added to every cell's x / y position. Used by the detail
+    // view to mirror the cumulative k-means gap that sits to the LEFT (or
+    // ABOVE) the selection's first column / row in the main plot, so detail
+    // cells land at the exact same x / y as their originating main cells.
+    colGapStartPx = 0,
+    rowGapStartPx = 0,
+    // Detail view sets this to false so the dendrograms / cluster-id strips
+    // are NOT redrawn over the detail (they belong to the main view), even
+    // though the cluster objects are still passed through for gap math.
+    showClusterStrip = true,
   },
   ref
 ) {
@@ -267,9 +279,12 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   const totalRowGap = nRows > 0 ? rowGapOffsets[nRows - 1] : 0;
 
   // plotW/plotH include the inter-cluster gaps so background, colourbar, and
-  // row-label x positions all sit past the gapped grid's right edge.
-  const plotW = (basePlotW != null ? basePlotW : cellW * nCols) + totalColGap;
-  const plotH = (basePlotH != null ? basePlotH : cellH * nRows) + totalRowGap;
+  // row-label x positions all sit past the gapped grid's right edge. When the
+  // caller supplies `basePlotW` / `basePlotH` they are taken AS-IS (the
+  // detail view already factors the main's totalColGap into its basePlotW so
+  // the detail SVG matches the main's width).
+  const plotW = basePlotW != null ? basePlotW : cellW * nCols + totalColGap;
+  const plotH = basePlotH != null ? basePlotH : cellH * nRows + totalRowGap;
 
   const computedDendroTop = colIsHier ? 60 : colIsKmeans ? 14 : 0;
   const computedDendroLeft = rowIsHier ? 60 : rowIsKmeans ? 14 : 0;
@@ -330,9 +345,11 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   const colGap = (ci) => colGapOffsets[ci] || 0;
   const rowGap = (ri) => rowGapOffsets[ri] || 0;
   const cellX = (ci) =>
-    bordersOn ? colIx(ci) * cellW + colGap(ci) : Math.round(colIx(ci) * cellW) + colGap(ci);
+    (bordersOn ? colIx(ci) * cellW + colGap(ci) : Math.round(colIx(ci) * cellW) + colGap(ci)) +
+    colGapStartPx;
   const cellY = (ri) =>
-    bordersOn ? rowIx(ri) * cellH + rowGap(ri) : Math.round(rowIx(ri) * cellH) + rowGap(ri);
+    (bordersOn ? rowIx(ri) * cellH + rowGap(ri) : Math.round(rowIx(ri) * cellH) + rowGap(ri)) +
+    rowGapStartPx;
   const cellWPx = (ci) =>
     bordersOn ? cellW : Math.round((colIx(ci) + 1) * cellW) - Math.round(colIx(ci) * cellW);
   const cellHPx = (ri) =>
@@ -945,10 +962,10 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
           </g>
         )}
 
-        {renderColDendrogram()}
-        {renderRowDendrogram()}
-        {renderColClusterStrip()}
-        {renderRowClusterStrip()}
+        {showClusterStrip && renderColDendrogram()}
+        {showClusterStrip && renderRowDendrogram()}
+        {showClusterStrip && renderColClusterStrip()}
+        {showClusterStrip && renderRowClusterStrip()}
 
         <g id="chart" transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
           <g id="plot-area-background">
@@ -1305,6 +1322,7 @@ function ClusterModeControl({ label, mode, setMode, k, setK }) {
               const v = parseInt(e.target.value, 10);
               setK(Math.max(2, Math.min(10, Number.isFinite(v) ? v : 3)));
             }}
+            style={{ width: "100%" }}
           />
         </div>
       )}
@@ -1529,6 +1547,7 @@ function PlotControls({
               step="1"
               min="1"
               onChange={(e) => setKmeansSeed(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              style={{ width: "100%" }}
             />
             <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>
               Change the seed to try a different k-means++ initialisation.
@@ -2447,7 +2466,6 @@ function DetailView({
   // offset the detail columns so they render at the same x-positions as in the
   // main plot. Only applied when the selected columns are a contiguous run in
   // the main's display order (otherwise absolute positioning makes no sense).
-  const basePlotW = baseCellW * mainColCount;
   const mainColIndex = new Map(mainColOrder.map((c, i) => [c, i]));
   const detailColPositions = detailColOrder.map((c) => mainColIndex.get(c));
   let colsContiguous = detailColPositions.length > 0 && detailColPositions.every((p) => p != null);
@@ -2471,6 +2489,26 @@ function DetailView({
   const mainColIsKmeans = mainColCluster && mainColCluster.mode === "kmeans";
   const baseDendroSizeLeft = mainRowIsHier ? 60 : mainRowIsKmeans ? 14 : 0;
   const baseDendroSizeTop = mainColIsHier ? 60 : mainColIsKmeans ? 14 : 0;
+  // Replicate the main HeatmapChart's k-means gap math so the detail can
+  // (1) include the main's totalColGap in its plot width — keeping the
+  // detail SVG the same width as the main — and (2) push detail cells
+  // right by the cumulative gap that sits to the LEFT of the selection's
+  // first column in the main, so contiguous detail columns land at the
+  // exact x positions of their originating main columns.
+  const K_GAP = 10;
+  let mainTotalColGap = 0;
+  let mainColGapStartPx = 0;
+  if (mainColIsKmeans) {
+    let acc = 0;
+    for (let ci = 1; ci < mainColOrder.length; ci++) {
+      const prev = mainColCluster.clusters[mainColOrder[ci - 1]];
+      const cur = mainColCluster.clusters[mainColOrder[ci]];
+      if (cur !== prev) acc += K_GAP;
+      if (ci === cellOffsetCols) mainColGapStartPx = acc;
+    }
+    mainTotalColGap = acc;
+  }
+  const basePlotW = baseCellW * mainColCount + mainTotalColGap;
   const base = fileBaseName(fileName || "heatmap") || "heatmap";
   const detailMatrixRef = useRef(null);
   detailMatrixRef.current = {
@@ -2558,8 +2596,13 @@ function DetailView({
           rawMatrix={rawMatrix.matrix}
           rowOrder={detailRowOrder}
           colOrder={detailColOrder}
-          rowCluster={null}
-          colCluster={null}
+          // Forward main's cluster objects so the detail's gap math matches
+          // (same K_GAP between cluster boundaries inside the selection); the
+          // dendrograms / cluster strips themselves are suppressed via
+          // `showClusterStrip={false}` because they belong to the main view.
+          rowCluster={mainRowCluster}
+          colCluster={mainColCluster}
+          showClusterStrip={false}
           vmin={vis.vmin}
           vmax={vis.vmax}
           palette={vis.palette}
@@ -2574,8 +2617,13 @@ function DetailView({
           baseCellW={baseCellW}
           baseCellH={baseCellH}
           baseColorbarH={baseColorbarH}
+          // basePlotW now includes the main's totalColGap so the detail SVG
+          // matches the main's width; the leading cumulative gap before the
+          // selection is forwarded as colGapStartPx so contiguous detail
+          // columns land at the exact x positions of their originating cells.
           basePlotW={colsContiguous ? basePlotW : undefined}
           cellOffsetCols={colsContiguous ? cellOffsetCols : 0}
+          colGapStartPx={colsContiguous ? mainColGapStartPx : 0}
           baseDendroSizeLeft={baseDendroSizeLeft}
           baseDendroSizeTop={baseDendroSizeTop}
         />

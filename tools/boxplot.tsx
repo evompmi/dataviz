@@ -1728,11 +1728,11 @@ function FilterStep({
         />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setStep("output")} className="dv-btn dv-btn-secondary">
+        <button onClick={() => setStep("output")} className="dv-btn dv-btn-primary">
           Output →
         </button>
         {canPlot && (
-          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
+          <button onClick={() => setStep("plot")} className="dv-btn dv-btn-secondary">
             Plot →
           </button>
         )}
@@ -3752,6 +3752,7 @@ function BoxplotStatsPanel({
             checked={!nsDisabled && showNs}
             disabled={nsDisabled}
             onChange={(e) => setShowNs(e.target.checked)}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
           Show ns
         </label>
@@ -3769,6 +3770,7 @@ function BoxplotStatsPanel({
             type="checkbox"
             checked={showSummary}
             onChange={(e) => setShowSummary(e.target.checked)}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
           Print summary below plot
         </label>
