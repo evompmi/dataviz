@@ -15,8 +15,15 @@ function normalizeHexColor(v) {
 
 function ColorInput({ value, onChange, size = 22 }) {
   const [text, setText] = React.useState(value);
+  // Only sync local text from parent `value` when the current text doesn't
+  // already normalise to that value. Without this guard, typing `#abc` would
+  // commit `#aabbcc` upstream, which round-trips back through this effect and
+  // rewrites the text field to the 6-char form mid-keystroke — the cursor
+  // jumps and the user's `#abc` shorthand gets auto-expanded against their
+  // will. With the guard, external value changes (preset swap, palette reset)
+  // still sync, but self-commits don't clobber what the user typed.
   React.useEffect(() => {
-    setText(value);
+    if (normalizeHexColor(text) !== value) setText(value);
   }, [value]);
   const commit = (v) => {
     const n = normalizeHexColor(v);
