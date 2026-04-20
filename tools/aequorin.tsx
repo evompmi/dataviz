@@ -1684,6 +1684,7 @@ function AequorinStatsPanel({
             checked={!nsDisabled && showNs}
             disabled={nsDisabled}
             onChange={(e) => setShowNs(e.target.checked)}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
           Show ns
         </label>
@@ -1701,6 +1702,7 @@ function AequorinStatsPanel({
             type="checkbox"
             checked={showSummary}
             onChange={(e) => setShowSummary(e.target.checked)}
+            style={{ accentColor: "var(--cta-primary-bg)" }}
           />
           Print summary below plot
         </label>
