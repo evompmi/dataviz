@@ -71,9 +71,9 @@ function sortIntersections(list, mode) {
   }
 }
 
-// Filter by minimum size, then cap at topN (in the order supplied).
-function truncateIntersections(list, { minSize = 1, topN = 0 } = {}) {
-  const filtered = list.filter((r) => r.size >= minSize);
+// Filter by minimum size and minimum degree, then cap at topN (in the order supplied).
+function truncateIntersections(list, { minSize = 1, minDegree = 1, topN = 0 } = {}) {
+  const filtered = list.filter((r) => r.size >= minSize && r.degree >= minDegree);
   if (topN > 0 && filtered.length > topN) return filtered.slice(0, topN);
   return filtered;
 }
@@ -794,6 +794,26 @@ function ConfigureStep({
 }) {
   const selectedCount = pendingSelection.length;
   const canPlot = selectedCount >= 2;
+  const needsCutoff = selectedCount > 8;
+  const [minDegree, setMinDegree] = useState(1);
+  // Reset cutoff back to 1 whenever the gate disappears so it doesn't
+  // silently apply to a later 3-set selection.
+  useEffect(() => {
+    if (!needsCutoff) setMinDegree(1);
+    else setMinDegree((d) => Math.min(d, selectedCount));
+  }, [needsCutoff, selectedCount]);
+
+  const allPossible = selectedCount >= 2 ? Math.pow(2, selectedCount) - 1 : 0;
+  const cutoffPreview = useMemo(() => {
+    if (!needsCutoff) return null;
+    const pendingSets = new Map();
+    pendingSelection.forEach((n) => pendingSets.set(n, allColumnSets.get(n)));
+    const { membershipMap } = computeMemberships(pendingSelection, pendingSets);
+    const all = enumerateIntersections(membershipMap, pendingSelection);
+    const kept = all.filter((r) => r.degree >= minDegree).length;
+    return { nonEmpty: all.length, kept };
+  }, [needsCutoff, pendingSelection, allColumnSets, minDegree]);
+
   const toggle = (name) => {
     setPendingSelection((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
@@ -876,8 +896,45 @@ function ConfigureStep({
         </div>
       </div>
 
+      {needsCutoff && (
+        <div className="dv-panel" style={{ marginTop: 16 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+            Intersection cutoff
+          </p>
+          <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--text-muted)" }}>
+            With {selectedCount} sets, up to {allPossible.toLocaleString()} intersections are
+            possible. Keep only intersections involving at least this many sets:
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              type="number"
+              min={1}
+              max={selectedCount}
+              step={1}
+              value={minDegree}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isFinite(v)) return;
+                setMinDegree(Math.max(1, Math.min(selectedCount, v)));
+              }}
+              className="dv-input"
+              style={{ width: 80 }}
+            />
+            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+              {cutoffPreview
+                ? `${cutoffPreview.kept.toLocaleString()} of ${cutoffPreview.nonEmpty.toLocaleString()} non-empty intersections kept.`
+                : ""}
+            </span>
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--text-faint)" }}>
+            Degree 1 keeps singletons (items unique to one set). You can change this later in the
+            plot controls.
+          </p>
+        </div>
+      )}
+
       <button
-        onClick={() => canPlot && onCommit(pendingSelection)}
+        onClick={() => canPlot && onCommit(pendingSelection, { minDegree })}
         disabled={!canPlot}
         className="dv-btn dv-btn-primary"
         style={{
@@ -1201,6 +1258,14 @@ function PlotControls({
             step={1}
             onChange={sv("minSize")}
           />
+          <SliderControl
+            label="Min degree"
+            value={vis.minDegree}
+            min={1}
+            max={Math.max(1, activeSetNames.length)}
+            step={1}
+            onChange={sv("minDegree")}
+          />
         </div>
       </div>
 
@@ -1298,6 +1363,7 @@ function App() {
     sortMode: "size-desc",
     topN: 20,
     minSize: 1,
+    minDegree: 1,
   };
   const [vis, updVis] = useReducer(
     (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
@@ -1342,8 +1408,13 @@ function App() {
   );
 
   const truncatedIntersections = useMemo(
-    () => truncateIntersections(sortedIntersections, { minSize: vis.minSize, topN: vis.topN }),
-    [sortedIntersections, vis.minSize, vis.topN]
+    () =>
+      truncateIntersections(sortedIntersections, {
+        minSize: vis.minSize,
+        minDegree: vis.minDegree,
+        topN: vis.topN,
+      }),
+    [sortedIntersections, vis.minSize, vis.minDegree, vis.topN]
   );
 
   const canNavigate = useCallback(
@@ -1549,8 +1620,9 @@ function App() {
           allColumnSets={allColumnSets}
           pendingSelection={pendingSelection}
           setPendingSelection={setPendingSelection}
-          onCommit={(names) => {
+          onCommit={(names, { minDegree } = { minDegree: 1 }) => {
             commitSelection(names, allColumnSets);
+            updVis({ minDegree: Math.max(1, minDegree || 1) });
             setStep("plot");
           }}
         />
