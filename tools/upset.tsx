@@ -122,7 +122,7 @@ const TITLE_H_NONE = 16;
 const SUBTITLE_H = 18;
 const TOP_PANEL_H = 200;
 const MATRIX_TOP_PAD = 8;
-const BOTTOM_H = 44;
+const BOTTOM_H = 56;
 const LEFT_MARGIN = 44;
 const LEFT_BAR_MAX = 110;
 const LEFT_LABEL_AREA = 82;
@@ -483,9 +483,9 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
               })}
               <text
                 x={axisLeftX + LEFT_BAR_MAX / 2}
-                y={axisY + 26}
+                y={axisY + 34}
                 textAnchor="middle"
-                fontSize={Math.max(9, fSize - 3)}
+                fontSize={Math.max(10, fSize - 2)}
                 fill={TEXT_MUTED}
                 fontFamily="sans-serif"
               >
