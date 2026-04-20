@@ -1637,7 +1637,24 @@ function App() {
               intersections={sortedIntersections}
             />
 
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+              {selectedMask != null && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMask(null)}
+                  className="dv-btn dv-btn-secondary"
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 14,
+                    zIndex: 2,
+                    padding: "4px 10px",
+                    fontSize: 11,
+                  }}
+                >
+                  Clear selection
+                </button>
+              )}
               <ScrollablePlotCard>
                 <UpsetChart
                   ref={chartRef}
