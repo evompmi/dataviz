@@ -53,6 +53,14 @@ function regionLabel(setNames, mask, allSetNames) {
   return active.join(" ∩ ") + " only";
 }
 
+// Filename-safe rendering of a region label. "A ∩ B only" → "A_and_B_only".
+function regionFilenamePart(label) {
+  return label
+    .replace(/∩/g, "and")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "");
+}
+
 // ── Venn Geometry ────────────────────────────────────────────────────────────
 
 function circleOverlapArea(r1, r2, d) {
@@ -1622,7 +1630,7 @@ function ItemListPanel({ intersection, allSetNames, fileName }) {
             downloadCsv(
               ["Item"],
               intersection.items.map((i) => [i]),
-              `${baseName}_venn_${label.replace(/[^a-zA-Z0-9]/g, "_")}.csv`
+              `${baseName}_venn_${regionFilenamePart(label)}.csv`
             );
           }}
           className="dv-btn dv-btn-secondary"
@@ -1670,6 +1678,7 @@ function PlotControls({
   allSets,
   activeSetNames,
   activeSets,
+  intersections,
   onToggleSet,
   setColors,
   onColorChange,
@@ -1705,6 +1714,8 @@ function PlotControls({
         extraDownloads={[
           {
             label: "CSV",
+            title:
+              "Download the membership matrix — one row per item, a 0/1 column for each active set (long/tidy format)",
             onClick: () => {
               const allItems = new Set();
               for (const n of activeSetNames) for (const item of allSets.get(n)) allItems.add(item);
@@ -1716,6 +1727,34 @@ function PlotControls({
                   ...activeSetNames.map((n) => (allSets.get(n).has(item) ? "1" : "0")),
                 ]);
               downloadCsv(headers, rows, `${baseName}_venn_membership.csv`);
+            },
+          },
+          {
+            // One CSV per non-empty region. Browsers may prompt once to
+            // allow multiple downloads from a single user gesture — accepting
+            // is expected. Empty regions are skipped (an empty CSV is noise,
+            // not a useful record).
+            label: "Regions",
+            title:
+              "Download one CSV per non-empty region (fires multiple saves — your browser may ask once to allow them)",
+            onClick: () => {
+              const nonEmpty = intersections.filter((r) => r.size > 0);
+              nonEmpty.forEach((r, i) => {
+                const label = regionLabel(r.setNames, r.mask, activeSetNames);
+                const name = `${baseName}_venn_${regionFilenamePart(label)}.csv`;
+                // Stagger slightly so the browser reliably handles each as
+                // its own download (a single synchronous loop of <a>.click()
+                // can race inside some engines).
+                setTimeout(
+                  () =>
+                    downloadCsv(
+                      ["Item"],
+                      r.items.map((it) => [it]),
+                      name
+                    ),
+                  i * 40
+                );
+              });
             },
           },
         ]}
@@ -2171,6 +2210,7 @@ function App() {
               allSets={sets}
               activeSetNames={activeSetNames}
               activeSets={activeSets}
+              intersections={intersections}
               onToggleSet={handleToggleSet}
               setColors={setColors}
               onColorChange={handleColorChange}

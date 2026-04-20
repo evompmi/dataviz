@@ -3078,6 +3078,8 @@ function PlotControls({
         extraDownloads={[
           {
             label: "CSV",
+            title:
+              "Download calibrated [Ca²⁺] over time — one row per time-point, one column per sample (calibration applied)",
             onClick: () => downloadCalibrated(),
           },
         ]}
