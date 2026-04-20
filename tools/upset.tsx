@@ -96,14 +96,20 @@ function intersectionIdKey(setIndices, setNames) {
   return setIndices.map((i) => svgSafeId(setNames[i])).join("-") || "empty";
 }
 
-// Build axis ticks for a bar panel whose domain is [0, max]: start from the
-// pretty ticks makeTicks produces, drop any ≥ max, and append the true max as
-// the final tick. This keeps bar lengths faithful (max reaches full panel)
-// while the inner ticks stay on nicely rounded values.
+// Build axis ticks for a bar panel: evenly spaced pretty ticks from 0 up to a
+// domain max that is strictly greater than the data max (rounded up to the
+// next niceStep). Callers scale bars against the last tick so every interval
+// is equal and the largest bar stops short of the panel edge.
 function buildBarTicks(max, count) {
-  if (!(max > 0)) return [0];
-  const pretty = makeTicks(0, max, count).filter((t) => t < max);
-  return [...pretty, max];
+  if (!(max > 0)) return [0, 1];
+  const step = niceStep(max, count);
+  const domainMax = Math.ceil((max + step * 1e-9) / step) * step;
+  const last = domainMax > max ? domainMax : domainMax + step;
+  const ticks = [];
+  for (let v = 0; v <= last + step * 0.001; v += step) {
+    ticks.push(parseFloat(v.toPrecision(10)));
+  }
+  return ticks;
 }
 
 // ── Layout constants ─────────────────────────────────────────────────────────
@@ -182,18 +188,20 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   // scale proportionally instead of clipping.
   const SVG_W = Math.max(PREFERRED_SVG_W, MATRIX_LEFT_X + Math.max(0, nCols) * colW + RIGHT_MARGIN);
 
-  // Top (intersection-size) bar area. Scale against the true max so the
-  // tallest bar always reaches TOP_PANEL_H; pretty ticks above max are
-  // dropped and the true max is appended as the final label.
+  // Top (intersection-size) bar area. Ticks are evenly spaced pretty values;
+  // the domain max (last tick) is strictly above the data max so the largest
+  // bar stops just below the panel edge rather than touching it.
   const topPanelBottom = topPanelY + TOP_PANEL_H;
   const topAxisMax = Math.max(1, ...intersections.map((r) => r.size));
   const topTicks = buildBarTicks(topAxisMax, 4);
-  const topBarScale = (v) => (v / topAxisMax) * TOP_PANEL_H;
+  const topDomainMax = topTicks[topTicks.length - 1];
+  const topBarScale = (v) => (v / topDomainMax) * TOP_PANEL_H;
 
   // Left (set-size) bar area — same scaling strategy as the top panel.
   const setSizeMax = Math.max(1, ...setNames.map((n) => setSizes.get(n) || 0));
   const leftTicks = buildBarTicks(setSizeMax, 3);
-  const leftBarScale = (v) => (v / setSizeMax) * LEFT_BAR_MAX;
+  const leftDomainMax = leftTicks[leftTicks.length - 1];
+  const leftBarScale = (v) => (v / leftDomainMax) * LEFT_BAR_MAX;
 
   const colX = (i) => MATRIX_LEFT_X + colW * (i + 0.5);
   const rowY = (i) => matrixY + rowH * (i + 0.5);

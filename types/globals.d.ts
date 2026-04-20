@@ -64,6 +64,7 @@ declare global {
   function powerChi2(w: number, n: number, alpha: number, df: number): number;
   function fFromGroupMeans(means: number[], sd: number): number;
   function makeTicks(min: number, max: number, approxN: number): number[];
+  function niceStep(range: number, approxN: number): number;
   interface LogTick {
     value: number;
     major: boolean;
