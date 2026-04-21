@@ -7,7 +7,7 @@ const prettier = require("eslint-config-prettier");
 
 const compiledTools = [
   "tools/aequorin.js",
-  "tools/boxplot.js",
+  "tools/boxplot/index.js",
   "tools/heatmap.js",
   "tools/lineplot.js",
   "tools/molarity.js",
