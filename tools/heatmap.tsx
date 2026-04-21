@@ -1474,7 +1474,6 @@ function PlotControls({
   updVis,
   cellBorder,
   updCellBorder,
-  chartRef,
   matrixRef,
   rawMatrix,
   resetAll,
@@ -1528,8 +1527,6 @@ function PlotControls({
       }}
     >
       <ActionsPanel
-        onDownloadSvg={() => downloadSvg(chartRef.current, `${baseName}_heatmap.svg`)}
-        onDownloadPng={() => downloadPng(chartRef.current, `${baseName}_heatmap.png`, 2)}
         onReset={resetAll}
         extraDownloads={[
           {
@@ -2418,7 +2415,6 @@ function App() {
               updVis={updVis}
               cellBorder={cellBorder}
               updCellBorder={updCellBorder}
-              chartRef={chartRef}
               matrixRef={matrixRef}
               rawMatrix={rawMatrix}
               resetAll={resetAll}
@@ -2467,23 +2463,52 @@ function App() {
                     minWidth: 0,
                   }}
                 >
-                  {hasSelection && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignSelf: "stretch",
-                      }}
-                    >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      alignSelf: "stretch",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      {hasSelection && (
+                        <button
+                          onClick={clearSelection}
+                          className="dv-btn dv-btn-secondary"
+                          style={{ padding: "4px 10px", fontSize: 11 }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button
-                        onClick={clearSelection}
-                        className="dv-btn dv-btn-secondary"
+                        onClick={(e) => {
+                          const bn = fileBaseName(fileName || "heatmap") || "heatmap";
+                          downloadSvg(chartRef.current, `${bn}_heatmap.svg`);
+                          flashSaved(e.currentTarget);
+                        }}
+                        className="dv-btn dv-btn-dl"
                         style={{ padding: "4px 10px", fontSize: 11 }}
                       >
-                        Clear
+                        ⬇ SVG
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          const bn = fileBaseName(fileName || "heatmap") || "heatmap";
+                          downloadPng(chartRef.current, `${bn}_heatmap.png`, 2);
+                          flashSaved(e.currentTarget);
+                        }}
+                        className="dv-btn dv-btn-dl"
+                        style={{ padding: "4px 10px", fontSize: 11 }}
+                      >
+                        ⬇ PNG
                       </button>
                     </div>
-                  )}
+                  </div>
                   <HeatmapChart
                     ref={chartRef}
                     rowLabels={rawMatrix.rowLabels}
@@ -2602,8 +2627,6 @@ function DetailView({
   }, [mainColCluster, mainColIsKmeans, mainColIsHier, detailColOrder]);
   const detailShowDendrogram =
     (mainRowIsHier && detailRowCluster) || (mainColIsHier && detailColCluster);
-  const nR = detailRowOrder.length;
-  const nC = detailColOrder.length;
 
   const downloadButton = (label, onClick) => (
     <button
@@ -2622,7 +2645,7 @@ function DetailView({
     <div
       className="dv-panel dv-plot-card"
       style={{
-        padding: 16,
+        padding: 20,
         background: "var(--plot-card-bg)",
         borderColor: "var(--plot-card-border)",
         display: "flex",
@@ -2641,11 +2664,8 @@ function DetailView({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
-          Detail — {nR} row{nR === 1 ? "" : "s"} × {nC} col{nC === 1 ? "" : "s"}
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          {detailShowDendrogram && (
+        <div style={{ alignItems: "center" }}>
+          {detailShowDendrogram ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Dendrogram</span>
               <div className="dv-seg" role="group" aria-label="Dendrogram stroke width">
@@ -2657,22 +2677,22 @@ function DetailView({
                       "dv-seg-btn" + (detailDendroStroke === k ? " dv-seg-btn-active" : "")
                     }
                     onClick={() => setDetailDendroStroke(k)}
-                    style={{ fontSize: 11, padding: "3px 8px" }}
+                    style={{ fontSize: 11, padding: "4px 10px" }}
                   >
                     {k.charAt(0).toUpperCase() + k.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
+          ) : null}
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {downloadButton("SVG", () =>
+            downloadSvg(detailChartRef.current, `${base}_heatmap_detail.svg`)
           )}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {downloadButton("SVG", () =>
-              downloadSvg(detailChartRef.current, `${base}_heatmap_detail.svg`)
-            )}
-            {downloadButton("PNG", () =>
-              downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
-            )}
-          </div>
+          {downloadButton("PNG", () =>
+            downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
+          )}
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
