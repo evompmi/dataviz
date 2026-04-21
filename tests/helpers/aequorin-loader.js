@@ -1,28 +1,26 @@
-// Loads the aequorin data pipeline into a Node vm context for fuzz / unit
-// tests. The calibration + condition-detection helpers live at the top of
-// tools/aequorin.tsx (lines 1–177 — pure JS, no JSX, no TypeScript). We
-// slice those lines out and run them under a stubbed React, piggy-backing
-// on shared.js for PALETTE + parseWideMatrix.
+// Loads the aequorin pure helpers (tools/aequorin/helpers.ts) plus shared.js /
+// stats.js into a Node vm context for fuzz / unit tests. helpers.ts is a pure
+// ES module (calibration, condition detection, smoothing, time conversion,
+// SVG path builders) with no React/DOM dependency, so we transform it to
+// CommonJS with esbuild and evaluate it in a vm context that already has the
+// shared globals (PALETTE, parseWideMatrix, …) available.
 
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
+const esbuild = require("esbuild");
 
 const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
-const aequorinSrc = fs.readFileSync(path.join(toolsDir, "aequorin.tsx"), "utf8");
-// Lines at the top are pure JS: DEFAULT_* constants, calibrate, calibrateHill,
-// calibrateGeneralized, detectConditions, smooth. The chart components
-// (React) start further down. We slice generously and strip the ES-module
-// `import` lines that the _shell/* scaffold adds at the very top — vm.run
-// can't evaluate them in script mode.
-const aequorinHelpers = aequorinSrc
-  .split("\n")
-  .slice(0, 222)
-  .filter((line) => !/^\s*import\s/.test(line))
-  .join("\n");
+const helpersSrc = fs.readFileSync(path.join(toolsDir, "aequorin/helpers.ts"), "utf8");
 
+const helpersCjs = esbuild.transformSync(helpersSrc, {
+  loader: "ts",
+  format: "cjs",
+}).code;
+
+const moduleObj = { exports: {} };
 const ctx = {
   Math,
   parseInt,
@@ -37,39 +35,23 @@ const ctx = {
   NaN,
   Set,
   Map,
-  setTimeout: () => {},
-  document: {
-    createElement: () => ({}),
-    body: { appendChild: () => {}, removeChild: () => {} },
-  },
-  URL: { createObjectURL: () => "", revokeObjectURL: () => {} },
-  Blob: function () {},
-  XMLSerializer: function () {
-    this.serializeToString = () => "";
-  },
-  React: {
-    useState: () => [null, () => {}],
-    useReducer: () => [null, () => {}],
-    useMemo: (fn) => fn(),
-    useCallback: (fn) => fn,
-    useRef: () => ({ current: null }),
-    useEffect: () => {},
-    forwardRef: (fn) => fn,
-    memo: (c) => c,
-    createElement: () => null,
-  },
+  module: moduleObj,
+  exports: moduleObj.exports,
 };
 
 vm.createContext(ctx);
 vm.runInContext(sharedSrc, ctx);
 vm.runInContext(statsSrc, ctx);
-vm.runInContext(aequorinHelpers, ctx);
+vm.runInContext(helpersCjs, ctx);
 
 module.exports = {
   parseWideMatrix: ctx.parseWideMatrix,
-  calibrate: ctx.calibrate,
-  calibrateHill: ctx.calibrateHill,
-  calibrateGeneralized: ctx.calibrateGeneralized,
-  detectConditions: ctx.detectConditions,
-  smooth: ctx.smooth,
+  calibrate: moduleObj.exports.calibrate,
+  calibrateHill: moduleObj.exports.calibrateHill,
+  calibrateGeneralized: moduleObj.exports.calibrateGeneralized,
+  detectConditions: moduleObj.exports.detectConditions,
+  smooth: moduleObj.exports.smooth,
+  convertTime: moduleObj.exports.convertTime,
+  buildAreaD: moduleObj.exports.buildAreaD,
+  buildLineD: moduleObj.exports.buildLineD,
 };

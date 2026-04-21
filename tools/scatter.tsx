@@ -3,6 +3,7 @@
 
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { fmtTick, SHAPES, MARGIN, VBW, VBH, computeLinearRegression } from "./scatter/helpers";
 
 const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
 
@@ -21,14 +22,8 @@ const VIS_INIT_SCATTER = {
 
 // COLOR_PALETTES and interpolateColor are now globals from shared.js so that
 // heatmap and scatter share the exact same colour-scale definitions.
-
-function fmtTick(t) {
-  if (t === 0) return "0";
-  const abs = Math.abs(t);
-  if (abs >= 10000 || (abs < 0.01 && abs > 0)) return t.toExponential(1);
-  if (abs >= 100) return t.toFixed(0);
-  return parseFloat(t.toPrecision(3)).toString();
-}
+// Pure helpers (fmtTick, SHAPES, MARGIN, VBW, VBH, computeLinearRegression)
+// live in tools/scatter/helpers.ts.
 
 // Palette strip
 
@@ -62,8 +57,6 @@ function PaletteStrip({
 }
 
 // ── Shapes ──────────────────────────────────────────────────────────────────
-
-const SHAPES = ["circle", "triangle", "cross", "square"];
 
 function renderPoint(shape, cx, cy, r, props) {
   const { fill, fillOpacity, stroke, strokeWidth, key } = props;
@@ -141,10 +134,6 @@ function ShapePreview({ shape, size = 16, color = "#666" }) {
     </svg>
   );
 }
-
-const MARGIN = { top: 28, right: 28, bottom: 56, left: 70 };
-const VBW = 800,
-  VBH = 500;
 
 const ScatterChart = forwardRef<SVGSVGElement, any>(function ScatterChart(
   {
@@ -2228,34 +2217,10 @@ function App() {
   }, [parsed, xCol, yCol]);
 
   // Linear regression over filtered data (simple y ~ x)
-  const regressionStats = useMemo(() => {
-    if (!filteredData || filteredData.length < 2) return { valid: false };
-    let n = 0,
-      sx = 0,
-      sy = 0,
-      sxx = 0,
-      syy = 0,
-      sxy = 0;
-    for (const row of filteredData) {
-      const x = row[xCol],
-        y = row[yCol];
-      if (x == null || y == null || isNaN(x) || isNaN(y)) continue;
-      n++;
-      sx += x;
-      sy += y;
-      sxx += x * x;
-      syy += y * y;
-      sxy += x * y;
-    }
-    if (n < 2) return { valid: false };
-    const denomX = n * sxx - sx * sx;
-    if (denomX === 0) return { valid: false };
-    const slope = (n * sxy - sx * sy) / denomX;
-    const intercept = (sy - slope * sx) / n;
-    const denomY = n * syy - sy * sy;
-    const r2 = denomY === 0 ? NaN : Math.pow(n * sxy - sx * sy, 2) / (denomX * denomY);
-    return { valid: true, slope, intercept, r2, n };
-  }, [filteredData, xCol, yCol]);
+  const regressionStats = useMemo(
+    () => computeLinearRegression(filteredData, xCol, yCol),
+    [filteredData, xCol, yCol]
+  );
 
   // Effective axis values: user override or auto
   const effAxis = {
