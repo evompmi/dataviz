@@ -100,6 +100,8 @@ const TOOL_ICONS = {
     '<svg viewBox="0 0 44 44" fill="none" stroke="#648FFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,34 16,24 26,28 36,12"/><circle cx="6" cy="34" r="2.5" fill="#648FFF"/><circle cx="16" cy="24" r="2.5" fill="#648FFF"/><circle cx="26" cy="28" r="2.5" fill="#648FFF"/><circle cx="36" cy="12" r="2.5" fill="#648FFF"/></svg>',
   heatmap:
     '<svg viewBox="0 0 44 44" fill="none" stroke="none"><rect x="6" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.2"/><rect x="17" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="28" y="6" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="6" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.5"/><rect x="17" y="17" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="28" y="17" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="6" y="28" width="10" height="10" fill="#648FFF" fill-opacity="0.8"/><rect x="17" y="28" width="10" height="10" fill="#785EF0" fill-opacity="0.6"/><rect x="28" y="28" width="10" height="10" fill="#785EF0"/></svg>',
+  upset:
+    '<svg viewBox="0 0 44 44" fill="none" stroke="none"><rect x="10" y="4" width="4" height="10" fill="#648FFF"/><rect x="18" y="7" width="4" height="7" fill="#648FFF"/><rect x="26" y="10" width="4" height="4" fill="#648FFF"/><rect x="34" y="11" width="4" height="3" fill="#648FFF"/><line x1="12" y1="22" x2="12" y2="36" stroke="#333333" stroke-width="1.5"/><line x1="20" y1="22" x2="20" y2="36" stroke="#333333" stroke-width="1.5"/><circle cx="12" cy="22" r="2.5" fill="#333333"/><circle cx="20" cy="22" r="2.5" fill="#333333"/><circle cx="28" cy="22" r="2.5" fill="#DDDDDD"/><circle cx="36" cy="22" r="2.5" fill="#DDDDDD"/><circle cx="12" cy="29" r="2.5" fill="#333333"/><circle cx="20" cy="29" r="2.5" fill="#DDDDDD"/><circle cx="28" cy="29" r="2.5" fill="#333333"/><circle cx="36" cy="29" r="2.5" fill="#DDDDDD"/><circle cx="12" cy="36" r="2.5" fill="#DDDDDD"/><circle cx="20" cy="36" r="2.5" fill="#333333"/><circle cx="28" cy="36" r="2.5" fill="#DDDDDD"/><circle cx="36" cy="36" r="2.5" fill="#333333"/></svg>',
 };
 
 function toolIcon(name, size, opts) {
@@ -446,6 +448,43 @@ function reshapeWide(rows, gi, vi) {
   const w = [];
   for (let i = 0; i < mx; i++) w.push(names.map((n) => (g[n][i] != null ? g[n][i] : "")));
   return { headers: names, rows: w };
+}
+
+// ── Set-membership parsing (Venn / UpSet) ─────────────────────────────────────
+
+// Wide format: each column is one set, cells are item ids. Preserves the
+// column order via Map so downstream colour/index assignment is deterministic.
+function parseSetData(headers, rows) {
+  const sets = new Map();
+  for (let ci = 0; ci < headers.length; ci++) {
+    const s = new Set();
+    for (const r of rows) {
+      const v = (r[ci] || "").trim();
+      if (v) s.add(v);
+    }
+    if (s.size > 0) sets.set(headers[ci], s);
+  }
+  const setNames = [...sets.keys()];
+  return { setNames, sets };
+}
+
+// Long format: exactly two columns — item id, set name. Pivots into the same
+// {setNames, sets} shape as parseSetData. setNames are ordered by first
+// appearance in the input. Throws if the table doesn't have exactly 2 columns.
+function parseLongFormatSets(headers, rows) {
+  if (!headers || headers.length !== 2) {
+    throw new Error("Long format requires exactly 2 columns (item, set).");
+  }
+  const sets = new Map();
+  for (const r of rows) {
+    const item = (r[0] || "").trim();
+    const setName = (r[1] || "").trim();
+    if (!item || !setName) continue;
+    if (!sets.has(setName)) sets.set(setName, new Set());
+    sets.get(setName).add(item);
+  }
+  const setNames = [...sets.keys()];
+  return { setNames, sets };
 }
 
 // ── Statistics ────────────────────────────────────────────────────────────────

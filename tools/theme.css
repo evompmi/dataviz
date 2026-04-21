@@ -276,3 +276,9 @@
 [data-theme="dark"] .dv-plot-card .dv-plot-card {
   filter: none;
 }
+
+/* Dim the scroll-edge fade overlays to match the .dv-plot-card beneath them
+   so dark mode doesn't read as bright slabs against the dimmed plot. */
+[data-theme="dark"] .dv-scroll-fade {
+  filter: brightness(0.85);
+}

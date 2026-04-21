@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        var t = localStorage.getItem("dataviz-theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+    <title>UpSet plot</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='6' y='4' width='4' height='8' fill='%23648FFF'/><rect x='14' y='6' width='4' height='6' fill='%23648FFF'/><rect x='22' y='8' width='4' height='4' fill='%23648FFF'/><circle cx='8' cy='20' r='2' fill='%23333'/><circle cx='16' cy='20' r='2' fill='%23333'/><circle cx='24' cy='20' r='2' fill='%23DDD'/><circle cx='8' cy='26' r='2' fill='%23333'/><circle cx='16' cy='26' r='2' fill='%23DDD'/><circle cx='24' cy='26' r='2' fill='%23333'/></svg>"
+    />
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="components.css" />
+    <script src="../vendor/react.production.min.js"></script>
+    <script src="../vendor/react-dom.production.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: monospace;
+        background: var(--page-bg);
+        background-image: radial-gradient(circle, var(--page-bg-dot) 0.8px, transparent 0.8px);
+        background-size: 20px 20px;
+        color: var(--text);
+      }
+    </style>
+    <script src="theme.js"></script>
+    <script src="shared.js"></script>
+    <script src="shared-color-input.js"></script>
+    <script src="shared-file-drop.js"></script>
+    <script src="shared-core.js"></script>
+    <script src="shared-ui.js"></script>
+    <script src="shared-prefs.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="upset_example.js"></script>
+    <script src="upset.js"></script>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 // tools/venn.tsx contains TS generics and JSX intermixed with ~950 lines of
 // pure-math helpers, so unlike the boxplot/heatmap/aequorin loaders we
 // transform the slice through esbuild first (esbuild is already a
-// devDependency — no new install). The slice stops at line 978 where
+// devDependency — no new install). The slice stops just before
 // `VennChart = forwardRef<...>` starts the React-heavy render layer.
 
 const fs = require("fs");
@@ -14,7 +14,7 @@ const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
 const vennSrc = fs.readFileSync(path.join(toolsDir, "venn.tsx"), "utf8");
-const vennHelpersSlice = vennSrc.split("\n").slice(0, 977).join("\n");
+const vennHelpersSlice = vennSrc.split("\n").slice(0, 963).join("\n");
 const vennHelpers = esbuild.transformSync(vennHelpersSlice, {
   loader: "tsx",
   jsx: "transform",
