@@ -1191,10 +1191,16 @@ function App() {
     (target) => {
       if (target === "upload") return true;
       if (target === "configure") return allColumnNames.length >= 2;
-      if (target === "plot") return setNames.length >= 2;
+      if (target === "plot") {
+        // When leaving configure, gate on the pending (pre-commit) selection
+        // so the nav button tracks the checkboxes the user just edited.
+        if (step === "configure")
+          return pendingSelection.length >= 2 && pendingSelection.length <= 3;
+        return setNames.length >= 2;
+      }
       return false;
     },
-    [allColumnNames, setNames]
+    [allColumnNames, setNames, step, pendingSelection]
   );
 
   const commitSelection = useCallback((names, allSets) => {
@@ -1210,6 +1216,28 @@ function App() {
     setSetColors(cols);
     setSelectedMask(null);
   }, []);
+
+  // StepNavBar's top "Plot" tab routes via shell.setStep directly, so without
+  // this intercept the user's configure-step checkbox edits would be lost
+  // (only the bottom "Plot →" button ran commitSelection). Commit the
+  // pending selection if it differs from the current one before navigating.
+  const navigateStep = useCallback(
+    (target) => {
+      if (
+        target === "plot" &&
+        step === "configure" &&
+        pendingSelection.length >= 2 &&
+        pendingSelection.length <= 3
+      ) {
+        const changed =
+          pendingSelection.length !== setNames.length ||
+          pendingSelection.some((n) => !setNames.includes(n));
+        if (changed) commitSelection(pendingSelection, allColumnSets);
+      }
+      setStep(target);
+    },
+    [step, pendingSelection, setNames, allColumnSets, commitSelection, setStep]
+  );
 
   const doParse = useCallback(
     (text, sep) => {
@@ -1323,7 +1351,7 @@ function App() {
 
   return (
     <PlotToolShell
-      state={shell}
+      state={{ ...shell, setStep: navigateStep }}
       toolName="venn"
       title="Venn Diagram"
       subtitle="Set overlaps with data extraction (2–3 sets)"
