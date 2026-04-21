@@ -1,7 +1,23 @@
 // heatmap.tsx — editable source. Run `npm run build` to compile to heatmap.js.
 // Do NOT edit the .js file directly.
 
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
+
+const VIS_INIT_HEATMAP = {
+  palette: "viridis",
+  invertPalette: false,
+  vmin: 0,
+  vmax: 1,
+  plotTitle: "",
+  plotSubtitle: "",
+  colAxisLabel: "",
+  rowAxisLabel: "",
+  showRowLabels: false,
+  showColLabels: true,
+};
 
 // ── Palette strip (same shape as scatter.tsx's local helper) ─────────────────
 
@@ -2173,12 +2189,20 @@ const EXAMPLE_CSV = (() => {
 // ── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [fileName, setFileName] = useState("");
-  const [step, setStep] = useState("upload");
-  const [parseError, setParseError] = useState(null);
-  const [sepOverride, setSepOverride] = useState("");
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
+  const shell = usePlotToolState("heatmap", VIS_INIT_HEATMAP);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
 
   const [rawMatrix, setRawMatrix] = useState({ rowLabels: [], colLabels: [], matrix: [] });
   const [warnings, setWarnings] = useState({ nonNumeric: 0 });
@@ -2191,30 +2215,6 @@ function App() {
   const [kmeansSeed, setKmeansSeed] = useState(1);
   const [distanceMetric, setDistanceMetric] = useState("euclidean");
   const [linkageMethod, setLinkageMethod] = useState("average");
-
-  const visInit = {
-    palette: "viridis",
-    invertPalette: false,
-    vmin: 0,
-    vmax: 1,
-    plotTitle: "",
-    plotSubtitle: "",
-    colAxisLabel: "",
-    rowAxisLabel: "",
-    // Row labels default OFF — at hundreds-of-rows matrices the labels don't
-    // fit next to 2–3 px-tall cells anyway, and showing them forces a wide
-    // right margin. Users with short matrices can re-enable via PlotControls.
-    showRowLabels: false,
-    showColLabels: true,
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("heatmap", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("heatmap", vis);
-  }, [vis]);
 
   const cellBorderInit = { on: false, color: "#ffffff", width: 0.5 };
   const [cellBorder, updCellBorder] = useReducer(
@@ -2462,49 +2462,15 @@ function App() {
   const oversize = nRows > 500 || nCols > 500;
 
   return (
-    <div style={{ padding: "24px 32px", maxWidth: 1400 }}>
-      <PageHeader
-        toolName="heatmap"
-        title="Heatmap"
-        subtitle="Matrix view with hierarchical clustering"
-        right={<PrefsPanel tool="heatmap" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "configure", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      {parseError && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: "10px 14px",
-            borderRadius: 8,
-            background: "var(--danger-bg)",
-            border: "1px solid var(--danger-border)",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>🚫</span>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--danger-text)",
-              fontWeight: 600,
-              whiteSpace: "pre-line",
-            }}
-          >
-            {parseError}
-          </span>
-        </div>
-      )}
-
+    <PlotToolShell
+      state={shell}
+      toolName="heatmap"
+      title="Heatmap"
+      subtitle="Matrix view with hierarchical clustering"
+      visInit={VIS_INIT_HEATMAP}
+      steps={["upload", "configure", "plot"]}
+      canNavigate={canNavigate}
+    >
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -2740,7 +2706,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

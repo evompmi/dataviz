@@ -1,6 +1,9 @@
 // venn.jsx — editable source. Run `npm run build` to compile to venn.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
+const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
 // parseSetData lives in tools/shared.js (shared with the UpSet tool).
 
@@ -497,6 +500,15 @@ const VENN_CONFIG = {
   SUBSET_CLEARANCE: 3, // px margin when a subset sits inside its superset
   DISJOINT_CLEARANCE: 2, // px gap between disjoint circles
   OVERLAP_CLEARANCE: 2, // px overlap enforced when sets must intersect
+};
+
+const VIS_INIT_VENN = {
+  plotTitle: "",
+  plotBg: "#ffffff",
+  fontSize: 14,
+  fillOpacity: 0.25,
+  readabilityBlend: VENN_CONFIG.DEFAULT_READABILITY_BLEND,
+  showOutline: true,
 };
 
 function clampRadii(radii) {
@@ -2071,12 +2083,21 @@ function PlotControls({
 // ── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [fileName, setFileName] = useState("");
-  const [step, setStep] = useState("upload");
-  const [parseError, setParseError] = useState(null);
-  const [sepOverride, setSepOverride] = useState("");
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
+  const shell = usePlotToolState("venn", VIS_INIT_VENN);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
   const [setNames, setSetNames] = useState([]);
   const [sets, setSets] = useState(new Map());
   const [setColors, setSetColors] = useState({});
@@ -2089,23 +2110,6 @@ function App() {
   const [pendingSelection, setPendingSelection] = useState([]);
 
   const [proportional, setProportional] = useState(false);
-
-  const visInit = {
-    plotTitle: "",
-    plotBg: "#ffffff",
-    fontSize: 14,
-    fillOpacity: 0.25,
-    readabilityBlend: VENN_CONFIG.DEFAULT_READABILITY_BLEND,
-    showOutline: true,
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("venn", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("venn", vis);
-  }, [vis]);
 
   const chartRef = useRef();
   const [layoutInfo, setLayoutInfo] = useState({
@@ -2265,49 +2269,15 @@ function App() {
   const selectedIntersection = intersections.find((g) => g.mask === selectedMask) || null;
 
   return (
-    <div style={{ padding: "24px 32px", maxWidth: 1200 }}>
-      <PageHeader
-        toolName="venn"
-        title="Venn Diagram"
-        subtitle="Set overlaps with data extraction (2–3 sets)"
-        right={<PrefsPanel tool="venn" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "configure", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      {parseError && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: "10px 14px",
-            borderRadius: 8,
-            background: "var(--danger-bg)",
-            border: "1px solid var(--danger-border)",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>🚫</span>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--danger-text)",
-              fontWeight: 600,
-              whiteSpace: "pre-line",
-            }}
-          >
-            {parseError}
-          </span>
-        </div>
-      )}
-
+    <PlotToolShell
+      state={shell}
+      toolName="venn"
+      title="Venn Diagram"
+      subtitle="Set overlaps with data extraction (2–3 sets)"
+      visInit={VIS_INIT_VENN}
+      steps={["upload", "configure", "plot"]}
+      canNavigate={canNavigate}
+    >
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -2473,7 +2443,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

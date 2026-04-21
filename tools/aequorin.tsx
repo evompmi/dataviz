@@ -1,11 +1,55 @@
 // aequorin.jsx — editable source. Run `npm run build` to compile to aequorin.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
+const { useState, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
 
 const DEFAULT_KR = 7;
 const DEFAULT_KTR = 118;
 const DEFAULT_KD = 7;
 const DEFAULT_HILL_N = 3;
+
+const VIS_INIT_AEQUORIN = {
+  xStart: 10,
+  xEnd: 800,
+  yMin: 0.1,
+  yMax: 1.4,
+  faceted: false,
+  plotTitle: "",
+  plotSubtitle: "",
+  smoothWidth: 3,
+  plotBg: "#ffffff",
+  showGrid: false,
+  lineWidth: 2,
+  ribbonOpacity: 0.3,
+  gridColor: "#e0e0e0",
+  timeStep: 1,
+  baseUnit: "s",
+  displayUnit: "s",
+  showInset: false,
+  insetFillOpacity: 0.7,
+  insetBarWidth: 70,
+  insetBarGap: 0,
+  insetYMinCustom: "",
+  insetYMaxCustom: "",
+  insetW: 400,
+  insetH: 200,
+  insetErrorType: "none",
+  insetShowBarOutline: false,
+  insetBarOutlineColor: "#333333",
+  insetBarStrokeWidth: 1,
+  insetShowGrid: false,
+  insetGridColor: "#e0e0e0",
+  insetErrorStrokeWidth: 0.8,
+  insetXFontSize: 7,
+  insetYFontSize: 7,
+  insetXLabelAngle: -45,
+  showColumnOverlay: false,
+  insetShowPoints: false,
+  insetPointSize: 3,
+  insetPointColor: "#333333",
+};
 const TIME_UNITS = [
   { key: "ms", label: "milliseconds" },
   { key: "s", label: "seconds" },
@@ -3696,12 +3740,29 @@ function SampleSelectionOverlay({
 // ── Main App ─────────────────────────────────────────────────────────────────
 
 function App() {
+  const shell = usePlotToolState("aequorin", VIS_INIT_AEQUORIN);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
+  // Aequorin keeps parseError as local state (separate from shell.parseError)
+  // because it renders a dual-variant banner: "⚠️"-prefixed strings show as a
+  // yellow warning (e.g. partial-parse notices), anything else shows as a red
+  // error. The shared ParseErrorBanner only renders the red variant, so we
+  // bypass PlotToolShell's auto-banner and render our own below the shell's
+  // CommaFixBanner.
+  const [parseError, setParseError] = useState<string | null>(null);
+
   const [rawText, setRawText] = useState(null);
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
-  const [sepOverride, setSepOverride] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [parseError, setParseError] = useState(null);
   const [formula, setFormula] = useState("none");
   const [Kr, setKr] = useState(DEFAULT_KR);
   const [Ktr, setKtr] = useState(DEFAULT_KTR);
@@ -3710,55 +3771,6 @@ function App() {
   const [conditions, setConditions] = useState([]);
   const [poolReplicates, setPoolReplicates] = useState(true);
   const [columnEnabled, setColumnEnabled] = useState({});
-  const visInit = {
-    xStart: 10,
-    xEnd: 800,
-    yMin: 0.1,
-    yMax: 1.4,
-    faceted: false,
-    plotTitle: "",
-    plotSubtitle: "",
-    smoothWidth: 3,
-    plotBg: "#ffffff",
-    showGrid: false,
-    lineWidth: 2,
-    ribbonOpacity: 0.3,
-    gridColor: "#e0e0e0",
-    timeStep: 1,
-    baseUnit: "s",
-    displayUnit: "s",
-    showInset: false,
-    insetFillOpacity: 0.7,
-    insetBarWidth: 70,
-    insetBarGap: 0,
-    insetYMinCustom: "",
-    insetYMaxCustom: "",
-    insetW: 400,
-    insetH: 200,
-    insetErrorType: "none",
-    insetShowBarOutline: false,
-    insetBarOutlineColor: "#333333",
-    insetBarStrokeWidth: 1,
-    insetShowGrid: false,
-    insetGridColor: "#e0e0e0",
-    insetErrorStrokeWidth: 0.8,
-    insetXFontSize: 7,
-    insetYFontSize: 7,
-    insetXLabelAngle: -45,
-    showColumnOverlay: false,
-    insetShowPoints: false,
-    insetPointSize: 3,
-    insetPointColor: "#333333",
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("aequorin", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("aequorin", vis);
-  }, [vis]);
-  const [step, setStep] = useState("upload");
 
   const parsed = useMemo(() => (rawText ? parseData(rawText) : null), [rawText]);
   const calData = useMemo(() => {
@@ -4054,29 +4066,15 @@ function App() {
   const canNavigate = (s) => s === "upload" || (parsed && s !== "upload");
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        color: "var(--text)",
-        fontFamily: "monospace",
-        padding: "24px 32px",
-      }}
+    <PlotToolShell
+      state={shell}
+      toolName="aequorin"
+      title="Aequorin Ca²⁺ Calibration"
+      subtitle={`${FORMULA_DEFS[formula].label} — ${FORMULA_DEFS[formula].eq}`}
+      visInit={VIS_INIT_AEQUORIN}
+      steps={["upload", "configure", "plot"]}
+      canNavigate={canNavigate}
     >
-      <PageHeader
-        toolName="aequorin"
-        title="Aequorin Ca²⁺ Calibration"
-        subtitle={`${FORMULA_DEFS[formula].label} — ${FORMULA_DEFS[formula].eq}`}
-        right={<PrefsPanel tool="aequorin" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "configure", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
       {parseError && (
         <div
           style={{
@@ -4370,7 +4368,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

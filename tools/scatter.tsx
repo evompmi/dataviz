@@ -1,7 +1,23 @@
 // scatter.jsx — editable source. Run `npm run build` to compile to scatter.js
 // Do NOT edit the .js file directly.
 
-const { useState, useReducer, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
+const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
+
+const VIS_INIT_SCATTER = {
+  xMin: null,
+  xMax: null,
+  yMin: null,
+  yMax: null,
+  xLabel: "",
+  yLabel: "",
+  plotTitle: "",
+  plotBg: "#ffffff",
+  showGrid: false,
+  gridColor: "#e0e0e0",
+};
 
 // COLOR_PALETTES and interpolateColor are now globals from shared.js so that
 // heatmap and scatter share the exact same colour-scale definitions.
@@ -1957,13 +1973,22 @@ function PlotStep({
 let refLineCounter = 0;
 
 function App() {
+  const shell = usePlotToolState("scatter", VIS_INIT_SCATTER);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
   const [rawText, setRawText] = useState(null);
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
-  const [sepOverride, setSepOverride] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [parseError, setParseError] = useState(null);
-  const [step, setStep] = useState("upload");
 
   // Column selection
   const [xCol, setXCol] = useState(0);
@@ -1991,28 +2016,6 @@ function App() {
 
   // Filter state
   const [filterState, setFilterState] = useState<Record<string, string[]>>({});
-
-  // Visual state
-  const visInit = {
-    xMin: null,
-    xMax: null,
-    yMin: null,
-    yMax: null,
-    xLabel: "",
-    yLabel: "",
-    plotTitle: "",
-    plotBg: "#ffffff",
-    showGrid: false,
-    gridColor: "#e0e0e0",
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("scatter", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("scatter", vis);
-  }, [vis]);
 
   const [refLines, setRefLines] = useState([]);
 
@@ -2447,31 +2450,15 @@ function App() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        color: "var(--text)",
-        fontFamily: "monospace",
-        padding: "24px 32px",
-      }}
+    <PlotToolShell
+      state={shell}
+      toolName="scatter"
+      title="Scatter Plot"
+      subtitle="XY scatter — one row per data point, one column per variable"
+      visInit={VIS_INIT_SCATTER}
+      steps={["upload", "plot"]}
+      canNavigate={canNavigate}
     >
-      <PageHeader
-        toolName="scatter"
-        title="Scatter Plot"
-        subtitle="XY scatter — one row per data point, one column per variable"
-        right={<PrefsPanel tool="scatter" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      <ParseErrorBanner error={parseError} />
-
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -2552,7 +2539,7 @@ function App() {
           svgLegend={svgLegend}
         />
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

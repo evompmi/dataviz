@@ -1,6 +1,37 @@
 // boxplot.jsx — editable source. Run `npm run build` to compile to boxplot.js
 // Do NOT edit the .js file directly.
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
 const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef, memo } = React;
+
+const VIS_INIT_BOXPLOT = {
+  plotTitle: "",
+  yLabel: "Value",
+  plotBg: "#ffffff",
+  showGrid: false,
+  gridColor: "#e0e0e0",
+  boxFillOpacity: 0.15,
+  boxWidth: 70,
+  boxGap: 0,
+  pointSize: 2.5,
+  showPoints: true,
+  jitterWidth: 0.6,
+  pointOpacity: 0.6,
+  xLabelAngle: 0,
+  yMinCustom: "",
+  yMaxCustom: "",
+  yScale: "linear",
+  showCompPie: false,
+  plotStyle: "box",
+  horizontal: false,
+  errorType: "sem",
+  errStrokeWidth: 1.2,
+  showBarOutline: false,
+  barOutlineWidth: 1.5,
+  barOutlineColor: "#333333",
+  barOpacity: 0.25,
+};
 
 // ── Stats summary SVG helpers ─────────────────────────────────────────────
 const STATS_LINE_H = 11;
@@ -4128,17 +4159,26 @@ function statsReducer(state: typeof statsInit, a: any): typeof statsInit {
 /* ── Main App (orchestrator) ───────────────────────────────────────────────── */
 
 function App() {
+  const shell = usePlotToolState("boxplot", VIS_INIT_BOXPLOT);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
   // Upload & navigation
   const [rawText, setRawText] = useState(null);
-  const [fileName, setFileName] = useState("");
-  const [step, setStep] = useState("upload");
-  const [parseError, setParseError] = useState(null);
   const [dataFormat, setDataFormat] = useState("long");
-  const [sepOverride, setSepOverride] = useState("");
 
   // Parsing
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
   const [parsedHeaders, setParsedHeaders] = useState([]);
   const [parsedRows, setParsedRows] = useState([]);
   const [hasHeader, setHasHeader] = useState(true);
@@ -4148,44 +4188,6 @@ function App() {
   const [colNames, setColNames] = useState([]);
   const [filters, setFilters] = useState({});
   const [valueRenames, setValueRenames] = useState({});
-
-  // Visual settings
-  const visInit = {
-    plotTitle: "",
-    yLabel: "Value",
-    plotBg: "#ffffff",
-    showGrid: false,
-    gridColor: "#e0e0e0",
-    boxFillOpacity: 0.15,
-    boxWidth: 70,
-    boxGap: 0,
-    pointSize: 2.5,
-    showPoints: true,
-    jitterWidth: 0.6,
-    pointOpacity: 0.6,
-    xLabelAngle: 0,
-    yMinCustom: "",
-    yMaxCustom: "",
-    yScale: "linear",
-    showCompPie: false,
-    plotStyle: "box",
-    horizontal: false,
-    // bar-specific
-    errorType: "sem",
-    errStrokeWidth: 1.2,
-    showBarOutline: false,
-    barOutlineWidth: 1.5,
-    barOutlineColor: "#333333",
-    barOpacity: 0.25,
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("boxplot", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("boxplot", vis);
-  }, [vis]);
 
   // Plot state
   const [boxplotColors, setBoxplotColors] = useState({});
@@ -4794,30 +4796,15 @@ function App() {
   }, [facetByCol, facetedData, fileStem]);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        color: "var(--text)",
-        fontFamily: "monospace",
-        padding: "24px 32px",
-      }}
+    <PlotToolShell
+      state={shell}
+      toolName="boxplot"
+      title="Group Plot"
+      subtitle={`Load → label columns → filter → plot & export${dataFormat === "wide" ? " · Wide format auto-detected" : ""}`}
+      visInit={VIS_INIT_BOXPLOT}
+      steps={["upload", "configure", "filter", "output", "plot"]}
+      canNavigate={(s) => s === "upload" || parsedRows.length > 0}
     >
-      <PageHeader
-        toolName="boxplot"
-        title="Group Plot"
-        subtitle={`Load → label columns → filter → plot & export${dataFormat === "wide" ? " · Wide format auto-detected" : ""}`}
-        right={<PrefsPanel tool="boxplot" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-      <StepNavBar
-        steps={["upload", "configure", "filter", "output", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={(s) => s === "upload" || parsedRows.length > 0}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      <ParseErrorBanner error={parseError} />
-
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -5104,7 +5091,7 @@ function App() {
           </button>
         </div>
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 ReactDOM.createRoot(document.getElementById("root")).render(

@@ -12,10 +12,16 @@ const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
 const aequorinSrc = fs.readFileSync(path.join(toolsDir, "aequorin.tsx"), "utf8");
-// Lines 1–177 are pure JS: DEFAULT_* constants, calibrate, calibrateHill,
+// Lines at the top are pure JS: DEFAULT_* constants, calibrate, calibrateHill,
 // calibrateGeneralized, detectConditions, smooth. The chart components
-// (React) start at line 179+. Slice by index.
-const aequorinHelpers = aequorinSrc.split("\n").slice(0, 177).join("\n");
+// (React) start further down. We slice generously and strip the ES-module
+// `import` lines that the _shell/* scaffold adds at the very top — vm.run
+// can't evaluate them in script mode.
+const aequorinHelpers = aequorinSrc
+  .split("\n")
+  .slice(0, 222)
+  .filter((line) => !/^\s*import\s/.test(line))
+  .join("\n");
 
 const ctx = {
   Math,

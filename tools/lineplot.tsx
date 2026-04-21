@@ -9,7 +9,28 @@
 //
 // v1 scope: linear axes, segmented lines (no smoothing), no curve fitting.
 
-const { useState, useEffect, useRef, useReducer, useMemo, useCallback, forwardRef } = React;
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
+const { useState, useEffect, useRef, useMemo, useCallback, forwardRef } = React;
+
+const VIS_INIT_LINEPLOT = {
+  xMin: null,
+  xMax: null,
+  yMin: null,
+  yMax: null,
+  xLabel: "",
+  yLabel: "",
+  plotTitle: "",
+  plotSubtitle: "",
+  plotBg: "#ffffff",
+  showGrid: true,
+  gridColor: "#e0e0e0",
+  lineWidth: 1.5,
+  pointRadius: 3.5,
+  errorStrokeWidth: 1,
+  errorCapWidth: 6,
+};
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const MARGIN = { top: 20, right: 20, bottom: 48, left: 62 };
@@ -1911,13 +1932,22 @@ function PlotStep(props) {
 // ── App ────────────────────────────────────────────────────────────────────
 
 function App() {
+  const shell = usePlotToolState("lineplot", VIS_INIT_LINEPLOT);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
   const [rawText, setRawText] = useState(null);
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
-  const [sepOverride, setSepOverride] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [parseError, setParseError] = useState(null);
-  const [step, setStep] = useState("upload");
 
   const [xCol, setXCol] = useState(0);
   const [yCol, setYCol] = useState(1);
@@ -1926,32 +1956,6 @@ function App() {
   const [errorType, setErrorType] = useState("sem");
   const [showStars, setShowStars] = useState(true);
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
-
-  const visInit = {
-    xMin: null,
-    xMax: null,
-    yMin: null,
-    yMax: null,
-    xLabel: "",
-    yLabel: "",
-    plotTitle: "",
-    plotSubtitle: "",
-    plotBg: "#ffffff",
-    showGrid: true,
-    gridColor: "#e0e0e0",
-    lineWidth: 1.5,
-    pointRadius: 3.5,
-    errorStrokeWidth: 1,
-    errorCapWidth: 6,
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("lineplot", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("lineplot", vis);
-  }, [vis]);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const sepRef = useRef("");
@@ -2109,31 +2113,15 @@ function App() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        color: "var(--text)",
-        fontFamily: "monospace",
-        padding: "24px 32px",
-      }}
+    <PlotToolShell
+      state={shell}
+      toolName="lineplot"
+      title="Line Plot"
+      subtitle="Profile plot — mean ± error per group at each x, with per-x statistics"
+      visInit={VIS_INIT_LINEPLOT}
+      steps={["upload", "configure", "plot"]}
+      canNavigate={canNavigate}
     >
-      <PageHeader
-        toolName="lineplot"
-        title="Line Plot"
-        subtitle="Profile plot — mean ± error per group at each x, with per-x statistics"
-        right={<PrefsPanel tool="lineplot" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "configure", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      <ParseErrorBanner error={parseError} />
-
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -2189,7 +2177,7 @@ function App() {
           resetAll={resetAll}
         />
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

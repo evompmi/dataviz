@@ -619,9 +619,7 @@
         var scripts = [
           { src: "vendor/react.production.min.js", size: 6 },
           { src: "vendor/react-dom.production.min.js", size: 130 },
-          { src: "tools/shared.js", size: 5 },
-          { src: "tools/shared-components.js", size: 8 },
-          { src: "tools/stats.js", size: 10 },
+          { src: "tools/shared.bundle.js", size: 250 },
         ];
         var totalWeight = scripts.reduce(function (s, f) {
           return s + f.size;

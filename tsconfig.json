@@ -16,6 +16,6 @@
     "noImplicitAny": false,
     "types": ["react", "react-dom"]
   },
-  "include": ["tools/*.tsx", "types/**/*.d.ts"],
+  "include": ["tools/*.tsx", "tools/_shell/**/*.ts", "tools/_shell/**/*.tsx", "types/**/*.d.ts"],
   "exclude": ["node_modules", "vendor", "tests", "tools/*.js", "tools/shared*.js"]
 }

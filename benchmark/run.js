@@ -395,7 +395,7 @@ const html = `<!doctype html>
 </script>
 <title>dataviz · statistical benchmark vs R</title>
 <link rel="stylesheet" href="tools/theme.css" />
-<script src="tools/theme.js"></script>
+<script src="tools/shared.bundle.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {

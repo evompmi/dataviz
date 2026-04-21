@@ -1,6 +1,10 @@
 // upset.tsx — editable source. Run `npm run build` to compile to upset.js
 // Do NOT edit the .js file directly.
-const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+import { ScrollablePlotCard } from "./_shell/ScrollablePlotCard";
+
+const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
 
 // parseSetData and parseLongFormatSets live in tools/shared.js.
 
@@ -1406,122 +1410,40 @@ function PlotControls({
 // Wraps the scrollable plot card with edge fade overlays + a hint pill so a
 // user who doesn't notice the browser's scrollbar still sees the content is
 // scrollable. Measures the inner element with a ResizeObserver + onScroll.
-function ScrollablePlotCard({ children }) {
-  const scrollRef = useRef(null);
-  const [hasOverflow, setHasOverflow] = useState(false);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(true);
-  const [userScrolled, setUserScrolled] = useState(false);
-
-  const measure = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const overflows = el.scrollWidth > el.clientWidth + 1;
-    setHasOverflow(overflows);
-    setAtStart(el.scrollLeft <= 1);
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    const content = el.firstElementChild;
-    if (content) ro.observe(content);
-    return () => ro.disconnect();
-  }, [measure]);
-
-  const onScroll = () => {
-    measure();
-    if (!userScrolled) setUserScrolled(true);
-  };
-
-  return (
-    <div style={{ position: "relative" }}>
-      <div
-        ref={scrollRef}
-        onScroll={onScroll}
-        className="dv-panel dv-plot-card"
-        style={{
-          padding: 20,
-          background: "var(--plot-card-bg)",
-          borderColor: "var(--plot-card-border)",
-          overflowX: "auto",
-          maxWidth: "100%",
-        }}
-      >
-        {children}
-      </div>
-      {hasOverflow && !atStart && (
-        <div
-          aria-hidden="true"
-          className="dv-scroll-fade"
-          style={{
-            position: "absolute",
-            top: 1,
-            bottom: 1,
-            left: 1,
-            width: 28,
-            pointerEvents: "none",
-            background: "linear-gradient(to right, var(--plot-card-bg), rgba(255,255,255,0))",
-            borderTopLeftRadius: 8,
-            borderBottomLeftRadius: 8,
-          }}
-        />
-      )}
-      {hasOverflow && !atEnd && (
-        <div
-          aria-hidden="true"
-          className="dv-scroll-fade"
-          style={{
-            position: "absolute",
-            top: 1,
-            bottom: 1,
-            right: 1,
-            width: 28,
-            pointerEvents: "none",
-            background: "linear-gradient(to left, var(--plot-card-bg), rgba(255,255,255,0))",
-            borderTopRightRadius: 8,
-            borderBottomRightRadius: 8,
-          }}
-        />
-      )}
-      {hasOverflow && !userScrolled && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            right: 12,
-            bottom: 10,
-            padding: "4px 10px",
-            borderRadius: 12,
-            background: "var(--accent-primary)",
-            color: "var(--on-accent)",
-            fontSize: 11,
-            fontWeight: 600,
-            pointerEvents: "none",
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-            opacity: 0.92,
-          }}
-        >
-          Scroll for more →
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── App ──────────────────────────────────────────────────────────────────────
 
+const VIS_INIT_UPSET = {
+  plotTitle: "",
+  plotSubtitle: "",
+  plotBg: "#ffffff",
+  fontSize: 12,
+  barOpacity: 1,
+  dotSize: 6,
+  sortMode: "size-desc",
+  minSize: 1,
+  minDegree: 1,
+  // `maxDegree: null` means "no upper bound" (keep every degree). Persists
+  // through loadAutoPrefs as null; the chart renders against setNames.length
+  // when null.
+  maxDegree: null,
+};
+
 function App() {
-  const [fileName, setFileName] = useState("");
-  const [step, setStep] = useState("upload");
-  const [parseError, setParseError] = useState(null);
-  const [sepOverride, setSepOverride] = useState("");
-  const [commaFixed, setCommaFixed] = useState(false);
-  const [commaFixCount, setCommaFixCount] = useState(0);
+  const shell = usePlotToolState("upset", VIS_INIT_UPSET);
+  const {
+    step,
+    setStep,
+    fileName,
+    setFileName,
+    setParseError,
+    sepOverride,
+    setSepOverride,
+    setCommaFixed,
+    setCommaFixCount,
+    vis,
+    updVis,
+  } = shell;
+
   const [format, setFormat] = useState("wide");
   const [setNames, setSetNames] = useState([]);
   const [sets, setSets] = useState(new Map());
@@ -1531,30 +1453,6 @@ function App() {
   const [allColumnNames, setAllColumnNames] = useState([]);
   const [allColumnSets, setAllColumnSets] = useState(new Map());
   const [pendingSelection, setPendingSelection] = useState([]);
-
-  const visInit = {
-    plotTitle: "",
-    plotSubtitle: "",
-    plotBg: "#ffffff",
-    fontSize: 12,
-    barOpacity: 1,
-    dotSize: 6,
-    sortMode: "size-desc",
-    minSize: 1,
-    minDegree: 1,
-    // `maxDegree: null` means "no upper bound" (keep every degree). Persists
-    // through loadAutoPrefs as null; the chart renders against setNames.length
-    // when null.
-    maxDegree: null,
-  };
-  const [vis, updVis] = useReducer(
-    (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
-    visInit,
-    (init) => loadAutoPrefs("upset", init)
-  );
-  useEffect(() => {
-    saveAutoPrefs("upset", vis);
-  }, [vis]);
 
   const chartRef = useRef();
 
@@ -1726,49 +1624,15 @@ function App() {
   const showColumnWarning = truncatedIntersections.length > 60;
 
   return (
-    <div style={{ padding: "24px 32px", maxWidth: 1400 }}>
-      <PageHeader
-        toolName="upset"
-        title="UpSet plot"
-        subtitle="Intersection sizes across many sets (4+ sets)"
-        right={<PrefsPanel tool="upset" vis={vis} visInit={visInit} updVis={updVis} />}
-      />
-
-      <StepNavBar
-        steps={["upload", "configure", "plot"]}
-        currentStep={step}
-        onStepChange={setStep}
-        canNavigate={canNavigate}
-      />
-
-      <CommaFixBanner commaFixed={commaFixed} commaFixCount={commaFixCount} />
-      {parseError && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: "10px 14px",
-            borderRadius: 8,
-            background: "var(--danger-bg)",
-            border: "1px solid var(--danger-border)",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>🚫</span>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--danger-text)",
-              fontWeight: 600,
-              whiteSpace: "pre-line",
-            }}
-          >
-            {parseError}
-          </span>
-        </div>
-      )}
-
+    <PlotToolShell
+      state={shell}
+      toolName="upset"
+      title="UpSet plot"
+      subtitle="Intersection sizes across many sets (4+ sets)"
+      visInit={VIS_INIT_UPSET}
+      steps={["upload", "configure", "plot"]}
+      canNavigate={canNavigate}
+    >
       {step === "upload" && (
         <UploadStep
           sepOverride={sepOverride}
@@ -1906,7 +1770,7 @@ function App() {
           </div>
         </div>
       )}
-    </div>
+    </PlotToolShell>
   );
 }
 

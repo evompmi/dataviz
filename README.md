@@ -1,178 +1,129 @@
-# Dataviz — a browser-only data-analysis toolbox for plant scientists
+# Dataviz — browser-only data-analysis toolbox for plant scientists
 
-A static web application that performs common plot-and-test workflows used in plant-physiology wet-lab research (aequorin Ca²⁺ time-courses, group comparisons, scatter plots with regression, Venn diagrams, molarity calculations, statistical power analysis) without a server, without tracking, and without data leaving the user's browser. All computation runs client-side in vanilla JavaScript.
+Static web app for common plot-and-test workflows in plant-physiology research. No server, no tracking, no data leaving the browser.
 
-**Live application:** [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz)
-**Source code:** [github.com/evompmi/dataviz](https://github.com/evompmi/dataviz)
+**Live:** [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz) · **Source:** [github.com/evompmi/dataviz](https://github.com/evompmi/dataviz)
 
-Originally developed for members of the EVO team at the Plant Science Research Laboratory (LRSV, Toulouse, France) and released publicly for anyone with similar needs.
+Originally built for the EVO team at LRSV (Toulouse), released publicly for anyone with similar needs.
 
 ## Design goals
 
-- **Zero infrastructure.** The entire application is a collection of static HTML, CSS, and JavaScript files. It can be served by GitHub Pages, any static host, or opened directly from a local filesystem — no backend, no database, no build step at runtime.
-- **Privacy by construction.** Uploaded files are parsed in the browser; no data is ever transmitted. Works offline once the page is loaded.
-- **Paste-and-plot ergonomics.** Each tool accepts pasted tabular data or dropped files, auto-detects separators and decimal conventions (comma/period), and walks the user through column assignment, filtering, plotting, and export in a fixed step sequence.
-- **Publication-ready output.** Charts render as SVG and can be exported as SVG (vector, grouped and named for downstream editing in Inkscape/Illustrator), PNG (2× raster), or CSV of the processed data.
-- **Statistically honest defaults.** Where a tool performs inferential statistics, test selection follows a defensible rule tree (normality + variance homogeneity → parametric vs. non-parametric; equal vs. unequal variance branches) and the full decision trace is reported, not hidden.
+- **Zero infrastructure.** Static HTML/CSS/JS. Runs from GitHub Pages, any static host, or directly off the filesystem.
+- **Privacy by construction.** All parsing and computation happens in-browser. Works offline once loaded.
+- **Paste-and-plot.** Each tool auto-detects separators (`,` / `\t`) and decimal convention (`,` / `.`), then walks through column roles → filter → plot → export.
+- **Publication-ready output.** SVG (named `<g>` groups for Inkscape/Illustrator), PNG (2×), CSV of processed data.
+- **Honest statistics.** Test picks follow a defensible rule tree (normality + variance → parametric vs. non-parametric); the full decision trace is shown, not hidden.
 
 ## Tools
 
-Each tool ships with an in-app **How to** panel documenting input format, column roles, and features. The table below is a short index.
+| Tool               | Purpose                                                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Aequorin Ca²⁺**  | Luminescence time-course with Allen & Blinks / Hill calibration, baseline correction, per-replicate integrals and inline stats.       |
+| **Group Plot**     | Box / violin / raincloud / bar with auto-selected test (t / Welch / Mann–Whitney / ANOVA / Welch-ANOVA / Kruskal–Wallis) + post-hocs. |
+| **Line Plot**      | Mean ± SEM / SD / 95 % CI per group across a shared x, with per-x significance markers.                                               |
+| **Scatter Plot**   | XY with colour / size / shape mapping, reference lines, and optional linear regression overlay.                                       |
+| **Heatmap**        | Matrix heatmap with row / column clustering (hierarchical, k-means), dendrograms, and zoomed detail view.                             |
+| **Venn Diagram**   | 2–3 set area-proportional Venn with click-to-extract region members.                                                                  |
+| **UpSet Plot**     | 4+ set intersection plot — top bar chart, matrix of participation dots, per-set totals. Click a column to inspect its items.          |
+| **Power Analysis** | A-priori and post-hoc power for t (indep / paired / one-sample), one-way ANOVA, χ², correlation.                                      |
+| **Calculator**     | Molarity, dilution (C₁V₁ = C₂V₂), ligation ratio, batch prep sheets.                                                                  |
 
-| Tool               | Purpose                                                                                                                                                                                                                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Aequorin Ca²⁺**  | Luminescence time-course visualisation with optional Ca²⁺ calibration (Allen & Blinks equation, Hill model). Supports baseline correction, per-replicate integral computation, and an inline statistical analysis of the integrals.                                                                   |
-| **Group Plot**     | Box plots, violin plots, raincloud plots and bar charts from long- or wide-format data. Automatic selection of Student's t, Welch's t, Mann–Whitney U, one-way / Welch ANOVA, or Kruskal–Wallis, with Tukey HSD, Games–Howell, or Dunn post-hocs and compact-letter display or significance brackets. |
-| **Line Plot**      | Profile plot showing the mean ± error (SEM, SD, or 95 % CI) per group across a shared x-axis (time, dose, position…), with per-x statistical comparison and significance markers above each x value.                                                                                                  |
-| **Scatter Plot**   | XY scatter with per-row colour, size and shape mapping, user-defined reference lines, row filtering, and optional linear regression overlay with slope / intercept / R² reporting.                                                                                                                    |
-| **Venn Diagram**   | Two- and three-set Venn diagrams in either equal-size or area-proportional layout. Proportional layouts are refined by minimising region-area error against the observed intersection sizes. Click any region to extract the underlying members and export them as CSV.                               |
-| **Power Analysis** | A-priori and post-hoc statistical power calculations for Student's t (independent, paired, one-sample), one-way ANOVA, χ² goodness-of-fit / independence, and correlation tests.                                                                                                                      |
-| **Calculator**     | Molarity and dilution (C₁V₁ = C₂V₂) computations, ligation ratio helper, and batch preparation sheets for routine wet-lab work.                                                                                                                                                                       |
+Each tool has an in-app **How to** panel.
 
 ## Screenshots
 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/screenshots/aequorin.png?v=2" alt="Aequorin Ca²⁺ time-course with calibration overlay">
-      <br><sub><b>Aequorin Ca²⁺</b> — luminescence time-course with Allen &amp; Blinks calibration and per-replicate integral barplot.</sub>
+      <img src="docs/screenshots/aequorin.png?v=2" alt="Aequorin Ca²⁺ time-course">
+      <br><sub><b>Aequorin Ca²⁺</b></sub>
     </td>
     <td width="50%" align="center">
       <img src="docs/screenshots/boxplot.png?v=2" alt="Group plot with significance brackets">
-      <br><sub><b>Group Plot</b> — box / violin / raincloud / bar with auto-selected test and significance annotations.</sub>
+      <br><sub><b>Group Plot</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/lineplot.png?v=2" alt="Line plot with per-x significance markers">
-      <br><sub><b>Line Plot</b> — mean ± error per group across a shared x, with per-x significance markers.</sub>
+      <img src="docs/screenshots/lineplot.png?v=2" alt="Line plot">
+      <br><sub><b>Line Plot</b></sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/screenshot.png?v=2" alt="Scatter plot with colour and size mapping">
-      <br><sub><b>Scatter Plot</b> — XY with colour / size / shape mapping and optional regression overlay.</sub>
+      <img src="docs/screenshots/screenshot.png?v=2" alt="Scatter plot">
+      <br><sub><b>Scatter Plot</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="docs/screenshots/venn.png?v=2" alt="Area-proportional Venn diagram">
-      <br><sub><b>Venn Diagram</b> — area-proportional layout with click-to-extract region members.</sub>
+      <img src="docs/screenshots/venn.png?v=2" alt="Venn diagram">
+      <br><sub><b>Venn Diagram</b></sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/power.png?v=2" alt="Power analysis curve">
-      <br><sub><b>Power Analysis</b> — a-priori and post-hoc power for t, ANOVA, χ² and correlation tests.</sub>
+      <img src="docs/screenshots/power.png?v=2" alt="Power analysis">
+      <br><sub><b>Power Analysis</b></sub>
     </td>
   </tr>
 </table>
 
-## Shared features
-
-All tools expose the same input handling, data-preview, and export pipeline:
-
-| Feature                | Details                                                                                                   |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- |
-| **File formats**       | `.csv`, `.tsv`, `.txt`, `.dat` — comma or tab, auto-detected                                              |
-| **Decimal convention** | European comma decimals are detected and converted with a banner so users can confirm or undo             |
-| **Data preview**       | First 15 rows with column-type hints (numeric / text / mixed) before plotting                             |
-| **Column control**     | Rename, reorder, assign roles, filter categorical values                                                  |
-| **Export**             | SVG (named `<g>` groups for downstream editing), PNG (2× raster), CSV of the processed / long-format data |
-| **Styling**            | Background colour, grid toggle, per-group colour editor, axis labels, plot title                          |
-
 ## Statistical validation
 
-The statistical core lives in a single file (`tools/stats.js`, ~1 300 lines) and covers the distributions, tests, effect sizes and post-hoc procedures exercised by the tools:
+All numerics (`tools/stats.js`) are cross-validated against **R 4.5** on real built-in datasets (`iris`, `PlantGrowth`, `ToothGrowth`, `mtcars`, …). Current run: **293 comparisons, max |Δ| ≈ 8 × 10⁻⁷**, reproducible via `npm run benchmark`. Results render as a public page at `benchmark.html` — failing rows are shown in red, not hidden.
 
-- **Distributions.** `normcdf`, `norminv`, `tcdf`, `tinv`, `fcdf`, `chi2cdf`, `chi2inv`, non-central `nctcdf`, `ncf_sf`, `ncchi2cdf`.
-- **Descriptive.** `sampleMean`, `sampleVariance`, `sampleSD`.
-- **Tests.** Shapiro–Wilk, Brown–Forsythe Levene, Student / Welch t, Mann–Whitney U, one-way ANOVA, Welch ANOVA, Kruskal–Wallis.
-- **Effect sizes.** Cohen's _d_, Hedges' _g_, rank-biserial _r_, η², ε².
-- **Post-hoc.** Tukey HSD (via the studentised range distribution), Games–Howell, Dunn with Benjamini–Hochberg correction, compact letter display.
+On top of that, **651 unit + integration tests** (CI-gated on every commit, alongside ESLint, Prettier, and `tsc --noEmit`) plus per-tool fuzz harnesses (`npm run fuzz:<tool>`) that run 2 × 1000 iterations of pathological-input corpus through each tool's pipeline.
 
-Every function in this file is cross-validated against **R 4.5** reference values on real built-in R datasets (`iris`, `PlantGrowth`, `ToothGrowth`, `mtcars`, `chickwts`, `InsectSprays`, `sleep`, `CO2`, `warpbreaks`, `faithful`, and others). The reference suite is the R script `benchmark/run-r.R`; the Node comparator is `benchmark/run.js`. Reproduce locally with:
-
-```bash
-npm run benchmark
-```
-
-The current run executes **285 comparisons, all within 5 × 10⁻³** of the R reference, with a maximum absolute deviation of ≈ 8 × 10⁻⁷. Results are rendered as a publicly visible page at `benchmark.html` — failing rows are shown in red, not hidden.
-
-In addition, the JavaScript code is covered by **485 unit and integration tests** across six suites (shared utilities, CSV / TSV parsing, edge-case integration, React component behaviour, power analysis, statistical functions). All tests are CI-gated on every commit alongside ESLint, Prettier, and `tsc --noEmit` type-checking.
+Covers: Shapiro–Wilk, Brown–Forsythe Levene, Student / Welch t, Mann–Whitney U, one-way ANOVA, Welch ANOVA, Kruskal–Wallis, Tukey HSD (studentised range), Games–Howell, Dunn + Benjamini–Hochberg, Cohen's _d_, Hedges' _g_, η², ε², compact letter display.
 
 ## Scope and limitations
 
-This tool is deliberately narrow. The numerics it ships are cross-validated against R, so what it computes can be trusted — but it covers only a slice of what a research workflow will need!
+Deliberately narrow. Numerics are trustworthy, but the design covers a slice of real workflows.
 
-**Where it fits best**
+**Fits best:** one-way group comparisons with a defensible test pick; quick exploratory plotting from pasted CSV/TSV; privacy-sensitive data; publication-ready SVG; a-priori power analysis; reproducibility via the one-click **⬇ R** script export (Group Plot / Aequorin / Power Analysis emit a runnable R script that embeds the data inline and reproduces the exact tests); niche Aequorin Ca²⁺ calibration not first-class anywhere else.
 
-- **One-way group comparisons** with bar / box / violin / raincloud plots and a defensible test pick (Student / Welch / Mann-Whitney / one-way ANOVA / Welch ANOVA / Kruskal-Wallis), plus Tukey HSD, Games-Howell, or Dunn-BH post-hocs and compact-letter display.
-- **Quick exploratory plotting** from pasted CSV/TSV — useful when the alternative is wrestling `ggplot2` margins or installing a 200 MB statistics package for a single bar chart.
-- **Privacy-sensitive data** (clinical, unpublished, embargoed) where uploading to a hosted service is not an option and installing R is a hurdle.
-- **Publication-ready SVG output** with named `<g>` groups for downstream touch-up in Inkscape or Illustrator.
-- **A-priori power analysis** for t-tests, one-way ANOVA, χ², and correlation — like R's `pwr` package for the tests it covers, and easier to explore interactively.
-- **Reproducibility trail via one-click R export.** Group Plot, Aequorin, and Power Analysis all ship a `⬇ R` chip next to the existing report download. Clicking it emits a runnable R script that embeds the current data inline and reproduces the exact statistical tests the toolbox just ran (`t.test`, `aov`, `oneway.test`, `kruskal.test`, `TukeyHSD`, `rstatix::games_howell_test`, `rstatix::dunn_test`, or the matching `pwr::*` call). The script can be checked into version control or pasted into a methods section — a UI click-through becomes something a reviewer can rerun a year later. Plot reproduction is deliberately out of scope: the script covers statistics only and says so in its header comment.
-- **Niche tool** Aequorin Ca²⁺ calibration that is not first-class anywhere else.
+**You will outgrow it for:** repeated-measures / mixed models, factorial designs (no two-way ANOVA, no interactions, no ANCOVA), Dunnett's test, multiple / logistic / non-linear regression, survival / ROC / time-to-event, large datasets (browser-only, millions of rows won't work), headless batch processing. Per-group Shapiro–Wilk at α = 0.05 inflates family-wise FPR at large _k_ and biases the auto-pick toward Kruskal–Wallis — documented in-source, adjustable via `alphaNormality`.
 
-**Where you will outgrow it**
+Use as a supplement to R / Prism / SPSS, not a replacement.
 
-- **No repeated-measures or mixed models.** Time-course on the same plant, before/after on the same subject, longitudinal data — the tool offers paired t-tests but nothing beyond that. Use R's `lme4` / `nlme` or Prism's RM ANOVA for these designs.
-- **One-way only.** No factorial ANOVA, no two-way with interaction, no ANCOVA. Genotype × treatment. If that is a daily need for you, this tool cannot run it.
-- **No Dunnett's test** (control vs. many treatments).
-- **No regression beyond simple linear.** Multiple regression, logistic regression, non-linear curve fitting (dose-response, Michaelis-Menten, Hill / Boltzmann), spline smoothing are not provided. The Hill model in the Aequorin calibration tool is a fixed-form solver, not a general non-linear fitter.
-- **No survival, ROC, or time-to-event analysis.**
-- **Per-group Shapiro-Wilk at α = 0.05 inflates the family-wise false-positive rate** for normality screening at large _k_. This is documented in the source and biases the auto-pick toward Kruskal-Wallis at large _k_ — adjustable via the `alphaNormality` override but worth knowing about.
-- **Browser-only** means no large datasets (millions of rows will not work) and no headless / scripted batch processing.
+## Installation
 
-**Summary.** Use this tool as a supplement to R or commercial software (Prism, SPSS, JMP, Stata), not as a replacement. For an undergrad doing simple one-way comparisons and producing thesis figures, the friction savings over R are real and the output is genuinely publication-grade. For a graduate student running factorial designs or repeated measurements, the coverage wall arrives quickly and a real statistics environment is the right tool.
+For casual use, visit [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz).
 
-## Installation and local use
-
-The application is a collection of static files. For casual use, visit the hosted version at [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz) — no installation required.
-
-To run entirely offline or to modify the source:
+To run offline or modify the source:
 
 ```bash
 git clone https://github.com/evompmi/dataviz.git
 cd dataviz
-# Open index.html in any modern browser. No server is required.
+# Open index.html in any modern browser — no server required.
 ```
-
-Any modern evergreen browser (Chrome, Firefox, Safari, Edge) is sufficient. Internet Explorer is not supported.
 
 ## Development
 
-Developers wishing to modify or extend the tools will need Node.js ≥ 20 for the build, test, and cross-validation tooling (not for running the application itself).
+Node.js ≥ 20 for the tooling (not for running the app):
 
 ```bash
 npm install
 npm run build       # compile tools/*.tsx → tools/*.js
 npm run watch       # recompile on save
-npm test            # 485 tests across 6 suites
+npm test            # 651 tests across 9 suites
+npm run fuzz:<tool> # fuzz one tool (boxplot, scatter, heatmap, …)
 npm run typecheck   # tsc --noEmit
 npm run lint        # ESLint
-npm run format:check
-npm run benchmark   # R + JavaScript cross-validation (requires R 4.5)
+npm run benchmark   # R + JS cross-validation (requires R 4.5)
 ```
 
-The architecture, shared-code constraints, and conventions for adding new tools are documented in [`CLAUDE.md`](CLAUDE.md).
+Architecture, shared-code constraints, and conventions for adding tools are in [`CLAUDE.md`](CLAUDE.md).
 
 ## Technical stack
 
-| Layer          | Technology                                                                   |
-| -------------- | ---------------------------------------------------------------------------- |
-| User interface | React 18 (vendored locally under `vendor/`, no CDN)                          |
-| Build          | esbuild (TSX → JS, ~5 ms incremental rebuilds, minified + sourcemapped)      |
-| Charts         | Custom SVG rendering — no charting library                                   |
-| Statistics     | In-house JavaScript implementation, cross-validated against R 4.5            |
-| Tests          | Custom lightweight harness (no Jest / Mocha), 485 assertions across 6 suites |
-| Hosting        | GitHub Pages (static files)                                                  |
+React 18 (vendored under `vendor/`, no CDN) + esbuild (TSX → JS, ~5 ms incremental) + custom SVG rendering (no charting library) + in-house stats cross-validated against R. Tests via a custom lightweight harness (no Jest/Mocha). Hosted on GitHub Pages.
 
-No runtime dependencies are fetched from external CDNs. The `vendor/` directory contains the React and ReactDOM production builds, so a cloned copy of the repository works without network access.
+No runtime dependencies from external CDNs — `vendor/` ships React + ReactDOM so a cloned copy works without network access.
 
 ## Citing
 
-If you use Dataviz in published research, please cite the repository. A Zenodo DOI will be minted upon tagged releases and displayed here. In the meantime, the suggested citation is:
+If you use Dataviz in published research, cite the repository. A Zenodo DOI will be minted on tagged releases. Suggested citation:
 
 > Dataviz — a browser-only data-analysis toolbox for plant scientists. EVO team, LRSV Toulouse. <https://github.com/evompmi/dataviz>
 
 ## Acknowledgements
 
-Implementation assisted by Anthropic's Claude (Opus / Sonnet) via Claude Code, under human direction. The author remains responsible for scientific validity; statistical outputs are cross-validated against R 4.5 to keep this accountability checkable rather than nominal.
+Implementation assisted by Anthropic's Claude via Claude Code, under human direction. Statistical outputs are cross-validated against R 4.5 to keep accountability checkable rather than nominal.
