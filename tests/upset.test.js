@@ -296,6 +296,25 @@ test("default thresholds pass every row with size ≥ 1 and degree ≥ 1", () =>
   );
 });
 
+test("maxDegree caps degree from above", () => {
+  // maxDegree=1 keeps only singletons (degree 1): masks 1, 2, 4. minSize=0 so
+  // size-0 rows aren't incidentally dropped.
+  eq(
+    truncateIntersections(sizedFixture, { maxDegree: 1, minSize: 0 }).map((r) => r.mask),
+    [1, 2, 4]
+  );
+});
+
+test("minDegree + maxDegree define a closed window", () => {
+  // degree window [2, 2] keeps masks 3 and 5 (both degree 2), regardless of size.
+  eq(
+    truncateIntersections(sizedFixture, { minDegree: 2, maxDegree: 2, minSize: 0 }).map(
+      (r) => r.mask
+    ),
+    [3, 5]
+  );
+});
+
 // ── buildBarTicks ───────────────────────────────────────────────────────────
 
 suite("buildBarTicks");

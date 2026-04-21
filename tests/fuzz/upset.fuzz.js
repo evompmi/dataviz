@@ -219,9 +219,13 @@ function checkDownstream(seed, iter, label, regions, setNames, text) {
   const degrees = regions.map((r) => r.degree);
   const minSize = sizes.length ? Math.floor(Math.min(...sizes) + 1) : 1;
   const minDegree = degrees.length ? Math.max(1, Math.floor(Math.min(...degrees))) : 1;
+  // Pick a maxDegree that's ≥ minDegree but can still prune — midway between
+  // minDegree and the observed max, ceiling-rounded.
+  const maxObservedDegree = degrees.length ? Math.max(...degrees) : minDegree;
+  const maxDegree = Math.max(minDegree, Math.ceil((minDegree + maxObservedDegree) / 2));
   let kept;
   try {
-    kept = truncateIntersections(regions, { minSize, minDegree });
+    kept = truncateIntersections(regions, { minSize, minDegree, maxDegree });
   } catch (err) {
     recordFailure(seed, iter, label, "truncateIntersections", err, text);
     return;
@@ -245,6 +249,17 @@ function checkDownstream(seed, iter, label, regions, setNames, text) {
         label,
         "truncateIntersections",
         new Error(`kept row degree ${r.degree} < minDegree ${minDegree}`),
+        text
+      );
+      return;
+    }
+    if (r.degree > maxDegree) {
+      recordFailure(
+        seed,
+        iter,
+        label,
+        "truncateIntersections",
+        new Error(`kept row degree ${r.degree} > maxDegree ${maxDegree}`),
         text
       );
       return;

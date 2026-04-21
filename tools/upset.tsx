@@ -71,9 +71,11 @@ function sortIntersections(list, mode) {
   }
 }
 
-// Filter by minimum size and minimum degree.
-function truncateIntersections(list, { minSize = 1, minDegree = 1 } = {}) {
-  return list.filter((r) => r.size >= minSize && r.degree >= minDegree);
+// Filter by minimum size and by a degree window [minDegree, maxDegree].
+// maxDegree defaults to Infinity so existing callers that only pass
+// minDegree keep the old "everything at or above minDegree" behaviour.
+function truncateIntersections(list, { minSize = 1, minDegree = 1, maxDegree = Infinity } = {}) {
+  return list.filter((r) => r.size >= minSize && r.degree >= minDegree && r.degree <= maxDegree);
 }
 
 // Human-readable label: "A ∩ B ∩ C".
@@ -126,7 +128,6 @@ const LEFT_BAR_MAX = 110;
 const LEFT_LABEL_AREA_MIN = 82;
 const LEFT_GAP = 6;
 const RIGHT_MARGIN = 20;
-const TOP_AXIS_LABEL_W = 6;
 const BAR_FILL = "#000000";
 const DOT_FILL = "#000000";
 const EMPTY_DOT = "#DDDDDD";
@@ -301,18 +302,28 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
             </g>
           );
         })}
-        <text
-          x={topAxisX - TOP_AXIS_LABEL_W - 28}
-          y={topPanelY + TOP_PANEL_H / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={Math.max(10, fSize - 2)}
-          fill={TEXT_MUTED}
-          fontFamily="sans-serif"
-          transform={`rotate(-90 ${topAxisX - TOP_AXIS_LABEL_W - 28} ${topPanelY + TOP_PANEL_H / 2})`}
-        >
-          Intersection size
-        </text>
+        {(() => {
+          const tickFS = Math.max(9, fSize - 3);
+          const labelFS = Math.max(10, fSize - 2);
+          const maxTickChars = String(topDomainMax).length;
+          const tickTextW = maxTickChars * tickFS * 0.6;
+          const labelCx = topAxisX - 6 - tickTextW - labelFS / 2 - 6;
+          const labelCy = topPanelY + TOP_PANEL_H / 2;
+          return (
+            <text
+              x={labelCx}
+              y={labelCy}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={labelFS}
+              fill={TEXT_MUTED}
+              fontFamily="sans-serif"
+              transform={`rotate(-90 ${labelCx} ${labelCy})`}
+            >
+              Intersection size
+            </text>
+          );
+        })()}
       </g>
 
       {/* Intersection bars + their numeric labels. */}
@@ -499,6 +510,57 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
                 Set size
               </text>
             </>
+          );
+        })()}
+      </g>
+
+      {/* Per-column identifier labels ("I1", "I2", …) directly beneath the
+          matrix. Ids are 1-based and derive from the render order, so they
+          always match whatever intersections.length and sorting are in play.
+          The same ids drive the "All regions" bulk-download filenames, so the
+          labels on the plot equal the file names 1:1 for any given render. */}
+      <g id="column-ids">
+        {(() => {
+          const idLaneY = matrixY + matrixH + 10;
+          const idFontSize = Math.max(8, Math.min(10, fSize - 4));
+          return intersections.map((inter, i) => (
+            <text
+              key={`cid-${inter.mask}`}
+              id={`column-id-${i + 1}`}
+              x={colX(i)}
+              y={idLaneY}
+              textAnchor="middle"
+              dominantBaseline="hanging"
+              fontSize={idFontSize}
+              fontFamily="monospace"
+              fill={TEXT_MUTED}
+            >
+              {`I${i + 1}`}
+            </text>
+          ));
+        })()}
+      </g>
+
+      {/* One-line legend clarifying the "I#" notation. Anchored at matrixLeftX
+          so it sits below the column-ids lane and right of the "Set size"
+          caption (which lives in the left bar area). */}
+      <g id="column-ids-legend">
+        {(() => {
+          const legendFS = Math.max(9, fSize - 3);
+          const legendY = matrixY + matrixH + 36;
+          return (
+            <text
+              x={matrixLeftX}
+              y={legendY}
+              textAnchor="start"
+              dominantBaseline="hanging"
+              fontSize={legendFS}
+              fontFamily="sans-serif"
+              fontStyle="italic"
+              fill={TEXT_MUTED}
+            >
+              I# = intersection id (used as bulk-download filename)
+            </text>
           );
         })()}
       </g>
@@ -808,23 +870,37 @@ function ConfigureStep({
   const canPlot = selectedCount >= 2;
   const needsCutoff = selectedCount > 8;
   const [minDegree, setMinDegree] = useState(1);
-  // Reset cutoff back to 1 whenever the gate disappears so it doesn't
-  // silently apply to a later 3-set selection.
+  const [maxDegree, setMaxDegree] = useState(Infinity);
+  // Reset the cutoff window back to "all degrees" whenever the gate disappears
+  // so it doesn't silently apply to a later 3-set selection. Also re-clamp to
+  // the current selection when the gate is active.
   useEffect(() => {
-    if (!needsCutoff) setMinDegree(1);
-    else setMinDegree((d) => Math.min(d, selectedCount));
+    if (!needsCutoff) {
+      setMinDegree(1);
+      setMaxDegree(Infinity);
+      return;
+    }
+    setMinDegree((d) => Math.max(1, Math.min(selectedCount, d)));
+    setMaxDegree((d) =>
+      Number.isFinite(d) ? Math.max(1, Math.min(selectedCount, d)) : selectedCount
+    );
   }, [needsCutoff, selectedCount]);
+  // Keep min ≤ max whenever either edge changes.
+  useEffect(() => {
+    if (Number.isFinite(maxDegree) && minDegree > maxDegree) setMinDegree(maxDegree);
+  }, [minDegree, maxDegree]);
 
   const allPossible = selectedCount >= 2 ? Math.pow(2, selectedCount) - 1 : 0;
+  const effectiveMaxDegree = Number.isFinite(maxDegree) ? maxDegree : selectedCount;
   const cutoffPreview = useMemo(() => {
     if (!needsCutoff) return null;
     const pendingSets = new Map();
     pendingSelection.forEach((n) => pendingSets.set(n, allColumnSets.get(n)));
     const { membershipMap } = computeMemberships(pendingSelection, pendingSets);
     const all = enumerateIntersections(membershipMap, pendingSelection);
-    const kept = all.filter((r) => r.degree >= minDegree).length;
+    const kept = all.filter((r) => r.degree >= minDegree && r.degree <= effectiveMaxDegree).length;
     return { nonEmpty: all.length, kept };
-  }, [needsCutoff, pendingSelection, allColumnSets, minDegree]);
+  }, [needsCutoff, pendingSelection, allColumnSets, minDegree, effectiveMaxDegree]);
 
   const toggle = (name) => {
     setPendingSelection((prev) =>
@@ -915,9 +991,10 @@ function ConfigureStep({
           </p>
           <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--text-muted)" }}>
             With {selectedCount} sets, up to {allPossible.toLocaleString()} intersections are
-            possible. Keep only intersections involving at least this many sets:
+            possible. Keep only intersections whose degree falls in this window:
           </p>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Min</label>
             <input
               type="number"
               min={1}
@@ -927,10 +1004,29 @@ function ConfigureStep({
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
                 if (!Number.isFinite(v)) return;
-                setMinDegree(Math.max(1, Math.min(selectedCount, v)));
+                const clamped = Math.max(1, Math.min(selectedCount, v));
+                setMinDegree(clamped);
+                if (Number.isFinite(maxDegree) && clamped > maxDegree) setMaxDegree(clamped);
               }}
               className="dv-input"
-              style={{ width: 80 }}
+              style={{ width: 72 }}
+            />
+            <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Max</label>
+            <input
+              type="number"
+              min={1}
+              max={selectedCount}
+              step={1}
+              value={effectiveMaxDegree}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isFinite(v)) return;
+                const clamped = Math.max(1, Math.min(selectedCount, v));
+                setMaxDegree(clamped);
+                if (clamped < minDegree) setMinDegree(clamped);
+              }}
+              className="dv-input"
+              style={{ width: 72 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
               {cutoffPreview
@@ -939,14 +1035,20 @@ function ConfigureStep({
             </span>
           </div>
           <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--text-faint)" }}>
-            Degree 1 keeps singletons (items unique to one set). You can change this later in the
-            plot controls.
+            Degree 1 keeps singletons (items unique to one set); degree = {selectedCount} keeps the
+            all-sets intersection. You can change this later in the plot controls.
           </p>
         </div>
       )}
 
       <button
-        onClick={() => canPlot && onCommit(pendingSelection, { minDegree })}
+        onClick={() =>
+          canPlot &&
+          onCommit(pendingSelection, {
+            minDegree,
+            maxDegree: Number.isFinite(maxDegree) ? maxDegree : null,
+          })
+        }
         disabled={!canPlot}
         className="dv-btn dv-btn-primary"
         style={{
@@ -963,7 +1065,7 @@ function ConfigureStep({
 
 // ── Intersection table + item list (below the chart) ────────────────────────
 
-function ItemListPanel({ intersection, setNames, fileName }) {
+function ItemListPanel({ intersection, setNames, fileName, columnId }) {
   const baseName = fileBaseName(fileName, "upset");
   if (!intersection)
     return (
@@ -990,6 +1092,17 @@ function ItemListPanel({ intersection, setNames, fileName }) {
         }}
       >
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+          {columnId != null && (
+            <span
+              style={{
+                fontFamily: "monospace",
+                color: "var(--text-muted)",
+                marginRight: 6,
+              }}
+            >
+              I{columnId}
+            </span>
+          )}
           {label}{" "}
           <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>
             ({intersection.size} items)
@@ -1000,7 +1113,9 @@ function ItemListPanel({ intersection, setNames, fileName }) {
             downloadCsv(
               ["Item"],
               intersection.items.map((i) => [i]),
-              `${baseName}_upset_${intersectionFilenamePart(label)}.csv`
+              columnId != null
+                ? `${baseName}_upset_I${columnId}.csv`
+                : `${baseName}_upset_${intersectionFilenamePart(label)}.csv`
             )
           }
           className="dv-btn dv-btn-secondary"
@@ -1122,7 +1237,7 @@ function PlotControls({
           {
             label: "Table",
             title:
-              "Download the full intersection table (Intersection, Degree, Size, + per-set flags)",
+              "Download the currently-plotted intersection table (Intersection, Degree, Size, + per-set flags). Matches the plot exactly — reflects sort, Top N, Minimum/Maximum degree, and Minimum size filters.",
             onClick: () => {
               const headers = ["Intersection", "Degree", "Size", ...activeSetNames];
               const rows = intersections.map((r) => {
@@ -1148,6 +1263,37 @@ function PlotControls({
                   ...activeSetNames.map((n) => (allSets.get(n).has(item) ? "1" : "0")),
                 ]);
               downloadCsv(headers, rows, `${baseName}_upset_membership.csv`);
+            },
+          },
+          {
+            label: "All regions",
+            title:
+              "One CSV per currently-plotted intersection (named _I1, _I2, … matching the on-plot identifiers) plus an _index.csv mapping Id → Intersection, Degree, Size. Your browser may ask once to allow multiple downloads.",
+            onClick: () => {
+              if (!intersections.length) return;
+              const indexHeaders = ["Id", "Intersection", "Degree", "Size"];
+              const indexRows = intersections.map((inter, i) => [
+                `I${i + 1}`,
+                intersectionLabel(inter.setIndices, activeSetNames),
+                String(inter.degree),
+                String(inter.size),
+              ]);
+              // Staggered downloads — without the gap, browsers tend to silently
+              // drop everything after the first file when a synchronous loop
+              // fires multiple <a>.click() events in the same tick.
+              downloadCsv(indexHeaders, indexRows, `${baseName}_upset_index.csv`);
+              intersections.forEach((inter, i) => {
+                setTimeout(
+                  () => {
+                    downloadCsv(
+                      ["Item"],
+                      inter.items.map((item) => [item]),
+                      `${baseName}_upset_I${i + 1}.csv`
+                    );
+                  },
+                  40 * (i + 1)
+                );
+              });
             },
           },
         ]}
@@ -1183,7 +1329,25 @@ function PlotControls({
           min={1}
           max={Math.max(1, activeSetNames.length)}
           step={1}
-          onChange={sv("minDegree")}
+          onChange={(v) => {
+            const clamped = Math.max(1, Math.min(activeSetNames.length || 1, v));
+            const patch: { minDegree: number; maxDegree?: number } = { minDegree: clamped };
+            if (vis.maxDegree != null && clamped > vis.maxDegree) patch.maxDegree = clamped;
+            updVis(patch);
+          }}
+        />
+        <SliderControl
+          label="Maximum degree"
+          value={vis.maxDegree ?? Math.max(1, activeSetNames.length)}
+          min={1}
+          max={Math.max(1, activeSetNames.length)}
+          step={1}
+          onChange={(v) => {
+            const clamped = Math.max(1, Math.min(activeSetNames.length || 1, v));
+            const patch: { maxDegree: number; minDegree?: number } = { maxDegree: clamped };
+            if (clamped < vis.minDegree) patch.minDegree = clamped;
+            updVis(patch);
+          }}
         />
       </ControlSection>
 
@@ -1378,6 +1542,10 @@ function App() {
     sortMode: "size-desc",
     minSize: 1,
     minDegree: 1,
+    // `maxDegree: null` means "no upper bound" (keep every degree). Persists
+    // through loadAutoPrefs as null; the chart renders against setNames.length
+    // when null.
+    maxDegree: null,
   };
   const [vis, updVis] = useReducer(
     (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
@@ -1414,8 +1582,9 @@ function App() {
       truncateIntersections(sortedIntersections, {
         minSize: vis.minSize,
         minDegree: vis.minDegree,
+        maxDegree: vis.maxDegree ?? Infinity,
       }),
-    [sortedIntersections, vis.minSize, vis.minDegree]
+    [sortedIntersections, vis.minSize, vis.minDegree, vis.maxDegree]
   );
 
   const canNavigate = useCallback(
@@ -1550,7 +1719,10 @@ function App() {
     return m;
   }, [displaySetNames, sets]);
 
-  const selectedIntersection = truncatedIntersections.find((g) => g.mask === selectedMask) || null;
+  const selectedIntersectionIdx = truncatedIntersections.findIndex((g) => g.mask === selectedMask);
+  const selectedIntersection =
+    selectedIntersectionIdx >= 0 ? truncatedIntersections[selectedIntersectionIdx] : null;
+  const selectedColumnId = selectedIntersectionIdx >= 0 ? selectedIntersectionIdx + 1 : null;
   const showColumnWarning = truncatedIntersections.length > 60;
 
   return (
@@ -1617,9 +1789,13 @@ function App() {
           allColumnSets={allColumnSets}
           pendingSelection={pendingSelection}
           setPendingSelection={setPendingSelection}
-          onCommit={(names, { minDegree } = { minDegree: 1 }) => {
+          onCommit={(names, { minDegree, maxDegree } = { minDegree: 1, maxDegree: null }) => {
             commitSelection(names, allColumnSets);
-            updVis({ minDegree: Math.max(1, minDegree || 1) });
+            const patch: { minDegree: number; maxDegree: number | null } = {
+              minDegree: Math.max(1, minDegree || 1),
+              maxDegree: Number.isFinite(maxDegree) ? maxDegree : null,
+            };
+            updVis(patch);
             setStep("plot");
           }}
         />
@@ -1636,7 +1812,7 @@ function App() {
               chartRef={chartRef}
               resetAll={resetAll}
               fileName={fileName}
-              intersections={sortedIntersections}
+              intersections={truncatedIntersections}
             />
 
             <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
@@ -1687,7 +1863,7 @@ function App() {
                   }}
                 >
                   {truncatedIntersections.length} columns — dots may overlap. Raise Minimum
-                  intersection size or Minimum degree to reduce.
+                  intersection size, raise Minimum degree, or lower Maximum degree to reduce.
                 </div>
               )}
 
@@ -1703,7 +1879,8 @@ function App() {
                     color: "var(--info-text)",
                   }}
                 >
-                  No intersections to show. Lower Minimum intersection size or Minimum degree.
+                  No intersections to show. Lower Minimum intersection size, lower Minimum degree,
+                  or raise Maximum degree.
                 </div>
               )}
 
@@ -1722,6 +1899,7 @@ function App() {
                   intersection={selectedIntersection}
                   setNames={displaySetNames}
                   fileName={fileName}
+                  columnId={selectedColumnId}
                 />
               </div>
             </div>
