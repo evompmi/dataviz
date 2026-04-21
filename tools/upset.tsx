@@ -366,7 +366,9 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         })}
       </g>
 
-      {/* Matrix zebra stripes — every other row gets a faint band. */}
+      {/* Matrix zebra stripes — every other row gets a faint band that
+          spans only the populated column range so the bands shrink in step
+          with the minimum-size / minimum-degree filters. */}
       <g id="matrix-background">
         {setNames.map((_, i) =>
           i % 2 === 0 ? (
@@ -374,7 +376,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
               key={`zb-${i}`}
               x={matrixLeftX}
               y={matrixY + i * rowH}
-              width={SVG_W - RIGHT_MARGIN - matrixLeftX}
+              width={Math.max(0, nCols) * colW}
               height={rowH}
               fill={ZEBRA_FILL}
               fillOpacity="0.5"
