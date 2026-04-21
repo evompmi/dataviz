@@ -62,6 +62,7 @@ vm.runInContext(sharedSrc, ctx);
 vm.runInContext(helpersJs, ctx);
 
 module.exports = {
+  parseRaw: ctx.parseRaw,
   parseSetData: ctx.parseSetData,
   parseLongFormatSets: ctx.parseLongFormatSets,
   computeMemberships: ctx.computeMemberships,
@@ -70,4 +71,5 @@ module.exports = {
   truncateIntersections: ctx.truncateIntersections,
   intersectionLabel: ctx.intersectionLabel,
   intersectionFilenamePart: ctx.intersectionFilenamePart,
+  buildBarTicks: ctx.buildBarTicks,
 };

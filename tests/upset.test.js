@@ -11,6 +11,7 @@ const {
   truncateIntersections,
   intersectionLabel,
   intersectionFilenamePart,
+  buildBarTicks,
 } = require("./helpers/upset-loader");
 
 // ── parseSetData ─────────────────────────────────────────────────────────────
@@ -265,6 +266,72 @@ test("minSize filters out smaller rows", () => {
     truncateIntersections(sizedFixture, { minSize: 3 }).map((r) => r.mask),
     [1, 2, 3]
   );
+});
+
+test("minDegree filters out lower-degree rows", () => {
+  // Drop the default minSize=1 floor so this test isolates the degree cut:
+  // rows with degree ≥ 2 are masks 3 (degree 2, size 3) and 5 (degree 2,
+  // size 0). The default minSize=1 would exclude mask 5; we pass
+  // minSize=0 here to verify the minDegree branch in isolation.
+  eq(
+    truncateIntersections(sizedFixture, { minDegree: 2, minSize: 0 }).map((r) => r.mask),
+    [3, 5]
+  );
+});
+
+test("combined minSize + minDegree filters on both conditions", () => {
+  // degree ≥ 2 AND size ≥ 2 → only mask 3 (degree 2, size 3). mask 5 has
+  // size 0 which fails minSize.
+  eq(
+    truncateIntersections(sizedFixture, { minSize: 2, minDegree: 2 }).map((r) => r.mask),
+    [3]
+  );
+});
+
+test("default thresholds pass every row with size ≥ 1 and degree ≥ 1", () => {
+  // mask 5 has size 0, which is the only reason it gets dropped by default.
+  eq(
+    truncateIntersections(sizedFixture).map((r) => r.mask),
+    [1, 2, 3, 4]
+  );
+});
+
+// ── buildBarTicks ───────────────────────────────────────────────────────────
+
+suite("buildBarTicks");
+
+test("returns [0, 1] when max ≤ 0 so the axis doesn't divide by zero", () => {
+  eq(buildBarTicks(0, 4), [0, 1]);
+  eq(buildBarTicks(-5, 4), [0, 1]);
+});
+
+test("first tick is always 0", () => {
+  for (const max of [3, 28, 100, 237]) {
+    const ticks = buildBarTicks(max, 4);
+    eq(ticks[0], 0);
+  }
+});
+
+test("last tick is strictly greater than the data max", () => {
+  for (const max of [1, 3, 7, 28, 100, 237]) {
+    const ticks = buildBarTicks(max, 4);
+    assert(
+      ticks[ticks.length - 1] > max,
+      `expected last tick > ${max}, got ${ticks[ticks.length - 1]}`
+    );
+  }
+});
+
+test("ticks are equally spaced (±1e-9)", () => {
+  for (const max of [3, 7, 28, 100, 237]) {
+    const ticks = buildBarTicks(max, 4);
+    if (ticks.length < 3) continue;
+    const step = ticks[1] - ticks[0];
+    for (let i = 2; i < ticks.length; i++) {
+      const gap = ticks[i] - ticks[i - 1];
+      assert(Math.abs(gap - step) < 1e-9, `step drift at index ${i}: expected ${step}, got ${gap}`);
+    }
+  }
 });
 
 // ── intersectionLabel / intersectionFilenamePart ────────────────────────────

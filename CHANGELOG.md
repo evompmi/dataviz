@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **UpSet fuzz-test suite** — new `tests/fuzz/upset.fuzz.js` runs the UpSet pipeline (`parseRaw` → `parseSetData` / `parseLongFormatSets` → `computeMemberships` → `enumerateIntersections` → `sortIntersections` → `truncateIntersections` → label/filename helpers) against the shared pathological-input corpus plus a dedicated 2-column long-format corpus. Per-iteration invariants cover mask uniqueness/range, strict `setIndices` ↔ bitmask consistency, `items.length === size`, sorted items, sort modes preserving length + membership, truncation respecting thresholds, and filename slugs staying ASCII-safe. Headers are clamped to 10 sets so the 2ᴺ−1 intersection space stays bounded. Wired up as `npm run fuzz:upset` (2×1000 iterations default, parameterised by `FUZZ_SEED` / `FUZZ_N` / `FUZZ_QUIET`); 10k-iteration sweeps across seeds 1 / 42 / 999 currently report zero crashes.
+
+- **Landing-page test counter bumped 642 → 649** to reflect the 7 new UpSet unit tests (3 `truncateIntersections` threshold variants + 4 `buildBarTicks` invariants).
+
+- **UpSet unit-test coverage for `truncateIntersections` + `buildBarTicks`** — the existing `tests/upset.test.js` only exercised the `minSize` branch of `truncateIntersections`; added tests for `minDegree` in isolation, the combined `minSize` + `minDegree` case, and the default-threshold contract. Also added a new `buildBarTicks` suite covering the zero/negative-max fallback, `first == 0`, strictly-greater-than-data-max last tick, and equal spacing — these were previously only validated indirectly via chart-render eyeballing.
+
 ### Changed
+
+- **Landing page — Plots section tiles regrouped by chart family** — the Plots row mixed set-overlap tools (Venn, UpSet) into the middle of the distribution/relationship plots, which made the section read as an unsorted list. Reordered so the four "X-vs-Y / group" plots come first (Group Plot, Scatter, Line, Aequorin Ca²⁺), then the two set-membership tools (Venn, UpSet), then Heatmap last as the matrix-view outlier. No tile content changed — pure reorder of the buttons inside the Plots `dv-tile-grid`.
 
 - **UpSet — filter slider labels spelled out in full** — renamed `Min size` → `Minimum intersection size` and `Min degree` → `Minimum degree` in the plot-controls sidebar so first-time users can guess what each filter does without hovering or reading the hint text. Banners that reference the two controls (overcrowded warning and empty-state) were updated to match.
 
