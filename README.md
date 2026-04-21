@@ -1,6 +1,6 @@
-# Dataviz — browser-only data-analysis toolbox for plant scientists
+# Dataviz — browser-only data-analysis toolbox for wet-lab scientists
 
-Static web app for common plot-and-test workflows in plant-physiology research. No server, no tracking, no data leaving the browser.
+Static web app for common plot-and-test workflows in wet-lab research. No server, no tracking, no data leaving the browser.
 
 **Live:** [evompmi.github.io/dataviz](https://evompmi.github.io/dataviz) · **Source:** [github.com/evompmi/dataviz](https://github.com/evompmi/dataviz)
 
