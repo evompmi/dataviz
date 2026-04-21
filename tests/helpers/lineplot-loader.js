@@ -1,19 +1,26 @@
-// Loads the pure-JS primitives that lineplot's computeSeries /
-// computePerXStats helpers depend on (sampleMean, sampleSD, tinv, bhAdjust,
-// selectTest + test functions). The helpers themselves live in
-// tools/lineplot.tsx with TypeScript type annotations on local vars
-// (`Map<string, …>`, `number[]`), so we can't vm-load them directly —
-// the fuzz script mirrors them as plain JS instead. Same approach as
-// scatter, kept up to date with a source-reference comment.
+// Loads the lineplot pure helpers (tools/lineplot/helpers.ts) and their shared
+// dependencies (tools/shared.js, tools/stats.js) into a Node vm context.
+// helpers.ts is a pure-TS ES module with no React/DOM use, so we transform it
+// to CommonJS with esbuild and evaluate it in a vm context that already has
+// the shared globals (sampleMean, sampleSD, tinv, bhAdjust, selectTest,
+// tTest, …) available.
 
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
+const esbuild = require("esbuild");
 
 const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
+const helpersSrc = fs.readFileSync(path.join(toolsDir, "lineplot/helpers.ts"), "utf8");
 
+const helpersCjs = esbuild.transformSync(helpersSrc, {
+  loader: "ts",
+  format: "cjs",
+}).code;
+
+const moduleObj = { exports: {} };
 const ctx = {
   Math,
   parseInt,
@@ -28,21 +35,14 @@ const ctx = {
   NaN,
   Set,
   Map,
-  setTimeout: () => {},
-  document: {
-    createElement: () => ({}),
-    body: { appendChild: () => {}, removeChild: () => {} },
-  },
-  URL: { createObjectURL: () => "", revokeObjectURL: () => {} },
-  Blob: function () {},
-  XMLSerializer: function () {
-    this.serializeToString = () => "";
-  },
+  module: moduleObj,
+  exports: moduleObj.exports,
 };
 
 vm.createContext(ctx);
 vm.runInContext(sharedSrc, ctx);
 vm.runInContext(statsSrc, ctx);
+vm.runInContext(helpersCjs, ctx);
 
 module.exports = {
   parseRaw: ctx.parseRaw,
@@ -57,4 +57,10 @@ module.exports = {
   oneWayANOVA: ctx.oneWayANOVA,
   welchANOVA: ctx.welchANOVA,
   kruskalWallis: ctx.kruskalWallis,
+  // Helpers now directly testable instead of mirrored in the fuzz script.
+  buildLineD: moduleObj.exports.buildLineD,
+  formatX: moduleObj.exports.formatX,
+  runChosenTest: moduleObj.exports.runChosenTest,
+  computeSeries: moduleObj.exports.computeSeries,
+  computePerXStats: moduleObj.exports.computePerXStats,
 };
