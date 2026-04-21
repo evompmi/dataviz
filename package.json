@@ -20,7 +20,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "node scripts/hooks/install.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

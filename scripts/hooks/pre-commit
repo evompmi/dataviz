@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Pre-commit hook: keeps compiled outputs in sync with source.
+#
+# Problem it solves: tools/<tool>.js.map files inline _shell/*.ts content via
+# sourcesContent. If any _shell/* or helpers.ts file changes and the committer
+# forgets to rebuild, the committed .map goes stale — CI rebuilds then report
+# a dirty working tree, merges conflict, and cross-tool sourcemap drift
+# sneaks in (we lived this during the tool-helpers-split merge to master).
+#
+# Strategy: if staged changes touch anything that affects the build
+# (tools/*.tsx, tools/*/*.ts(x), tools/_shell/*, tools/shared*.js, stats.js,
+# theme.js, scripts/build-shared.js, scripts/write-version.js), rebuild and
+# re-stage any compiled output that changed as a result.
+#
+# Bypass with `git commit --no-verify` if you truly need to commit without
+# rebuilding (e.g. reverting only compiled outputs).
+
+set -euo pipefail
+
+# Files whose edits invalidate compiled outputs.
+affects_build() {
+  git diff --cached --name-only --diff-filter=ACMR | \
+    grep -E '^(tools/[^/]+\.(tsx|ts)$|tools/[^/]+/.*\.(ts|tsx)$|tools/(shared[^/]*|stats|theme)\.js$|scripts/(build-shared|write-version)\.js$)' \
+    || true
+}
+
+STAGED=$(affects_build)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+echo "[pre-commit] Source files staged — rebuilding to keep compiled outputs in sync:"
+echo "$STAGED" | sed 's/^/  /'
+
+# Rebuild. prebuild script also regenerates tools/version.js and
+# tools/shared.bundle.js, so we don't need separate invocations.
+npm run --silent build >/dev/null
+
+# Find any compiled artifact that changed as a result of the build.
+REBUILT=$(git diff --name-only -- \
+  'tools/*.js' 'tools/*.js.map' \
+  'tools/shared.bundle.js' 'tools/shared.bundle.js.map' \
+  'tools/version.js' \
+  2>/dev/null || true)
+
+if [ -n "$REBUILT" ]; then
+  echo "[pre-commit] Re-staging rebuilt outputs:"
+  echo "$REBUILT" | sed 's/^/  /'
+  echo "$REBUILT" | xargs git add
+fi
+
+exit 0
