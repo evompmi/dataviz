@@ -685,7 +685,6 @@ function App() {
       state={shell}
       toolName="boxplot"
       title="Group Plot"
-      subtitle={`Load → label columns → filter → plot & export${dataFormat === "wide" ? " · Wide format auto-detected" : ""}`}
       visInit={VIS_INIT_BOXPLOT}
       steps={["upload", "configure", "filter", "output", "plot"]}
       canNavigate={(s) => s === "upload" || parsedRows.length > 0}

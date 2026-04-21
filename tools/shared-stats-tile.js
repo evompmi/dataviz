@@ -602,8 +602,8 @@ function StatsTile({
     borderRadius: 10,
     fontSize: fs(10),
     fontWeight: 700,
-    background: "var(--success-bg)",
-    color: "var(--success-text)",
+    background: "var(--step-ready-bg)",
+    color: "var(--step-ready)",
   };
   const pillBad = { ...pillOk, background: "var(--danger-bg)", color: "var(--danger-text)" };
   const pillNeutral = { ...pillOk, background: "var(--neutral-bg)", color: "var(--neutral-text)" };
@@ -1006,7 +1006,7 @@ function StatsTile({
             style: {
               ...td,
               fontWeight: 700,
-              color: pVal < 0.05 ? "var(--success-text)" : "var(--text-faint)",
+              color: pVal < 0.05 ? "var(--step-ready)" : "var(--text-faint)",
             },
           },
           pStars(pVal)
@@ -1088,7 +1088,7 @@ function StatsTile({
                   style: {
                     ...td,
                     fontWeight: 700,
-                    color: row.achieved >= 0.8 ? "var(--success-text)" : "var(--warning-text)",
+                    color: row.achieved >= 0.8 ? "var(--step-ready)" : "var(--warning-text)",
                   },
                 },
                 fmtPct(row.achieved)

@@ -1512,7 +1512,6 @@ function App() {
       state={{ ...shell, setStep: navigateStep }}
       toolName="upset"
       title="UpSet plot"
-      subtitle="Intersection sizes across many sets (4+ sets)"
       visInit={VIS_INIT_UPSET}
       steps={["upload", "configure", "plot"]}
       canNavigate={canNavigate}

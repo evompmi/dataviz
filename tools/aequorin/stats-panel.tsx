@@ -68,8 +68,8 @@ export function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
     borderRadius: 8,
     fontSize: 9,
     fontWeight: 700,
-    background: "var(--success-bg)",
-    color: "var(--success-text)",
+    background: "var(--step-ready-bg)",
+    color: "var(--step-ready)",
   };
   const pillBad: React.CSSProperties = {
     ...pillOk,
@@ -252,7 +252,7 @@ export function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
                       style={{
                         ...tdS,
                         fontWeight: 700,
-                        color: p < 0.05 ? "var(--success-text)" : "var(--text-faint)",
+                        color: p < 0.05 ? "var(--step-ready)" : "var(--text-faint)",
                       }}
                     >
                       {pStars(p)}
@@ -289,7 +289,7 @@ export function AequorinStatsDetail({ row, onOverrideTest, isOverridden }) {
                     style={{
                       ...tdS,
                       fontWeight: 700,
-                      color: pr.achieved >= 0.8 ? "var(--success-text)" : "var(--warning-text)",
+                      color: pr.achieved >= 0.8 ? "var(--step-ready)" : "var(--warning-text)",
                     }}
                   >
                     {(pr.achieved * 100).toFixed(1)}%
@@ -607,7 +607,7 @@ export function AequorinStatsPanel({
                 ...tdS,
                 ...mono,
                 fontWeight: sig ? 700 : 400,
-                color: sig ? "var(--success-text)" : "var(--text)",
+                color: sig ? "var(--step-ready)" : "var(--text)",
               }}
             >
               {p != null ? formatP(p) : "—"}
@@ -616,7 +616,7 @@ export function AequorinStatsPanel({
               style={{
                 ...tdS,
                 textAlign: "right",
-                color: sig ? "var(--success-text)" : "var(--text-faint)",
+                color: sig ? "var(--step-ready)" : "var(--text-faint)",
                 fontWeight: 700,
               }}
             >

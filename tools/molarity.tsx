@@ -1168,11 +1168,7 @@ function App() {
     <div
       style={{ maxWidth: 720, margin: "0 auto", padding: compact ? "16px 10px 80px" : "32px 20px" }}
     >
-      <PageHeader
-        toolName="molarity"
-        title="Calculator"
-        subtitle="Molarity, dilution, batch preparation, and ligation"
-      />
+      <PageHeader toolName="molarity" title="Calculator" />
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 6px" }}>
         <span

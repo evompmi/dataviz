@@ -537,19 +537,8 @@ function ConfigureStep({
           </button>
         </div>
       )}
-      <div className="dv-panel">
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
-          × {parsedRows.length} rows
-        </p>
-        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
-          Preview (first 8 rows):
-        </p>
-        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
-      </div>
-
       {needsPicker && (
-        <div className="dv-panel" style={{ marginTop: 16 }}>
+        <div className="dv-panel">
           <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
             Choose sets to overlap
           </p>
@@ -613,6 +602,16 @@ function ConfigureStep({
           </div>
         </div>
       )}
+      <div className="dv-panel" style={{ marginTop: needsPicker || showNudge ? 16 : 0 }}>
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
+          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
+          × {parsedRows.length} rows
+        </p>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
+          Preview (first 8 rows):
+        </p>
+        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
+      </div>
     </div>
   );
 }
@@ -1285,7 +1284,6 @@ function App() {
       state={{ ...shell, setStep: navigateStep }}
       toolName="venn"
       title="Venn Diagram"
-      subtitle="Set overlaps with data extraction (2–3 sets)"
       visInit={VIS_INIT_VENN}
       steps={["upload", "configure", "plot"]}
       canNavigate={canNavigate}

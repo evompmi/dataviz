@@ -742,11 +742,7 @@ function App() {
 
   return (
     <div style={{ maxWidth: 960, padding: "24px 32px" }}>
-      <PageHeader
-        title="Power Analysis"
-        icon={toolIcon("power")}
-        subtitle="Validated to within ±0.5% of R pwr package output"
-      />
+      <PageHeader title="Power Analysis" icon={toolIcon("power")} />
 
       {/* Question banner */}
       <div

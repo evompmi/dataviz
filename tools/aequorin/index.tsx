@@ -397,7 +397,6 @@ function App() {
       state={shell}
       toolName="aequorin"
       title="Aequorin Ca²⁺ Calibration"
-      subtitle={`${FORMULA_DEFS[formula].label} — ${FORMULA_DEFS[formula].eq}`}
       visInit={VIS_INIT_AEQUORIN}
       steps={["upload", "configure", "plot"]}
       canNavigate={canNavigate}
