@@ -39,6 +39,7 @@ npm run --silent build >/dev/null
 # Find any compiled artifact that changed as a result of the build.
 REBUILT=$(git diff --name-only -- \
   'tools/*.js' 'tools/*.js.map' \
+  'tools/*/index.js' 'tools/*/index.js.map' \
   'tools/shared.bundle.js' 'tools/shared.bundle.js.map' \
   'tools/version.js' \
   2>/dev/null || true)

@@ -37,39 +37,9 @@ export const TEST_OPTIONS_BP_K = ["oneWayANOVA", "welchANOVA", "kruskalWallis"];
 
 export const ERROR_BAR_LABELS = { none: "None", sd: "SD", sem: "SEM", ci95: "95% CI" };
 
-// ── Run a selected test / post-hoc by name ──────────────────────────────────
-
-export function runBpTest(name, values) {
-  try {
-    if (name === "studentT") return tTest(values[0], values[1], { equalVar: true });
-    if (name === "welchT") return tTest(values[0], values[1], { equalVar: false });
-    if (name === "mannWhitney") return mannWhitneyU(values[0], values[1]);
-    if (name === "oneWayANOVA") return oneWayANOVA(values);
-    if (name === "welchANOVA") return welchANOVA(values);
-    if (name === "kruskalWallis") return kruskalWallis(values);
-    return { error: "unknown test" };
-  } catch (e) {
-    return { error: String((e && e.message) || e) };
-  }
-}
-
-export function runBpPostHoc(name, values) {
-  try {
-    if (name === "tukeyHSD") return tukeyHSD(values);
-    if (name === "gamesHowell") return gamesHowell(values);
-    if (name === "dunn") return dunnTest(values);
-    return null;
-  } catch (e) {
-    return { error: String((e && e.message) || e) };
-  }
-}
-
-export function postHocForBpTest(testName) {
-  if (testName === "oneWayANOVA") return "tukeyHSD";
-  if (testName === "welchANOVA") return "gamesHowell";
-  if (testName === "kruskalWallis") return "dunn";
-  return null;
-}
+// Test / post-hoc dispatchers live in tools/_shell/stats-dispatch.ts
+// (runTest, runPostHoc, postHocForTest) — shared across boxplot, lineplot,
+// and aequorin.
 
 // ── Result formatting ───────────────────────────────────────────────────────
 

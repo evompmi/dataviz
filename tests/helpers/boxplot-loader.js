@@ -90,9 +90,6 @@ module.exports = {
   compactLetterDisplay: ctx.compactLetterDisplay,
   assignBracketLevels: ctx.assignBracketLevels,
   // Boxplot-specific pure helpers.
-  runBpTest: moduleObj.exports.runBpTest,
-  runBpPostHoc: moduleObj.exports.runBpPostHoc,
-  postHocForBpTest: moduleObj.exports.postHocForBpTest,
   formatBpStatShort: moduleObj.exports.formatBpStatShort,
   formatBpResultLine: moduleObj.exports.formatBpResultLine,
   computeBpAnnotationSpec: moduleObj.exports.computeBpAnnotationSpec,

@@ -1,9 +1,9 @@
 // Loads the lineplot pure helpers (tools/lineplot/helpers.ts) and their shared
 // dependencies (tools/shared.js, tools/stats.js) into a Node vm context.
-// helpers.ts is a pure-TS ES module with no React/DOM use, so we transform it
-// to CommonJS with esbuild and evaluate it in a vm context that already has
-// the shared globals (sampleMean, sampleSD, tinv, bhAdjust, selectTest,
-// tTest, …) available.
+// helpers.ts is a pure-TS ES module that imports from ../_shell/stats-dispatch,
+// so we bundle it (inlining the shared dispatcher) to CommonJS with esbuild
+// and evaluate it in a vm context that already has the shared globals
+// (sampleMean, sampleSD, tinv, bhAdjust, selectTest, tTest, …) available.
 
 const fs = require("fs");
 const vm = require("vm");
@@ -13,12 +13,14 @@ const esbuild = require("esbuild");
 const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
-const helpersSrc = fs.readFileSync(path.join(toolsDir, "lineplot/helpers.ts"), "utf8");
 
-const helpersCjs = esbuild.transformSync(helpersSrc, {
-  loader: "ts",
+const helpersCjs = esbuild.buildSync({
+  entryPoints: [path.join(toolsDir, "lineplot/helpers.ts")],
+  bundle: true,
   format: "cjs",
-}).code;
+  platform: "neutral",
+  write: false,
+}).outputFiles[0].text;
 
 const moduleObj = { exports: {} };
 const ctx = {
@@ -60,7 +62,6 @@ module.exports = {
   // Helpers now directly testable instead of mirrored in the fuzz script.
   buildLineD: moduleObj.exports.buildLineD,
   formatX: moduleObj.exports.formatX,
-  runChosenTest: moduleObj.exports.runChosenTest,
   computeSeries: moduleObj.exports.computeSeries,
   computePerXStats: moduleObj.exports.computePerXStats,
 };

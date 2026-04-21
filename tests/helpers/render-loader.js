@@ -226,7 +226,12 @@ function buildContext() {
 
 function loadTool(toolName) {
   const { ctx, resetHooks } = buildContext();
-  const toolSrc = fs.readFileSync(path.join(toolsDir, toolName + ".js"), "utf8");
+  // Some tools ship as folder-split entries (e.g. tools/boxplot/index.js);
+  // fall back to the folder layout when the flat .js is missing.
+  const flatPath = path.join(toolsDir, toolName + ".js");
+  const folderPath = path.join(toolsDir, toolName, "index.js");
+  const toolPath = fs.existsSync(flatPath) ? flatPath : folderPath;
+  const toolSrc = fs.readFileSync(toolPath, "utf8");
   // Wrap in a function so const/let declarations are captured via _exports.
   // The tool source ends with ReactDOM.createRoot(...).render(...) which we
   // replace with an export of all const-declared names we care about.
