@@ -96,6 +96,18 @@ export function intersectionIdKey(setIndices, setNames) {
   return setIndices.map((i) => svgSafeId(setNames[i])).join("-") || "empty";
 }
 
+// Decide whether column-id labels ("I1", "I2", …) should render rotated -90°
+// (reading bottom-to-top) instead of horizontally. Rotation kicks in as soon
+// as the horizontal label would be wider than the matrix column plus a small
+// gap, so behaviour adapts to nCols, font size, and any future colW change.
+// The 0.58 factor is the same shared average-glyph-width estimate used for
+// set-name label sizing in upset.tsx.
+export function shouldRotateColumnIds(nCols, colW, idFontSize) {
+  const maxIdChars = 1 + String(Math.max(1, nCols)).length;
+  const horizontalIdWidth = maxIdChars * idFontSize * 0.58;
+  return horizontalIdWidth + 2 > colW;
+}
+
 // Build axis ticks for a bar panel: evenly spaced pretty ticks from 0 up to a
 // domain max that is strictly greater than the data max (rounded up to the
 // next niceStep). Callers scale bars against the last tick so every interval

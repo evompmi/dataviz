@@ -52,4 +52,5 @@ module.exports = {
   intersectionLabel: moduleObj.exports.intersectionLabel,
   intersectionFilenamePart: moduleObj.exports.intersectionFilenamePart,
   buildBarTicks: moduleObj.exports.buildBarTicks,
+  shouldRotateColumnIds: moduleObj.exports.shouldRotateColumnIds,
 };

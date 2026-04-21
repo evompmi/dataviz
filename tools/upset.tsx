@@ -12,6 +12,7 @@ import {
   intersectionFilenamePart,
   intersectionIdKey,
   buildBarTicks,
+  shouldRotateColumnIds,
 } from "./upset/helpers";
 
 const { useState, useMemo, useCallback, useRef, useEffect, forwardRef } = React;
@@ -96,13 +97,13 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   const topPanelY = titleH + subH;
   const matrixY = topPanelY + TOP_PANEL_H + MATRIX_TOP_PAD;
   // Column ids ("I1", "I2", …) render horizontally by default, but flip to a
-  // vertical (rotated -90°) orientation past 10 columns so they stop colliding.
+  // vertical (rotated -90°) orientation whenever the horizontal label would be
+  // wider than the matrix column (plus a 2 px gap). 0.58 is the shared
+  // average-glyph-width factor used above for set-name labels.
   const idFontSize = Math.max(8, Math.min(10, fSize - 4));
-  const rotateColumnIds = nCols > 10;
   const maxIdChars = 1 + String(Math.max(1, nCols)).length;
-  const idLabelSpan = rotateColumnIds
-    ? Math.ceil(maxIdChars * idFontSize * 0.58)
-    : idFontSize;
+  const rotateColumnIds = shouldRotateColumnIds(nCols, colW, idFontSize);
+  const idLabelSpan = rotateColumnIds ? Math.ceil(maxIdChars * idFontSize * 0.58) : idFontSize;
   const legendFS = Math.max(9, fSize - 3);
   const idLaneOffset = 10;
   const legendOffset = idLaneOffset + idLabelSpan + 8;
