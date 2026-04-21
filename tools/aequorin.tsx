@@ -2,6 +2,7 @@
 // Do NOT edit the .js file directly.
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { runTest, runPostHoc, postHocForTest } from "./_shell/stats-dispatch";
 import {
   DEFAULT_KR,
   DEFAULT_KTR,
@@ -812,38 +813,6 @@ const POSTHOC_LABELS_AQ = {
 const TEST_OPTIONS_AQ_2 = ["studentT", "welchT", "mannWhitney"];
 const TEST_OPTIONS_AQ_K = ["oneWayANOVA", "welchANOVA", "kruskalWallis"];
 
-function runAqTest(name, values) {
-  try {
-    if (name === "studentT") return tTest(values[0], values[1], { equalVar: true });
-    if (name === "welchT") return tTest(values[0], values[1], { equalVar: false });
-    if (name === "mannWhitney") return mannWhitneyU(values[0], values[1]);
-    if (name === "oneWayANOVA") return oneWayANOVA(values);
-    if (name === "welchANOVA") return welchANOVA(values);
-    if (name === "kruskalWallis") return kruskalWallis(values);
-    return { error: "unknown test" };
-  } catch (e) {
-    return { error: String((e && e.message) || e) };
-  }
-}
-
-function runAqPostHoc(name, values) {
-  try {
-    if (name === "tukeyHSD") return tukeyHSD(values);
-    if (name === "gamesHowell") return gamesHowell(values);
-    if (name === "dunn") return dunnTest(values);
-    return null;
-  } catch (e) {
-    return { error: String((e && e.message) || e) };
-  }
-}
-
-function postHocForAqTest(testName) {
-  if (testName === "oneWayANOVA") return "tukeyHSD";
-  if (testName === "welchANOVA") return "gamesHowell";
-  if (testName === "kruskalWallis") return "dunn";
-  return null;
-}
-
 function formatAqStatShort(testName, res) {
   if (!res || res.error) return "—";
   if (testName === "studentT" || testName === "welchT")
@@ -1352,9 +1321,9 @@ function AequorinStatsPanel({
     const recTest =
       rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
     const chosenTest = override || recTest || null;
-    const testResult = chosenTest ? runAqTest(chosenTest, values) : null;
-    const postHocName = postHocForAqTest(chosenTest);
-    const postHocResult = k > 2 && postHocName ? runAqPostHoc(postHocName, values) : null;
+    const testResult = chosenTest ? runTest(chosenTest, values) : null;
+    const postHocName = postHocForTest(chosenTest);
+    const postHocResult = k > 2 && postHocName ? runPostHoc(postHocName, values) : null;
     const powerResult = computePowerFromData(chosenTest, values);
     return {
       key: singleKey,

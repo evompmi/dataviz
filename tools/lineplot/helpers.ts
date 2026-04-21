@@ -3,6 +3,8 @@
 // lineplot-loader.js loads this file directly). Keep render-layer code and
 // UI-specific components out — they belong in tools/lineplot.tsx.
 
+import { runTest } from "../_shell/stats-dispatch";
+
 // ── Constants ──────────────────────────────────────────────────────────────
 export const MARGIN = { top: 20, right: 20, bottom: 48, left: 62 };
 export const STAR_ROW_H = 18;
@@ -29,21 +31,9 @@ export function formatX(x) {
   return Number.isInteger(x) ? String(x) : String(round4(x));
 }
 
-// Run the test that `selectTest` chose. Returns `{p, error?}` in every case so
-// downstream code doesn't have to branch on the test name.
-export function runChosenTest(testName, groupValues) {
-  try {
-    if (testName === "studentT") return tTest(groupValues[0], groupValues[1], { equalVar: true });
-    if (testName === "welchT") return tTest(groupValues[0], groupValues[1], { equalVar: false });
-    if (testName === "mannWhitney") return mannWhitneyU(groupValues[0], groupValues[1]);
-    if (testName === "oneWayANOVA") return oneWayANOVA(groupValues);
-    if (testName === "welchANOVA") return welchANOVA(groupValues);
-    if (testName === "kruskalWallis") return kruskalWallis(groupValues);
-    return { error: "unknown test" };
-  } catch (e) {
-    return { error: String((e && e.message) || e) };
-  }
-}
+// Test / post-hoc dispatchers live in tools/_shell/stats-dispatch.ts
+// (runTest, runPostHoc, postHocForTest) — shared across boxplot, lineplot,
+// and aequorin.
 
 // ── Series + per-x stats ───────────────────────────────────────────────────
 
@@ -107,7 +97,7 @@ export function computePerXStats(series) {
     const rec = selectTest(values);
     const chosenTest =
       rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
-    const result = chosenTest ? runChosenTest(chosenTest, values) : null;
+    const result = chosenTest ? runTest(chosenTest, values) : null;
     rows.push({ x, names, values, chosenTest, result });
   }
 

@@ -11,6 +11,7 @@
 
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { runTest, runPostHoc, postHocForTest } from "./_shell/stats-dispatch";
 import {
   MARGIN,
   STAR_ROW_H,
@@ -18,7 +19,6 @@ import {
   round2,
   buildLineD,
   formatX,
-  runChosenTest,
   computeSeries,
   computePerXStats,
 } from "./lineplot/helpers";
@@ -1040,20 +1040,6 @@ const POSTHOC_LABELS_LP = {
   dunn: "Dunn (BH-adjusted)",
 };
 
-function postHocForTest(testName) {
-  if (testName === "oneWayANOVA") return "tukeyHSD";
-  if (testName === "welchANOVA") return "gamesHowell";
-  if (testName === "kruskalWallis") return "dunn";
-  return null;
-}
-
-function runPostHocByName(name, values) {
-  if (name === "tukeyHSD") return tukeyHSD(values);
-  if (name === "gamesHowell") return gamesHowell(values);
-  if (name === "dunn") return dunnTest(values);
-  return null;
-}
-
 function formatStat(testName, res) {
   if (!res || res.error) return "—";
   if (testName === "studentT" || testName === "welchT")
@@ -1511,10 +1497,10 @@ function PerXStatsPanel({ rows, xLabel, fileName }) {
       const recTest =
         rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
       const chosenTest = overrides[key] || recTest || r.chosenTest;
-      const result = chosenTest ? runChosenTest(chosenTest, r.values) : null;
+      const result = chosenTest ? runTest(chosenTest, r.values) : null;
       const postHocName = postHocForTest(chosenTest);
       const postHocResult =
-        r.names.length >= 3 && postHocName ? runPostHocByName(postHocName, r.values) : null;
+        r.names.length >= 3 && postHocName ? runPostHoc(postHocName, r.values) : null;
       const powerResult = computePowerFromData(chosenTest, r.values);
       return { ...r, rec, chosenTest, result, postHocName, postHocResult, powerResult };
     });

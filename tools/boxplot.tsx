@@ -2,6 +2,7 @@
 // Do NOT edit the .js file directly.
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { runTest, runPostHoc, postHocForTest } from "./_shell/stats-dispatch";
 import {
   STATS_LINE_H,
   STATS_FONT,
@@ -11,9 +12,6 @@ import {
   TEST_OPTIONS_BP_2,
   TEST_OPTIONS_BP_K,
   ERROR_BAR_LABELS,
-  runBpTest,
-  runBpPostHoc,
-  postHocForBpTest,
   formatBpStatShort,
   formatBpResultLine,
   computeBpAnnotationSpec,
@@ -2929,11 +2927,13 @@ function PlotArea({
 //   - Flat mode:     scalar `flatStats*` state (the key is ignored)
 // ─────────────────────────────────────────────────────────────────────────
 
-// Pure stats-routing, formatting, annotation, and summary helpers live in
+// Pure formatting, annotation, and summary helpers live in
 // tools/boxplot/helpers.ts (TEST_LABELS_BP / POSTHOC_LABELS_BP / TEST_OPTIONS_*
-// / ERROR_BAR_LABELS / runBpTest / runBpPostHoc / postHocForBpTest /
-// formatBpStatShort / formatBpResultLine / computeBpAnnotationSpec /
-// summariseNormality / summariseEqualVariance / computeBpSummaryText).
+// / ERROR_BAR_LABELS / formatBpStatShort / formatBpResultLine /
+// computeBpAnnotationSpec / summariseNormality / summariseEqualVariance /
+// computeBpSummaryText). The test / post-hoc dispatchers themselves
+// (runTest / runPostHoc / postHocForTest) live in tools/_shell/stats-dispatch.ts
+// and are shared with lineplot and aequorin.
 
 function buildBpSetTextBlock(row, setLabel) {
   const lines = [];
@@ -3396,9 +3396,9 @@ function BoxplotStatsPanel({
         const recTest =
           rec && rec.recommendation && rec.recommendation.test ? rec.recommendation.test : null;
         const chosenTest = overrides[s.key] || recTest || null;
-        const testResult = chosenTest ? runBpTest(chosenTest, values) : null;
-        const postHocName = postHocForBpTest(chosenTest);
-        const postHocResult = k > 2 && postHocName ? runBpPostHoc(postHocName, values) : null;
+        const testResult = chosenTest ? runTest(chosenTest, values) : null;
+        const postHocName = postHocForTest(chosenTest);
+        const postHocResult = k > 2 && postHocName ? runPostHoc(postHocName, values) : null;
         const powerResult = computePowerFromData(chosenTest, values);
         return {
           ...s,
