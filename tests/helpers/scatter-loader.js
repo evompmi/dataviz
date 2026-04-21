@@ -1,18 +1,25 @@
 // Loads the scatter data pipeline into a Node vm context for fuzz / unit
-// tests. The tool's regression math lives inline in tools/scatter.tsx (a
-// `useMemo` closure at line ~2228); we deliberately do NOT extract it just
-// for testability — the fuzz harness mirrors the same formula in a small
-// helper so the tool stays unchanged. What this loader provides is the
-// shared primitives scatter layers on top of parseRaw.
+// tests. Pure helpers live in tools/scatter/helpers.ts (fmtTick, SHAPES,
+// MARGIN / VBW / VBH, computeLinearRegression) and are exposed via the
+// esbuild CJS transform below. The rest of scatter.tsx is React-heavy
+// (PaletteStrip, renderPoint, ShapePreview use JSX) and is not extracted.
 
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
+const esbuild = require("esbuild");
 
 const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
+const helpersSrc = fs.readFileSync(path.join(toolsDir, "scatter/helpers.ts"), "utf8");
 
+const helpersCjs = esbuild.transformSync(helpersSrc, {
+  loader: "ts",
+  format: "cjs",
+}).code;
+
+const moduleObj = { exports: {} };
 const ctx = {
   Math,
   parseInt,
@@ -27,21 +34,14 @@ const ctx = {
   NaN,
   Set,
   Map,
-  setTimeout: () => {},
-  document: {
-    createElement: () => ({}),
-    body: { appendChild: () => {}, removeChild: () => {} },
-  },
-  URL: { createObjectURL: () => "", revokeObjectURL: () => {} },
-  Blob: function () {},
-  XMLSerializer: function () {
-    this.serializeToString = () => "";
-  },
+  module: moduleObj,
+  exports: moduleObj.exports,
 };
 
 vm.createContext(ctx);
 vm.runInContext(sharedSrc, ctx);
 vm.runInContext(statsSrc, ctx);
+vm.runInContext(helpersCjs, ctx);
 
 // `const` bindings inside vm.runInContext stay script-scoped (they don't
 // become properties of the context object), so ctx.COLOR_PALETTES is
@@ -55,4 +55,8 @@ module.exports = {
   isNumericValue: ctx.isNumericValue,
   interpolateColor: ctx.interpolateColor,
   COLOR_PALETTES,
+  // Scatter-specific pure helpers, now directly testable.
+  fmtTick: moduleObj.exports.fmtTick,
+  SHAPES: moduleObj.exports.SHAPES,
+  computeLinearRegression: moduleObj.exports.computeLinearRegression,
 };
