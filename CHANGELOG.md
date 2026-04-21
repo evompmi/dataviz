@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Heatmap detail view — "Cluster n° X (rows/cols)" pill removed.** The detail card already conveys which cluster slice is being shown via the highlighted selection on the main plot (and the export filenames still carry the `_clusterN` suffix), so the redundant pill next to the Dendrogram stroke-width selector was just noise. The underlying `selection.clusterAxis` state is kept (still drives the `_cluster` filename suffix).
+
 ### Changed
 
 - **HowToCard disclosure chevron enlarged.** The "How to use" collapsible card used a 14-px `›` (U+203A) glyph as its expand/collapse indicator — small, lightweight, and easy to miss against the gradient header. Replaced it with a 22×22 SVG chevron path (2.6-px round-capped stroke, `currentColor`), keeping the same 90° rotation on toggle. Now visually on par with the stepper's SVG checkmark and the rest of the chrome.
