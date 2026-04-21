@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-04-21
+
 ### Fixed
 
 - **UpSet — column-id rotation threshold is now width-aware, not a magic `nCols > 10` cutoff.** Follow-up to the rotation fix below: the initial version hard-coded "rotate past 10 columns", but the real collision condition depends on `colW` and `idFontSize`, both of which can change independently of `nCols` (font-size preference, future layout tweaks, fewer columns but tighter spacing, etc.). Extracted the decision into `shouldRotateColumnIds(nCols, colW, idFontSize)` in `tools/upset/helpers.ts` — rotation now triggers as soon as the horizontal label width (`maxIdChars * idFontSize * 0.58 + 2 px gap`) exceeds the matrix column width. Added 5 regression tests in `tests/upset.test.js` covering: no-rotate when label fits, rotate when label overflows, colW-awareness (identical `nCols` reaches opposite decisions at different `colW`), font-size-awareness (same layout tips over as `idFontSize` grows), and the `nCols = 0` guard. Landing-page test counter bumped 671 → 676.
