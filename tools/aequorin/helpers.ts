@@ -1,7 +1,9 @@
 // Pure calibration, condition-detection, smoothing, and SVG-path helpers for
 // the Aequorin tool. No React / DOM dependency — separately testable
 // (tests/helpers/aequorin-loader.js loads this file directly). Keep chart
-// components and step UI out; they belong in tools/aequorin.tsx.
+// components and step UI out; they belong in the sibling modules under
+// tools/aequorin/ (chart.tsx, stats-panel.tsx, reports.ts, plot-area.tsx,
+// steps.tsx, controls.tsx, index.tsx).
 
 // ── Calibration defaults ─────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ const tsPlugin = require("@typescript-eslint/eslint-plugin");
 const prettier = require("eslint-config-prettier");
 
 const compiledTools = [
-  "tools/aequorin.js",
+  "tools/aequorin/index.js",
   "tools/boxplot/index.js",
   "tools/heatmap.js",
   "tools/lineplot.js",

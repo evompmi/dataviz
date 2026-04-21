@@ -49,7 +49,7 @@ function recordFailure(seed, iter, genLabel, stage, err, text) {
 // non-numeric cells as NaN. Aequorin's calibrate* helpers treat
 // `v == null` as "missing"; they were written assuming nulls, not NaN.
 // The tool's real data path replaces NaN with null via its own pipeline
-// (see `rawNumbers` in aequorin.tsx) — mirror that here to exercise the
+// (see `rawNumbers` in aequorin/index.tsx) — mirror that here to exercise the
 // same shape.
 function nullifyNaN(matrix) {
   return matrix.map((row) => row.map((v) => (Number.isFinite(v) ? v : null)));
