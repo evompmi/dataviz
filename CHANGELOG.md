@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Internal — dedicated unit-test files for scatter, heatmap, aequorin, and lineplot pure helpers.** Follow-up to the v2.3.0 code-review: four of the seven plot tools had their `helpers.ts` modules covered only by fuzz harnesses (which assert structural invariants, not numerical correctness). A silent sign-flip or off-by-one in any of the calibration formulas, normalisation paths, regression math, or per-x stats pipeline could have passed fuzz unchanged. Added `tests/scatter.test.js` (13 tests — `fmtTick` formatting boundaries, `SHAPES` catalogue, `computeLinearRegression` with perfect / noisy / degenerate / null-filtered fixtures and the "zero y-variance → r² = NaN" edge), `tests/heatmap.test.js` (26 tests — `finiteMean` / `finiteSD` with NaN handling, `normalizeMatrix` for all three modes including zero-variance row and `log2` guard, `autoRange` symmetric / single-value / all-NaN branches, `buildDendroLayout` + `pruneDendroTree` on a hand-constructed 3-leaf tree, `fmtColorbarTick`), `tests/aequorin.test.js` (21 tests — `convertTime` round-trips, Allen & Blinks / Hill / generalized calibration pinned to textbook reference values at f=1/3, `detectConditions` pooling vs rep-wise, `smooth` null handling, `buildAreaD` / `buildLineD` path output), and `tests/lineplot.test.js` (14 tests — `buildLineD` / `formatX`, `computeSeries` group ordering + mean/SD/SEM, `computePerXStats` eligibility + BH adjustment monotonicity). Wired into `package.json` test script. Landing-page counter bumped 676 → 750.
+
 ## [2.3.0] - 2026-04-21
 
 ### Fixed
