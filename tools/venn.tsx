@@ -225,18 +225,8 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
         exampleLabel="Arabidopsis abiotic stress genes (Drought / Heat / Salt)"
-        hint="CSV · TSV · TXT — one column per set (2–3), items listed in rows"
+        hint="CSV · TSV · TXT — one column per set (2–3), items in rows · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        ⚠ Max file size: 2 MB
-      </p>
       <div
         style={{
           marginTop: 24,

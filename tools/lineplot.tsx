@@ -435,18 +435,8 @@ function UploadStep({
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
         exampleLabel="Bacterial growth curves (3 strains × 5 timepoints × 3 reps)"
-        hint="CSV · TSV · TXT — one row per observation, columns for X, Y, and grouping variable"
+        hint="CSV · TSV · TXT — one row per observation, columns for X, Y, and grouping · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        Max file size: 2 MB
-      </p>
       <div
         style={{
           marginTop: 24,

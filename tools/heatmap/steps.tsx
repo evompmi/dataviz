@@ -12,18 +12,8 @@ export function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoad
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
         exampleLabel="Example gene-expression matrix (500 genes × 6 samples)"
-        hint="CSV · TSV · TXT — first column = row labels, first row = column labels, rest numeric"
+        hint="CSV · TSV · TXT — first column = row labels, first row = column labels, rest numeric · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        ⚠ Max file size: 2 MB
-      </p>
       <div
         style={{
           marginTop: 24,

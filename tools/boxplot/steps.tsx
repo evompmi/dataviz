@@ -26,18 +26,9 @@ export function UploadStep({
         }}
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
-        hint="CSV · TSV · TXT · DAT"
+        exampleLabel="Plant biomass under drought / salt (3 genotypes × 3 treatments × 8 reps)"
+        hint="CSV · TSV · TXT · DAT — one row per observation · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        ⚠ Max file size: 2 MB
-      </p>
       <div
         style={{
           marginTop: 24,

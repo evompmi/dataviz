@@ -345,18 +345,8 @@ export function UploadStep({
         }}
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
-        hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point"
+        hint="CSV · TSV · TXT · DAT — one column per sample, one row per time-point · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        ⚠ Max file size: 2 MB
-      </p>
       <HowToSection />
     </div>
   );
