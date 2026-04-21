@@ -227,202 +227,169 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
         exampleLabel="Arabidopsis abiotic stress genes (Drought / Heat / Salt)"
         hint="CSV · TSV · TXT — one column per set (2–3), items in rows · 2 MB max"
       />
-      <div
-        style={{
-          marginTop: 24,
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "2px solid var(--howto-border)",
-          boxShadow: "var(--howto-shadow)",
-        }}
+      <HowToCard
+        toolName="venn"
+        title="Venn Diagram — How to use"
+        subtitle="Upload wide-format data → review sets → plot"
       >
         <div
           style={{
-            background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
-            padding: "14px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          {toolIcon("venn", 24, { circle: true })}
-          <div>
-            <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
-              Venn Diagram — How to use
-            </div>
-            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
-              Upload wide-format data → review sets → plot
-            </div>
-          </div>
-        </div>
-        <div
-          style={{
-            background: "var(--info-bg)",
-            padding: "20px 24px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 14,
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+            gridColumn: "1/-1",
           }}
         >
           <div
             style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-              gridColumn: "1/-1",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Data layout (wide format)
-            </div>
-            <p
-              style={{
-                fontSize: 12,
-                lineHeight: 1.75,
-                color: "var(--text-muted)",
-                margin: "0 0 10px",
-              }}
-            >
-              Each <strong>column</strong> = one set (2 to 3 columns). Each <strong>row</strong>{" "}
-              lists one item per set. Columns can have different lengths — empty cells are ignored.
-            </p>
-            <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-              <thead>
-                <tr style={{ background: "var(--info-bg)" }}>
-                  {["Set A", "Set B", "Set C"].map((h) => (
-                    <th
-                      key={h}
+            Data layout (wide format)
+          </div>
+          <p
+            style={{
+              fontSize: 12,
+              lineHeight: 1.75,
+              color: "var(--text-muted)",
+              margin: "0 0 10px",
+            }}
+          >
+            Each <strong>column</strong> = one set (2 to 3 columns). Each <strong>row</strong> lists
+            one item per set. Columns can have different lengths — empty cells are ignored.
+          </p>
+          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+            <thead>
+              <tr style={{ background: "var(--info-bg)" }}>
+                {["Set A", "Set B", "Set C"].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: "4px 10px",
+                      textAlign: "left",
+                      color: "var(--accent-primary)",
+                      fontWeight: 700,
+                      borderBottom: "1.5px solid var(--info-border)",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["gene1", "gene2", "gene1"],
+                ["gene3", "gene3", "gene4"],
+                ["gene5", "gene1", "gene6"],
+                ["gene7", "", ""],
+              ].map((r, i) => (
+                <tr
+                  key={i}
+                  style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+                >
+                  {r.map((v, j) => (
+                    <td
+                      key={j}
                       style={{
-                        padding: "4px 10px",
-                        textAlign: "left",
-                        color: "var(--accent-primary)",
-                        fontWeight: 700,
-                        borderBottom: "1.5px solid var(--info-border)",
+                        padding: "3px 10px",
+                        color: v ? "var(--text)" : "var(--border-strong)",
+                        fontFamily: "monospace",
                       }}
                     >
-                      {h}
-                    </th>
+                      {v || "—"}
+                    </td>
                   ))}
                 </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["gene1", "gene2", "gene1"],
-                  ["gene3", "gene3", "gene4"],
-                  ["gene5", "gene1", "gene6"],
-                  ["gene7", "", ""],
-                ].map((r, i) => (
-                  <tr
-                    key={i}
-                    style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
-                  >
-                    {r.map((v, j) => (
-                      <td
-                        key={j}
-                        style={{
-                          padding: "3px 10px",
-                          color: v ? "var(--text)" : "var(--border-strong)",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {v || "—"}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Features
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Equal-size circles by default, with optional area-proportional mode. Click any region
-              count to highlight it and view its items. Rename sets, adjust colors and opacity from
-              the plot controls.
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Export
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Download the diagram as <strong>SVG</strong> or <strong>PNG</strong>. Export item
-              lists per region or a full membership matrix as <strong>CSV</strong>.
-            </p>
-          </div>
-
-          <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {[
-              "2–3 sets",
-              "Proportional toggle",
-              "Subset detection",
-              "Item extraction",
-              "SVG / PNG / CSV export",
-              "100% browser-side",
-            ].map((t) => (
-              <span
-                key={t}
-                style={{
-                  fontSize: 10,
-                  padding: "3px 10px",
-                  borderRadius: 20,
-                  background: "var(--surface)",
-                  border: "1px solid var(--info-border)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+
+        <div
+          style={{
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Features
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Equal-size circles by default, with optional area-proportional mode. Click any region
+            count to highlight it and view its items. Rename sets, adjust colors and opacity from
+            the plot controls.
+          </p>
+        </div>
+
+        <div
+          style={{
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Export
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Download the diagram as <strong>SVG</strong> or <strong>PNG</strong>. Export item lists
+            per region or a full membership matrix as <strong>CSV</strong>.
+          </p>
+        </div>
+
+        <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[
+            "2–3 sets",
+            "Proportional toggle",
+            "Subset detection",
+            "Item extraction",
+            "SVG / PNG / CSV export",
+            "100% browser-side",
+          ].map((t) => (
+            <span
+              key={t}
+              style={{
+                fontSize: 10,
+                padding: "3px 10px",
+                borderRadius: 20,
+                background: "var(--surface)",
+                border: "1px solid var(--info-border)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      </HowToCard>
     </div>
   );
 }
@@ -437,11 +404,9 @@ function ConfigureStep({
   allColumnSets,
   pendingSelection,
   setPendingSelection,
-  onCommit,
 }) {
   const needsPicker = allColumnNames.length > 3;
   const selectedCount = pendingSelection.length;
-  const canPlot = selectedCount === 2 || selectedCount === 3;
 
   // Non-blocking nudge to the UpSet tool when the dataset has 4+ sets.
   // Venn still renders 2–3 of them; the banner is dismissible and remembers
@@ -648,19 +613,6 @@ function ConfigureStep({
           </div>
         </div>
       )}
-
-      <button
-        onClick={() => canPlot && onCommit(pendingSelection)}
-        disabled={!canPlot}
-        className="dv-btn dv-btn-primary"
-        style={{
-          marginTop: 16,
-          opacity: canPlot ? 1 : 0.5,
-          cursor: canPlot ? "pointer" : "not-allowed",
-        }}
-      >
-        Plot →
-      </button>
     </div>
   );
 }
@@ -1356,10 +1308,6 @@ function App() {
           allColumnSets={allColumnSets}
           pendingSelection={pendingSelection}
           setPendingSelection={setPendingSelection}
-          onCommit={(names) => {
-            commitSelection(names, allColumnSets);
-            setStep("plot");
-          }}
         />
       )}
 

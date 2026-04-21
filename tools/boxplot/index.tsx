@@ -714,7 +714,6 @@ function App() {
           valueColIsNumeric={valueColIsNumeric}
           onRoleChange={updateRole}
           onNameChange={updateColName}
-          setStep={setStep}
         />
       )}
 
@@ -736,8 +735,6 @@ function App() {
           setRenameVal={setRenameVal}
           dragState={dragState}
           setDragState={setDragState}
-          canPlot={canPlot}
-          setStep={setStep}
         />
       )}
 
@@ -752,8 +749,6 @@ function App() {
           activeColIdxs={activeColIdxs}
           wideData={wideData}
           fileName={fileName}
-          canPlot={canPlot}
-          setStep={setStep}
         />
       )}
 

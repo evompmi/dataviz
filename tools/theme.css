@@ -61,6 +61,7 @@
   --success-bg: #dcfce7;
   --success-text: #166534;
   --success-border: #86efac;
+  --step-ready: #166534;
   --neutral-bg: #e5e7eb;
   --neutral-text: #374151;
   --subhead-bg: #475569;
@@ -152,6 +153,7 @@
   --success-bg: #0f2a1a;
   --success-text: #86efac;
   --success-border: #166534;
+  --step-ready: #4d8560;
   --neutral-bg: #2e2f3a;
   --neutral-text: #d1d5db;
   --subhead-bg: #334155;
@@ -231,6 +233,7 @@
     --success-bg: #0f2a1a;
     --success-text: #86efac;
     --success-border: #166534;
+    --step-ready: #4d8560;
     --neutral-bg: #2e2f3a;
     --neutral-text: #d1d5db;
     --subhead-bg: #334155;

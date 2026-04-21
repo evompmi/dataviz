@@ -459,7 +459,6 @@ function App() {
           calData={calData}
           columnEnabled={columnEnabled}
           downloadCalibrated={downloadCalibrated}
-          setStep={setStep}
         />
       )}
 

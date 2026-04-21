@@ -613,156 +613,123 @@ function UploadStep({
         }
       />
 
-      <div
-        style={{
-          marginTop: 24,
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "2px solid var(--howto-border)",
-          boxShadow: "var(--howto-shadow)",
-        }}
+      <HowToCard
+        toolName="upset"
+        title="UpSet plot — How to use"
+        subtitle="Upload set membership → review → plot intersections"
       >
         <div
           style={{
-            background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
-            padding: "14px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+            gridColumn: "1/-1",
           }}
         >
-          {toolIcon("upset", 24, { circle: true })}
-          <div>
-            <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
-              UpSet plot — How to use
-            </div>
-            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
-              Upload set membership → review → plot intersections
-            </div>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            When to use UpSet
           </div>
+          <p
+            style={{
+              fontSize: 12,
+              lineHeight: 1.75,
+              color: "var(--text-muted)",
+              margin: 0,
+            }}
+          >
+            Venn diagrams stop being readable past 3 sets. UpSet plots replace the overlapping
+            circles with a matrix of dots: each column is one exclusive intersection (items in those
+            sets and no others), with a bar chart on top showing its size. Left bars show per-set
+            totals. Click any column to list the items.
+          </p>
         </div>
+
         <div
           style={{
-            background: "var(--info-bg)",
-            padding: "20px 24px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 14,
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-              gridColumn: "1/-1",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              When to use UpSet
-            </div>
-            <p
-              style={{
-                fontSize: 12,
-                lineHeight: 1.75,
-                color: "var(--text-muted)",
-                margin: 0,
-              }}
-            >
-              Venn diagrams stop being readable past 3 sets. UpSet plots replace the overlapping
-              circles with a matrix of dots: each column is one exclusive intersection (items in
-              those sets and no others), with a bar chart on top showing its size. Left bars show
-              per-set totals. Click any column to list the items.
-            </p>
+            Controls
           </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Controls
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Sort by size or degree, filter with minimum intersection size and minimum degree.
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Export
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Download the plot as <strong>SVG</strong> or <strong>PNG</strong>, plus two CSVs: the
-              full intersection table and the long membership matrix.
-            </p>
-          </div>
-
-          <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {[
-              "4+ sets",
-              "Exclusive intersections",
-              "Sort / filter",
-              "Wide or long input",
-              "SVG / PNG / CSV export",
-              "100% browser-side",
-            ].map((t) => (
-              <span
-                key={t}
-                style={{
-                  fontSize: 10,
-                  padding: "3px 10px",
-                  borderRadius: 20,
-                  background: "var(--surface)",
-                  border: "1px solid var(--info-border)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Sort by size or degree, filter with minimum intersection size and minimum degree.
+          </p>
         </div>
-      </div>
+
+        <div
+          style={{
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Export
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Download the plot as <strong>SVG</strong> or <strong>PNG</strong>, plus two CSVs: the
+            full intersection table and the long membership matrix.
+          </p>
+        </div>
+
+        <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[
+            "4+ sets",
+            "Exclusive intersections",
+            "Sort / filter",
+            "Wide or long input",
+            "SVG / PNG / CSV export",
+            "100% browser-side",
+          ].map((t) => (
+            <span
+              key={t}
+              style={{
+                fontSize: 10,
+                padding: "3px 10px",
+                borderRadius: 20,
+                background: "var(--surface)",
+                border: "1px solid var(--info-border)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      </HowToCard>
     </div>
   );
 }
@@ -777,13 +744,13 @@ function ConfigureStep({
   allColumnSets,
   pendingSelection,
   setPendingSelection,
-  onCommit,
+  minDegree,
+  setMinDegree,
+  maxDegree,
+  setMaxDegree,
 }) {
   const selectedCount = pendingSelection.length;
-  const canPlot = selectedCount >= 2;
   const needsCutoff = selectedCount > 8;
-  const [minDegree, setMinDegree] = useState(1);
-  const [maxDegree, setMaxDegree] = useState(Infinity);
   // Reset the cutoff window back to "all degrees" whenever the gate disappears
   // so it doesn't silently apply to a later 3-set selection. Also re-clamp to
   // the current selection when the gate is active.
@@ -832,17 +799,6 @@ function ConfigureStep({
   return (
     <div>
       <div className="dv-panel">
-        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
-          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
-          × {parsedRows.length} rows
-        </p>
-        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
-          Preview (first 8 rows):
-        </p>
-        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
-      </div>
-
-      <div className="dv-panel" style={{ marginTop: 16 }}>
         <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
           Sets to include
         </p>
@@ -954,24 +910,16 @@ function ConfigureStep({
         </div>
       )}
 
-      <button
-        onClick={() =>
-          canPlot &&
-          onCommit(pendingSelection, {
-            minDegree,
-            maxDegree: Number.isFinite(maxDegree) ? maxDegree : null,
-          })
-        }
-        disabled={!canPlot}
-        className="dv-btn dv-btn-primary"
-        style={{
-          marginTop: 16,
-          opacity: canPlot ? 1 : 0.5,
-          cursor: canPlot ? "pointer" : "not-allowed",
-        }}
-      >
-        Plot →
-      </button>
+      <div className="dv-panel" style={{ marginTop: 16 }}>
+        <p style={{ margin: "0 0 4px", fontSize: 13, color: "var(--text-muted)" }}>
+          <strong style={{ color: "var(--text)" }}>{fileName}</strong> — {parsedHeaders.length} cols
+          × {parsedRows.length} rows
+        </p>
+        <p style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 10 }}>
+          Preview (first 8 rows):
+        </p>
+        <DataPreview headers={parsedHeaders} rows={parsedRows} maxRows={8} />
+      </div>
     </div>
   );
 }
@@ -1350,6 +1298,8 @@ function App() {
   const [allColumnNames, setAllColumnNames] = useState([]);
   const [allColumnSets, setAllColumnSets] = useState(new Map());
   const [pendingSelection, setPendingSelection] = useState([]);
+  const [pendingMinDegree, setPendingMinDegree] = useState(1);
+  const [pendingMaxDegree, setPendingMaxDegree] = useState<number>(Infinity);
 
   const chartRef = useRef();
 
@@ -1406,9 +1356,10 @@ function App() {
   }, []);
 
   // StepNavBar's top "Plot" tab routes via shell.setStep directly, so without
-  // this intercept the user's configure-step checkbox edits would be lost
-  // (only the bottom "Plot →" button ran commitSelection). Commit the
-  // pending selection if it differs from the current one before navigating.
+  // this intercept the user's configure-step edits (set selection + degree
+  // cutoffs) would be lost. Commit the pending selection if it differs from
+  // the current one and patch vis with the pending min/max degree before
+  // navigating, matching what the old bottom "Plot →" button used to do.
   const navigateStep = useCallback(
     (target) => {
       if (target === "plot" && step === "configure" && pendingSelection.length >= 2) {
@@ -1416,10 +1367,24 @@ function App() {
           pendingSelection.length !== setNames.length ||
           pendingSelection.some((n) => !setNames.includes(n));
         if (changed) commitSelection(pendingSelection, allColumnSets);
+        updVis({
+          minDegree: Math.max(1, pendingMinDegree || 1),
+          maxDegree: Number.isFinite(pendingMaxDegree) ? pendingMaxDegree : null,
+        });
       }
       setStep(target);
     },
-    [step, pendingSelection, setNames, allColumnSets, commitSelection, setStep]
+    [
+      step,
+      pendingSelection,
+      setNames,
+      allColumnSets,
+      commitSelection,
+      setStep,
+      pendingMinDegree,
+      pendingMaxDegree,
+      updVis,
+    ]
   );
 
   const doParse = useCallback(
@@ -1572,15 +1537,10 @@ function App() {
           allColumnSets={allColumnSets}
           pendingSelection={pendingSelection}
           setPendingSelection={setPendingSelection}
-          onCommit={(names, { minDegree, maxDegree } = { minDegree: 1, maxDegree: null }) => {
-            commitSelection(names, allColumnSets);
-            const patch: { minDegree: number; maxDegree: number | null } = {
-              minDegree: Math.max(1, minDegree || 1),
-              maxDegree: Number.isFinite(maxDegree) ? maxDegree : null,
-            };
-            updVis(patch);
-            setStep("plot");
-          }}
+          minDegree={pendingMinDegree}
+          setMinDegree={setPendingMinDegree}
+          maxDegree={pendingMaxDegree}
+          setMaxDegree={setPendingMaxDegree}
         />
       )}
 

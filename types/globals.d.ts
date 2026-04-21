@@ -205,6 +205,7 @@ declare global {
   const StepNavBar: FC<any>;
   const PageHeader: FC<any>;
   const UploadPanel: FC<any>;
+  const HowToCard: FC<any>;
   const ActionsPanel: FC<any>;
   const CommaFixBanner: FC<any>;
   const ParseErrorBanner: FC<any>;

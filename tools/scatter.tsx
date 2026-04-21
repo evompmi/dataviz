@@ -683,148 +683,115 @@ function UploadStep({
         exampleLabel="Fisher's Iris dataset (150 rows, 3 species)"
         hint="CSV · TSV · TXT — one column per variable, one row per point · 2 MB max"
       />
-      <div
-        style={{
-          marginTop: 24,
-          borderRadius: 14,
-          overflow: "hidden",
-          border: "2px solid var(--howto-border)",
-          boxShadow: "var(--howto-shadow)",
-        }}
+      <HowToCard
+        toolName="scatter"
+        title="Scatter Plot — How to use"
+        subtitle="Upload → Pick X & Y → Map color, size, shape"
       >
         <div
           style={{
-            background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
-            padding: "14px 24px",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+            gridColumn: "1/-1",
           }}
         >
-          {toolIcon("scatter", 24, { circle: true })}
-          <div>
-            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
-              Scatter Plot — How to use
-            </div>
-            <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
-              Upload → Pick X & Y → Map color, size, shape
-            </div>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Data layout
           </div>
+          <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
+            One <strong>row</strong> = one data point. One <strong>column</strong> = one variable.
+            Any number of columns, any mix of numeric and text.
+          </p>
         </div>
+
         <div
           style={{
-            background: "var(--info-bg)",
-            padding: "20px 24px",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 14,
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
           }}
         >
           <div
             style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-              gridColumn: "1/-1",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
             }}
           >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Data layout
-            </div>
-            <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
-              One <strong>row</strong> = one data point. One <strong>column</strong> = one variable.
-              Any number of columns, any mix of numeric and text.
-            </p>
+            X & Y selection
           </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              X & Y selection
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              After upload, pick any <strong>numeric</strong> column for <strong>X</strong> and{" "}
-              <strong>Y</strong> via dropdowns. The plot updates instantly.
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: 10,
-              padding: "14px 18px",
-              border: "1.5px solid var(--info-border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "var(--accent-primary)",
-                marginBottom: 10,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-              }}
-            >
-              Aesthetics
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
-              Map any column to <strong>color</strong>, <strong>size</strong>, or{" "}
-              <strong>shape</strong>. Numeric columns get continuous scales; categorical columns get
-              discrete legends.
-            </p>
-          </div>
-
-          <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {[
-              "X/Y dropdown selection",
-              "Color / size / shape mapping",
-              "Row filtering",
-              "8 gradient palettes",
-              "100% browser-side",
-            ].map((t) => (
-              <span
-                key={t}
-                style={{
-                  fontSize: 10,
-                  padding: "3px 10px",
-                  borderRadius: 20,
-                  background: "var(--surface)",
-                  border: "1px solid var(--info-border)",
-                  color: "var(--text-muted)",
-                }}
-              >
-                {t}
-              </span>
-            ))}
-          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            After upload, pick any <strong>numeric</strong> column for <strong>X</strong> and{" "}
+            <strong>Y</strong> via dropdowns. The plot updates instantly.
+          </p>
         </div>
-      </div>
+
+        <div
+          style={{
+            background: "var(--surface)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            border: "1.5px solid var(--info-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent-primary)",
+              marginBottom: 10,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Aesthetics
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.6 }}>
+            Map any column to <strong>color</strong>, <strong>size</strong>, or{" "}
+            <strong>shape</strong>. Numeric columns get continuous scales; categorical columns get
+            discrete legends.
+          </p>
+        </div>
+
+        <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[
+            "X/Y dropdown selection",
+            "Color / size / shape mapping",
+            "Row filtering",
+            "8 gradient palettes",
+            "100% browser-side",
+          ].map((t) => (
+            <span
+              key={t}
+              style={{
+                fontSize: 10,
+                padding: "3px 10px",
+                borderRadius: 20,
+                background: "var(--surface)",
+                border: "1px solid var(--info-border)",
+                color: "var(--text-muted)",
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      </HowToCard>
     </div>
   );
 }

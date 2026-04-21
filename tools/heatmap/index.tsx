@@ -395,14 +395,6 @@ function App() {
               )
             )}
           />
-          <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            <button onClick={() => setStep("upload")} className="dv-btn dv-btn-secondary">
-              ← Upload
-            </button>
-            <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
-              Continue to plot →
-            </button>
-          </div>
         </div>
       )}
 

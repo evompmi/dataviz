@@ -242,37 +242,41 @@ function StepNavBar(props) {
     currentStep = props.currentStep,
     onStepChange = props.onStepChange,
     canNavigate = props.canNavigate;
-  return React.createElement(
-    "div",
-    { style: { display: "flex", gap: 8, marginBottom: 20 } },
-    steps.map(function (s, i) {
-      const enabled = canNavigate ? canNavigate(s) : true;
-      return React.createElement(
+  const enabledList = steps.map(function (s) {
+    return canNavigate ? canNavigate(s) : true;
+  });
+  const children = [];
+  steps.forEach(function (s, i) {
+    const enabled = enabledList[i];
+    const isCurrent = currentStep === s;
+    const isDoneOrCurrent = isCurrent || i < steps.indexOf(currentStep);
+    children.push(
+      React.createElement(
         "button",
         {
-          key: s,
+          key: "step-" + s,
           onClick: function () {
             if (enabled) onStepChange(s);
           },
           style: {
-            padding: "6px 16px",
+            height: 40,
+            padding: "0 16px",
             borderRadius: 6,
             fontSize: 12,
             fontWeight: 600,
-            background: currentStep === s ? "var(--step-active-bg)" : "var(--surface)",
-            color:
-              currentStep === s
-                ? "var(--on-accent)"
-                : enabled
-                  ? "var(--text-faint)"
-                  : "var(--border)",
+            background: isCurrent ? "var(--step-active-bg)" : "var(--surface)",
+            color: isCurrent ? "var(--on-accent)" : enabled ? "var(--text-faint)" : "var(--border)",
             border:
               "1px solid " +
-              (currentStep === s
+              (isCurrent
                 ? "var(--step-active-border)"
-                : enabled
-                  ? "var(--border-strong)"
-                  : "var(--border)"),
+                : enabled && !isDoneOrCurrent
+                  ? "var(--step-ready)"
+                  : enabled
+                    ? "var(--border-strong)"
+                    : "var(--border)"),
+            boxShadow:
+              enabled && !isCurrent && !isDoneOrCurrent ? "0 0 0 2px var(--step-ready)" : "none",
             cursor: enabled ? "pointer" : "default",
             fontFamily: "inherit",
             textTransform: "uppercase",
@@ -280,8 +284,39 @@ function StepNavBar(props) {
           },
         },
         i + 1 + ". " + s
+      )
+    );
+    if (i < steps.length - 1) {
+      const nextEnabled = enabledList[i + 1];
+      const currentIdx = steps.indexOf(currentStep);
+      const isFutureReachable = i + 1 > currentIdx && nextEnabled;
+      children.push(
+        React.createElement(
+          "span",
+          {
+            key: "chev-" + s,
+            "aria-hidden": "true",
+            style: {
+              display: "inline-flex",
+              alignItems: "center",
+              fontSize: 20,
+              lineHeight: 1,
+              fontWeight: 700,
+              padding: "0 2px",
+              color: isFutureReachable ? "var(--step-ready)" : "var(--border-strong)",
+              transition: "color 160ms ease-out",
+              userSelect: "none",
+            },
+          },
+          "\u276F"
+        )
       );
-    })
+    }
+  });
+  return React.createElement(
+    "div",
+    { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
+    children
   );
 }
 
@@ -353,6 +388,65 @@ function ParseErrorBanner(props) {
 // Page header with tool icon. The landing page owns the theme toggle in
 // its top bar — we don't render a second one here.
 function PageHeader(props) {
+  const vbar = function (key) {
+    return React.createElement("div", {
+      key: key,
+      "aria-hidden": "true",
+      style: {
+        flex: "0 0 auto",
+        width: 1,
+        alignSelf: "stretch",
+        background: "var(--border-strong)",
+      },
+    });
+  };
+  const rowChildren = [
+    React.createElement(
+      "h1",
+      {
+        key: "title",
+        style: {
+          margin: 0,
+          fontSize: 22,
+          fontWeight: 700,
+          color: "var(--text)",
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+        },
+      },
+      toolIcon(props.toolName),
+      props.title
+    ),
+  ];
+  if (props.middle) {
+    rowChildren.push(vbar("vbar-middle"));
+    rowChildren.push(
+      React.createElement(
+        "div",
+        {
+          key: "middle",
+          style: { flex: "1 1 auto", minWidth: 0, display: "flex", alignItems: "center" },
+        },
+        props.middle
+      )
+    );
+  } else {
+    rowChildren.push(React.createElement("div", { key: "spacer", style: { flex: "1 1 auto" } }));
+  }
+  if (props.right) {
+    rowChildren.push(vbar("vbar-right"));
+    rowChildren.push(
+      React.createElement(
+        "div",
+        {
+          key: "right",
+          style: { flex: "0 0 auto", display: "flex", alignItems: "center" },
+        },
+        props.right
+      )
+    );
+  }
   return React.createElement(
     "div",
     {
@@ -367,36 +461,20 @@ function PageHeader(props) {
       {
         style: {
           display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
+          alignItems: "center",
           gap: 16,
+          minHeight: 40,
         },
       },
-      React.createElement(
-        "div",
-        { style: { flex: "1 1 auto", minWidth: 0 } },
-        React.createElement(
-          "h1",
-          { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--text)" } },
-          toolIcon(props.toolName),
-          props.title
-        ),
-        props.subtitle
-          ? React.createElement(
-              "p",
-              { style: { margin: "4px 0 0", fontSize: 10, color: "var(--text-faint)" } },
-              props.subtitle
-            )
-          : null
-      ),
-      props.right
-        ? React.createElement(
-            "div",
-            { style: { flex: "0 0 auto", display: "flex", alignItems: "center" } },
-            props.right
-          )
-        : null
-    )
+      rowChildren
+    ),
+    props.subtitle
+      ? React.createElement(
+          "p",
+          { style: { margin: "6px 0 0", fontSize: 10, color: "var(--text-faint)" } },
+          props.subtitle
+        )
+      : null
   );
 }
 
@@ -448,14 +526,7 @@ function UploadPanel(props) {
         React.createElement("option", { value: ";" }, "Semicolon (;)"),
         React.createElement("option", { value: "\t" }, "Tab (\\t)"),
         React.createElement("option", { value: " " }, "Space")
-      ),
-      !sepOverride
-        ? React.createElement(
-            "span",
-            { style: { fontSize: 11, color: "var(--danger-text)", fontWeight: 600 } },
-            "Required before loading a file"
-          )
-        : null
+      )
     ),
     !sepOverride
       ? React.createElement(
@@ -491,7 +562,7 @@ function UploadPanel(props) {
           "div",
           {
             style: {
-              marginTop: 10,
+              marginTop: 12,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -500,25 +571,139 @@ function UploadPanel(props) {
               color: "var(--text-muted)",
             },
           },
-          React.createElement("span", null, "No data handy?"),
+          React.createElement("span", null, "Try sample data:"),
           React.createElement(
             "button",
             {
+              type: "button",
+              className: "dv-btn dv-btn-secondary",
               onClick: onLoadExample,
-              style: {
-                background: "none",
-                border: "none",
-                padding: 0,
-                color: "var(--accent-primary)",
-                fontWeight: 700,
-                fontSize: 12,
-                fontFamily: "monospace",
-                textDecoration: "underline",
-                cursor: "pointer",
-              },
             },
-            exampleLabel || "Load example dataset \u2192"
+            exampleLabel || "Load example \u2192"
           )
+        )
+      : null
+  );
+}
+
+// Collapsible "How to use" card shared across every plot tool's upload step.
+// Props: toolName (drives the icon + localStorage key), title, subtitle,
+// children (the tool-specific body content). Open state persists under
+// `dv-howto-<toolName>`; open by default on first visit, then follows whatever
+// the user last chose. The header acts as a <button> so keyboard users can
+// toggle with Enter / Space, and aria-expanded lets AT announce state.
+function HowToCard(props) {
+  const toolName = props.toolName,
+    title = props.title,
+    subtitle = props.subtitle,
+    children = props.children;
+  const storageKey = "dv-howto-" + toolName;
+  const initialOpen = React.useMemo(
+    function () {
+      try {
+        const v = localStorage.getItem(storageKey);
+        if (v === "1") return true;
+        if (v === "0") return false;
+      } catch (_e) {
+        /* ignore */
+      }
+      return true;
+    },
+    [storageKey]
+  );
+  const [open, setOpen] = React.useState(initialOpen);
+  const bodyId = "dv-howto-body-" + toolName;
+  const toggle = function () {
+    setOpen(function (prev) {
+      const next = !prev;
+      try {
+        localStorage.setItem(storageKey, next ? "1" : "0");
+      } catch (_e) {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+  return React.createElement(
+    "section",
+    {
+      style: {
+        marginTop: 24,
+        borderRadius: 14,
+        overflow: "hidden",
+        border: "2px solid var(--howto-border)",
+        boxShadow: "var(--howto-shadow)",
+      },
+    },
+    React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: toggle,
+        "aria-expanded": open ? "true" : "false",
+        "aria-controls": bodyId,
+        style: {
+          width: "100%",
+          background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
+          padding: "14px 24px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          border: "none",
+          cursor: "pointer",
+          textAlign: "left",
+          font: "inherit",
+          color: "inherit",
+        },
+      },
+      toolIcon(toolName, 24, { circle: true }),
+      React.createElement(
+        "div",
+        { style: { flex: 1, minWidth: 0 } },
+        React.createElement(
+          "div",
+          { style: { color: "var(--on-accent)", fontWeight: 700, fontSize: 15 } },
+          title
+        ),
+        subtitle
+          ? React.createElement(
+              "div",
+              { style: { color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 } },
+              subtitle
+            )
+          : null
+      ),
+      React.createElement(
+        "span",
+        {
+          "aria-hidden": "true",
+          style: {
+            color: "var(--on-accent)",
+            fontSize: 14,
+            fontWeight: 700,
+            transition: "transform .18s ease",
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+            lineHeight: 1,
+            flexShrink: 0,
+          },
+        },
+        "\u203A"
+      )
+    ),
+    open
+      ? React.createElement(
+          "div",
+          {
+            id: bodyId,
+            style: {
+              background: "var(--info-bg)",
+              padding: "20px 24px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 14,
+            },
+          },
+          children
         )
       : null
   );

@@ -62,7 +62,8 @@ test("renders step buttons", function () {
     onStepChange: noop,
   });
   assert(el, "should return an element");
-  assert(el.children.length === 3, "should have 3 step buttons");
+  // 3 step buttons interleaved with 2 chevron separators = 5 children
+  assert(el.children.length === 5, "should have 3 step buttons + 2 chevron separators");
 });
 
 suite("CommaFixBanner");

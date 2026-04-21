@@ -9,321 +9,288 @@ import { TIME_UNITS } from "./helpers";
 
 export function HowToSection() {
   return (
-    <div
-      style={{
-        marginTop: 24,
-        borderRadius: 14,
-        overflow: "hidden",
-        border: "2px solid var(--howto-border)",
-        boxShadow: "var(--howto-shadow)",
-      }}
+    <HowToCard
+      toolName="aequorin"
+      title="Aequorin Ca²⁺ Calibration — How to use"
+      subtitle="RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots"
     >
       <div
         style={{
-          background: "linear-gradient(135deg,var(--howto-header-from),var(--howto-header-to))",
-          padding: "14px 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
+          background: "var(--surface)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          border: "1.5px solid var(--info-border)",
+          gridColumn: "1/-1",
         }}
       >
-        {toolIcon("aequorin", 24, { circle: true })}
-        <div>
-          <div style={{ color: "var(--on-accent)", fontWeight: 700, fontSize: 15 }}>
-            Aequorin Ca²⁺ Calibration — How to use
-          </div>
-          <div style={{ color: "var(--on-accent-muted)", fontSize: 11, marginTop: 2 }}>
-            RLU → [Ca²⁺] • Raw or calibrated • Time-course plotting • Σ barplots
-          </div>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--accent-primary)",
+            marginBottom: 8,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Purpose
         </div>
+        <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
+          Plots aequorin luminescence time-courses — either as raw RLU values or converted to [Ca²⁺]
+          using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes mean ±
+          SD across replicates and generates Σ barplots (raw and baseline-corrected) for the
+          selected time window.
+        </p>
       </div>
       <div
         style={{
-          background: "var(--info-bg)",
-          padding: "20px 24px",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 14,
+          background: "var(--surface)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          border: "1.5px solid var(--info-border)",
         }}
       >
         <div
           style={{
-            background: "var(--surface)",
-            borderRadius: 10,
-            padding: "14px 18px",
-            border: "1.5px solid var(--info-border)",
-            gridColumn: "1/-1",
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--accent-primary)",
+            marginBottom: 8,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
           }}
         >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent-primary)",
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}
-          >
-            Purpose
-          </div>
-          <p style={{ fontSize: 12, lineHeight: 1.75, color: "var(--text-muted)", margin: 0 }}>
-            Plots aequorin luminescence time-courses — either as raw RLU values or converted to
-            [Ca²⁺] using calibration formulas (Allen &amp; Blinks 1978, Hill, Generalised). Computes
-            mean ± SD across replicates and generates Σ barplots (raw and baseline-corrected) for
-            the selected time window.
-          </p>
+          Data layout — wide format
         </div>
-        <div
-          style={{
-            background: "var(--surface)",
-            borderRadius: 10,
-            padding: "14px 18px",
-            border: "1.5px solid var(--info-border)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent-primary)",
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}
-          >
-            Data layout — wide format
-          </div>
-          <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}>
-            Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one
-            time-point. First row = header names.
-          </p>
-          <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
-            <thead>
-              <tr style={{ background: "var(--info-bg)" }}>
-                {["WT", "WT", "WT", "KO", "KO", "KO"].map((h, i) => (
-                  <th
-                    key={i}
+        <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.6 }}>
+          Each <strong>column</strong> = one sample/replicate. Each <strong>row</strong> = one
+          time-point. First row = header names.
+        </p>
+        <table style={{ borderCollapse: "collapse", fontSize: 11, width: "100%" }}>
+          <thead>
+            <tr style={{ background: "var(--info-bg)" }}>
+              {["WT", "WT", "WT", "KO", "KO", "KO"].map((h, i) => (
+                <th
+                  key={i}
+                  style={{
+                    padding: "4px 8px",
+                    border: "1px solid var(--info-border)",
+                    color: "var(--accent-primary)",
+                    fontWeight: 700,
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              [1200, 1180, 1250, 800, 790, 810],
+              [1350, 1400, 1310, 850, 870, 840],
+              [980, 1010, 990, 620, 600, 640],
+            ].map((r, i) => (
+              <tr
+                key={i}
+                style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
+              >
+                {r.map((v, j) => (
+                  <td
+                    key={j}
                     style={{
                       padding: "4px 8px",
                       border: "1px solid var(--info-border)",
-                      color: "var(--accent-primary)",
-                      fontWeight: 700,
+                      color: "var(--text)",
                     }}
                   >
-                    {h}
-                  </th>
+                    {v}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {[
-                [1200, 1180, 1250, 800, 790, 810],
-                [1350, 1400, 1310, 850, 870, 840],
-                [980, 1010, 990, 620, 600, 640],
-              ].map((r, i) => (
-                <tr
-                  key={i}
-                  style={{ background: i % 2 === 0 ? "var(--surface-subtle)" : "var(--surface)" }}
-                >
-                  {r.map((v, j) => (
-                    <td
-                      key={j}
-                      style={{
-                        padding: "4px 8px",
-                        border: "1px solid var(--info-border)",
-                        color: "var(--text)",
-                      }}
-                    >
-                      {v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div
-          style={{
-            background: "var(--surface)",
-            borderRadius: 10,
-            padding: "14px 18px",
-            border: "1.5px solid var(--info-border)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent-primary)",
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}
-          >
-            Configure step
-          </div>
-          {[
-            {
-              icon: "🔬",
-              text: "Column grouping: identical header names are pooled as replicates by default. Switch to Individual to treat each column separately. Uncheck any column to exclude it from the analysis and exports.",
-            },
-            {
-              icon: "⏱️",
-              text: "Time axis: set the time step per row and its base unit (ms, s, min, h…). The display unit can be changed independently on the plot page.",
-            },
-            {
-              icon: "⚙️",
-              text: "Calibration: defaults to None (raw RLU). Switch to Allen & Blinks (1978), Hill equilibrium, or Generalised Allen & Blinks — constants are adjustable.",
-            },
-          ].map(({ icon, text }) => (
-            <div
-              key={icon}
-              style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
-            >
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
-                {text}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            background: "var(--surface)",
-            borderRadius: 10,
-            padding: "14px 18px",
-            border: "1.5px solid var(--info-border)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent-primary)",
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}
-          >
-            Plot step
-          </div>
-          {[
-            {
-              icon: "📊",
-              text: "Combined or faceted view. X/Y range, smoothing, title, and style controls in the left panel.",
-            },
-            {
-              icon: "📈",
-              text: "Σ barplots shown below the main chart: raw sums and baseline-corrected sums (Σv − n×min) per condition, with SD/SEM error bars computed across replicates.",
-            },
-            {
-              icon: "⬇️",
-              text: "Each barplot tile has a matching CSV table below it — download per-replicate sums directly from the plot page.",
-            },
-          ].map(({ icon, text }) => (
-            <div
-              key={icon}
-              style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
-            >
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
-                {text}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            background: "var(--surface)",
-            borderRadius: 10,
-            padding: "14px 18px",
-            border: "1.5px solid var(--info-border)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent-primary)",
-              marginBottom: 10,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}
-          >
-            Sample selection (plot page)
-          </div>
-          {[
-            {
-              icon: "🔬",
-              text: 'Click the sticky "Sample selection" button above the chart to open the column overlay.',
-            },
-            {
-              icon: "✅",
-              text: "Toggle individual replicates on or off — excluded columns are removed from the plot, barplots, and all exports.",
-            },
-            {
-              icon: "🔀",
-              text: "Switch between Pool (group by header name, mean ± SD) and Individual (each column plotted separately as name_rep1, name_rep2…).",
-            },
-            {
-              icon: "⚡",
-              text: "All changes apply instantly — no need to go back to the configure step.",
-            },
-          ].map(({ icon, text }) => (
-            <div
-              key={icon}
-              style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
-            >
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
-                {text}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            borderLeft: "4px solid var(--accent-primary)",
-            background: "var(--info-bg)",
-            padding: "10px 14px",
-            borderRadius: "0 8px 8px 0",
-            gridColumn: "1/-1",
-          }}
-        >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-primary)" }}>
-            💡 Replicate grouping —{" "}
-          </span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed
-            across them at each time-point. In Individual mode, each column is its own condition
-            (labelled name_rep1, name_rep2…) and plotted separately.
-          </span>
-        </div>
-        <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {[
-            "Separator explicitly selected (comma, semicolon, tab, space)",
-            "Quoted values stripped automatically",
-            "Excluded columns omitted from all exports",
-            "100% browser-side — nothing uploaded",
-          ].map((t) => (
-            <span
-              key={t}
-              style={{
-                fontSize: 10,
-                padding: "3px 10px",
-                borderRadius: 20,
-                background: "var(--surface)",
-                border: "1px solid var(--info-border)",
-                color: "var(--text-muted)",
-              }}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </div>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          border: "1.5px solid var(--info-border)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--accent-primary)",
+            marginBottom: 10,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Configure step
+        </div>
+        {[
+          {
+            icon: "🔬",
+            text: "Column grouping: identical header names are pooled as replicates by default. Switch to Individual to treat each column separately. Uncheck any column to exclude it from the analysis and exports.",
+          },
+          {
+            icon: "⏱️",
+            text: "Time axis: set the time step per row and its base unit (ms, s, min, h…). The display unit can be changed independently on the plot page.",
+          },
+          {
+            icon: "⚙️",
+            text: "Calibration: defaults to None (raw RLU). Switch to Allen & Blinks (1978), Hill equilibrium, or Generalised Allen & Blinks — constants are adjustable.",
+          },
+        ].map(({ icon, text }) => (
+          <div
+            key={icon}
+            style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
+          >
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              {text}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          border: "1.5px solid var(--info-border)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--accent-primary)",
+            marginBottom: 10,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Plot step
+        </div>
+        {[
+          {
+            icon: "📊",
+            text: "Combined or faceted view. X/Y range, smoothing, title, and style controls in the left panel.",
+          },
+          {
+            icon: "📈",
+            text: "Σ barplots shown below the main chart: raw sums and baseline-corrected sums (Σv − n×min) per condition, with SD/SEM error bars computed across replicates.",
+          },
+          {
+            icon: "⬇️",
+            text: "Each barplot tile has a matching CSV table below it — download per-replicate sums directly from the plot page.",
+          },
+        ].map(({ icon, text }) => (
+          <div
+            key={icon}
+            style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
+          >
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              {text}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          border: "1.5px solid var(--info-border)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--accent-primary)",
+            marginBottom: 10,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}
+        >
+          Sample selection (plot page)
+        </div>
+        {[
+          {
+            icon: "🔬",
+            text: 'Click the sticky "Sample selection" button above the chart to open the column overlay.',
+          },
+          {
+            icon: "✅",
+            text: "Toggle individual replicates on or off — excluded columns are removed from the plot, barplots, and all exports.",
+          },
+          {
+            icon: "🔀",
+            text: "Switch between Pool (group by header name, mean ± SD) and Individual (each column plotted separately as name_rep1, name_rep2…).",
+          },
+          {
+            icon: "⚡",
+            text: "All changes apply instantly — no need to go back to the configure step.",
+          },
+        ].map(({ icon, text }) => (
+          <div
+            key={icon}
+            style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-start" }}
+          >
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{icon}</span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.55 }}>
+              {text}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          borderLeft: "4px solid var(--accent-primary)",
+          background: "var(--info-bg)",
+          padding: "10px 14px",
+          borderRadius: "0 8px 8px 0",
+          gridColumn: "1/-1",
+        }}
+      >
+        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-primary)" }}>
+          💡 Replicate grouping —{" "}
+        </span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          In Pool mode, columns sharing the same header name are grouped: mean ± SD is computed
+          across them at each time-point. In Individual mode, each column is its own condition
+          (labelled name_rep1, name_rep2…) and plotted separately.
+        </span>
+      </div>
+      <div style={{ gridColumn: "1/-1", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {[
+          "Separator explicitly selected (comma, semicolon, tab, space)",
+          "Quoted values stripped automatically",
+          "Excluded columns omitted from all exports",
+          "100% browser-side — nothing uploaded",
+        ].map((t) => (
+          <span
+            key={t}
+            style={{
+              fontSize: 10,
+              padding: "3px 10px",
+              borderRadius: 20,
+              background: "var(--surface)",
+              border: "1px solid var(--info-border)",
+              color: "var(--text-muted)",
+            }}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </HowToCard>
   );
 }
 
@@ -370,7 +337,6 @@ export function ConfigureStep({
   calData,
   columnEnabled,
   downloadCalibrated,
-  setStep,
 }) {
   return (
     <div>
@@ -527,9 +493,6 @@ export function ConfigureStep({
             );
           })()}
       </div>
-      <button onClick={() => setStep("plot")} className="dv-btn dv-btn-primary">
-        Plot →
-      </button>
     </div>
   );
 }
