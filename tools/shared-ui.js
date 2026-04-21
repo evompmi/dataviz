@@ -292,6 +292,7 @@ function CommaFixBanner(props) {
     "div",
     {
       className: "dv-panel",
+      role: "status",
       style: {
         background: "var(--warning-bg)",
         borderColor: "var(--warning-border)",
@@ -301,7 +302,7 @@ function CommaFixBanner(props) {
         padding: "10px 16px",
       },
     },
-    React.createElement("span", { style: { fontSize: 18 } }, "\uD83D\uDD04"),
+    React.createElement("span", { style: { fontSize: 18 }, "aria-hidden": "true" }, "\uD83D\uDD04"),
     React.createElement(
       "div",
       { style: { flex: 1 } },
@@ -316,7 +317,7 @@ function CommaFixBanner(props) {
         props.commaFixCount +
           " value" +
           (props.commaFixCount > 1 ? "s" : "") +
-          ' had commas as decimal separators (e.g. "0,5" \u2192 "0.5"). The data was corrected automatically.'
+          ' had commas as decimal separators (e.g. "0,5" \u2192 "0.5").'
       )
     )
   );
@@ -328,6 +329,7 @@ function ParseErrorBanner(props) {
   return React.createElement(
     "div",
     {
+      role: "alert",
       style: {
         marginBottom: 16,
         padding: "10px 14px",
@@ -339,7 +341,7 @@ function ParseErrorBanner(props) {
         gap: 8,
       },
     },
-    React.createElement("span", { style: { fontSize: 16 } }, "\uD83D\uDEAB"),
+    React.createElement("span", { style: { fontSize: 16 }, "aria-hidden": "true" }, "\uD83D\uDEAB"),
     React.createElement(
       "span",
       { style: { fontSize: 12, color: "var(--danger-text)", fontWeight: 600 } },
@@ -424,13 +426,17 @@ function UploadPanel(props) {
         },
       },
       React.createElement(
-        "span",
-        { style: { fontSize: 13, fontWeight: 600, color: "var(--accent-primary)" } },
-        "1. Choose your column separator:"
+        "label",
+        {
+          htmlFor: "dv-separator-select",
+          style: { fontSize: 13, fontWeight: 600, color: "var(--accent-primary)" },
+        },
+        "Column separator"
       ),
       React.createElement(
         "select",
         {
+          id: "dv-separator-select",
           value: sepOverride,
           onChange: function (e) {
             onSepChange(e.target.value);
@@ -447,7 +453,7 @@ function UploadPanel(props) {
         ? React.createElement(
             "span",
             { style: { fontSize: 11, color: "var(--danger-text)", fontWeight: 600 } },
-            "\u26A0 Required before loading a file"
+            "Required before loading a file"
           )
         : null
     ),
@@ -464,17 +470,21 @@ function UploadPanel(props) {
               opacity: 0.5,
             },
           },
-          React.createElement("div", { style: { fontSize: 40, marginBottom: 8 } }, "\uD83D\uDEAB"),
+          React.createElement(
+            "div",
+            { style: { fontSize: 40, marginBottom: 8 }, "aria-hidden": "true" },
+            "\uD83D\uDEAB"
+          ),
           React.createElement(
             "p",
             { style: { margin: 0, fontSize: 15, color: "var(--text-faint)" } },
-            "Select a column separator above to enable file loading"
+            "Pick a column separator above to enable file loading"
           )
         )
       : React.createElement(FileDropZone, {
           onFileLoad: onFileLoad,
           accept: ".csv,.tsv,.txt,.dat,.tab",
-          hint: hint || "CSV \u00B7 TSV \u00B7 TXT \u00B7 DAT",
+          hint: hint || "CSV \u00B7 TSV \u00B7 TXT \u00B7 DAT \u2014 2 MB max",
         }),
     onLoadExample
       ? React.createElement(

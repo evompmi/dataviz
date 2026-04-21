@@ -608,20 +608,10 @@ function UploadStep({
         exampleLabel="Arabidopsis abiotic stress genes (5-set DEG lists)"
         hint={
           format === "wide"
-            ? "CSV · TSV · TXT — one column per set (2+), items listed in rows"
-            : "CSV · TSV · TXT — two columns (item, set), one membership per row"
+            ? "CSV · TSV · TXT — one column per set (2+), items in rows · 2 MB max"
+            : "CSV · TSV · TXT — two columns (item, set), one per row · 2 MB max"
         }
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        ⚠ Max file size: 2 MB
-      </p>
 
       <div
         style={{

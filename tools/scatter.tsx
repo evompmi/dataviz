@@ -681,18 +681,8 @@ function UploadStep({
         onFileLoad={handleFileLoad}
         onLoadExample={onLoadExample}
         exampleLabel="Fisher's Iris dataset (150 rows, 3 species)"
-        hint="CSV · TSV · TXT — one column per variable, one row per data point"
+        hint="CSV · TSV · TXT — one column per variable, one row per point · 2 MB max"
       />
-      <p
-        style={{
-          margin: "4px 0 12px",
-          fontSize: 11,
-          color: "var(--text-faint)",
-          textAlign: "right",
-        }}
-      >
-        Max file size: 2 MB
-      </p>
       <div
         style={{
           marginTop: 24,

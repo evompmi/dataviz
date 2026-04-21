@@ -42,6 +42,7 @@
 
   /* Accents */
   --accent-primary: #939eae;
+  --accent-primary-weak: rgba(147, 158, 174, 0.12);
   --accent-plot: #2ec4b6;
   --accent-dna: #785ef0;
   --accent-warning: #f59e0b;
@@ -193,6 +194,7 @@
      The accent color itself (--accent-warning) stays identical across
      themes like all other --accent-* vars. */
   --accent-primary: #3a4454;
+  --accent-primary-weak: rgba(58, 68, 84, 0.28);
   --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
 }
 
@@ -260,6 +262,7 @@
     --cta-dna-bg: #5a45b8;
 
     --accent-primary: #3a4454;
+    --accent-primary-weak: rgba(58, 68, 84, 0.28);
     --accent-warning-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
   }
 }
