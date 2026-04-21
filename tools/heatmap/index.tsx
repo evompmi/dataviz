@@ -556,7 +556,6 @@ function App() {
                     detailDendroStroke={detailDendroStroke}
                     setDetailDendroStroke={setDetailDendroStroke}
                     clusterId={selection.clusterId}
-                    clusterAxis={selection.clusterAxis}
                   />
                 )}
               </div>

@@ -27,7 +27,6 @@ export function DetailView({
   detailDendroStroke,
   setDetailDendroStroke,
   clusterId,
-  clusterAxis,
 }) {
   // Detail tile is now an independent sibling next to the main plot rather
   // than stacked beneath it, so it no longer mirrors the main's width,
@@ -74,10 +73,6 @@ export function DetailView({
   // downloaded filenames with the 1-based cluster id so a user can tell
   // cluster-1 and cluster-3 exports apart on disk without re-opening them.
   const clusterSuffix = clusterId != null ? `_cluster${clusterId + 1}` : "";
-  const clusterTag =
-    clusterId != null
-      ? `Cluster n° ${clusterId + 1}${clusterAxis === "row" ? " (rows)" : clusterAxis === "col" ? " (cols)" : ""}`
-      : null;
 
   const downloadButton = (label, onClick) => (
     <button
@@ -135,21 +130,6 @@ export function DetailView({
                 ))}
               </div>
             </div>
-          ) : null}
-          {clusterTag ? (
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "var(--text)",
-                background: "var(--surface-subtle)",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                padding: "3px 8px",
-              }}
-            >
-              {clusterTag}
-            </span>
           ) : null}
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
