@@ -12,16 +12,37 @@ Tech stack: React 18 (vendored in `/vendor/`) + esbuild (build-time TSX compilat
 
 ```bash
 npm test
-# Equivalent to running all six test files in sequence:
+# Runs every tests/*.test.js file in sequence. Current suite:
 node tests/shared.test.js       # Utility function tests (color, ticks, seeded random)
 node tests/parsing.test.js      # CSV/TSV parsing tests
 node tests/integration.test.js  # Edge cases & integration tests
 node tests/components.test.js   # Shared React component tests (StatsTile, etc.)
 node tests/power.test.js        # Power analysis function tests
 node tests/stats.test.js        # Statistical function tests (t-test, ANOVA, post-hocs, etc.)
+node tests/prefs.test.js        # Auto-prefs load/save round-trip
+node tests/r-export.test.js     # R reproducibility-script builders
+node tests/upset.test.js        # UpSet intersection / sort / truncate helpers
 ```
 
 No test framework — custom harness in `tests/harness.js` using `suite()`, `test()`, `assert()`, `eq()`, `approx()`, `throws()`, `summary()`. Exit code 1 on any failure.
+
+### Fuzz harnesses
+
+Every plot tool has a paired fuzz harness under `tests/fuzz/<tool>.fuzz.js`, wired to `npm run fuzz:<tool>`. These feed the shared pathological-input corpus (`tests/fuzz/generators.js`) through each tool's parse → compute → render pipeline and assert structural invariants, not exact outputs. Run with `FUZZ_SEED=<n>` / `FUZZ_N=<n>` / `FUZZ_QUIET=1` env vars to vary seeds / iteration counts / output. Default cadence is 2 × 1000 iterations; 10k sweeps across seeds 1 / 42 / 999 are expected to report zero crashes before a release.
+
+### Test standards (mandatory for new work)
+
+New features that add user-visible behaviour or data-pipeline logic must ship with tests in the same PR/commit as the feature. The bar varies by what you touched:
+
+- **New shared function** in `shared.js` / `stats.js` / any `shared-*.js` → export from the matching loader in `tests/helpers/` and add unit tests to the appropriate `tests/*.test.js` file (or create a new one if the domain is new).
+- **New plot tool** → ships with (a) at least one dedicated `tests/<tool>.test.js` for any non-trivial pure helpers (intersection / aggregation / layout math), and (b) a `tests/fuzz/<tool>.fuzz.js` harness wired into `package.json` as `fuzz:<tool>`. Pattern the fuzz harness after `tests/fuzz/upset.fuzz.js` — load the tool's helpers via a `tests/helpers/<tool>-loader.js` that slices the pure-JS region of the `.tsx` and strips ES `import` lines with a regex filter before `vm.runInContext`.
+- **New pure helper inside a tool `.tsx`** → if it's non-trivial (any math, filtering, sorting, layout, label-disambiguation), expose it via the `tests/helpers/<tool>-loader.js` slice and add unit tests. If it's already covered by the tool's fuzz invariants, a fuzz-only addition is acceptable — note this in the PR/commit message.
+- **New chart component** → add a render-smoke assertion in `tests/components.test.js` (or the tool-specific fuzz harness) that builds with realistic inputs and confirms it doesn't throw.
+- **Bug fix that wasn't caught by existing tests** → add a regression test reproducing the original failure before committing the fix. If a fuzz harness could have caught it, extend the fuzz invariants too.
+
+### Landing-page test counter
+
+`index.html` line ~563 renders a `N internal tests` badge. **Whenever you change the total test count, update this number in the same commit.** The total is the sum of the `X/X passed` lines that `npm test` prints at the end of each suite — grep with `npm test 2>&1 | grep -E "^\s*[0-9]+/[0-9]+ passed"` and add them up. Fuzz iterations do not count (they are randomised); only the deterministic `tests/*.test.js` cases do. Log the bump in `CHANGELOG.md` under `### Added` or `### Changed` alongside whatever drove the new tests.
 
 ## Architecture
 
@@ -97,13 +118,48 @@ Each tool's `.tsx` source file follows this pattern:
 3. **App()** — orchestrator holding state and routing between steps
 
 ### Shared plot-tool scaffold (`tools/_shell/`)
-The ~22% boilerplate that every plot tool used to re-derive lives in three ES modules under `tools/_shell/`. Unlike the plain-JS `shared-*.js` globals, these are TypeScript modules imported via `import { … } from "./_shell/…"` and resolved by esbuild when bundling each tool.
+All seven plot tools (UpSet, Venn, Lineplot, Scatter, Heatmap, Aequorin, Boxplot) use the shared scaffold under `tools/_shell/`. Unlike the plain-JS `shared-*.js` globals, these are TypeScript modules imported via `import { … } from "./_shell/…"` and resolved by esbuild when bundling each tool.
 
 - `tools/_shell/usePlotToolState.ts` — `usePlotToolState<TVis>(toolKey, initialVis)` typed hook. Owns step state, upload fields (`fileName`, `parseError`, `sepOverride`, `commaFixed`, `commaFixCount`), and the `vis` reducer with auto-prefs persistence (`loadAutoPrefs` on init, `saveAutoPrefs` on change, `_reset` sentinel for reset-to-defaults).
 - `tools/_shell/PlotToolShell.tsx` — outer page frame. Renders `PageHeader` (with `PrefsPanel` in the right slot), `StepNavBar`, `CommaFixBanner`, `ParseErrorBanner`, then delegates to `children`. Takes the hook's return as a `state` prop.
-- `tools/_shell/ScrollablePlotCard.tsx` — horizontal-scroll affordances (edge fades + "Scroll for more →" pill driven by `ResizeObserver`). Currently used by UpSet; `venn.tsx` and `heatmap.tsx` have local copies that will migrate in follow-up passes.
+- `tools/_shell/ScrollablePlotCard.tsx` — horizontal-scroll affordances (edge fades + "Scroll for more →" pill driven by `ResizeObserver`). Used by UpSet today; `venn.tsx` and `heatmap.tsx` still ship local copies that will migrate in a follow-up pass.
 
-Tool-specific state (parsed rows, selection, etc.) stays inline in `App()` — the scaffold intentionally does not become a kitchen sink. When adding a new plot tool, start from `tools/upset.tsx` as the reference for the scaffold wiring.
+**Standard wiring pattern** (every migrated tool follows this shape — start from `tools/upset.tsx` as the canonical reference):
+
+```tsx
+import { usePlotToolState } from "./_shell/usePlotToolState";
+import { PlotToolShell } from "./_shell/PlotToolShell";
+
+const { useState /* , useReducer, useMemo, ... */ } = React;
+
+const VIS_INIT_<TOOL> = { /* persisted vis props */ };
+
+function App() {
+  const shell = usePlotToolState("<toolkey>", VIS_INIT_<TOOL>);
+  const { step, setStep, fileName, setFileName, setParseError,
+          sepOverride, setSepOverride, setCommaFixed, setCommaFixCount,
+          vis, updVis } = shell;
+  // tool-specific state (parsedRows, colRoles, filters, selection, …) stays local
+  return (
+    <PlotToolShell state={shell} toolName="…" title="…" subtitle="…"
+                   visInit={VIS_INIT_<TOOL>} steps={[…]} canNavigate={…}>
+      {/* step content */}
+    </PlotToolShell>
+  );
+}
+```
+
+Key conventions:
+
+- Hoist `VIS_INIT_<TOOL>` to **module scope** (not inside `App()`) so `usePlotToolState` can use it as both the reducer initial state and the `_reset` target.
+- Tool-specific state (parsed rows, selection, tool-only reducers like boxplot's `statsUi` or heatmap's `cellBorder`) stays inline in `App()` — the scaffold intentionally does not become a kitchen sink.
+- If a tool needs a dual-variant parse banner (e.g. aequorin's yellow "⚠️" warning vs. red error), keep `parseError` as **local** state and render the custom banner as `PlotToolShell` children; the shared `ParseErrorBanner` only renders the red error variant.
+
+**esbuild flags matter.** The build command in `package.json` uses `--bundle --format=esm --minify-syntax --minify-whitespace --sourcemap`. `--bundle` inlines `_shell/*` imports so the tool loads from a classic `<script>` tag; `--format=esm` avoids IIFE wrapping (which would hide chart consts like `BoxplotChart` from render-smoke tests); `--minify-syntax --minify-whitespace` (not `--minify`) preserves top-level identifier names so the render harness can find them. Do not change these without also updating the render-smoke test harness.
+
+**Test-loader gotcha.** Several fuzz helpers (`tests/helpers/<tool>-loader.js`) slice the top of a tool's `.tsx` and run it under `vm.runInContext` in script mode. Script mode can't parse ES `import` statements. After migration, these loaders strip `import` lines with a regex filter (`.filter((line) => !/^\s*import\s/.test(line))`) before `runInContext`. When editing a migrated tool's header region, check that the slice cutoff still covers the helper region the loader needs.
+
+**If you add a new plot tool**, start by copying `tools/upset.tsx` and adapting the chart + step content. Do not re-derive the scaffold.
 
 ### SVG export: named groups for Inkscape
 Exported SVGs are routinely re-opened in Inkscape for touch-ups, so **every chart must wrap its elements in `<g id="...">` groups with human-readable ids**. When adding a new chart (or a new element to an existing chart), give the wrapping group a descriptive id so Inkscape users can select it by name from the Objects panel / XML editor.
