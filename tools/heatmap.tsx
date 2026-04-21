@@ -5,8 +5,9 @@ const { useState, useReducer, useMemo, useCallback, useRef, useEffect, forwardRe
 
 // ── Palette strip (same shape as scatter.tsx's local helper) ─────────────────
 
-function PaletteStrip({ palette, height = 12 }) {
-  const stops = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+function PaletteStrip({ palette, invert = false, height = 12 }) {
+  const base = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+  const stops = invert ? [...base].reverse() : base;
   const n = 48;
   return (
     <div
@@ -209,6 +210,7 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     vmin,
     vmax,
     palette,
+    invertPalette = false,
     cellBorder,
     plotTitle,
     plotSubtitle,
@@ -279,7 +281,8 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
 ) {
   const nRows = rowOrder.length;
   const nCols = colOrder.length;
-  const stops = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+  const paletteBase = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+  const stops = invertPalette ? [...paletteBase].reverse() : paletteBase;
 
   // Longest label lengths drive the margin sizes. Labels render at 10 px.
   const longestRowLabel = Math.max(0, ...rowLabels.map((l) => (l || "").length));
@@ -345,6 +348,15 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
   const computedDendroLeft = rowIsHier ? 60 : rowIsKmeans ? 14 : 0;
   const DENDRO_SIZE_TOP = baseDendroSizeTop != null ? baseDendroSizeTop : computedDendroTop;
   const DENDRO_SIZE_LEFT = baseDendroSizeLeft != null ? baseDendroSizeLeft : computedDendroLeft;
+  // Extra reserved margin for rotated per-band "Cluster n° X" labels above the
+  // col k-means strip / left of the row k-means strip. Sized to fit a ~12-char
+  // label at fontSize 10 (≈ 60 px) plus 4 px padding between label tail and
+  // strip edge. Zero when the relevant axis isn't k-means or when the strip
+  // isn't drawn (hierarchical mode and the detail view when showKmeansStrip
+  // is off both skip the strip — and therefore the label band too).
+  const effShowKmeans = showKmeansStrip != null ? showKmeansStrip : showClusterStrip;
+  const CLUSTER_LABEL_H = colIsKmeans && effShowKmeans ? 24 : 0;
+  const CLUSTER_LABEL_W = rowIsKmeans && effShowKmeans ? 92 : 0;
   const LABEL_GAP = 6;
   const ROW_LABEL_W =
     baseRowLabelW != null
@@ -375,8 +387,9 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
     baseColorbarH != null ? baseColorbarH : Math.min(180, Math.max(60, Math.round(plotH * 0.6)));
 
   const MARGIN = {
-    top: TITLE_H + 10 + AXIS_LABEL_TOP + COL_LABEL_H + LABEL_GAP + DENDRO_SIZE_TOP,
-    left: AXIS_LABEL_LEFT + DENDRO_SIZE_LEFT + LABEL_GAP,
+    top:
+      TITLE_H + 10 + AXIS_LABEL_TOP + CLUSTER_LABEL_H + COL_LABEL_H + LABEL_GAP + DENDRO_SIZE_TOP,
+    left: AXIS_LABEL_LEFT + CLUSTER_LABEL_W + DENDRO_SIZE_LEFT + LABEL_GAP,
     right: ROW_LABEL_W + CB_OFFSET + CB_W + CB_TICK_W + 10,
     bottom: 12,
   };
@@ -721,6 +734,17 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
         leavesByCluster.get(id).push(c);
       }
     }
+    // Contiguous runs along colOrder → one horizontal "Cluster n° X" label
+    // per run, centered on the band and parked in the reserved
+    // CLUSTER_LABEL_H band directly above the strip.
+    const bands = [];
+    for (let i = 0; i < colOrder.length; ) {
+      const id = colCluster.clusters[colOrder[i]];
+      let j = i + 1;
+      while (j < colOrder.length && colCluster.clusters[colOrder[j]] === id) j++;
+      bands.push({ id, start: i, end: j });
+      i = j;
+    }
     return (
       <g id="col-cluster-strip" onMouseLeave={interactive ? () => setAxisHover(null) : undefined}>
         {colOrder.map((origCi, ci) => {
@@ -745,13 +769,40 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                 interactive
                   ? (e) => {
                       e.stopPropagation();
-                      onAxisSelect && onAxisSelect("col", leavesByCluster.get(cid));
+                      onAxisSelect &&
+                        onAxisSelect("col", leavesByCluster.get(cid), {
+                          clusterId: cid,
+                        });
                     }
                   : undefined
               }
             />
           );
         })}
+        {CLUSTER_LABEL_H > 0 &&
+          bands.map((b) => {
+            const x0 = MARGIN.left + cellX(b.start);
+            const x1 = MARGIN.left + cellX(b.end - 1) + cellWPx(b.end - 1);
+            const cx = (x0 + x1) / 2;
+            const cy = y - CLUSTER_LABEL_H / 2 - 4;
+            return (
+              <text
+                key={`lbl-${b.id}-${b.start}`}
+                x={cx}
+                y={cy}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={10}
+                fill="#111111"
+                stroke="#ffffff"
+                strokeWidth={3}
+                paintOrder="stroke"
+                style={{ pointerEvents: "none" }}
+              >
+                {`Cluster n° ${b.id + 1}`}
+              </text>
+            );
+          })}
       </g>
     );
   }
@@ -766,6 +817,14 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
         if (!leavesByCluster.has(id)) leavesByCluster.set(id, []);
         leavesByCluster.get(id).push(r);
       }
+    }
+    const bands = [];
+    for (let i = 0; i < rowOrder.length; ) {
+      const id = rowCluster.clusters[rowOrder[i]];
+      let j = i + 1;
+      while (j < rowOrder.length && rowCluster.clusters[rowOrder[j]] === id) j++;
+      bands.push({ id, start: i, end: j });
+      i = j;
     }
     return (
       <g id="row-cluster-strip" onMouseLeave={interactive ? () => setAxisHover(null) : undefined}>
@@ -791,13 +850,40 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
                 interactive
                   ? (e) => {
                       e.stopPropagation();
-                      onAxisSelect && onAxisSelect("row", leavesByCluster.get(cid));
+                      onAxisSelect &&
+                        onAxisSelect("row", leavesByCluster.get(cid), {
+                          clusterId: cid,
+                        });
                     }
                   : undefined
               }
             />
           );
         })}
+        {CLUSTER_LABEL_W > 0 &&
+          bands.map((b) => {
+            const y0 = MARGIN.top + cellY(b.start);
+            const y1 = MARGIN.top + cellY(b.end - 1) + cellHPx(b.end - 1);
+            const cy = (y0 + y1) / 2;
+            const cx = x - CLUSTER_LABEL_W / 2 - 4;
+            return (
+              <text
+                key={`lbl-${b.id}-${b.start}`}
+                x={cx}
+                y={cy}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={10}
+                fill="#111111"
+                stroke="#ffffff"
+                strokeWidth={3}
+                paintOrder="stroke"
+                style={{ pointerEvents: "none" }}
+              >
+                {`Cluster n° ${b.id + 1}`}
+              </text>
+            );
+          })}
       </g>
     );
   }
@@ -980,6 +1066,7 @@ const HeatmapChart = forwardRef<SVGSVGElement, any>(function HeatmapChart(
       vmin,
       vmax,
       palette,
+      invertPalette,
       cellW,
       cellH,
       cellOffsetCols,
@@ -1408,10 +1495,10 @@ function ClusterModeControl({ label, mode, setMode, k, setK }) {
             value={k}
             step="1"
             min="2"
-            max="10"
+            max="20"
             onChange={(e) => {
               const v = parseInt(e.target.value, 10);
-              setK(Math.max(2, Math.min(10, Number.isFinite(v) ? v : 3)));
+              setK(Math.max(2, Math.min(20, Number.isFinite(v) ? v : 3)));
             }}
             style={{ width: "100%" }}
           />
@@ -1556,6 +1643,7 @@ function PlotControls({
                 distanceMetric,
                 linkageMethod,
                 palette: vis.palette,
+                invertPalette: vis.invertPalette,
                 vmin: vis.vmin,
                 vmax: vis.vmax,
                 plotTitle: vis.plotTitle,
@@ -1663,8 +1751,31 @@ function PlotControls({
               </option>
             ))}
           </select>
-          <PaletteStrip palette={vis.palette} />
+          <PaletteStrip palette={vis.palette} invert={vis.invertPalette} />
         </label>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+          <span className="dv-label" style={{ fontSize: 11, flexShrink: 0 }}>
+            Direction
+          </span>
+          <div className="dv-seg" role="group" aria-label="Palette direction">
+            <button
+              type="button"
+              className={"dv-seg-btn" + (!vis.invertPalette ? " dv-seg-btn-active" : "")}
+              onClick={() => updVis({ invertPalette: false })}
+              style={{ fontSize: 11, padding: "3px 8px" }}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              className={"dv-seg-btn" + (vis.invertPalette ? " dv-seg-btn-active" : "")}
+              onClick={() => updVis({ invertPalette: true })}
+              style={{ fontSize: 11, padding: "3px 8px" }}
+            >
+              Inverted
+            </button>
+          </div>
+        </div>
         <div style={{ display: "flex", gap: 6, alignItems: "flex-end", marginBottom: 6 }}>
           <label style={{ fontSize: 11, flex: 1, display: "block" }}>
             <span className="dv-label">Min</span>
@@ -1828,6 +1939,7 @@ function buildHeatmapRScript({
   distanceMetric,
   linkageMethod,
   palette,
+  invertPalette,
   vmin,
   vmax,
   plotTitle,
@@ -1852,7 +1964,8 @@ function buildHeatmapRScript({
     );
   }
   const dataLiteral = "c(\n" + dataRows.join(",\n") + "\n  )";
-  const stops = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+  const paletteBase = COLOR_PALETTES[palette] || COLOR_PALETTES.viridis;
+  const stops = invertPalette ? [...paletteBase].reverse() : paletteBase;
   const stopsR = "c(" + stops.map((c) => `"${c}"`).join(", ") + ")";
 
   // pheatmap speaks "correlation" directly; map our metric accordingly.
@@ -1940,7 +2053,10 @@ function buildHeatmapRScript({
   lines.push("");
   lines.push("# ── Colour scale ───────────────────────────────────────────────────────────");
   lines.push(
-    "# Palette: " + palette + (DIVERGING_PALETTES.has(palette) ? " (diverging)" : " (sequential)")
+    "# Palette: " +
+      palette +
+      (DIVERGING_PALETTES.has(palette) ? " (diverging)" : " (sequential)") +
+      (invertPalette ? " — inverted" : "")
   );
   lines.push("palette_stops <- " + stopsR);
   lines.push("heat_colors <- colorRampPalette(palette_stops)(100)");
@@ -1981,15 +2097,40 @@ function buildHeatmapRScript({
   return lines.join("\n");
 }
 
-function buildCsvExport({ rowLabels, colLabels, matrix, rowOrder, colOrder }) {
-  const headers = [""].concat(colOrder.map((i) => colLabels[i]));
+function buildCsvExport({
+  rowLabels,
+  colLabels,
+  matrix,
+  rowOrder,
+  colOrder,
+  rowClusterIds,
+  colClusterIds,
+}) {
+  const hasRowClusters = Array.isArray(rowClusterIds);
+  const hasColClusters = Array.isArray(colClusterIds);
+  const headers = [""]
+    .concat(colOrder.map((i) => colLabels[i]))
+    .concat(hasRowClusters ? ["cluster"] : []);
   const rows = rowOrder.map((ri) => {
     const cells = colOrder.map((ci) => {
       const v = matrix[ri][ci];
       return Number.isFinite(v) ? String(v) : "";
     });
-    return [rowLabels[ri]].concat(cells);
+    const base = [rowLabels[ri]].concat(cells);
+    if (hasRowClusters) {
+      const cid = rowClusterIds[ri];
+      base.push(cid != null ? String(cid + 1) : "");
+    }
+    return base;
   });
+  if (hasColClusters) {
+    const clusterRow = ["cluster"]
+      .concat(
+        colOrder.map((ci) => (colClusterIds[ci] != null ? String(colClusterIds[ci] + 1) : ""))
+      )
+      .concat(hasRowClusters ? [""] : []);
+    rows.unshift(clusterRow);
+  }
   return { headers, rows };
 }
 
@@ -2053,6 +2194,7 @@ function App() {
 
   const visInit = {
     palette: "viridis",
+    invertPalette: false,
     vmin: 0,
     vmax: 1,
     plotTitle: "",
@@ -2094,26 +2236,38 @@ function App() {
   // `null` on an axis means "all rows/cols". Indices are into the ORIGINAL
   // rawMatrix, not into rowOrder/colOrder — so clustering changes don't
   // invalidate them.
-  const [selection, setSelection] = useState({ rows: null, cols: null });
+  const [selection, setSelection] = useState({
+    rows: null,
+    cols: null,
+    clusterId: null,
+    clusterAxis: null,
+  });
 
   const selectBox = useCallback((rows, cols) => {
     setSelection({
       rows: rows && rows.length ? rows : null,
       cols: cols && cols.length ? cols : null,
+      clusterId: null,
+      clusterAxis: null,
     });
   }, []);
   // Axis-scoped selection (dendrogram branch / cluster strip click) REPLACES
   // any prior selection rather than layering onto it — otherwise clicking a
   // column subtree after a row brush would intersect the two, which doesn't
   // match the user's mental model of "show me this subtree".
-  const selectAxis = useCallback((axis, indices) => {
+  const selectAxis = useCallback((axis, indices, meta) => {
     const valid = indices && indices.length ? indices : null;
     setSelection({
       rows: axis === "row" ? valid : null,
       cols: axis === "col" ? valid : null,
+      clusterId: meta && meta.clusterId != null ? meta.clusterId : null,
+      clusterAxis: meta && meta.clusterId != null ? axis : null,
     });
   }, []);
-  const clearSelection = useCallback(() => setSelection({ rows: null, cols: null }), []);
+  const clearSelection = useCallback(
+    () => setSelection({ rows: null, cols: null, clusterId: null, clusterAxis: null }),
+    []
+  );
 
   // Normalised matrix (memoised on the raw matrix + mode).
   const normalized = useMemo(
@@ -2222,6 +2376,8 @@ function App() {
     matrix: normalized,
     rowOrder,
     colOrder,
+    rowClusterIds: rowCluster && rowCluster.mode === "kmeans" ? rowCluster.clusters : null,
+    colClusterIds: colCluster && colCluster.mode === "kmeans" ? colCluster.clusters : null,
   };
 
   const autoVRange = useCallback(() => {
@@ -2473,8 +2629,10 @@ function App() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <div>
-                      {hasSelection && (
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}
+                    >
+                      {hasSelection ? (
                         <button
                           onClick={clearSelection}
                           className="dv-btn dv-btn-secondary"
@@ -2482,6 +2640,17 @@ function App() {
                         >
                           Clear
                         </button>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          ↳ Drag on the heatmap or click a dendrogram / k-means band to open a
+                          zoomed view
+                        </span>
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -2522,6 +2691,7 @@ function App() {
                     vmin={vis.vmin}
                     vmax={vis.vmax}
                     palette={vis.palette}
+                    invertPalette={vis.invertPalette}
                     cellBorder={cellBorder}
                     plotTitle={vis.plotTitle}
                     plotSubtitle={vis.plotSubtitle}
@@ -2551,6 +2721,8 @@ function App() {
                     fileName={fileName}
                     detailDendroStroke={detailDendroStroke}
                     setDetailDendroStroke={setDetailDendroStroke}
+                    clusterId={selection.clusterId}
+                    clusterAxis={selection.clusterAxis}
                   />
                 )}
               </div>
@@ -2561,6 +2733,7 @@ function App() {
                   detailRowOrder={detailRowOrder}
                   detailColOrder={detailColOrder}
                   fileName={fileName}
+                  clusterId={selection.clusterId}
                 />
               )}
             </div>
@@ -2586,6 +2759,8 @@ function DetailView({
   fileName,
   detailDendroStroke,
   setDetailDendroStroke,
+  clusterId,
+  clusterAxis,
 }) {
   // Detail tile is now an independent sibling next to the main plot rather
   // than stacked beneath it, so it no longer mirrors the main's width,
@@ -2628,6 +2803,15 @@ function DetailView({
   const detailShowDendrogram =
     (mainRowIsHier && detailRowCluster) || (mainColIsHier && detailColCluster);
 
+  // When the selection came from a k-means cluster-strip click we tag the
+  // downloaded filenames with the 1-based cluster id so a user can tell
+  // cluster-1 and cluster-3 exports apart on disk without re-opening them.
+  const clusterSuffix = clusterId != null ? `_cluster${clusterId + 1}` : "";
+  const clusterTag =
+    clusterId != null
+      ? `Cluster n° ${clusterId + 1}${clusterAxis === "row" ? " (rows)" : clusterAxis === "col" ? " (cols)" : ""}`
+      : null;
+
   const downloadButton = (label, onClick) => (
     <button
       onClick={(e) => {
@@ -2664,7 +2848,7 @@ function DetailView({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           {detailShowDendrogram ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Dendrogram</span>
@@ -2685,13 +2869,28 @@ function DetailView({
               </div>
             </div>
           ) : null}
+          {clusterTag ? (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--text)",
+                background: "var(--surface-subtle)",
+                border: "1px solid var(--border)",
+                borderRadius: 4,
+                padding: "3px 8px",
+              }}
+            >
+              {clusterTag}
+            </span>
+          ) : null}
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {downloadButton("SVG", () =>
-            downloadSvg(detailChartRef.current, `${base}_heatmap_detail.svg`)
+            downloadSvg(detailChartRef.current, `${base}_heatmap${clusterSuffix}_detail.svg`)
           )}
           {downloadButton("PNG", () =>
-            downloadPng(detailChartRef.current, `${base}_heatmap_detail.png`, 2)
+            downloadPng(detailChartRef.current, `${base}_heatmap${clusterSuffix}_detail.png`, 2)
           )}
         </div>
       </div>
@@ -2714,6 +2913,7 @@ function DetailView({
           vmin={vis.vmin}
           vmax={vis.vmax}
           palette={vis.palette}
+          invertPalette={vis.invertPalette}
           cellBorder={cellBorder}
           plotTitle={vis.plotTitle ? `${vis.plotTitle} — detail` : undefined}
           plotSubtitle={vis.plotSubtitle}
@@ -2729,8 +2929,16 @@ function DetailView({
   );
 }
 
-function DetailPreviewCard({ rawMatrix, normalized, detailRowOrder, detailColOrder, fileName }) {
+function DetailPreviewCard({
+  rawMatrix,
+  normalized,
+  detailRowOrder,
+  detailColOrder,
+  fileName,
+  clusterId,
+}) {
   const base = fileBaseName(fileName || "heatmap") || "heatmap";
+  const clusterSuffix = clusterId != null ? `_cluster${clusterId + 1}` : "";
   const nR = detailRowOrder.length;
   const nC = detailColOrder.length;
   const tableHeaders = [""].concat(detailColOrder.map((ci) => rawMatrix.colLabels[ci]));
@@ -2778,7 +2986,7 @@ function DetailPreviewCard({ rawMatrix, normalized, detailRowOrder, detailColOrd
           onClick={(e) => {
             if (!detailMatrixRef.current) return;
             const { headers, rows } = buildCsvExport(detailMatrixRef.current);
-            downloadCsv(headers, rows, `${base}_heatmap_detail.csv`);
+            downloadCsv(headers, rows, `${base}_heatmap${clusterSuffix}_detail.csv`);
             flashSaved(e.currentTarget);
           }}
           className="dv-btn dv-btn-dl"
