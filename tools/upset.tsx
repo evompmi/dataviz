@@ -95,7 +95,19 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
   const subH = plotSubtitle ? SUBTITLE_H : 0;
   const topPanelY = titleH + subH;
   const matrixY = topPanelY + TOP_PANEL_H + MATRIX_TOP_PAD;
-  const VH = matrixY + matrixH + BOTTOM_H;
+  // Column ids ("I1", "I2", …) render horizontally by default, but flip to a
+  // vertical (rotated -90°) orientation past 10 columns so they stop colliding.
+  const idFontSize = Math.max(8, Math.min(10, fSize - 4));
+  const rotateColumnIds = nCols > 10;
+  const maxIdChars = 1 + String(Math.max(1, nCols)).length;
+  const idLabelSpan = rotateColumnIds
+    ? Math.ceil(maxIdChars * idFontSize * 0.58)
+    : idFontSize;
+  const legendFS = Math.max(9, fSize - 3);
+  const idLaneOffset = 10;
+  const legendOffset = idLaneOffset + idLabelSpan + 8;
+  const bottomNeeded = legendOffset + legendFS + 8;
+  const VH = matrixY + matrixH + Math.max(BOTTOM_H, bottomNeeded);
   // Grow the SVG when columns would otherwise spill past the preferred width;
   // the style below keeps it <=100% of the container so narrow viewports just
   // scale proportionally instead of clipping.
@@ -428,23 +440,26 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
           labels on the plot equal the file names 1:1 for any given render. */}
       <g id="column-ids">
         {(() => {
-          const idLaneY = matrixY + matrixH + 10;
-          const idFontSize = Math.max(8, Math.min(10, fSize - 4));
-          return intersections.map((inter, i) => (
-            <text
-              key={`cid-${inter.mask}`}
-              id={`column-id-${i + 1}`}
-              x={colX(i)}
-              y={idLaneY}
-              textAnchor="middle"
-              dominantBaseline="hanging"
-              fontSize={idFontSize}
-              fontFamily="monospace"
-              fill={TEXT_MUTED}
-            >
-              {`I${i + 1}`}
-            </text>
-          ));
+          const idLaneY = matrixY + matrixH + idLaneOffset;
+          return intersections.map((inter, i) => {
+            const cx = colX(i);
+            return (
+              <text
+                key={`cid-${inter.mask}`}
+                id={`column-id-${i + 1}`}
+                x={cx}
+                y={idLaneY}
+                textAnchor={rotateColumnIds ? "end" : "middle"}
+                dominantBaseline={rotateColumnIds ? "middle" : "hanging"}
+                fontSize={idFontSize}
+                fontFamily="monospace"
+                fill={TEXT_MUTED}
+                transform={rotateColumnIds ? `rotate(-90 ${cx} ${idLaneY})` : undefined}
+              >
+                {`I${i + 1}`}
+              </text>
+            );
+          });
         })()}
       </g>
 
@@ -453,8 +468,7 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
           caption (which lives in the left bar area). */}
       <g id="column-ids-legend">
         {(() => {
-          const legendFS = Math.max(9, fSize - 3);
-          const legendY = matrixY + matrixH + 36;
+          const legendY = matrixY + matrixH + legendOffset;
           return (
             <text
               x={matrixLeftX}
