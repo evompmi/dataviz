@@ -1,8 +1,10 @@
-// Loads the venn pure helpers (tools/venn/helpers.ts) and their shared
-// dependencies (tools/shared.js, tools/stats.js) into a Node vm context.
-// helpers.ts is a pure-TS ES module with no React/DOM use, so we transform it
-// to CommonJS with esbuild and evaluate it in a single vm context that already
-// has the shared globals available.
+// Loads the venn pure helpers (tools/venn/helpers.ts and its cohesion-split
+// siblings under tools/venn/*.ts) and their shared dependencies
+// (tools/shared.js, tools/stats.js) into a Node vm context. helpers.ts is a
+// thin barrel that re-exports from constants.ts / set-math.ts / geometry.ts /
+// areas.ts / layout.ts / centroids.ts — we bundle it (inlining the sibling
+// modules) to CommonJS with esbuild and evaluate it in a single vm context
+// that already has the shared globals available.
 
 const fs = require("fs");
 const vm = require("vm");
@@ -12,12 +14,14 @@ const esbuild = require("esbuild");
 const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
-const helpersSrc = fs.readFileSync(path.join(toolsDir, "venn/helpers.ts"), "utf8");
 
-const helpersCjs = esbuild.transformSync(helpersSrc, {
-  loader: "ts",
+const helpersCjs = esbuild.buildSync({
+  entryPoints: [path.join(toolsDir, "venn/helpers.ts")],
+  bundle: true,
   format: "cjs",
-}).code;
+  platform: "neutral",
+  write: false,
+}).outputFiles[0].text;
 
 const moduleObj = { exports: {} };
 const ctx = {
