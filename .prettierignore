@@ -1,6 +1,6 @@
 node_modules
 vendor
-tools/aequorin.js
+tools/aequorin/index.js
 tools/bargraph.js
 tools/boxplot/index.js
 tools/heatmap.js
