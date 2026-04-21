@@ -2365,7 +2365,6 @@ function App() {
       state={shell}
       toolName="scatter"
       title="Scatter Plot"
-      subtitle="XY scatter — one row per data point, one column per variable"
       visInit={VIS_INIT_SCATTER}
       steps={["upload", "plot"]}
       canNavigate={canNavigate}

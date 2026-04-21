@@ -360,17 +360,17 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  background: var(--success-bg);
-  border: 1px solid var(--success-border);
-  color: var(--success-text);
+  background: var(--step-ready-bg);
+  border: 1px solid var(--step-ready-border);
+  color: var(--step-ready);
   white-space: nowrap;
   min-width: 78px;
 }
 .dv-btn-dl:hover:not(:disabled) {
   filter: brightness(0.96);
-  border-color: var(--success-text);
+  border-color: var(--step-ready);
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px -3px rgb(22 101 52 / 0.4);
+  box-shadow: 0 3px 10px -3px rgb(63 107 42 / 0.4);
 }
 .dv-btn-dl:active:not(:disabled) {
   transform: translateY(1px);

@@ -236,87 +236,194 @@ var SliderControl = React.memo(_SliderControlImpl, function (prev, next) {
   );
 });
 
-// Step navigation bar
+// Step navigation bar — horizontal stepper with circles + labels + connector line.
+// Past steps render a ✓ on a filled --step-ready circle; the current step renders
+// its number on --step-active-bg chrome; reachable-unvisited steps render a
+// --step-ready outline; locked steps render a neutral outline. Connector line
+// between circles fills --step-ready green up to the last completed step.
 function StepNavBar(props) {
   const steps = props.steps,
     currentStep = props.currentStep,
     onStepChange = props.onStepChange,
     canNavigate = props.canNavigate;
-  const enabledList = steps.map(function (s) {
-    return canNavigate ? canNavigate(s) : true;
-  });
-  const children = [];
-  steps.forEach(function (s, i) {
-    const enabled = enabledList[i];
-    const isCurrent = currentStep === s;
-    const isDoneOrCurrent = isCurrent || i < steps.indexOf(currentStep);
-    children.push(
-      React.createElement(
-        "button",
+  const currentIdx = steps.indexOf(currentStep);
+  const capitalize = function (s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+  const cells = steps.map(function (s, i) {
+    const enabled = canNavigate ? canNavigate(s) : true;
+    const isCurrent = i === currentIdx;
+    const isPast = i < currentIdx;
+    const isReachableUnvisited = enabled && !isCurrent && !isPast;
+
+    let circleBg, circleBorder, circleColor, circleContent;
+    if (isPast) {
+      circleBg = "var(--step-ready)";
+      circleBorder = "none";
+      circleColor = "#ffffff";
+      circleContent = React.createElement(
+        "svg",
         {
-          key: "step-" + s,
-          onClick: function () {
-            if (enabled) onStepChange(s);
-          },
-          style: {
-            height: 40,
-            padding: "0 16px",
-            borderRadius: 6,
-            fontSize: 12,
-            fontWeight: 600,
-            background: isCurrent ? "var(--step-active-bg)" : "var(--surface)",
-            color: isCurrent ? "var(--on-accent)" : enabled ? "var(--text-faint)" : "var(--border)",
-            border:
-              "1px solid " +
-              (isCurrent
-                ? "var(--step-active-border)"
-                : enabled && !isDoneOrCurrent
-                  ? "var(--step-ready)"
-                  : enabled
-                    ? "var(--border-strong)"
-                    : "var(--border)"),
-            boxShadow:
-              enabled && !isCurrent && !isDoneOrCurrent ? "0 0 0 2px var(--step-ready)" : "none",
-            cursor: enabled ? "pointer" : "default",
-            fontFamily: "inherit",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-          },
+          key: "check",
+          width: 18,
+          height: 18,
+          viewBox: "0 0 24 24",
+          "aria-hidden": "true",
+          style: { display: "block" },
         },
-        i + 1 + ". " + s
-      )
-    );
-    if (i < steps.length - 1) {
-      const nextEnabled = enabledList[i + 1];
-      const currentIdx = steps.indexOf(currentStep);
-      const isFutureReachable = i + 1 > currentIdx && nextEnabled;
-      children.push(
-        React.createElement(
-          "span",
-          {
-            key: "chev-" + s,
+        React.createElement("path", {
+          d: "M5 12.5l4.2 4.2L19 7",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: 3,
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+        })
+      );
+    } else if (isCurrent) {
+      circleBg = "var(--step-active-bg)";
+      circleBorder = "1px solid var(--step-active-border)";
+      circleColor = "var(--on-accent)";
+      circleContent = String(i + 1);
+    } else if (isReachableUnvisited) {
+      circleBg = "var(--surface)";
+      circleBorder = "2px solid var(--step-ready)";
+      circleColor = "var(--step-ready)";
+      circleContent = String(i + 1);
+    } else {
+      circleBg = "var(--surface)";
+      circleBorder = "1px solid var(--border)";
+      circleColor = "var(--text-faint)";
+      circleContent = String(i + 1);
+    }
+
+    const labelColor = isCurrent
+      ? "var(--text)"
+      : isPast
+        ? "var(--text-muted)"
+        : isReachableUnvisited
+          ? "var(--text-faint)"
+          : "var(--border)";
+    const labelWeight = isCurrent ? 600 : 500;
+
+    const connector =
+      i < steps.length - 1
+        ? React.createElement("div", {
+            key: "conn",
             "aria-hidden": "true",
             style: {
-              display: "inline-flex",
-              alignItems: "center",
-              fontSize: 20,
-              lineHeight: 1,
-              fontWeight: 700,
-              padding: "0 2px",
-              color: isFutureReachable ? "var(--step-ready)" : "var(--border-strong)",
-              transition: "color 160ms ease-out",
-              userSelect: "none",
+              position: "absolute",
+              top: 18,
+              left: "50%",
+              right: "-50%",
+              height: 2,
+              background: isPast ? "var(--step-ready)" : "var(--border-strong)",
+              zIndex: 0,
+              transition: "background 160ms ease-out",
             },
-          },
-          "\u276F"
-        )
-      );
-    }
+          })
+        : null;
+
+    const circle = React.createElement(
+      "span",
+      {
+        key: "circle",
+        style: {
+          position: "relative",
+          zIndex: 1,
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: circleBg,
+          border: circleBorder,
+          color: circleColor,
+          fontSize: 16,
+          fontWeight: 600,
+          lineHeight: 1,
+          boxSizing: "border-box",
+          transition:
+            "background 160ms ease-out, border-color 160ms ease-out, color 160ms ease-out",
+        },
+      },
+      circleContent
+    );
+
+    const label = React.createElement(
+      "span",
+      {
+        key: "label",
+        style: {
+          marginTop: 6,
+          fontSize: 11,
+          fontWeight: labelWeight,
+          color: labelColor,
+          textTransform: "capitalize",
+          letterSpacing: 0.2,
+          whiteSpace: "nowrap",
+        },
+      },
+      capitalize(s)
+    );
+
+    const button = React.createElement(
+      "button",
+      {
+        key: "btn",
+        type: "button",
+        onClick: enabled
+          ? function () {
+              onStepChange(s);
+            }
+          : undefined,
+        disabled: !enabled,
+        "aria-current": isCurrent ? "step" : undefined,
+        "aria-label": "Step " + (i + 1) + " of " + steps.length + ": " + capitalize(s),
+        style: {
+          all: "unset",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          cursor: enabled ? "pointer" : "default",
+          position: "relative",
+          zIndex: 1,
+        },
+      },
+      circle,
+      label
+    );
+
+    return React.createElement(
+      "div",
+      {
+        key: "step-" + s,
+        style: {
+          flex: "1 1 0",
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          minWidth: 0,
+        },
+      },
+      connector,
+      button
+    );
   });
+
   return React.createElement(
     "div",
-    { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
-    children
+    {
+      style: {
+        display: "flex",
+        alignItems: "flex-start",
+        padding: "8px 0 4px",
+        width: "100%",
+      },
+    },
+    cells
   );
 }
 
@@ -467,14 +574,7 @@ function PageHeader(props) {
         },
       },
       rowChildren
-    ),
-    props.subtitle
-      ? React.createElement(
-          "p",
-          { style: { margin: "6px 0 0", fontSize: 10, color: "var(--text-faint)" } },
-          props.subtitle
-        )
-      : null
+    )
   );
 }
 
