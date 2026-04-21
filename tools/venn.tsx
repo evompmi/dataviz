@@ -990,6 +990,7 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
     onLayoutInfo,
     proportional,
     readabilityBlend,
+    showOutline,
   },
   ref
 ) {
@@ -1026,6 +1027,7 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
 
   const fSize = fontSize || 14;
   const fOpacity = fillOpacity != null ? fillOpacity : 0.25;
+  const outlineOn = showOutline !== false;
 
   return (
     <svg
@@ -1065,9 +1067,9 @@ const VennChart = forwardRef<SVGSVGElement, any>(function VennChart(
             r={c.r}
             fill={colors[setNames[i]] || PALETTE[i]}
             fillOpacity={fOpacity}
-            stroke={colors[setNames[i]] || PALETTE[i]}
-            strokeWidth="2"
-            strokeOpacity="0.6"
+            stroke={outlineOn ? colors[setNames[i]] || PALETTE[i] : "none"}
+            strokeWidth={outlineOn ? 2 : 0}
+            strokeOpacity={outlineOn ? 0.6 : 0}
             aria-label={`Set ${setNames[i]}: ${sets[setNames[i]] || 0} elements`}
           />
         ))}
@@ -1915,6 +1917,42 @@ function PlotControls({
             step={0.05}
             onChange={sv("fillOpacity")}
           />
+          <div>
+            <span className="dv-label">Circle outline</span>
+            <div
+              style={{
+                display: "flex",
+                borderRadius: 6,
+                overflow: "hidden",
+                border: "1px solid var(--border-strong)",
+              }}
+            >
+              {(["off", "on"] as const).map((mode) => {
+                const active = mode === "on" ? vis.showOutline : !vis.showOutline;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => updVis({ showOutline: mode === "on" })}
+                    style={{
+                      flex: 1,
+                      padding: "4px 0",
+                      fontSize: 11,
+                      fontWeight: active ? 700 : 400,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                      border: "none",
+                      background: active ? "var(--accent-primary)" : "var(--surface)",
+                      color: active ? "var(--on-accent)" : "var(--text-muted)",
+                      transition: "background 120ms ease, color 120ms ease",
+                    }}
+                  >
+                    {mode === "off" ? "Off" : "On"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <SliderControl
             label="Font size"
             value={vis.fontSize}
@@ -1961,6 +1999,7 @@ function App() {
     fontSize: 14,
     fillOpacity: 0.25,
     readabilityBlend: VENN_CONFIG.DEFAULT_READABILITY_BLEND,
+    showOutline: true,
   };
   const [vis, updVis] = useReducer(
     (s, a) => (a._reset ? { ...visInit } : { ...s, ...a }),
@@ -2241,6 +2280,7 @@ function App() {
                   fontSize={vis.fontSize}
                   fillOpacity={vis.fillOpacity}
                   readabilityBlend={vis.readabilityBlend}
+                  showOutline={vis.showOutline}
                   onLayoutInfo={setLayoutInfo}
                   proportional={proportional}
                 />
