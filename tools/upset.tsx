@@ -3,6 +3,7 @@
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
 import { ScrollablePlotCard } from "./_shell/ScrollablePlotCard";
+import { PlotSidebar } from "./_shell/PlotSidebar";
 import {
   computeMemberships,
   enumerateIntersections,
@@ -1138,19 +1139,7 @@ function PlotControls({
   const baseName = fileBaseName(fileName, "upset");
   const sv = (k) => (v) => updVis({ [k]: v });
   return (
-    <div
-      style={{
-        width: 279,
-        flexShrink: 0,
-        position: "sticky",
-        top: 24,
-        maxHeight: "calc(100vh - 90px)",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar>
       <ActionsPanel
         onDownloadSvg={() => downloadSvg(chartRef.current, `${baseName}_upset.svg`)}
         onDownloadPng={() => downloadPng(chartRef.current, `${baseName}_upset.png`, 2)}
@@ -1321,7 +1310,7 @@ function PlotControls({
           <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
         </div>
       </ControlSection>
-    </div>
+    </PlotSidebar>
   );
 }
 

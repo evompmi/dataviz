@@ -6,6 +6,7 @@
 // ColorInput, NumberInput, scrollDisclosureIntoView) resolves through
 // shared.bundle.js; TIME_UNITS comes from ./helpers.
 
+import { PlotSidebar } from "../_shell/PlotSidebar";
 import { TIME_UNITS } from "./helpers";
 import { ConditionEditor } from "./plot-area";
 
@@ -100,19 +101,7 @@ export function PlotControls({
   resetAll,
 }) {
   return (
-    <div
-      style={{
-        width: 279,
-        flexShrink: 0,
-        position: "sticky",
-        top: 24,
-        maxHeight: "calc(100vh - 90px)",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar>
       {/* Actions tile */}
       <ActionsPanel
         onDownloadSvg={() => {
@@ -580,6 +569,6 @@ export function PlotControls({
           </>
         )}
       </ControlSection>
-    </div>
+    </PlotSidebar>
   );
 }

@@ -3,6 +3,7 @@
 
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { PlotSidebar } from "./_shell/PlotSidebar";
 import { fmtTick, SHAPES, MARGIN, VBW, VBH, computeLinearRegression } from "./scatter/helpers";
 
 const { useState, useMemo, useCallback, useEffect, useRef, forwardRef } = React;
@@ -933,19 +934,7 @@ function PlotStep({
   return (
     <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
       {/* LEFT: controls panel */}
-      <div
-        style={{
-          width: 279,
-          flexShrink: 0,
-          position: "sticky",
-          top: 24,
-          maxHeight: "calc(100vh - 90px)",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
+      <PlotSidebar>
         {/* Actions */}
         <ActionsPanel
           onDownloadSvg={() =>
@@ -1900,7 +1889,7 @@ function PlotStep({
             )}
           </div>
         )}
-      </div>
+      </PlotSidebar>
 
       {/* RIGHT: chart area */}
       <div style={{ flex: 1, minWidth: 0 }}>

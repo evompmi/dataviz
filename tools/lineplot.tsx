@@ -11,6 +11,7 @@
 
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { PlotSidebar } from "./_shell/PlotSidebar";
 import { runTest, runPostHoc, postHocForTest } from "./_shell/stats-dispatch";
 import {
   MARGIN,
@@ -754,19 +755,7 @@ function PlotControls({
   };
 
   return (
-    <div
-      style={{
-        width: 279,
-        flexShrink: 0,
-        position: "sticky",
-        top: 24,
-        maxHeight: "calc(100vh - 90px)",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar>
       <ActionsPanel
         onDownloadSvg={() =>
           downloadSvg(svgRef.current, `${fileBaseName(fileName, "lineplot")}_lineplot.svg`)
@@ -1016,7 +1005,7 @@ function PlotControls({
           onChange={sv("errorCapWidth")}
         />
       </ControlSection>
-    </div>
+    </PlotSidebar>
   );
 }
 

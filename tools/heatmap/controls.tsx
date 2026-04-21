@@ -5,6 +5,7 @@
 // imported from ./chart so the sidebar's palette picker and the
 // heatmap's colourbar stay visually in sync.
 
+import { PlotSidebar } from "../_shell/PlotSidebar";
 import { PaletteStrip } from "./chart";
 import { buildHeatmapRScript, buildCsvExport } from "./reports";
 
@@ -147,15 +148,7 @@ export function PlotControls({
     { k: "single", label: "Single" },
   ];
   return (
-    <div
-      style={{
-        width: 280,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar sticky={false} width={280}>
       <ActionsPanel
         onReset={resetAll}
         extraDownloads={[
@@ -462,6 +455,6 @@ export function PlotControls({
           </div>
         </div>
       </ControlSection>
-    </div>
+    </PlotSidebar>
   );
 }

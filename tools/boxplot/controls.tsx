@@ -1,9 +1,10 @@
 // Sidebar plot controls: the collapsible ControlSection primitive and the
 // full PlotControls panel (plot-style toggle, shape/fill sliders, color
-// picker, facet/subgroup selector, axes & labels). No sibling-module
-// imports; shared UI (ActionsPanel, SliderControl, ColorInput,
-// BaseStyleControls, GroupColorEditor, PALETTE, scrollDisclosureIntoView)
-// resolves through shared.bundle.js.
+// picker, facet/subgroup selector, axes & labels). Shared UI (ActionsPanel,
+// SliderControl, ColorInput, BaseStyleControls, GroupColorEditor, PALETTE,
+// scrollDisclosureIntoView) resolves through shared.bundle.js.
+
+import { PlotSidebar } from "../_shell/PlotSidebar";
 
 export function ControlSection({
   title,
@@ -102,19 +103,7 @@ export function PlotControls({
     }
   };
   return (
-    <div
-      style={{
-        width: 279,
-        flexShrink: 0,
-        position: "sticky",
-        top: 24,
-        maxHeight: "calc(100vh - 90px)",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar>
       {/* Wide format banner */}
       {dataFormat === "wide" && (
         <div
@@ -794,6 +783,6 @@ export function PlotControls({
           onChange={sv("xLabelAngle")}
         />
       </ControlSection>
-    </div>
+    </PlotSidebar>
   );
 }

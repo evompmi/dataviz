@@ -2,6 +2,7 @@
 // Do NOT edit the .js file directly.
 import { usePlotToolState } from "./_shell/usePlotToolState";
 import { PlotToolShell } from "./_shell/PlotToolShell";
+import { PlotSidebar } from "./_shell/PlotSidebar";
 import {
   computeIntersections,
   regionLabel,
@@ -858,19 +859,7 @@ function PlotControls({
   const baseName = fileBaseName(fileName, "venn");
   const sv = (k) => (v) => updVis({ [k]: v });
   return (
-    <div
-      style={{
-        width: 279,
-        flexShrink: 0,
-        position: "sticky",
-        top: 24,
-        maxHeight: "calc(100vh - 90px)",
-        overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <PlotSidebar>
       <ActionsPanel
         onDownloadSvg={() => downloadSvg(chartRef.current, `${baseName}_venn.svg`)}
         onDownloadPng={() => downloadPng(chartRef.current, `${baseName}_venn.png`, 2)}
@@ -1129,7 +1118,7 @@ function PlotControls({
           </div>
         </div>
       </div>
-    </div>
+    </PlotSidebar>
   );
 }
 
