@@ -4482,16 +4482,27 @@ function HowToCard(props) {
         {
           "aria-hidden": "true",
           style: {
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             color: "var(--on-accent)",
-            fontSize: 14,
-            fontWeight: 700,
             transition: "transform .18s ease",
             transform: open ? "rotate(90deg)" : "rotate(0deg)",
-            lineHeight: 1,
             flexShrink: 0,
           },
         },
-        "\u203A"
+        React.createElement(
+          "svg",
+          { width: 22, height: 22, viewBox: "0 0 24 24", style: { display: "block" } },
+          React.createElement("path", {
+            d: "M9 5l7 7-7 7",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: 2.6,
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+          })
+        )
       )
     ),
     open

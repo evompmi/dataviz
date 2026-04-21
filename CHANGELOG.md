@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **HowToCard disclosure chevron enlarged.** The "How to use" collapsible card used a 14-px `›` (U+203A) glyph as its expand/collapse indicator — small, lightweight, and easy to miss against the gradient header. Replaced it with a 22×22 SVG chevron path (2.6-px round-capped stroke, `currentColor`), keeping the same 90° rotation on toggle. Now visually on par with the stepper's SVG checkmark and the rest of the chrome.
+
 ### Removed
 
 - **Plot-tool page-header subtitles removed.** Every tool page previously rendered a one-line subtitle under the tool name (`"Load → label columns → filter → plot & export"`, `"XY scatter — one row per data point, one column per variable"`, `"Intersection sizes across many sets (4+ sets)"`, etc.). These strings restate what the landing-page tile already tells the user before they click in, so once inside the tool they're just noise competing with the stepper for attention. Dropped the `subtitle` rendering block from `PageHeader` in `tools/shared-ui.js` and the `subtitle` prop from `PlotToolShellProps` in `tools/_shell/PlotToolShell.tsx`. Removed per-tool `subtitle=` call-sites in `tools/lineplot.tsx`, `tools/venn.tsx`, `tools/scatter.tsx`, `tools/upset.tsx`, `tools/boxplot/index.tsx`, `tools/heatmap/index.tsx`, `tools/aequorin/index.tsx`, `tools/molarity.tsx`, and `tools/power.tsx`. HowToCard subtitles inside the collapsible upload-step info cards (contextually relevant inside the card) and the SVG chart's configurable subtitle (part of exported plot content) are untouched.
