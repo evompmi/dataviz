@@ -14,7 +14,7 @@ const toolsDir = path.join(__dirname, "../../tools");
 const sharedSrc = fs.readFileSync(path.join(toolsDir, "shared.js"), "utf8");
 const statsSrc = fs.readFileSync(path.join(toolsDir, "stats.js"), "utf8");
 const vennSrc = fs.readFileSync(path.join(toolsDir, "venn.tsx"), "utf8");
-const vennHelpersSlice = vennSrc.split("\n").slice(0, 963).join("\n");
+const vennHelpersSlice = vennSrc.split("\n").slice(0, 975).join("\n");
 const vennHelpers = esbuild.transformSync(vennHelpersSlice, {
   loader: "tsx",
   jsx: "transform",
