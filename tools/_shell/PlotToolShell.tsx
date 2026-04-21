@@ -16,7 +16,6 @@ interface PlotToolShellProps<TVis extends object> {
   state: PlotToolState<TVis>;
   toolName: string;
   title: string;
-  subtitle: string;
   visInit: TVis;
   steps: string[];
   canNavigate: (target: string) => boolean;
@@ -53,7 +52,6 @@ export function PlotToolShell<TVis extends object>({
   state,
   toolName,
   title,
-  subtitle,
   visInit,
   steps,
   canNavigate,
@@ -64,7 +62,6 @@ export function PlotToolShell<TVis extends object>({
       <PageHeader
         toolName={toolName}
         title={title}
-        subtitle={subtitle}
         middle={
           <StepNavBar
             steps={steps}

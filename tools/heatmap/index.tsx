@@ -343,7 +343,6 @@ function App() {
       state={shell}
       toolName="heatmap"
       title="Heatmap"
-      subtitle="Matrix view with hierarchical clustering"
       visInit={VIS_INIT_HEATMAP}
       steps={["upload", "configure", "plot"]}
       canNavigate={canNavigate}

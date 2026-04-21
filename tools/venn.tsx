@@ -1285,7 +1285,6 @@ function App() {
       state={{ ...shell, setStep: navigateStep }}
       toolName="venn"
       title="Venn Diagram"
-      subtitle="Set overlaps with data extraction (2–3 sets)"
       visInit={VIS_INIT_VENN}
       steps={["upload", "configure", "plot"]}
       canNavigate={canNavigate}
