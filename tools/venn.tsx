@@ -394,8 +394,6 @@ function UploadStep({ sepOverride, setSepOverride, handleFileLoad, onLoadExample
   );
 }
 
-const UPSET_NUDGE_KEY = "venn-upset-nudge-dismissed";
-
 function ConfigureStep({
   fileName,
   parsedHeaders,
@@ -404,28 +402,11 @@ function ConfigureStep({
   allColumnSets,
   pendingSelection,
   setPendingSelection,
+  isLongFormat,
 }) {
   const needsPicker = allColumnNames.length > 3;
   const selectedCount = pendingSelection.length;
 
-  // Non-blocking nudge to the UpSet tool when the dataset has 4+ sets.
-  // Venn still renders 2–3 of them; the banner is dismissible and remembers
-  // that choice in localStorage so it never nags the same user twice.
-  const [nudgeDismissed, setNudgeDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(UPSET_NUDGE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const dismissNudge = () => {
-    setNudgeDismissed(true);
-    try {
-      localStorage.setItem(UPSET_NUDGE_KEY, "1");
-    } catch {
-      /* storage disabled — dismissal only lasts this session */
-    }
-  };
   const openUpset = (e) => {
     e.preventDefault();
     // Hand the currently-loaded dataset off to the UpSet tool so it doesn't
@@ -445,7 +426,7 @@ function ConfigureStep({
       text: tsv,
       fileName: fileName || "",
       sep: "\t",
-      format: "wide",
+      format: isLongFormat ? "long" : "wide",
     };
     // In-iframe path: post directly into the sibling UpSet iframe (same
     // origin, so we can reach it via parent.document) before asking the
@@ -470,7 +451,7 @@ function ConfigureStep({
       window.location.href = "upset.html";
     }
   };
-  const showNudge = allColumnNames.length >= 4 && !nudgeDismissed;
+  const showNudge = allColumnNames.length >= 4;
 
   const toggle = (name) => {
     setPendingSelection((prev) => {
@@ -509,32 +490,29 @@ function ConfigureStep({
         >
           <span style={{ fontSize: 16 }}>💡</span>
           <span style={{ flex: 1 }}>
-            <strong>{allColumnNames.length} sets detected</strong> — UpSet plots read better than
-            Venn diagrams above 3 sets.{" "}
-            <a
-              href="upset.html"
-              onClick={openUpset}
-              style={{ color: "var(--accent-primary)", fontWeight: 700 }}
-            >
-              Open in UpSet tool →
-            </a>
+            <strong>{allColumnNames.length} sets detected</strong> — Venn diagrams only render 2 or
+            3 sets. For 4+ sets, use the UpSet tool.
           </span>
-          <button
-            type="button"
-            onClick={dismissNudge}
-            aria-label="Dismiss"
+          <a
+            href="upset.html"
+            onClick={openUpset}
             style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--text-muted)",
-              cursor: "pointer",
-              fontSize: 16,
-              lineHeight: 1,
-              padding: "0 4px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "5px 12px",
+              borderRadius: 999,
+              background: "var(--cta-primary-bg)",
+              color: "var(--on-accent)",
+              fontWeight: 700,
+              fontSize: 12,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              boxShadow: "var(--cta-primary-shadow)",
             }}
           >
-            ×
-          </button>
+            Open in UpSet →
+          </a>
         </div>
       )}
       {needsPicker && (
@@ -578,6 +556,7 @@ function ConfigureStep({
                     checked={checked}
                     disabled={atCap}
                     onChange={() => toggle(name)}
+                    style={{ accentColor: "var(--cta-primary-bg)" }}
                   />
                   <span
                     style={{
@@ -1091,6 +1070,7 @@ function App() {
   const [allColumnNames, setAllColumnNames] = useState([]);
   const [allColumnSets, setAllColumnSets] = useState(new Map());
   const [pendingSelection, setPendingSelection] = useState([]);
+  const [isLongFormat, setIsLongFormat] = useState(false);
 
   const [proportional, setProportional] = useState(false);
 
@@ -1180,7 +1160,31 @@ function App() {
         return;
       }
 
-      const { setNames: sn, sets: ss } = parseSetData(headers, rows);
+      // Detect a long-format upload (2 columns: item, set) so we don't silently
+      // treat it as a 2-set wide Venn when it's actually N distinct sets stacked
+      // into column 2. Strong signal: col 2 has fewer distinct values than rows
+      // (i.e. labels repeat), which never happens in a wide 2-column layout.
+      let sn, ss;
+      let usedLongFormat = false;
+      if (headers.length === 2) {
+        const col2 = rows.map((r) => (r[1] || "").trim()).filter(Boolean);
+        const col2Distinct = new Set(col2).size;
+        if (col2.length >= 4 && col2Distinct >= 2 && col2Distinct < col2.length) {
+          try {
+            const longParsed = parseLongFormatSets(headers, rows);
+            sn = longParsed.setNames;
+            ss = longParsed.sets;
+            usedLongFormat = true;
+          } catch {
+            /* fall through to wide parse */
+          }
+        }
+      }
+      if (!usedLongFormat) {
+        const wide = parseSetData(headers, rows);
+        sn = wide.setNames;
+        ss = wide.sets;
+      }
 
       if (sn.length < 2) {
         setParseError("Need at least 2 sets — each column header becomes a set name.");
@@ -1192,6 +1196,7 @@ function App() {
       setParsedRows(rows);
       setAllColumnNames(sn);
       setAllColumnSets(ss);
+      setIsLongFormat(usedLongFormat);
 
       if (sn.length <= 3) {
         setPendingSelection(sn);
@@ -1306,6 +1311,7 @@ function App() {
           allColumnSets={allColumnSets}
           pendingSelection={pendingSelection}
           setPendingSelection={setPendingSelection}
+          isLongFormat={isLongFormat}
         />
       )}
 

@@ -831,7 +831,12 @@ function ConfigureStep({
                   color: "var(--text)",
                 }}
               >
-                <input type="checkbox" checked={checked} onChange={() => toggle(name)} />
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(name)}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
+                />
                 <span
                   style={{
                     fontWeight: 600,
@@ -864,8 +869,7 @@ function ConfigureStep({
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Min</label>
-            <input
-              type="number"
+            <NumberInput
               min={1}
               max={selectedCount}
               step={1}
@@ -877,12 +881,10 @@ function ConfigureStep({
                 setMinDegree(clamped);
                 if (Number.isFinite(maxDegree) && clamped > maxDegree) setMaxDegree(clamped);
               }}
-              className="dv-input"
-              style={{ width: 72 }}
+              style={{ width: 96 }}
             />
             <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Max</label>
-            <input
-              type="number"
+            <NumberInput
               min={1}
               max={selectedCount}
               step={1}
@@ -894,8 +896,7 @@ function ConfigureStep({
                 setMaxDegree(clamped);
                 if (clamped < minDegree) setMinDegree(clamped);
               }}
-              className="dv-input"
-              style={{ width: 72 }}
+              style={{ width: 96 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
               {cutoffPreview
