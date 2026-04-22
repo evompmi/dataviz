@@ -73,6 +73,8 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
     fontSize,
     barOpacity,
     dotSize,
+    showIntersectionLabels,
+    showSetSizeLabels,
   },
   ref
 ) {
@@ -278,25 +280,27 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         })}
       </g>
 
-      <g id="intersection-bar-labels">
-        {intersections.map((inter, i) => {
-          const cx = colX(i);
-          const h = topBarScale(inter.size);
-          return (
-            <text
-              key={`tbl-${inter.mask}`}
-              x={cx}
-              y={topPanelBottom - h - 3}
-              textAnchor="middle"
-              fontSize={Math.max(9, fSize - 3)}
-              fill={TEXT_DARK}
-              fontFamily="sans-serif"
-            >
-              {inter.size}
-            </text>
-          );
-        })}
-      </g>
+      {showIntersectionLabels !== false && (
+        <g id="intersection-bar-labels">
+          {intersections.map((inter, i) => {
+            const cx = colX(i);
+            const h = topBarScale(inter.size);
+            return (
+              <text
+                key={`tbl-${inter.mask}`}
+                x={cx}
+                y={topPanelBottom - h - 3}
+                textAnchor="middle"
+                fontSize={Math.max(9, fSize - 3)}
+                fill={TEXT_DARK}
+                fontFamily="sans-serif"
+              >
+                {inter.size}
+              </text>
+            );
+          })}
+        </g>
+      )}
 
       {/* Matrix zebra stripes — every other row gets a faint band that
           spans only the populated column range so the bands shrink in step
@@ -357,27 +361,29 @@ const UpsetChart = forwardRef<SVGSVGElement, any>(function UpsetChart(
         })}
       </g>
 
-      <g id="set-size-bar-labels">
-        {setNames.map((name, i) => {
-          const size = setSizes.get(name) || 0;
-          const w = leftBarScale(size);
-          const barRightX = matrixLeftX - LEFT_GAP - leftLabelArea;
-          return (
-            <text
-              key={`sbl-${i}`}
-              x={barRightX - w - 4}
-              y={rowY(i)}
-              textAnchor="end"
-              dominantBaseline="central"
-              fontSize={Math.max(9, fSize - 3)}
-              fill={TEXT_MUTED}
-              fontFamily="sans-serif"
-            >
-              {size}
-            </text>
-          );
-        })}
-      </g>
+      {showSetSizeLabels !== false && (
+        <g id="set-size-bar-labels">
+          {setNames.map((name, i) => {
+            const size = setSizes.get(name) || 0;
+            const w = leftBarScale(size);
+            const barRightX = matrixLeftX - LEFT_GAP - leftLabelArea;
+            return (
+              <text
+                key={`sbl-${i}`}
+                x={barRightX - w - 4}
+                y={rowY(i)}
+                textAnchor="end"
+                dominantBaseline="central"
+                fontSize={Math.max(9, fSize - 3)}
+                fill={TEXT_MUTED}
+                fontFamily="sans-serif"
+              >
+                {size}
+              </text>
+            );
+          })}
+        </g>
+      )}
 
       {/* Set-size axis: baseline + downward ticks + labels below the matrix. */}
       <g id="axis-set-size">
@@ -831,7 +837,12 @@ function ConfigureStep({
                   color: "var(--text)",
                 }}
               >
-                <input type="checkbox" checked={checked} onChange={() => toggle(name)} />
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(name)}
+                  style={{ accentColor: "var(--cta-primary-bg)" }}
+                />
                 <span
                   style={{
                     fontWeight: 600,
@@ -864,8 +875,7 @@ function ConfigureStep({
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Min</label>
-            <input
-              type="number"
+            <NumberInput
               min={1}
               max={selectedCount}
               step={1}
@@ -877,12 +887,10 @@ function ConfigureStep({
                 setMinDegree(clamped);
                 if (Number.isFinite(maxDegree) && clamped > maxDegree) setMaxDegree(clamped);
               }}
-              className="dv-input"
-              style={{ width: 72 }}
+              style={{ width: 96 }}
             />
             <label style={{ fontSize: 11, color: "var(--text-muted)" }}>Max</label>
-            <input
-              type="number"
+            <NumberInput
               min={1}
               max={selectedCount}
               step={1}
@@ -894,8 +902,7 @@ function ConfigureStep({
                 setMaxDegree(clamped);
                 if (clamped < minDegree) setMinDegree(clamped);
               }}
-              className="dv-input"
-              style={{ width: 72 }}
+              style={{ width: 96 }}
             />
             <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
               {cutoffPreview
@@ -1243,6 +1250,80 @@ function PlotControls({
           step={1}
           onChange={sv("fontSize")}
         />
+        <div>
+          <div className="dv-label">Intersection size labels</div>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(["off", "on"] as const).map((mode) => {
+              const on = vis.showIntersectionLabels !== false;
+              const active = mode === "on" ? on : !on;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => updVis({ showIntersectionLabels: mode === "on" })}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {mode === "off" ? "Off" : "On"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div>
+          <div className="dv-label">Set size labels</div>
+          <div
+            style={{
+              display: "flex",
+              borderRadius: 6,
+              overflow: "hidden",
+              border: "1px solid var(--border-strong)",
+            }}
+          >
+            {(["off", "on"] as const).map((mode) => {
+              const on = vis.showSetSizeLabels !== false;
+              const active = mode === "on" ? on : !on;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => updVis({ showSetSizeLabels: mode === "on" })}
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: 11,
+                    fontWeight: active ? 700 : 400,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    border: "none",
+                    background: active ? "var(--accent-primary)" : "var(--surface)",
+                    color: active ? "var(--on-accent)" : "var(--text-muted)",
+                    transition: "background 120ms ease, color 120ms ease",
+                  }}
+                >
+                  {mode === "off" ? "Off" : "On"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span className="dv-label">Background</span>
           <ColorInput value={vis.plotBg} onChange={sv("plotBg")} size={24} />
@@ -1271,6 +1352,8 @@ const VIS_INIT_UPSET = {
   // through loadAutoPrefs as null; the chart renders against setNames.length
   // when null.
   maxDegree: null,
+  showIntersectionLabels: true,
+  showSetSizeLabels: true,
 };
 
 function App() {
@@ -1589,6 +1672,8 @@ function App() {
                   fontSize={vis.fontSize}
                   barOpacity={vis.barOpacity}
                   dotSize={vis.dotSize}
+                  showIntersectionLabels={vis.showIntersectionLabels}
+                  showSetSizeLabels={vis.showSetSizeLabels}
                 />
               </ScrollablePlotCard>
 
